@@ -1,0 +1,10 @@
+import { Partner } from '../types/crm';
+
+export const mockPartners: Partner[] = [
+  { id: 'p1', name: 'SunTech Energy Partners', region: 'South Asia', country: 'India', pssOrangeOwner: 'u1', partnerOwner: 'u2', email: 'contact@suntech.in', phone: '+91 98765 43210', clickupLink: 'https://app.clickup.com/t/abc123', notes: 'Strategic partner for rooftop installations', createdAt: new Date('2024-01-15'), updatedAt: new Date('2024-11-20') },
+  { id: 'p2', name: 'GreenWave Solutions', region: 'Southeast Asia', country: 'Vietnam', pssOrangeOwner: 'u3', partnerOwner: 'u1', email: 'info@greenwave.vn', phone: '+84 123 456 789', clickupLink: 'https://app.clickup.com/t/def456', notes: 'Expanding into floating solar', createdAt: new Date('2024-02-10'), updatedAt: new Date('2024-10-15') },
+  { id: 'p3', name: 'EcoSolar Philippines', region: 'Southeast Asia', country: 'Philippines', pssOrangeOwner: 'u2', partnerOwner: 'u5', email: 'hello@ecosolar.ph', phone: '+63 912 345 6789', notes: 'Strong government connections', createdAt: new Date('2024-03-05'), updatedAt: new Date('2024-11-01') },
+  { id: 'p4', name: 'Tata Power Solar', region: 'South Asia', country: 'India', pssOrangeOwner: 'u1', partnerOwner: 'u3', email: 'solar@tatapower.com', phone: '+91 22 6665 8282', clickupLink: 'https://app.clickup.com/t/ghi789', notes: 'Major EPC partner', createdAt: new Date('2024-01-20'), updatedAt: new Date('2024-11-18') },
+  { id: 'p5', name: 'Thai Solar Energy', region: 'Southeast Asia', country: 'Thailand', pssOrangeOwner: 'u5', partnerOwner: 'u2', email: 'contact@thaisolar.co.th', phone: '+66 2 123 4567', notes: 'Industrial focus', createdAt: new Date('2024-04-12'), updatedAt: new Date('2024-09-30') },
+  { id: 'p6', name: 'BDx Data Centers', region: 'Asia Pacific', country: 'Singapore', pssOrangeOwner: 'u1', partnerOwner: 'u6', email: 'energy@bdx.sg', phone: '+65 6789 0123', clickupLink: 'https://app.clickup.com/t/jkl012', notes: 'Key data center client', createdAt: new Date('2024-05-01'), updatedAt: new Date('2024-11-25') },
+];

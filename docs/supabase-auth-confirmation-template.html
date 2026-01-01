@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f9f9f9; margin: 0; padding: 40px 0;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+      <td align="center">
+        <div style="max-width: 600px; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 5px solid #E87E3C;">
+          <div style="padding: 40px; text-align: center;">
+            <img src="https://shrglaqikuzcvoihzpyt.supabase.co/storage/v1/object/public/company-assets/pss_orange_logo.png" alt="PSS Orange" width="140" style="margin-bottom: 30px;">
+            <h2 style="color: #333; margin-top: 0;">Let's get started!</h2>
+            <p style="color: #666; font-size: 16px; line-height: 1.5;">Thanks for joining PSS Orange. Please click the button below to verify your email address and activate your account.</p>
+            <a href="{{ .ConfirmationURL }}" style="display: inline-block; padding: 14px 30px; background-color: #E87E3C; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0;">Confirm My Account</a>
+            <p style="color: #999; font-size: 12px; margin-top: 30px;">If the button doesn't work, copy this link: <br> <a href="{{ .ConfirmationURL }}" style="color: #E87E3C;">{{ .ConfirmationURL }}</a></p>
+          </div>
+          <div style="background-color: #f4f4f4; padding: 20px; text-align: center; color: #999; font-size: 12px;">
+            &copy; 2026 PSS Orange. All rights reserved.
+          </div>
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

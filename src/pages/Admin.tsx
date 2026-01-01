@@ -1,0 +1,133 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Navigate, Link } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { UserManagement } from '@/components/admin/UserManagement';
+import { ActivityLogs } from '@/components/admin/ActivityLogs';
+import { SettingsPanel } from '@/components/admin/SettingsPanel';
+import { OrgChart } from '@/components/admin/OrgChart';
+import { Users, Activity, Settings, Shield, ArrowLeft, Network } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/lib/supabase';
+
+interface AdminStatsProps {
+  totalUsers: number;
+  activeUsers: number;
+  adminUsers: number;
+}
+
+const AdminStats: React.FC<AdminStatsProps> = ({ totalUsers, activeUsers, adminUsers }) => {
+  const stats = [
+    { label: 'Total Users', value: String(totalUsers), icon: Users, color: 'bg-blue-500' },
+    { label: 'Active Users', value: String(activeUsers), icon: Activity, color: 'bg-green-500' },
+    { label: 'Admin Users', value: String(adminUsers), icon: Shield, color: 'bg-red-500' },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+      {stats.map(stat => (
+        <div key={stat.label} className="bg-white rounded-lg border p-4">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${stat.color}`}>
+              <stat.icon className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{stat.value}</p>
+              <p className="text-xs text-gray-500">{stat.label}</p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const Admin: React.FC = () => {
+  const { profile, loading } = useAuth();
+  const [activeTab, setActiveTab] = useState('users');
+  const [stats, setStats] = useState({ totalUsers: 0, activeUsers: 0, adminUsers: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const { data, error } = await supabase
+        .from('crm_users')
+        .select('role, is_active');
+
+      if (data) {
+        const totalUsers = data.length;
+        const activeUsers = data.filter(u => u.is_active !== false).length;
+        const adminUsers = data.filter(u => u.role === 'admin').length;
+        setStats({ totalUsers, activeUsers, adminUsers });
+      }
+      setStatsLoading(false);
+    };
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (!profile || profile.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link to="/"><Button variant="ghost" size="icon"><ArrowLeft className="w-5 h-5" /></Button></Link>
+            <div className="flex items-center gap-2">
+              <Shield className="w-6 h-6 text-orange-500" />
+              <h1 className="text-xl font-bold">Admin Dashboard</h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">Logged in as</span>
+            <span className="font-medium text-orange-600">{profile.name}</span>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        <AdminStats
+          totalUsers={stats.totalUsers}
+          activeUsers={stats.activeUsers}
+          adminUsers={stats.adminUsers}
+        />
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="bg-white border">
+            <TabsTrigger value="users" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
+              <Users className="w-4 h-4 mr-2" />Users
+            </TabsTrigger>
+            <TabsTrigger value="org-chart" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
+              <Network className="w-4 h-4 mr-2" />Org Chart
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
+              <Activity className="w-4 h-4 mr-2" />Activity Logs
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
+              <Settings className="w-4 h-4 mr-2" />Settings
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="users"><UserManagement /></TabsContent>
+          <TabsContent value="org-chart"><OrgChart /></TabsContent>
+          <TabsContent value="activity"><ActivityLogs /></TabsContent>
+          <TabsContent value="settings"><SettingsPanel /></TabsContent>
+        </Tabs>
+      </main>
+    </div>
+  );
+};
+
+export default Admin;
+
