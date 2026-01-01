@@ -10,11 +10,11 @@ interface ProjectCardProps {
 }
 
 const statusColors: Record<string, string> = {
-  'Discovery': 'bg-slate-100 text-slate-600 border-slate-200',
-  'Pre-Dev': 'bg-blue-50 text-blue-600 border-blue-200',
-  'Dev': 'bg-purple-50 text-purple-600 border-purple-200',
-  'Contract': 'bg-amber-50 text-amber-600 border-amber-200',
+  'Won': 'bg-slate-100 text-slate-600 border-slate-200',
+  'Engineering': 'bg-blue-50 text-blue-600 border-blue-200',
+  'Permit/EPC': 'bg-amber-50 text-amber-600 border-amber-200',
   'Construction': 'bg-orange-50 text-orange-600 border-orange-200',
+  'Commissioning': 'bg-purple-50 text-purple-600 border-purple-200',
   'Operational': 'bg-emerald-50 text-emerald-600 border-emerald-200',
 };
 

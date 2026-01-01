@@ -242,11 +242,11 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
   // Project pipeline stages
   const projectStages = useMemo(() => {
     const stages: { stage: ProjectStatus; count: number; mw: number; color: string }[] = [
-      { stage: 'Discovery', count: 0, mw: 0, color: 'bg-slate-500' },
-      { stage: 'Pre-Dev', count: 0, mw: 0, color: 'bg-blue-500' },
-      { stage: 'Dev', count: 0, mw: 0, color: 'bg-purple-500' },
-      { stage: 'Contract', count: 0, mw: 0, color: 'bg-amber-500' },
+      { stage: 'Won', count: 0, mw: 0, color: 'bg-slate-500' },
+      { stage: 'Engineering', count: 0, mw: 0, color: 'bg-blue-500' },
+      { stage: 'Permit/EPC', count: 0, mw: 0, color: 'bg-amber-500' },
       { stage: 'Construction', count: 0, mw: 0, color: 'bg-orange-500' },
+      { stage: 'Commissioning', count: 0, mw: 0, color: 'bg-purple-500' },
       { stage: 'Operational', count: 0, mw: 0, color: 'bg-emerald-500' },
     ];
 

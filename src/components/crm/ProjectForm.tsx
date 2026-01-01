@@ -11,14 +11,14 @@ interface ProjectFormProps {
   onCancel: () => void;
 }
 
-const PROJECT_STATUSES: ProjectStatus[] = ['Discovery', 'Pre-Dev', 'Dev', 'Contract', 'Construction', 'Operational'];
+const PROJECT_STATUSES: ProjectStatus[] = ['Won', 'Engineering', 'Permit/EPC', 'Construction', 'Commissioning', 'Operational'];
 
 const statusColors: Record<ProjectStatus, { bg: string; text: string; border: string }> = {
-  'Discovery': { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-300' },
-  'Pre-Dev': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-300' },
-  'Dev': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-300' },
-  'Contract': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-300' },
+  'Won': { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-300' },
+  'Engineering': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-300' },
+  'Permit/EPC': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-300' },
   'Construction': { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-300' },
+  'Commissioning': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-300' },
   'Operational': { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-300' },
 };
 
@@ -35,7 +35,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
     linkedAccountId: project?.linkedAccountId || '',
     country: project?.country || 'Thailand',
     capacity: project?.capacity || 0,
-    status: project?.status || 'Discovery' as ProjectStatus,
+    status: project?.status || 'Won' as ProjectStatus,
     ownerId: project?.ownerId || currentUserId || '',
     linkedPartnerIds: project?.linkedPartnerIds || [] as string[],
     clickupLink: project?.clickupLink || '',
