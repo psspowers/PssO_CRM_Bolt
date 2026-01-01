@@ -1,7 +1,7 @@
 export type UserRole = 'admin' | 'internal' | 'external';
 export type REType = 'Solar - Rooftop' | 'Solar - Ground' | 'Solar - Floating';
 export type ContactTag = 'Decision Maker' | 'Influencer' | 'Regulator' | 'Advisor' | 'Banker' | 'Pricing' | 'Legal' | 'Policy' | 'Land' | 'Bank';
-export type OpportunityStage = 'Prospect' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Won' | 'Lost';
+export type OpportunityStage = 'Prospect' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Term Sheet' | 'Won' | 'Lost';
 export type Priority = 'Low' | 'Medium' | 'High';
 export type ProjectStatus = 'Won' | 'Engineering' | 'Permit/EPC' | 'Construction' | 'Commissioning' | 'Operational';
 export type ActivityType = 'Note' | 'Call' | 'Meeting' | 'WhatsApp' | 'Site Visit';

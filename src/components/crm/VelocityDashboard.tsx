@@ -215,7 +215,8 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
       { stage: 'Prospect', count: 0, mw: 0, color: 'bg-slate-500', wowChange: 0, momChange: 0 },
       { stage: 'Qualified', count: 0, mw: 0, color: 'bg-blue-500', wowChange: 0, momChange: 0 },
       { stage: 'Proposal', count: 0, mw: 0, color: 'bg-amber-500', wowChange: 0, momChange: 0 },
-      { stage: 'Negotiation', count: 0, mw: 0, color: 'bg-purple-500', wowChange: 0, momChange: 0 },
+      { stage: 'Negotiation', count: 0, mw: 0, color: 'bg-orange-500', wowChange: 0, momChange: 0 },
+      { stage: 'Term Sheet', count: 0, mw: 0, color: 'bg-teal-500', wowChange: 0, momChange: 0 },
       { stage: 'Won', count: 0, mw: 0, color: 'bg-emerald-500', wowChange: 0, momChange: 0 },
     ];
 

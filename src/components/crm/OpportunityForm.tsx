@@ -17,17 +17,13 @@ interface OpportunityFormProps {
   onCancel: () => void;
 }
 
-const stages: string[] = [
-  'Discovery',
-  'Pre-Dev',
-  'Development',
-  'Contract',
+const stages: OpportunityStage[] = [
+  'Prospect',
+  'Qualified',
+  'Proposal',
+  'Negotiation',
+  'Term Sheet',
   'Won',
-  'Engineering',
-  'Permit - EPC',
-  'Construction',
-  'Commissioning',
-  'Operational',
   'Lost'
 ];
 const priorities: Priority[] = ['Low', 'Medium', 'High'];
