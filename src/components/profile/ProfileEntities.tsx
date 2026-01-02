@@ -7,17 +7,18 @@ const stageColors: Record<string, string> = {
   Qualified: 'bg-blue-100 text-blue-700',
   Proposal: 'bg-purple-100 text-purple-700',
   Negotiation: 'bg-orange-100 text-orange-700',
+  'Term Sheet': 'bg-yellow-100 text-yellow-700',
   Won: 'bg-green-100 text-green-700',
   Lost: 'bg-red-100 text-red-700',
 };
 
 const statusColors: Record<string, string> = {
-  Discovery: 'bg-gray-100 text-gray-700',
-  'Pre-Dev': 'bg-blue-100 text-blue-700',
-  Dev: 'bg-purple-100 text-purple-700',
-  Contract: 'bg-orange-100 text-orange-700',
+  Won: 'bg-green-100 text-green-700',
+  Engineering: 'bg-blue-100 text-blue-700',
+  'Permit/EPC': 'bg-purple-100 text-purple-700',
   Construction: 'bg-yellow-100 text-yellow-700',
-  Operational: 'bg-green-100 text-green-700',
+  Commissioning: 'bg-orange-100 text-orange-700',
+  Operational: 'bg-emerald-100 text-emerald-700',
 };
 
 interface Props {
@@ -42,9 +43,9 @@ export const ProfileEntities: React.FC<Props> = ({ opportunities, projects }) =>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-900 truncate">{opp.name}</p>
-                    <p className="text-sm text-gray-500">{opp.companyName}</p>
+                    {opp.companyName && <p className="text-sm text-gray-500">{opp.companyName}</p>}
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${stageColors[opp.stage]}`}>
+                  <span className={`text-xs px-2 py-1 rounded-full ${stageColors[opp.stage] || 'bg-gray-100 text-gray-700'}`}>
                     {opp.stage}
                   </span>
                 </div>
@@ -82,7 +83,7 @@ export const ProfileEntities: React.FC<Props> = ({ opportunities, projects }) =>
                     <p className="font-medium text-gray-900 truncate">{proj.name}</p>
                     <p className="text-sm text-gray-500">{proj.country} • {proj.capacity} MWp</p>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${statusColors[proj.status]}`}>
+                  <span className={`text-xs px-2 py-1 rounded-full ${statusColors[proj.status] || 'bg-gray-100 text-gray-700'}`}>
                     {proj.status}
                   </span>
                 </div>

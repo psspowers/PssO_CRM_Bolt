@@ -103,6 +103,7 @@ export interface Opportunity {
   bankabilityScore?: number;
   completedMilestones?: string[];
   lostReason?: string;
+  companyName?: string;
   // NEW CLASSIFICATION FIELDS (Thai Taxonomy)
   sector: string;
   industry: string;

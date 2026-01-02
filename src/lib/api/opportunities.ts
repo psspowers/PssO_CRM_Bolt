@@ -15,22 +15,23 @@ const toUuidOrNull = (value: string | undefined | null): string | null => {
  * Mapper: Converts Database (snake_case) to Frontend (camelCase)
  */
 const toOpp = (db: DbOpportunity, partnerIds: string[] = []): Opportunity => ({
-  id: db.id, 
-  name: db.name, 
-  accountId: db.account_id || db.linked_account_id || '', 
+  id: db.id,
+  name: db.name,
+  accountId: db.account_id || db.linked_account_id || '',
   value: db.value ?? db.value_usd ?? 0,
-  stage: db.stage as OpportunityStage, 
+  stage: db.stage as OpportunityStage,
   priority: db.priority as Priority,
-  ownerId: db.owner_id, 
-  linkedPartnerIds: partnerIds, 
+  ownerId: db.owner_id,
+  linkedPartnerIds: partnerIds,
   nextAction: db.next_action,
   nextActionDate: db.next_action_date ? new Date(db.next_action_date) : undefined,
-  clickupLink: db.clickup_link, 
+  clickupLink: db.clickup_link,
   notes: db.notes,
-  targetCapacity: db.target_capacity ?? db.target_capacity_mw ?? 0, 
+  targetCapacity: db.target_capacity ?? db.target_capacity_mw ?? 0,
   reType: db.re_type as REType,
   targetDecisionDate: db.target_decision_date ? new Date(db.target_decision_date) : undefined,
-  
+  companyName: db.company_name,
+
   // Thai Taxonomy Classification
   sector: db.sector || '',
   industry: db.industry || '',
@@ -43,11 +44,11 @@ const toOpp = (db: DbOpportunity, partnerIds: string[] = []): Opportunity => ({
   daytimeLoadKW: db.daytime_load_kw || 0,             // Maps Feature 1 (Load)
   is24Hours: db.is_24_hours || false,
   bankabilityScore: db.bankability_score || 0,
-  
+
   // Counterparty Risk Profile (Credit Committee)
   riskProfile: db.risk_profile as CounterpartyRisk | undefined,
 
-  createdAt: new Date(db.created_at), 
+  createdAt: new Date(db.created_at),
   updatedAt: new Date(db.updated_at),
 });
 
