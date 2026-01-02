@@ -46,7 +46,7 @@ export const useAppContext = () => { const ctx = useContext(AppContext); if (!ct
 const emptyState: CRMState = { partners: [], accounts: [], contacts: [], opportunities: [], projects: [], activities: [], relationships: [], users: [], loading: false, error: null };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { profile } = useAuth();
+  const { profile, user, loading: authLoading } = useAuth();
   const [state, setState] = useState<CRMState>({ ...emptyState, loading: true });
   const mountedRef = useRef(true);
   const { announce } = useAnnouncer();
@@ -76,11 +76,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   useEffect(() => {
+    // 1. Wait for Auth to finish initializing
+    if (authLoading) return;
+
+    // 2. If no user, do not fetch (RLS would block it anyway)
+    if (!user) {
+      setState(prev => ({ ...prev, loading: false }));
+      return;
+    }
+
+    // 3. User is ready - Fetch Data
     mountedRef.current = true;
-    // Always load data regardless of auth status - RLS policies allow public read
     refreshData();
+
     return () => { mountedRef.current = false; };
-  }, [refreshData]);
+  }, [refreshData, user, authLoading]);
 
 
   const canEdit = (ownerId?: string) => !profile ? false : profile.role === 'admin' || profile.role === 'internal' || ownerId === profile.id;
