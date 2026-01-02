@@ -141,9 +141,9 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   const filtered = useMemo(() => {
     return opportunities.filter(o => {
     // 0. OPPORTUNITY STAGE FILTER - Only show pre-win opportunities
-    // Pre-win stages: Discovery, Pre-Dev, Development, Contract, Lost
-    // Exclude Won and project stages (Engineering, Permit - EPC, Construction, Commissioning, Operational)
-    const preWinStages = ['Discovery', 'Pre-Dev', 'Development', 'Contract', 'Lost'];
+    // Pre-win stages: Prospect, Qualified, Proposal, Negotiation, Term Sheet, Lost
+    // Exclude Won and project stages (Engineering, Permit/EPC, Construction, Commissioning, Operational)
+    const preWinStages = ['Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Lost'];
     if (!preWinStages.includes(o.stage)) return false;
 
     // 1. HIERARCHY FILTER - Filter based on ownership/team view
@@ -176,7 +176,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   }, [opportunities, accounts, search, stageFilter, priorityFilter, hierarchyView, user?.id, subordinateIds]);
 
   // Calculate stats for the header (only count pre-win opportunities)
-  const preWinStages = ['Discovery', 'Pre-Dev', 'Development', 'Contract', 'Lost'];
+  const preWinStages = ['Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Lost'];
   const myDealsCount = useMemo(() =>
     opportunities.filter(o => o.ownerId === user?.id && preWinStages.includes(o.stage)).length,
     [opportunities, user?.id]
@@ -241,10 +241,11 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     if (!selectedOpp) return;
 
     const stageProgression: Record<string, string | null> = {
-      'Discovery': 'Pre-Dev',
-      'Pre-Dev': 'Development',
-      'Development': 'Contract',
-      'Contract': 'Won',
+      'Prospect': 'Qualified',
+      'Qualified': 'Proposal',
+      'Proposal': 'Negotiation',
+      'Negotiation': 'Term Sheet',
+      'Term Sheet': 'Won',
       'Won': null,
       'Lost': null
     };
@@ -418,7 +419,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
 
       {/* Stage Fast-Filters */}
       <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
-        {['all', 'Discovery', 'Pre-Dev', 'Development', 'Contract', 'Lost'].map(stage => (
+        {['all', 'Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Won', 'Lost'].map(stage => (
           <button
             key={stage}
             onClick={() => setStageFilter(stage)}
