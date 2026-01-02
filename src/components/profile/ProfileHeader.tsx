@@ -23,12 +23,13 @@ interface Props { profile: UserProfile; onUpdate: () => void; }
 export const ProfileHeader: React.FC<Props> = ({ profile, onUpdate }) => {
   const { updateProfile } = useAuth();
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(profile.name);
+  const [name, setName] = useState(profile?.name || '');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const initials = profile.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  // Defensive: Ensure profile and profile.name exist before processing
+  const initials = (profile?.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -55,6 +56,17 @@ export const ProfileHeader: React.FC<Props> = ({ profile, onUpdate }) => {
     else { toast({ title: 'Profile updated' }); setEditing(false); onUpdate(); }
     setSaving(false);
   };
+
+  // Defensive: Early return if profile is somehow invalid
+  if (!profile) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="text-center text-gray-500">
+          <p>Profile data unavailable</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl shadow-sm border p-6">
@@ -83,11 +95,11 @@ export const ProfileHeader: React.FC<Props> = ({ profile, onUpdate }) => {
               <button onClick={() => setEditing(true)} className="text-gray-400 hover:text-orange-500" aria-label="Edit profile"><Edit2 className="w-4 h-4" /></button>
             </div>
           )}
-          <p className="text-gray-500 mb-2">{profile.email}</p>
-          <span className={`inline-block text-sm px-3 py-1 rounded-full border ${roleColors[profile.role]}`}>{roleLabels[profile.role]}</span>
+          <p className="text-gray-500 mb-2">{profile.email || 'No email'}</p>
+          <span className={`inline-block text-sm px-3 py-1 rounded-full border ${roleColors[profile.role] || roleColors.external}`}>{roleLabels[profile.role] || 'User'}</span>
         </div>
       </div>
-      {profile.badges.length > 0 && (
+      {profile.badges && profile.badges.length > 0 && (
         <div className="mt-6 pt-6 border-t">
           <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2"><Award className="w-4 h-4" /> Badges</h3>
           <div className="flex flex-wrap gap-2">

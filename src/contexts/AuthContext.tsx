@@ -94,28 +94,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const emailRole = userEmail ? getRoleForEmail(userEmail) : 'external';
       const emailName = userEmail ? getNameForEmail(userEmail) : 'User';
       const emailBadges = userEmail ? getBadgesForEmail(userEmail) : [];
-      
+
       // First, try to fetch by ID
       const { data: dataById } = await supabase
         .from('crm_users')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
-      
-      if (dataById) {
+
+      // Defensive: Handle unexpected array response
+      const profileData = Array.isArray(dataById) ? dataById[0] : dataById;
+
+      if (profileData) {
         // Use email-based role for admin emails to ensure they always have admin access
-        const finalRole = ADMIN_EMAILS.includes(userEmail?.toLowerCase() || '') ? 'admin' : dataById.role;
-        const finalName = ADMIN_EMAILS.includes(userEmail?.toLowerCase() || '') ? emailName : dataById.name;
-        const finalBadges = ADMIN_EMAILS.includes(userEmail?.toLowerCase() || '') ? emailBadges : (dataById.badges || []);
+        const finalRole = ADMIN_EMAILS.includes(userEmail?.toLowerCase() || '') ? 'admin' : profileData.role;
+        const finalName = ADMIN_EMAILS.includes(userEmail?.toLowerCase() || '') ? emailName : profileData.name;
+        const finalBadges = ADMIN_EMAILS.includes(userEmail?.toLowerCase() || '') ? emailBadges : (profileData.badges || []);
 
         return {
-          id: dataById.id,
+          id: profileData.id,
           name: finalName || emailName,
-          email: dataById.email,
+          email: profileData.email,
           role: finalRole,
-          avatar: dataById.avatar,
+          avatar: profileData.avatar,
           badges: finalBadges,
-          password_change_required: dataById.password_change_required || false
+          password_change_required: profileData.password_change_required || false
         };
       }
       
@@ -126,27 +129,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .select('*')
           .eq('email', userEmail)
           .maybeSingle();
-        
-        if (dataByEmail) {
+
+        // Defensive: Handle unexpected array response
+        const emailProfileData = Array.isArray(dataByEmail) ? dataByEmail[0] : dataByEmail;
+
+        if (emailProfileData) {
           // Found by email - update the record to use the auth user ID
           await supabase
             .from('crm_users')
             .update({ id: userId })
             .eq('email', userEmail);
-          
+
           // Use email-based role for admin emails
-          const finalRole = ADMIN_EMAILS.includes(userEmail.toLowerCase()) ? 'admin' : dataByEmail.role;
-          const finalName = ADMIN_EMAILS.includes(userEmail.toLowerCase()) ? emailName : dataByEmail.name;
-          const finalBadges = ADMIN_EMAILS.includes(userEmail.toLowerCase()) ? emailBadges : (dataByEmail.badges || []);
-          
+          const finalRole = ADMIN_EMAILS.includes(userEmail.toLowerCase()) ? 'admin' : emailProfileData.role;
+          const finalName = ADMIN_EMAILS.includes(userEmail.toLowerCase()) ? emailName : emailProfileData.name;
+          const finalBadges = ADMIN_EMAILS.includes(userEmail.toLowerCase()) ? emailBadges : (emailProfileData.badges || []);
+
           return {
             id: userId,
             name: finalName || emailName,
-            email: dataByEmail.email,
+            email: emailProfileData.email,
             role: finalRole,
-            avatar: dataByEmail.avatar,
+            avatar: emailProfileData.avatar,
             badges: finalBadges,
-            password_change_required: dataByEmail.password_change_required || false
+            password_change_required: emailProfileData.password_change_required || false
           };
         }
       }
