@@ -18,6 +18,7 @@ interface Device {
 
 interface DeviceCardProps {
   device: Device;
+  isCurrentDevice: boolean;
   editingId: string | null;
   editName: string;
   setEditingId: (id: string | null) => void;
@@ -30,6 +31,7 @@ interface DeviceCardProps {
 
 const DeviceCard: React.FC<DeviceCardProps> = ({
   device,
+  isCurrentDevice,
   editingId,
   editName,
   setEditingId,
@@ -42,10 +44,10 @@ const DeviceCard: React.FC<DeviceCardProps> = ({
   const isEditing = editingId === device.id;
 
   return (
-    <div className={`p-4 rounded-lg border ${device.is_current ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'}`}>
+    <div className={`p-4 rounded-lg border ${isCurrentDevice ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'}`}>
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-3">
-          <div className={`p-2 rounded-lg ${device.is_current ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-600'}`}>
+          <div className={`p-2 rounded-lg ${isCurrentDevice ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-600'}`}>
             {getDeviceIcon(device.device_type)}
           </div>
           <div className="flex-1">
@@ -67,7 +69,7 @@ const DeviceCard: React.FC<DeviceCardProps> = ({
             ) : (
               <div className="flex items-center gap-2">
                 <h4 className="font-medium text-sm">{device.device_name}</h4>
-                {device.is_current && (
+                {isCurrentDevice && (
                   <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                     This device
                   </span>
@@ -102,7 +104,7 @@ const DeviceCard: React.FC<DeviceCardProps> = ({
           >
             <Edit2 className="w-4 h-4 text-gray-500" />
           </Button>
-          {!device.is_current && (
+          {!isCurrentDevice && (
             <Button
               size="sm"
               variant="ghost"

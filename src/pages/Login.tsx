@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import TwoFactorVerification from '@/components/TwoFactorVerification';
+import { getDeviceInfo } from '@/lib/device';
 
 const LOGO_URL = 'https://d64gsuwffb70l.cloudfront.net/6906bb3c71e38f27025f3702_1764911901727_6285940b.png';
 
@@ -97,39 +98,44 @@ const Login: React.FC = () => {
   };
 
   // Fire and forget - log login attempt without blocking
-  const logLoginAttempt = (userEmail: string, success: boolean, failureReason?: string, userId?: string) => {
-    supabase.functions.invoke('login-history', {
-      body: { 
-        action: 'log', 
-        email: userEmail, 
-        success, 
-        failure_reason: failureReason,
-        user_agent: navigator.userAgent,
-        user_id: userId || null
-      }
-    }).catch(() => {}); // Silently ignore errors
+  const logLoginAttempt = async (userEmail: string, success: boolean, failureReason?: string, userId?: string) => {
+    try {
+      const deviceInfo = await getDeviceInfo();
+      await supabase.from('login_history').insert({
+        user_id: userId || null,
+        email: userEmail,
+        success,
+        failure_reason: failureReason || null,
+        ip_address: deviceInfo.ip,
+        browser: deviceInfo.browser,
+        os: deviceInfo.os,
+        device_type: deviceInfo.deviceType,
+        user_agent: deviceInfo.userAgent
+      });
+    } catch (error) {
+      console.error('Failed to log login attempt:', error);
+    }
   };
 
 
   // Fire and forget - register device without blocking
-  const registerDevice = (userId: string) => {
+  const registerDevice = async (userId: string) => {
     try {
-      const ua = navigator.userAgent;
-      const isMobile = /Mobile|Android|iPhone/i.test(ua);
-      const isTablet = /iPad|Tablet/i.test(ua);
-      const deviceType = isMobile ? 'Mobile' : isTablet ? 'Tablet' : 'Desktop';
-      const browser = ua.includes('Chrome') ? 'Chrome' : ua.includes('Firefox') ? 'Firefox' : ua.includes('Safari') ? 'Safari' : 'Other';
-      const os = ua.includes('Windows') ? 'Windows' : ua.includes('Mac') ? 'macOS' : ua.includes('Linux') ? 'Linux' : ua.includes('Android') ? 'Android' : ua.includes('iOS') ? 'iOS' : 'Unknown';
-      
-      supabase.functions.invoke('trusted-devices', {
-        body: { 
-          action: 'register_device', 
-          user_id: userId,
-          device_info: { device_type: deviceType, browser, os, user_agent: ua, ip_address: 'Unknown' }
-        }
-      }).catch(() => {}); // Silently ignore errors
-    } catch {
-      // Silently ignore errors
+      const deviceInfo = await getDeviceInfo();
+      await supabase.from('trusted_devices').upsert({
+        user_id: userId,
+        device_fingerprint: deviceInfo.fingerprint,
+        device_name: `${deviceInfo.browser} on ${deviceInfo.os}`,
+        device_type: deviceInfo.deviceType,
+        browser: deviceInfo.browser,
+        os: deviceInfo.os,
+        ip_address: deviceInfo.ip,
+        user_agent: deviceInfo.userAgent,
+        is_current: true,
+        last_active_at: new Date().toISOString()
+      }, { onConflict: 'device_fingerprint' });
+    } catch (error) {
+      console.error('Failed to register device:', error);
     }
   };
 

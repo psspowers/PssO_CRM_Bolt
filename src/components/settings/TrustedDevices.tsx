@@ -3,8 +3,9 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import DeviceCard from './DeviceCard';
-import { 
-  Monitor, Smartphone, Tablet, RefreshCw, Shield, 
+import { getDeviceInfo } from '@/lib/device';
+import {
+  Monitor, Smartphone, Tablet, RefreshCw, Shield,
   LogOut, AlertTriangle, Info
 } from 'lucide-react';
 
@@ -12,6 +13,7 @@ interface Device {
   id: string;
   device_name: string;
   device_type: string;
+  device_fingerprint: string;
   browser: string;
   os: string;
   ip_address: string;
@@ -29,6 +31,7 @@ const TrustedDevices: React.FC = () => {
   const [editName, setEditName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [serviceUnavailable, setServiceUnavailable] = useState(false);
+  const [currentFingerprint, setCurrentFingerprint] = useState<string>('');
 
   const fetchDevices = async () => {
     if (!user) {
@@ -59,9 +62,21 @@ const TrustedDevices: React.FC = () => {
     }
   };
 
-  useEffect(() => { 
-    fetchDevices(); 
+  useEffect(() => {
+    fetchDevices();
   }, [user]);
+
+  useEffect(() => {
+    const fetchCurrentDeviceFingerprint = async () => {
+      try {
+        const deviceInfo = await getDeviceInfo();
+        setCurrentFingerprint(deviceInfo.fingerprint);
+      } catch (error) {
+        console.error('Failed to get current device fingerprint:', error);
+      }
+    };
+    fetchCurrentDeviceFingerprint();
+  }, []);
 
   const getDeviceIcon = (type: string) => {
     if (type === 'Mobile') return <Smartphone className="w-5 h-5" />;
@@ -136,7 +151,7 @@ const TrustedDevices: React.FC = () => {
     }
   };
 
-  const currentDevice = devices.find(d => d.is_current);
+  const currentDevice = devices.find(d => d.device_fingerprint === currentFingerprint);
 
   // Show service unavailable message
   if (serviceUnavailable) {
@@ -204,7 +219,19 @@ const TrustedDevices: React.FC = () => {
             <p className="text-xs mt-1">Your current device will appear here after setup</p>
           </div>
         ) : devices.map((device) => (
-          <DeviceCard key={device.id} device={device} editingId={editingId} editName={editName} setEditingId={setEditingId} setEditName={setEditName} handleRename={handleRename} handleRevoke={handleRevoke} getDeviceIcon={getDeviceIcon} formatDate={formatDate} />
+          <DeviceCard
+            key={device.id}
+            device={device}
+            isCurrentDevice={device.device_fingerprint === currentFingerprint}
+            editingId={editingId}
+            editName={editName}
+            setEditingId={setEditingId}
+            setEditName={setEditName}
+            handleRename={handleRename}
+            handleRevoke={handleRevoke}
+            getDeviceIcon={getDeviceIcon}
+            formatDate={formatDate}
+          />
         ))}
       </div>
     </div>
