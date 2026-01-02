@@ -449,22 +449,13 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
       {/* Deals Grid/List */}
       <div className={viewMode === 'grid' && !selectionMode ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4' : 'space-y-3'}>
         {filtered.map(opp => (
-          <div key={opp.id} className="relative">
-            {/* Show owner badge for team view when deal is not owned by current user */}
-            {hierarchyView === 'team' && opp.ownerId !== user?.id && (
-              <div className="absolute top-2 left-2 z-10">
-                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full flex items-center gap-1 shadow-sm">
-                  <User className="w-3 h-3" />
-                  {getOwnerName(opp.ownerId)}
-                </span>
-              </div>
-            )}
-            <OpportunityCard 
-              opportunity={opp} 
-              accountName={accounts.find(a => a.id === opp.accountId)?.name} 
-              onClick={() => !selectionMode && setSelectedOpp(opp)} 
-            />
-          </div>
+          <OpportunityCard
+            key={opp.id}
+            opportunity={opp}
+            accountName={accounts.find(a => a.id === opp.accountId)?.name}
+            ownerName={hierarchyView === 'team' && opp.ownerId !== user?.id ? getOwnerName(opp.ownerId) : undefined}
+            onClick={() => !selectionMode && setSelectedOpp(opp)}
+          />
         ))}
       </div>
 

@@ -1,10 +1,11 @@
 import React from 'react';
-import { Calendar, DollarSign, ChevronRight, Zap } from 'lucide-react';
+import { Calendar, DollarSign, ChevronRight, Zap, User } from 'lucide-react';
 import { Opportunity } from '../../types/crm';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
   accountName?: string;
+  ownerName?: string;
   onClick: () => void;
 }
 
@@ -28,24 +29,33 @@ const priorityColors: Record<string, string> = {
   Low: 'border-l-slate-300' 
 };
 
-export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, accountName, onClick }) => {
+export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, accountName, ownerName, onClick }) => {
   const formatValue = (val: number) => val >= 1000000 ? `$${(val / 1000000).toFixed(1)}M` : `$${(val / 1000).toFixed(0)}K`;
 
   return (
-    <button 
-      onClick={onClick} 
+    <button
+      onClick={onClick}
       className={`w-full bg-white rounded-xl lg:rounded-2xl border border-slate-200 p-4 lg:p-5 text-left shadow-sm hover:shadow-lg hover:border-slate-300 transition-all border-l-4 ${priorityColors[opportunity.priority]} group`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-slate-900 truncate group-hover:text-orange-600 transition-colors">
-            {opportunity.name}
-          </h3>
-          <p className="text-sm text-slate-500 mt-1">{accountName || 'No account linked'}</p>
-        </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-bold ${stageColors[opportunity.stage]}`}>
+      {/* Top row: Owner and Stage badges */}
+      <div className="flex items-center justify-between gap-3 mb-3">
+        {ownerName && (
+          <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full flex items-center gap-1.5 border border-blue-100">
+            <User className="w-3 h-3" />
+            {ownerName}
+          </span>
+        )}
+        <span className={`px-3 py-1 rounded-full text-xs font-bold ml-auto ${stageColors[opportunity.stage]}`}>
           {opportunity.stage}
         </span>
+      </div>
+
+      {/* Project name and account */}
+      <div className="mb-4">
+        <h3 className="font-bold text-lg text-slate-900 mb-1 group-hover:text-orange-600 transition-colors">
+          {opportunity.name}
+        </h3>
+        <p className="text-sm text-slate-500">{accountName || 'No account linked'}</p>
       </div>
       
       <div className="flex items-center gap-4 mt-4">
