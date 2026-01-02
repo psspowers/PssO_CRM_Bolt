@@ -1,5 +1,5 @@
 import React from 'react';
-import { Opportunity, Project } from '@/types/crm';
+import { Opportunity, Project, Account } from '@/types/crm';
 import { Target, Briefcase, TrendingUp, Clock } from 'lucide-react';
 
 const stageColors: Record<string, string> = {
@@ -24,9 +24,10 @@ const statusColors: Record<string, string> = {
 interface Props {
   opportunities: Opportunity[];
   projects: Project[];
+  accounts: Account[];
 }
 
-export const ProfileEntities: React.FC<Props> = ({ opportunities, projects }) => {
+export const ProfileEntities: React.FC<Props> = ({ opportunities, projects, accounts }) => {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow-sm border p-6">
@@ -38,12 +39,14 @@ export const ProfileEntities: React.FC<Props> = ({ opportunities, projects }) =>
           <p className="text-gray-500 text-center py-6">No opportunities assigned</p>
         ) : (
           <div className="space-y-3">
-            {opportunities.slice(0, 5).map((opp) => (
+            {opportunities.slice(0, 5).map((opp) => {
+              const accountName = accounts.find(a => a.id === opp.accountId)?.name;
+              return (
               <div key={opp.id} className="p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-900 truncate">{opp.name}</p>
-                    {opp.companyName && <p className="text-sm text-gray-500">{opp.companyName}</p>}
+                    {accountName && <p className="text-sm text-gray-500">{accountName}</p>}
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full ${stageColors[opp.stage] || 'bg-gray-100 text-gray-700'}`}>
                     {opp.stage}
@@ -62,7 +65,8 @@ export const ProfileEntities: React.FC<Props> = ({ opportunities, projects }) =>
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

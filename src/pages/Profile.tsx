@@ -11,7 +11,7 @@ import { ProfileEntities } from '@/components/profile/ProfileEntities';
 
 const Profile: React.FC = () => {
   const { profile, user, loading: authLoading } = useAuth();
-  const { activities, opportunities, projects, contacts, loading: dataLoading } = useAppContext();
+  const { activities, opportunities, projects, contacts, accounts, loading: dataLoading } = useAppContext();
   const navigate = useNavigate();
   const [refreshKey, setRefreshKey] = React.useState(0);
 
@@ -120,7 +120,7 @@ const Profile: React.FC = () => {
               <ProfileActivities activities={userActivities} />
             </div>
             <div className="space-y-6">
-              <ProfileEntities opportunities={userOpportunities} projects={userProjects} />
+              <ProfileEntities opportunities={userOpportunities} projects={userProjects} accounts={accounts} />
             </div>
           </div>
         )}
