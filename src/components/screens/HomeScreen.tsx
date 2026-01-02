@@ -13,11 +13,16 @@ interface HomeScreenProps {
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onOpportunityClick }) => {
   const { opportunities, accounts, partners, projects, loading, error, refreshData } = useAppContext();
   const { profile, user } = useAuth();
-  
+
   const totalPipeline = opportunities.filter(o => o.stage !== 'Lost').reduce((sum, o) => sum + (Number(o.value) || 0), 0);
   const activeDeals = opportunities.filter(o => !['Won', 'Lost'].includes(o.stage)).length;
   const wonDeals = opportunities.filter(o => o.stage === 'Won').length;
-  const totalCapacity = projects.reduce((sum, p) => sum + (Number(p.capacity) || 0), 0);
+
+  const projectStatuses = ['Won', 'Engineering', 'Permit/EPC', 'Construction', 'Commissioning', 'Operational'];
+  const totalCapacity = opportunities
+    .filter(o => projectStatuses.includes(o.stage))
+    .reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
+
   const formatValue = (val: number) => val >= 1000000 ? `$${(val / 1000000).toFixed(1)}M` : `$${(val / 1000).toFixed(0)}K`;
 
   // Calculate stage distribution

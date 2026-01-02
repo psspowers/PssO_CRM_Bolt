@@ -61,7 +61,8 @@ export const UpcomingActions: React.FC<UpcomingActionsProps> = ({ opportunities,
                 ) : item.daysUntil === 0 ? 'Today' : item.daysUntil === 1 ? 'Tomorrow' : `${item.daysUntil} days`}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-900 truncate">{item.nextAction}</p>
+                <p className="text-sm font-bold text-slate-900 truncate">{item.name}</p>
+                <p className="text-sm text-slate-700 truncate">{item.nextAction}</p>
                 <p className="text-xs text-slate-500 mt-1">{item.account?.name} • {formatDate(item.nextActionDate!)}</p>
               </div>
               <ChevronRight className="w-5 h-5 text-slate-300 flex-shrink-0 group-hover:text-orange-500 transition-colors" />

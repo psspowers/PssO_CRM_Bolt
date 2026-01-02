@@ -6,20 +6,22 @@ interface PipelineChartProps {
   opportunities: Opportunity[];
 }
 
-const stages = ['Discovery', 'Pre-Dev', 'Development', 'Contract', 'Won'];
+const stages = ['Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Won'];
 const stageColors: Record<string, string> = {
-  Discovery: 'bg-slate-400',
-  'Pre-Dev': 'bg-blue-500',
-  Development: 'bg-amber-500',
-  Contract: 'bg-purple-500',
+  Prospect: 'bg-slate-400',
+  Qualified: 'bg-blue-500',
+  Proposal: 'bg-amber-500',
+  Negotiation: 'bg-purple-500',
+  'Term Sheet': 'bg-teal-500',
   Won: 'bg-emerald-500',
 };
 
 const stageBgColors: Record<string, string> = {
-  Discovery: 'bg-slate-100',
-  'Pre-Dev': 'bg-blue-100',
-  Development: 'bg-amber-100',
-  Contract: 'bg-purple-100',
+  Prospect: 'bg-slate-100',
+  Qualified: 'bg-blue-100',
+  Proposal: 'bg-amber-100',
+  Negotiation: 'bg-purple-100',
+  'Term Sheet': 'bg-teal-100',
   Won: 'bg-emerald-100',
 };
 
