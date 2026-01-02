@@ -7,37 +7,41 @@ import { Button } from '../ui/button';
 
 // Stage progression map
 const STAGE_PROGRESSION: Record<string, string | null> = {
-  'Discovery': 'Pre-Dev',
-  'Pre-Dev': 'Development',
-  'Development': 'Contract',
-  'Contract': 'Won',
+  'Prospect': 'Qualified',
+  'Qualified': 'Proposal',
+  'Proposal': 'Negotiation',
+  'Negotiation': 'Term Sheet',
+  'Term Sheet': 'Won',
   'Won': null,
   'Lost': null
 };
 
 // INVESTOR-FOCUSED QUALITY GATES - PPA Underwriting Terminology
 const STAGE_GATES: Record<string, { id: string; label: string }[]> = {
-  'Discovery': [
+  'Prospect': [
     { id: 'origination', label: 'Origination / Initial Contact' },
-    { id: 'indicative_offer', label: 'Indicative Offer (Initial Proposal)' },
-    { id: 'decision_unit', label: 'Stakeholders / Decision Unit Identified' },
+    { id: 'decision_unit', label: 'Decision Unit / Stakeholders Identified' },
     { id: 'prelim_yield', label: 'Site Preliminary Yield Estimate' }
   ],
-  'Pre-Dev': [
-    { id: 'commercial_workshop', label: 'Commercial Workshop (1st Presentation)' },
+  'Qualified': [
+    { id: 'data_room', label: 'Data Room: 12mo Bills & Load Profile' },
     { id: 'pre_ic_filter', label: 'Pre-IC Filter (Go-No-Go Approval)' },
-    { id: 'data_room', label: 'Data Room: 12mo Bills & Load Profile' }
+    { id: 'commercial_workshop', label: 'Commercial Workshop (1st Presentation)' }
   ],
-  'Development': [
-    { id: 'investment_case', label: 'Final Investment Case Presentation' },
+  'Proposal': [
+    { id: 'economic_audit', label: 'Unit Economic Audit (Financial Model)' },
     { id: 'tdd_signoff', label: 'Technical Due Diligence (TDD) Sign-off' },
-    { id: 'economic_audit', label: 'Unit Economic Audit (Financial Model)' }
+    { id: 'indicative_offer', label: 'Indicative Offer Submitted' }
   ],
-  'Contract': [
+  'Negotiation': [
     { id: 'bidding', label: 'Competitive Bidding / Positioning' },
-    { id: 'term_sheet', label: 'Term Sheet Executed' },
-    { id: 'legal_dd', label: 'Legal DD / PPA Redlining' },
+    { id: 'commercial_terms', label: 'Commercial Terms Agreed (Price/Tenure)' },
     { id: 'credit_approval', label: 'Counterparty Credit Approval' }
+  ],
+  'Term Sheet': [
+    { id: 'term_sheet', label: 'Term Sheet / LOI Executed' },
+    { id: 'legal_dd', label: 'Legal DD / PPA Redlining' },
+    { id: 'final_ic', label: 'Final Investment Committee (IC) Approval' }
   ],
   'Won': [
     { id: 'ppa_execution', label: 'PPA Execution (Signed)' },
