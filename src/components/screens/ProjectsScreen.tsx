@@ -5,12 +5,12 @@ import { useAppContext } from '../../contexts/AppContext';
 import { Project, ProjectStatus } from '../../types/crm';
 import { Loader2, Plus, FolderKanban, Zap, MapPin, ChevronDown, X, ExternalLink, Users, Clock, FileText, Building2, Pencil, Trash2 } from 'lucide-react';
 
-const PROJECT_STATUSES: string[] = ['Won', 'Engineering', 'Permit - EPC', 'Construction', 'Commissioning', 'Operational'];
+const PROJECT_STATUSES: string[] = ['Won', 'Engineering', 'Permit/EPC', 'Construction', 'Commissioning', 'Operational'];
 
 const statusColors: Record<string, string> = {
   'Won': 'bg-emerald-500',
   'Engineering': 'bg-blue-500',
-  'Permit - EPC': 'bg-purple-500',
+  'Permit/EPC': 'bg-purple-500',
   'Construction': 'bg-orange-500',
   'Commissioning': 'bg-amber-500',
   'Operational': 'bg-green-600',
@@ -41,7 +41,7 @@ export const ProjectsScreen: React.FC = () => {
 
   // Convert opportunities to projects (post-win opportunities only)
   const projects = useMemo(() => {
-    const postWinStages = ['Won', 'Engineering', 'Permit - EPC', 'Construction', 'Commissioning', 'Operational'];
+    const postWinStages = ['Won', 'Engineering', 'Permit/EPC', 'Construction', 'Commissioning', 'Operational'];
     return opportunities
       .filter(opp => postWinStages.includes(opp.stage))
       .map(opp => ({
@@ -349,7 +349,7 @@ export const ProjectsScreen: React.FC = () => {
                 selectedProject.status === 'Operational' ? 'bg-green-50 text-green-600 border-green-200' :
                 selectedProject.status === 'Commissioning' ? 'bg-amber-50 text-amber-600 border-amber-200' :
                 selectedProject.status === 'Construction' ? 'bg-orange-50 text-orange-600 border-orange-200' :
-                selectedProject.status === 'Permit - EPC' ? 'bg-purple-50 text-purple-600 border-purple-200' :
+                selectedProject.status === 'Permit/EPC' ? 'bg-purple-50 text-purple-600 border-purple-200' :
                 selectedProject.status === 'Engineering' ? 'bg-blue-50 text-blue-600 border-blue-200' :
                 selectedProject.status === 'Won' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
                 'bg-slate-100 text-slate-600 border-slate-200'
