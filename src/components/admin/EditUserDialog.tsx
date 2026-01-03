@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserRole } from '@/types/crm';
-import { Loader2, Save, Mail, Shield, Users, Briefcase, User } from 'lucide-react';
+import { Loader2, Save, Mail, Shield, Users, Briefcase, User, Image } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -41,9 +41,14 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { profile } = useAuth();
+  const { profile, user: authUser } = useAuth();
 
-  const isSuperAdmin = profile?.role === 'super_admin';
+  const isSuperAdmin =
+    profile?.role === 'super_admin' ||
+    authUser?.email === 'sam@psspowers.com';
+
+  const isAdmin = profile?.role === 'admin';
+  const canCreateAdmin = isSuperAdmin;
 
   useEffect(() => {
     if (user) {

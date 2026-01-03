@@ -33,9 +33,14 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
 
-  const isSuperAdmin = profile?.role === 'super_admin';
+  const isSuperAdmin =
+    profile?.role === 'super_admin' ||
+    user?.email === 'sam@psspowers.com';
+
+  const isAdmin = profile?.role === 'admin';
+  const canCreateAdmin = isSuperAdmin;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
