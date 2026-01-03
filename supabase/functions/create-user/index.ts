@@ -273,6 +273,9 @@ Deno.serve(async (req: Request) => {
     
     if (!password) {
       console.log('[CREATE-USER] Sending invitation email via inviteUserByEmail');
+      console.log('[CREATE-USER] Target email:', email);
+      console.log('[CREATE-USER] Auth user confirmed status:', authData.user.email_confirmed_at);
+
       const result = await supabaseAdmin.auth.admin.inviteUserByEmail(email);
       inviteData = result.data;
       inviteError = result.error;
@@ -281,7 +284,28 @@ Deno.serve(async (req: Request) => {
         console.error('[CREATE-USER] ❌ FAILED to send invitation email');
         console.error('[CREATE-USER] Error details:', JSON.stringify(inviteError, null, 2));
         console.error('[CREATE-USER] Error message:', inviteError.message);
-        console.error('[CREATE-USER] Error code:', inviteError.code);
+        console.error('[CREATE-USER] Error name:', inviteError.name);
+        console.error('[CREATE-USER] Error status:', inviteError.status);
+        console.error('[CREATE-USER] Full error object:', inviteError);
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Failed to send invitation email: ${inviteError.message}`,
+            details: {
+              error_code: inviteError.status || 'unknown',
+              error_name: inviteError.name || 'unknown',
+              supabase_error: inviteError
+            }
+          }),
+          {
+            status: 500,
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
       } else {
         console.log('[CREATE-USER] ✅ Invitation email sent successfully');
         console.log('[CREATE-USER] Invite data:', inviteData);
