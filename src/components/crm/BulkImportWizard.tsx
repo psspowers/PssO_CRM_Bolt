@@ -431,7 +431,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       { key: 'name', label: 'Partner Name', type: 'text', required: true },
       { key: 'companyName', label: 'Company Legal Name', type: 'text' },
       { key: 'partnerType', label: 'Partner Type', type: 'text' },
-      { key: 'region', label: 'Region', type: 'text', required: true },
+      { key: 'region', label: 'Region', type: 'text' },
       { key: 'country', label: 'Country', type: 'text', required: true },
       { key: 'email', label: 'Email', type: 'email', validation: validateEmail },
       { key: 'phone', label: 'Phone', type: 'phone', validation: validatePhone },
