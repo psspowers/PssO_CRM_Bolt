@@ -489,6 +489,7 @@ export default function AppLayout() {
           onClose={() => setShowBulkImport(false)}
           existingAccounts={accounts}
           existingPartners={partners}
+          currentUserId={user?.id}
         />
       )}
 

@@ -1,13 +1,14 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { 
-  Upload, FileSpreadsheet, X, Check, AlertTriangle, ArrowRight, 
-  ChevronLeft, ChevronRight, RefreshCw, Download, Info, 
-  FileText, Table, CheckCircle, XCircle, Users, Building2, 
+import {
+  Upload, FileSpreadsheet, X, Check, AlertTriangle, ArrowRight,
+  ChevronLeft, ChevronRight, RefreshCw, Download, Info,
+  FileText, Table, CheckCircle, XCircle, Users, Building2,
   Target, FolderKanban, Handshake, Loader2, Link, Unlink,
   Search, ChevronDown, Edit2
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { Account, Partner } from '@/types/crm';
+import { Account, Partner, User } from '@/types/crm';
+import { fetchUsers } from '@/lib/api/users';
 
 // ============================================================================
 // ENTITY TYPE DEFINITIONS
@@ -27,7 +28,7 @@ interface FieldDefinition {
 interface LinkableField {
   key: string;
   label: string;
-  targetEntity: 'Account' | 'Partner';
+  targetEntity: 'Account' | 'Partner' | 'User';
   matchField: string; // The field in target entity to match against (e.g., 'name')
 }
 
@@ -73,27 +74,36 @@ const levenshteinDistance = (str1: string, str2: string): number => {
 // Calculate similarity score (0-100)
 const calculateSimilarity = (str1: string, str2: string): number => {
   if (!str1 || !str2) return 0;
-  
+
   const s1 = str1.toLowerCase().trim();
   const s2 = str2.toLowerCase().trim();
-  
+
   // Exact match
   if (s1 === s2) return 100;
-  
+
   // Check if one contains the other
   if (s1.includes(s2) || s2.includes(s1)) {
     const containmentScore = Math.min(s1.length, s2.length) / Math.max(s1.length, s2.length) * 100;
     return Math.max(containmentScore, 75);
   }
-  
+
   // Levenshtein-based similarity
   const maxLen = Math.max(s1.length, s2.length);
   if (maxLen === 0) return 100;
-  
+
   const distance = levenshteinDistance(s1, s2);
   const similarity = ((maxLen - distance) / maxLen) * 100;
-  
+
   return Math.round(similarity);
+};
+
+// Normalize user name for better matching
+const normalizeUserName = (name: string): string => {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
 };
 
 // Normalize company name for better matching
@@ -108,42 +118,117 @@ const normalizeCompanyName = (name: string): string => {
 };
 
 interface MatchResult {
-  entity: Account | Partner;
+  entity: Account | Partner | User;
   score: number;
   matchType: 'exact' | 'high' | 'medium' | 'low';
 }
 
 // Find best matches for a company name
 const findMatches = (
-  searchName: string, 
-  entities: (Account | Partner)[], 
+  searchName: string,
+  entities: (Account | Partner)[],
   limit: number = 5
 ): MatchResult[] => {
   if (!searchName || entities.length === 0) return [];
-  
+
   const normalizedSearch = normalizeCompanyName(searchName);
-  
+
   const results: MatchResult[] = entities.map(entity => {
     const normalizedEntity = normalizeCompanyName(entity.name);
     const score = calculateSimilarity(normalizedSearch, normalizedEntity);
-    
+
     // Also check original names for exact matches
     const exactScore = calculateSimilarity(searchName.toLowerCase(), entity.name.toLowerCase());
     const finalScore = Math.max(score, exactScore);
-    
+
     let matchType: 'exact' | 'high' | 'medium' | 'low';
     if (finalScore >= 95) matchType = 'exact';
     else if (finalScore >= 75) matchType = 'high';
     else if (finalScore >= 50) matchType = 'medium';
     else matchType = 'low';
-    
+
     return { entity, score: finalScore, matchType };
   });
-  
+
   return results
     .filter(r => r.score >= 30) // Minimum threshold
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
+};
+
+// Find best matches for users (by name)
+const findUserMatches = (
+  searchName: string,
+  users: User[],
+  limit: number = 5
+): MatchResult[] => {
+  if (!searchName || users.length === 0) return [];
+
+  const normalizedSearch = normalizeUserName(searchName);
+
+  const results: MatchResult[] = users.map(user => {
+    const normalizedUserName = normalizeUserName(user.name);
+    const score = calculateSimilarity(normalizedSearch, normalizedUserName);
+
+    let matchType: 'exact' | 'high' | 'medium' | 'low';
+    if (score >= 95) matchType = 'exact';
+    else if (score >= 75) matchType = 'high';
+    else if (score >= 50) matchType = 'medium';
+    else matchType = 'low';
+
+    return { entity: user, score, matchType };
+  });
+
+  return results
+    .filter(r => r.score >= 30)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+};
+
+// ============================================================================
+// NORMALIZATION HELPERS
+// ============================================================================
+
+// Normalize stage values to match database enums
+const normalizeStage = (stage: string): string => {
+  if (!stage) return stage;
+
+  const normalized = stage.toLowerCase().trim();
+
+  // Fix common typos and variations
+  if (normalized.includes('negotation') || normalized.includes('negotiaton')) return 'Negotiation';
+  if (normalized === 'presentation') return 'Proposal';
+  if (normalized === 'hold') return 'Prospect';
+  if (normalized.startsWith('termsheet') || normalized.startsWith('term sheet')) return 'Term Sheet';
+  if (normalized === 'qualified lead') return 'Qualified';
+  if (normalized === 'lost' || normalized === 'dead') return 'Lost';
+  if (normalized === 'won' || normalized === 'closed') return 'Won';
+
+  // Return title case
+  return stage.split(' ').map(word =>
+    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  ).join(' ');
+};
+
+// Parse percentage strings ("100%" -> 100)
+const parsePercentage = (value: any): number | undefined => {
+  if (value === undefined || value === null || value === '') return undefined;
+
+  const str = String(value).trim();
+  const cleaned = str.replace(/%/g, '');
+  const num = parseFloat(cleaned);
+
+  if (isNaN(num)) return undefined;
+
+  // If original had %, assume it's already in percentage form (75% = 75)
+  // If no %, and value is between 0-1, convert to percentage (0.75 = 75)
+  if (str.includes('%')) {
+    return num;
+  } else if (num >= 0 && num <= 1) {
+    return num * 100;
+  }
+
+  return num;
 };
 
 // ============================================================================
@@ -257,6 +342,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
     color: 'emerald',
     fields: [
       { key: 'name', label: 'Opportunity Name', type: 'text', required: true },
+      { key: 'companyName', label: 'Company Name', type: 'text' },
       { key: 'value', label: 'Value (THB)', type: 'currency', validation: validateNumber },
       { key: 'stage', label: 'Stage', type: 'select', required: true, options: ['Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Won', 'Lost'] },
       { key: 'priority', label: 'Priority', type: 'select', options: ['Low', 'Medium', 'High'] },
@@ -269,16 +355,19 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       { key: 'sector', label: 'Sector', type: 'text' },
       { key: 'industry', label: 'Industry', type: 'text' },
       { key: 'subIndustry', label: 'Sub-Industry', type: 'text' },
+      { key: 'location', label: 'Location', type: 'text' },
+      { key: 'clickupLink', label: 'ClickUp Link', type: 'text' },
       { key: 'nextAction', label: 'Next Action', type: 'text' },
       { key: 'notes', label: 'Notes', type: 'text' },
     ],
     aliases: {
       name: ['opportunity name', 'name', 'deal name', 'project name', 'ชื่อโอกาส'],
+      companyName: ['company name', 'company', 'client company', 'customer name'],
       value: ['value', 'deal value', 'amount', 'revenue', 'value (thb)', 'มูลค่า'],
       stage: ['stage', 'status', 'pipeline stage', 'สถานะ'],
       priority: ['priority', 'importance', 'tier', 'ความสำคัญ'],
       maxCapacity: ['max capacity', 'maximum capacity', 'max capacity (mwp)', 'customer max'],
-      targetCapacity: ['capacity', 'target capacity', 'mw', 'size', 'capacity (mwp)', 'กำลังการผลิต'],
+      targetCapacity: ['capacity', 'target capacity', 'capacity (mw)', 'capacity mw', 'mw', 'size', 'capacity (mwp)', 'กำลังการผลิต'],
       ppaTermYears: ['ppa term', 'ppa year', 'ppa years', 'ppa term (years)', 'contract term', 'term'],
       epcCost: ['epc cost', 'epc cost (thb)', 'construction cost', 'project cost'],
       manualProbability: ['probability', 'probability (%)', 'win probability', 'chance', 'likelihood'],
@@ -286,18 +375,23 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       sector: ['sector', 'business sector', 'ภาคธุรกิจ'],
       industry: ['industry', 'business type', 'อุตสาหกรรม'],
       subIndustry: ['sub-industry', 'sub industry', 'subsector', 'กลุ่มย่อย'],
+      location: ['location', 'site', 'city', 'place'],
+      clickupLink: ['clickup link', 'clickup id', 'task id', 'clickup', 'task url'],
       nextAction: ['next action', 'next step', 'action', 'todo'],
       notes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
-      // Linkable field aliases
-      accountName: ['account', 'account name', 'company', 'company name', 'customer', 'client', 'บริษัท'],
+      accountName: ['account', 'account name', 'customer', 'client', 'บริษัท'],
+      partnerName: ['partner', 'partner name', 'epc', 'contractor', 'พันธมิตร'],
+      ownerName: ['owner', 'leader', 'owner name', 'assigned to', 'sales rep', 'account manager'],
     },
     templateData: [
-      ['Opportunity Name', 'Value (THB)', 'Stage', 'Priority', 'Max Capacity', 'Target Capacity (MW)', 'PPA Year', 'EPC Cost', 'Probability', 'RE Type', 'Sector', 'Industry', 'Next Action', 'Notes', 'Account Name'],
-      ['ABC Solar Project', '15000000', 'Qualified', 'High', '3.0', '2.5', '25', '12000000', '75', 'Solar - Rooftop', 'Industrial', 'Manufacturing', 'Site visit scheduled', 'Large rooftop area', 'ABC Manufacturing'],
-      ['XYZ Green Energy', '8000000', 'Proposal', 'Medium', '1.5', '1.0', '20', '6000000', '60', 'Solar - Ground', 'Agriculture', 'Farming', 'Send proposal', 'Ground mount opportunity', 'XYZ Foods'],
+      ['Opportunity Name', 'Company Name', 'Value (THB)', 'Stage', 'Priority', 'Max Capacity', 'Target Capacity (MW)', 'PPA Year', 'EPC Cost', 'Probability', 'RE Type', 'Sector', 'Industry', 'Location', 'ClickUp Link', 'Next Action', 'Notes', 'Account Name', 'Partner', 'Leader'],
+      ['ABC Solar Project', 'ABC Manufacturing', '15000000', 'Qualified', 'High', '3.0', '2.5', '25', '12000000', '75', 'Solar - Rooftop', 'Industrial', 'Manufacturing', 'Bangkok', 'https://app.clickup.com/t/123', 'Site visit scheduled', 'Large rooftop area', 'ABC Manufacturing', 'Solar Solutions Ltd', 'John Smith'],
+      ['XYZ Green Energy', 'XYZ Foods', '8000000', 'Proposal', 'Medium', '1.5', '1.0', '20', '6000000', '60', 'Solar - Ground', 'Agriculture', 'Farming', 'Chiang Mai', '', 'Send proposal', 'Ground mount opportunity', 'XYZ Foods', '', 'Jane Doe'],
     ],
     linkableFields: [
       { key: 'accountId', label: 'Link to Account', targetEntity: 'Account', matchField: 'accountName' },
+      { key: 'partnerId', label: 'Link to Partner', targetEntity: 'Partner', matchField: 'partnerName' },
+      { key: 'ownerId', label: 'Link to Owner', targetEntity: 'User', matchField: 'ownerName' },
     ],
   },
   Project: {
@@ -352,11 +446,15 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       email: ['email', 'e-mail', 'email address', 'อีเมล'],
       phone: ['phone', 'telephone', 'mobile', 'contact number', 'โทรศัพท์'],
       notes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
+      ownerName: ['owner', 'leader', 'owner name', 'assigned to', 'account manager'],
     },
     templateData: [
-      ['Partner Name', 'Company Legal Name', 'Type', 'Region', 'Country', 'Email', 'Phone', 'Notes'],
-      ['Solar Solutions Ltd', 'Solar Solutions Limited', 'EPC', 'Southeast Asia', 'Thailand', 'info@solarsolutions.com', '+66-2-123-4567', 'EPC partner'],
-      ['Green Energy Corp', 'Green Energy Corporation', 'Financier', 'Asia Pacific', 'Singapore', 'contact@greenenergy.sg', '+65-6789-0123', 'Financing partner'],
+      ['Partner Name', 'Company Legal Name', 'Type', 'Region', 'Country', 'Email', 'Phone', 'Notes', 'Owner'],
+      ['Solar Solutions Ltd', 'Solar Solutions Limited', 'EPC', 'Southeast Asia', 'Thailand', 'info@solarsolutions.com', '+66-2-123-4567', 'EPC partner', 'John Smith'],
+      ['Green Energy Corp', 'Green Energy Corporation', 'Financier', 'Asia Pacific', 'Singapore', 'contact@greenenergy.sg', '+65-6789-0123', 'Financing partner', 'Jane Doe'],
+    ],
+    linkableFields: [
+      { key: 'ownerId', label: 'Link to Owner', targetEntity: 'User', matchField: 'ownerName' },
     ],
   },
 };
@@ -393,6 +491,7 @@ interface BulkImportWizardProps {
   defaultEntityType?: EntityType;
   existingAccounts?: Account[];
   existingPartners?: Partner[];
+  currentUserId?: string;
 }
 
 // ============================================================================
@@ -404,7 +503,7 @@ interface EntityLinkSelectorProps {
   linkField: LinkableField;
   sourceValue: string;
   currentLink: EntityLink;
-  entities: (Account | Partner)[];
+  entities: (Account | Partner | User)[];
   onSelect: (entityId: string | null, entityName: string | null, score: number, matchType: EntityLink['matchType']) => void;
 }
 
@@ -420,11 +519,12 @@ const EntityLinkSelector: React.FC<EntityLinkSelectorProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   
   const matches = useMemo(() => {
-    if (searchTerm) {
-      return findMatches(searchTerm, entities, 10);
+    const searchValue = searchTerm || sourceValue;
+    if (linkField.targetEntity === 'User') {
+      return findUserMatches(searchValue, entities as User[], searchTerm ? 10 : 5);
     }
-    return findMatches(sourceValue, entities, 5);
-  }, [sourceValue, entities, searchTerm]);
+    return findMatches(searchValue, entities as (Account | Partner)[], searchTerm ? 10 : 5);
+  }, [sourceValue, entities, searchTerm, linkField.targetEntity]);
   
   const getMatchBadgeColor = (matchType: EntityLink['matchType']) => {
     switch (matchType) {
@@ -552,12 +652,13 @@ const EntityLinkSelector: React.FC<EntityLinkSelectorProps> = ({
 // MAIN COMPONENT
 // ============================================================================
 
-export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({ 
-  onImport, 
+export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
+  onImport,
   onClose,
   defaultEntityType,
   existingAccounts = [],
   existingPartners = [],
+  currentUserId,
 }) => {
   const [step, setStep] = useState<'select' | 'upload' | 'mapping' | 'linking' | 'preview' | 'importing' | 'complete'>(
     defaultEntityType ? 'upload' : 'select'
@@ -573,10 +674,28 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const [importResults, setImportResults] = useState<{ success: number; failed: number; errors: string[] }>({ success: 0, failed: 0, errors: [] });
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const config = entityType ? ENTITY_CONFIGS[entityType] : null;
   const hasLinkableFields = config?.linkableFields && config.linkableFields.length > 0;
+
+  // Fetch users when component mounts
+  useEffect(() => {
+    const loadUsers = async () => {
+      setIsLoadingUsers(true);
+      try {
+        const users = await fetchUsers();
+        setAvailableUsers(users);
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+    loadUsers();
+  }, []);
 
   // Auto-map columns based on header names
   const autoMapColumns = useCallback((headers: string[], entityConfig: EntityConfig) => {
@@ -611,23 +730,38 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
   // Parse value based on field type
   const parseValue = (value: any, field: FieldDefinition): any => {
     if (value === undefined || value === null || value === '') return undefined;
-    
+
     const strValue = String(value).trim();
-    
+
     switch (field.type) {
       case 'number':
-      case 'currency':
-        const cleaned = strValue.replace(/[$,฿]/g, '').replace(/\s/g, '');
+        // Special handling for probability field
+        if (field.key === 'manualProbability') {
+          return parsePercentage(value);
+        }
+        const cleaned = strValue.replace(/[,\s]/g, '');
         const num = parseFloat(cleaned);
         return isNaN(num) ? strValue : num;
-      
+
+      case 'currency':
+        const cleanedCurrency = strValue.replace(/[$,฿\s]/g, '');
+        const currencyNum = parseFloat(cleanedCurrency);
+        return isNaN(currencyNum) ? strValue : currencyNum;
+
+      case 'select':
+        // Special handling for stage field
+        if (field.key === 'stage') {
+          return normalizeStage(strValue);
+        }
+        return strValue;
+
       case 'tags':
         return strValue.split(',').map(t => t.trim()).filter(Boolean);
-      
+
       case 'date':
         const date = new Date(strValue);
         return isNaN(date.getTime()) ? strValue : date;
-      
+
       default:
         return strValue;
     }
@@ -635,16 +769,16 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
 
   // Process entity links for a row
   const processEntityLinks = useCallback((
-    row: ParsedRow, 
+    row: ParsedRow,
     entityConfig: EntityConfig,
     linkMapping: Record<string, string>
   ): EntityLink[] => {
     if (!entityConfig.linkableFields) return [];
-    
+
     return entityConfig.linkableFields.map(linkField => {
       const sourceColumn = linkMapping[linkField.key] || null;
       const sourceValue = sourceColumn ? String(row[sourceColumn] || '') : '';
-      
+
       if (!sourceValue) {
         return {
           fieldKey: linkField.key,
@@ -656,11 +790,18 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
           isManualOverride: false,
         };
       }
-      
-      // Find best match
-      const entities = linkField.targetEntity === 'Account' ? existingAccounts : existingPartners;
-      const matches = findMatches(sourceValue, entities, 1);
-      
+
+      // Find best match based on entity type
+      let matches: MatchResult[] = [];
+
+      if (linkField.targetEntity === 'User') {
+        matches = findUserMatches(sourceValue, availableUsers, 1);
+      } else if (linkField.targetEntity === 'Account') {
+        matches = findMatches(sourceValue, existingAccounts, 1);
+      } else if (linkField.targetEntity === 'Partner') {
+        matches = findMatches(sourceValue, existingPartners, 1);
+      }
+
       if (matches.length > 0 && matches[0].score >= 50) {
         return {
           fieldKey: linkField.key,
@@ -672,7 +813,23 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
           isManualOverride: false,
         };
       }
-      
+
+      // If it's a user field and no match found, use current user as fallback with warning
+      if (linkField.targetEntity === 'User' && currentUserId) {
+        const currentUser = availableUsers.find(u => u.id === currentUserId);
+        if (currentUser) {
+          return {
+            fieldKey: linkField.key,
+            sourceColumn,
+            matchedEntityId: currentUser.id,
+            matchedEntityName: `${currentUser.name} (fallback)`,
+            matchScore: 0,
+            matchType: 'low' as const,
+            isManualOverride: false,
+          };
+        }
+      }
+
       return {
         fieldKey: linkField.key,
         sourceColumn,
@@ -683,7 +840,7 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
         isManualOverride: false,
       };
     });
-  }, [existingAccounts, existingPartners]);
+  }, [existingAccounts, existingPartners, availableUsers, currentUserId]);
 
   // Validate a single row
   const validateRow = useCallback((
@@ -1298,7 +1455,9 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
                   <div className="mt-4 p-3 bg-slate-800/50 rounded-lg">
                     <div className="text-xs text-slate-400">
                       <span className="font-medium text-slate-300">Available for linking:</span>
-                      <span className="ml-2">{existingAccounts.length} Accounts, {existingPartners.length} Partners</span>
+                      <span className="ml-2">
+                        {existingAccounts.length} Accounts, {existingPartners.length} Partners, {availableUsers.length} Users
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1411,7 +1570,8 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
                               const link = row.entityLinks.find(l => l.fieldKey === linkField.key);
                               const sourceColumn = linkColumnMapping[linkField.key];
                               const sourceValue = sourceColumn ? String(parsedData[row.rowIndex]?.[sourceColumn] || '') : '';
-                              const entities = linkField.targetEntity === 'Account' ? existingAccounts : existingPartners;
+                              const entities = linkField.targetEntity === 'User' ? availableUsers :
+                                             linkField.targetEntity === 'Account' ? existingAccounts : existingPartners;
                               
                               return (
                                 <React.Fragment key={linkField.key}>
