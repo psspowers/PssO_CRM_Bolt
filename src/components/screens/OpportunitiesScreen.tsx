@@ -192,7 +192,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
 
   const formatValue = (val: number) => {
     const num = Number(val) || 0;
-    return num >= 1000000 ? `$${(num / 1000000).toFixed(2)}M` : `$${(num / 1000).toFixed(0)}K`;
+    return num >= 1000000 ? `฿${(num / 1000000).toFixed(2)}M` : `฿${(num / 1000).toFixed(0)}K`;
   };
 
   const handleSelect = (id: string, selected: boolean) => {

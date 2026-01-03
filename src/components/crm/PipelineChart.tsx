@@ -38,10 +38,10 @@ export const PipelineChart: React.FC<PipelineChartProps> = ({ opportunities }) =
   const totalValue = stageValues.reduce((sum, s) => sum + s.value, 0);
   
   const formatValue = (val: number) => {
-    if (val === 0) return '$0';
-    if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
-    if (val >= 1000) return `$${(val / 1000).toFixed(0)}K`;
-    return `$${val.toFixed(0)}`;
+    if (val === 0) return '฿0';
+    if (val >= 1000000) return `฿${(val / 1000000).toFixed(1)}M`;
+    if (val >= 1000) return `฿${(val / 1000).toFixed(0)}K`;
+    return `฿${val.toFixed(0)}`;
   };
 
   return (

@@ -262,7 +262,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
     return stages;
   }, [projects]);
 
-  const formatValue = (val: number) => val >= 1000000 ? `$${(val / 1000000).toFixed(1)}M` : `$${(val / 1000).toFixed(0)}K`;
+  const formatValue = (val: number) => val >= 1000000 ? `฿${(val / 1000000).toFixed(1)}M` : `฿${(val / 1000).toFixed(0)}K`;
 
   if (loading) {
     return (

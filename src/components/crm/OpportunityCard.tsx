@@ -30,7 +30,7 @@ const priorityColors: Record<string, string> = {
 };
 
 export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, accountName, ownerName, onClick }) => {
-  const formatValue = (val: number) => val >= 1000000 ? `$${(val / 1000000).toFixed(1)}M` : `$${(val / 1000).toFixed(0)}K`;
+  const formatValue = (val: number) => val >= 1000000 ? `฿${(val / 1000000).toFixed(1)}M` : `฿${(val / 1000).toFixed(0)}K`;
 
   return (
     <button
