@@ -4,7 +4,7 @@ import {
   ChevronLeft, ChevronRight, RefreshCw, Download, Info,
   FileText, Table, CheckCircle, XCircle, Users, Building2,
   Target, FolderKanban, Handshake, Loader2, Link, Unlink,
-  Search, ChevronDown, Edit2
+  Search, ChevronDown, Edit2, AlertCircle
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Account, Partner, User } from '@/types/crm';
@@ -702,58 +702,70 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
     const mapping: Record<string, string> = {};
     const linkMapping: Record<string, string> = {};
 
-    console.log('=== AUTO-MAPPING DEBUG ===');
-    console.log('Headers from CSV:', headers);
-    console.log('Available aliases:', entityConfig.aliases);
+    if (!headers || !entityConfig || !entityConfig.aliases) {
+      console.error('Invalid parameters for autoMapColumns');
+      return { mapping, linkMapping };
+    }
+
+    console.log('=== AUTO-MAPPING START ===');
+    console.log('CSV Headers:', JSON.stringify(headers));
+    console.log('Entity:', entityConfig.name);
 
     headers.forEach(header => {
-      const cleanHeader = header.replace(/[*]/g, '').trim();
-      const normalizedHeader = cleanHeader.toLowerCase().replace(/\s+/g, ' ').trim();
-      console.log(`\nProcessing header: "${header}" (cleaned: "${cleanHeader}", normalized: "${normalizedHeader}")`);
+      if (!header) return;
 
-      let bestMatch: { fieldKey: string; alias: string; score: number } | null = null;
+      const cleanHeader = String(header).replace(/[*]/g, '').replace(/\s+/g, ' ').trim();
+      const normalizedHeader = cleanHeader.toLowerCase();
 
-      for (const [fieldKey, aliases] of Object.entries(entityConfig.aliases)) {
-        for (const alias of aliases) {
-          const normalizedAlias = alias.toLowerCase().replace(/\s+/g, ' ').trim();
+      console.log(`\n📋 Header: "${header}"`);
+      console.log(`   Cleaned: "${cleanHeader}"`);
+      console.log(`   Normalized: "${normalizedHeader}"`);
+
+      let bestMatch: { fieldKey: string; score: number } | null = null;
+
+      Object.entries(entityConfig.aliases).forEach(([fieldKey, aliases]) => {
+        aliases.forEach(alias => {
+          const normalizedAlias = String(alias).toLowerCase().trim();
           let score = 0;
 
           if (normalizedHeader === normalizedAlias) {
             score = 100;
-            console.log(`    Exact match: "${normalizedHeader}" === "${normalizedAlias}" (field: ${fieldKey})`);
-          } else if (normalizedHeader.includes(normalizedAlias) && normalizedAlias.length > 3) {
-            score = 70 + (normalizedAlias.length / normalizedHeader.length) * 30;
-            console.log(`    Header contains alias: "${normalizedHeader}" includes "${normalizedAlias}" (field: ${fieldKey}, score: ${score})`);
-          } else if (normalizedAlias.includes(normalizedHeader) && normalizedHeader.length > 3) {
-            score = 50 + (normalizedHeader.length / normalizedAlias.length) * 30;
-            console.log(`    Alias contains header: "${normalizedAlias}" includes "${normalizedHeader}" (field: ${fieldKey}, score: ${score})`);
+          } else if (normalizedHeader.includes(normalizedAlias) && normalizedAlias.length >= 4) {
+            score = 80;
+          } else if (normalizedAlias.includes(normalizedHeader) && normalizedHeader.length >= 4) {
+            score = 60;
+          }
+
+          if (score > 0) {
+            console.log(`   🔍 Checking "${alias}" (field: ${fieldKey}) → score: ${score}`);
           }
 
           if (score > 0 && (!bestMatch || score > bestMatch.score)) {
-            bestMatch = { fieldKey, alias, score };
+            bestMatch = { fieldKey, score };
           }
-        }
-      }
+        });
+      });
 
-      if (bestMatch && bestMatch.score >= 50) {
-        console.log(`  ✓ BEST MATCH for "${header}": fieldKey="${bestMatch.fieldKey}", alias="${bestMatch.alias}", score=${bestMatch.score}`);
+      if (bestMatch) {
+        console.log(`   ✅ MATCHED: ${bestMatch.fieldKey} (score: ${bestMatch.score})`);
 
         const linkableField = entityConfig.linkableFields?.find(lf => lf.matchField === bestMatch.fieldKey);
         if (linkableField) {
           linkMapping[linkableField.key] = header;
-          console.log(`  → Added to linkMapping: ${linkableField.key} = "${header}"`);
+          console.log(`   → Link field: ${linkableField.key}`);
         } else {
           mapping[bestMatch.fieldKey] = header;
-          console.log(`  → Added to mapping: ${bestMatch.fieldKey} = "${header}"`);
+          console.log(`   → Data field: ${bestMatch.fieldKey}`);
         }
       } else {
-        console.log(`  ✗ NO MATCH FOUND for "${header}"`);
+        console.log(`   ❌ No match found`);
       }
     });
 
-    console.log('\nFinal mapping:', mapping);
-    console.log('Final linkMapping:', linkMapping);
-    console.log('=== END AUTO-MAPPING DEBUG ===\n');
+    console.log('\n📊 RESULTS:');
+    console.log('Regular mappings:', Object.keys(mapping).length, JSON.stringify(mapping));
+    console.log('Link mappings:', Object.keys(linkMapping).length, JSON.stringify(linkMapping));
+    console.log('=== AUTO-MAPPING END ===\n');
 
     return { mapping, linkMapping };
   }, []);
@@ -1411,6 +1423,43 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
                   <span className="text-white">{file?.name}</span>
                 </div>
                 <span className="text-sm text-slate-400">{parsedData.length} rows found</span>
+              </div>
+
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
+                <div className="flex items-start gap-2 mb-3">
+                  <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-amber-400 mb-1">Detected CSV Headers</h4>
+                    <p className="text-sm text-amber-200/80 mb-2">Found {headers.length} columns in your file</p>
+                  </div>
+                </div>
+                <div className="bg-slate-800/50 rounded-lg p-3 max-h-32 overflow-y-auto">
+                  <div className="flex flex-wrap gap-2">
+                    {headers.map((header, idx) => (
+                      <div key={idx} className="inline-flex items-center gap-1 px-2 py-1 bg-slate-700 rounded text-xs text-white border border-slate-600">
+                        <span className="text-slate-400">{idx + 1}.</span>
+                        <span>{header}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <div className="text-sm text-amber-200/80">
+                    Auto-mapped: <span className="font-semibold text-emerald-400">{Object.keys(columnMapping).length + Object.keys(linkColumnMapping).length}</span> of {headers.length} columns
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (config) {
+                        const { mapping, linkMapping } = autoMapColumns(headers, config);
+                        setColumnMapping(mapping);
+                        setLinkColumnMapping(linkMapping);
+                      }
+                    }}
+                    className="text-xs px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
+                  >
+                    Re-run Auto-Mapping
+                  </button>
+                </div>
               </div>
 
               <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
