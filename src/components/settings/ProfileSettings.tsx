@@ -1,17 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
-import { 
-  User, Mail, Building2, Save, Loader2, Camera, 
+import { supabase } from '@/lib/supabase';
+import {
+  User, Mail, Building2, Save, Loader2, Camera,
   CheckCircle, AlertCircle
 } from 'lucide-react';
 
 const ProfileSettings: React.FC = () => {
   const { user, profile, updateProfile } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -32,6 +35,57 @@ const ProfileSettings: React.FC = () => {
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setHasChanges(true);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) {
+      if (!user?.id) {
+        toast({
+          title: 'Upload failed',
+          description: 'Authentication required. Please log in again.',
+          variant: 'destructive'
+        });
+      }
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${user.id}/${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+
+      setFormData(prev => ({ ...prev, avatar: data.publicUrl }));
+      setHasChanges(true);
+
+      toast({
+        title: 'Avatar uploaded',
+        description: 'Your profile picture has been uploaded. Click "Save Changes" to apply.'
+      });
+    } catch (err: any) {
+      console.error('Avatar upload error:', err);
+      toast({
+        title: 'Upload failed',
+        description: err.message || 'Could not upload avatar. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -118,16 +172,19 @@ const ProfileSettings: React.FC = () => {
               )}
               <button
                 type="button"
-                className="absolute bottom-0 right-0 w-8 h-8 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors"
-                onClick={() => {
-                  const url = prompt('Enter avatar URL:', formData.avatar);
-                  if (url !== null) {
-                    handleChange('avatar', url);
-                  }
-                }}
+                className="absolute bottom-0 right-0 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white hover:bg-orange-600 transition-colors shadow-lg disabled:opacity-50"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
               >
-                <Camera className="w-4 h-4 text-gray-600" />
+                {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
               </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
             </div>
             <div>
               <p className="font-medium text-gray-900">{formData.name || 'Your Name'}</p>
@@ -167,22 +224,6 @@ const ProfileSettings: React.FC = () => {
               />
               <p className="text-xs text-gray-500">Email cannot be changed</p>
             </div>
-          </div>
-
-          {/* Avatar URL Field */}
-          <div className="space-y-2">
-            <Label htmlFor="avatar" className="flex items-center gap-2">
-              <Camera className="w-4 h-4 text-gray-400" />
-              Avatar URL
-            </Label>
-            <Input
-              id="avatar"
-              value={formData.avatar}
-              onChange={(e) => handleChange('avatar', e.target.value)}
-              placeholder="https://example.com/avatar.jpg"
-              className="focus:ring-orange-500 focus:border-orange-500"
-            />
-            <p className="text-xs text-gray-500">Enter a URL for your profile picture</p>
           </div>
 
           {/* Save Button */}
