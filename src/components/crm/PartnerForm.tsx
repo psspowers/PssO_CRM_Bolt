@@ -15,6 +15,8 @@ export const PartnerForm: React.FC<PartnerFormProps> = ({ partner, onSave, onCan
     country: partner.country,
     email: partner.email,
     phone: partner.phone,
+    partnerType: partner.partnerType || '',
+    companyName: partner.companyName || '',
     clickupLink: partner.clickupLink || '',
     notes: partner.notes || '',
   });
@@ -26,6 +28,8 @@ export const PartnerForm: React.FC<PartnerFormProps> = ({ partner, onSave, onCan
     try {
       await onSave({
         ...form,
+        partnerType: form.partnerType || undefined,
+        companyName: form.companyName || undefined,
         clickupLink: form.clickupLink || undefined,
         notes: form.notes || undefined,
       });
@@ -59,6 +63,16 @@ export const PartnerForm: React.FC<PartnerFormProps> = ({ partner, onSave, onCan
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
         <input type="tel" inputMode="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className={inputClass} required />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Partner Type</label>
+          <input type="text" value={form.partnerType} onChange={e => setForm({ ...form, partnerType: e.target.value })} className={inputClass} placeholder="EPC, O&M, Developer, etc." />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Company Legal Name</label>
+          <input type="text" value={form.companyName} onChange={e => setForm({ ...form, companyName: e.target.value })} className={inputClass} placeholder="Official registered name" />
+        </div>
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">ClickUp Link</label>

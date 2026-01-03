@@ -54,7 +54,10 @@ export interface CounterpartyRisk {
 
 export interface Partner {
   id: string; name: string; region: string; country: string; ownerId: string;
-  email: string; phone: string; clickupLink?: string; notes?: string; createdAt: Date; updatedAt: Date;
+  email: string; phone: string;
+  partnerType?: string;
+  companyName?: string;
+  clickupLink?: string; notes?: string; createdAt: Date; updatedAt: Date;
 }
 
 export interface Account {
@@ -94,7 +97,11 @@ export interface Opportunity {
   nextActionDate?: Date;
   clickupLink?: string;
   notes?: string;
+  maxCapacity?: number;
   targetCapacity: number;
+  ppaTermYears?: number;
+  epcCost?: number;
+  manualProbability?: number;
   reType: REType;
   targetDecisionDate?: Date;
   operatingDays?: string[];

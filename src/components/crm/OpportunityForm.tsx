@@ -35,7 +35,11 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
     value: opportunity.value,
     stage: opportunity.stage,
     priority: opportunity.priority,
+    maxCapacity: opportunity.maxCapacity || 0,
     targetCapacity: opportunity.targetCapacity || 0,
+    ppaTermYears: opportunity.ppaTermYears || 0,
+    epcCost: opportunity.epcCost || 0,
+    manualProbability: opportunity.manualProbability || 0,
     reType: opportunity.reType,
     nextAction: opportunity.nextAction || '',
     nextActionDate: opportunity.nextActionDate ? new Date(opportunity.nextActionDate).toISOString().split('T')[0] : '',
@@ -107,7 +111,11 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
         value: form.value,
         stage: form.stage,
         priority: form.priority,
+        maxCapacity: form.maxCapacity,
         targetCapacity: form.targetCapacity,
+        ppaTermYears: form.ppaTermYears,
+        epcCost: form.epcCost,
+        manualProbability: form.manualProbability,
         reType: form.reType,
         nextAction: form.nextAction,
         nextActionDate: form.nextActionDate ? new Date(form.nextActionDate) : undefined,
@@ -154,14 +162,70 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Capacity (MW)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Max Capacity (MW)</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            value={form.maxCapacity}
+            onChange={e => setForm({ ...form, maxCapacity: Number(e.target.value) })}
+            className={inputClass}
+            placeholder="Customer's theoretical max"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Target Capacity (MW)</label>
           <input
             type="number"
             inputMode="decimal"
             step="0.1"
             value={form.targetCapacity}
-            onChange={e => setForm({ ...form, targetCapacity: Number(e.target.value) })} 
-            className={inputClass} 
+            onChange={e => setForm({ ...form, targetCapacity: Number(e.target.value) })}
+            className={inputClass}
+            placeholder="What we're willing to offer"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Manual Probability (%)</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="1"
+            min="0"
+            max="100"
+            value={form.manualProbability}
+            onChange={e => setForm({ ...form, manualProbability: Number(e.target.value) })}
+            className={inputClass}
+            placeholder="Leader's commitment %"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">PPA Term (Years)</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="1"
+            value={form.ppaTermYears}
+            onChange={e => setForm({ ...form, ppaTermYears: Number(e.target.value) })}
+            className={inputClass}
+            placeholder="PPA duration"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">EPC Cost (THB)</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            value={form.epcCost}
+            onChange={e => setForm({ ...form, epcCost: Number(e.target.value) })}
+            className={inputClass}
+            placeholder="Total EPC costs"
           />
         </div>
       </div>
