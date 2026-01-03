@@ -33,6 +33,7 @@ interface LinkableField {
 
 interface EntityConfig {
   name: EntityType;
+  pluralName: string;
   icon: React.ReactNode;
   color: string;
   fields: FieldDefinition[];
@@ -188,6 +189,7 @@ const validateRequired = (value: any): { isValid: boolean; error?: string } => {
 const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
   Contact: {
     name: 'Contact',
+    pluralName: 'Contacts',
     icon: <Users className="w-5 h-5" />,
     color: 'blue',
     fields: [
@@ -225,6 +227,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
   },
   Account: {
     name: 'Account',
+    pluralName: 'Accounts',
     icon: <Building2 className="w-5 h-5" />,
     color: 'purple',
     fields: [
@@ -253,6 +256,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
   },
   Opportunity: {
     name: 'Opportunity',
+    pluralName: 'Opportunities',
     icon: <Target className="w-5 h-5" />,
     color: 'emerald',
     fields: [
@@ -302,6 +306,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
   },
   Project: {
     name: 'Project',
+    pluralName: 'Projects',
     icon: <FolderKanban className="w-5 h-5" />,
     color: 'amber',
     fields: [
@@ -331,6 +336,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
   },
   Partner: {
     name: 'Partner',
+    pluralName: 'Partners',
     icon: <Handshake className="w-5 h-5" />,
     color: 'rose',
     fields: [
@@ -1015,7 +1021,7 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">
-                {config ? `Import ${config.name}s` : 'Bulk Import Wizard'}
+                {config ? `Import ${config.pluralName}` : 'Bulk Import Wizard'}
               </h2>
               <p className="text-sm text-slate-400">
                 {config ? `Upload CSV or Excel file with ${config.name.toLowerCase()} data` : 'Import data from spreadsheets'}
@@ -1089,7 +1095,7 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
                         {entityConfig.icon}
                       </div>
                     </div>
-                    <h4 className="text-lg font-semibold text-white mb-2">{entityConfig.name}s</h4>
+                    <h4 className="text-lg font-semibold text-white mb-2">{entityConfig.pluralName}</h4>
                     <p className="text-sm text-slate-400">
                       {entityConfig.fields.length} fields available
                       {entityConfig.linkableFields && entityConfig.linkableFields.length > 0 && (
@@ -1782,7 +1788,7 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
                   className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors disabled:opacity-50"
                 >
                   <Check className="w-4 h-4" />
-                  Import {selectedRows.size} {config?.name}(s)
+                  Import {selectedRows.size} {selectedRows.size === 1 ? config?.name : config?.pluralName}
                 </button>
               )}
             </div>
