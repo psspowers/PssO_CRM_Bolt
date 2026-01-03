@@ -21,32 +21,67 @@ const roleLabels: Record<string, string> = {
 interface Props { profile: UserProfile; onUpdate: () => void; }
 
 export const ProfileHeader: React.FC<Props> = ({ profile, onUpdate }) => {
-  const { updateProfile } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(profile?.name || '');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Defensive: Ensure profile and profile.name exist before processing
   const initials = (profile?.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !user?.id) {
+      if (!user?.id) {
+        toast({
+          title: 'Upload failed',
+          description: 'Authentication required. Please log in again.',
+          variant: 'destructive'
+        });
+      }
+      return;
+    }
+
     setUploading(true);
     try {
       const ext = file.name.split('.').pop();
-      const path = `${profile.id}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file);
+      const path = `${user.id}/${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
       if (uploadError) throw uploadError;
+
       const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-      await updateProfile({ avatar: data.publicUrl });
-      toast({ title: 'Avatar updated', description: 'Your profile picture has been updated.' });
+      const updateResult = await updateProfile({ avatar: data.publicUrl });
+
+      if (updateResult.error) {
+        throw new Error(updateResult.error.message || 'Failed to update profile');
+      }
+
+      toast({
+        title: 'Avatar updated',
+        description: 'Your profile picture has been updated successfully.'
+      });
       onUpdate();
-    } catch (err) {
-      toast({ title: 'Upload failed', description: 'Could not upload avatar.', variant: 'destructive' });
-    } finally { setUploading(false); }
+    } catch (err: any) {
+      console.error('Avatar upload error:', err);
+      toast({
+        title: 'Upload failed',
+        description: err.message || 'Could not upload avatar. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleSave = async () => {
