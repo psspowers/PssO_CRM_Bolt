@@ -701,29 +701,56 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
   const autoMapColumns = useCallback((headers: string[], entityConfig: EntityConfig) => {
     const mapping: Record<string, string> = {};
     const linkMapping: Record<string, string> = {};
-    
+
+    console.log('=== AUTO-MAPPING DEBUG ===');
+    console.log('Headers from CSV:', headers);
+    console.log('Available aliases:', entityConfig.aliases);
+
     headers.forEach(header => {
-      const normalizedHeader = header.toLowerCase().trim();
-      
-      // Map regular fields
+      const normalizedHeader = header.toLowerCase().trim().replace(/[*\s]+/g, ' ').trim();
+      console.log(`\nProcessing header: "${header}" (normalized: "${normalizedHeader}")`);
+
+      let bestMatch: { fieldKey: string; alias: string; score: number } | null = null;
+
       for (const [fieldKey, aliases] of Object.entries(entityConfig.aliases)) {
-        if (aliases.some(alias => 
-          normalizedHeader.includes(alias) || 
-          alias.includes(normalizedHeader) ||
-          normalizedHeader === alias
-        )) {
-          // Check if this is a linkable field alias
-          const linkableField = entityConfig.linkableFields?.find(lf => lf.matchField === fieldKey);
-          if (linkableField) {
-            linkMapping[linkableField.key] = header;
-          } else {
-            mapping[fieldKey] = header;
+        for (const alias of aliases) {
+          const normalizedAlias = alias.toLowerCase().trim();
+          let score = 0;
+
+          if (normalizedHeader === normalizedAlias) {
+            score = 100;
+          } else if (normalizedHeader.includes(normalizedAlias) && normalizedAlias.length > 3) {
+            score = 70 + (normalizedAlias.length / normalizedHeader.length) * 30;
+          } else if (normalizedAlias.includes(normalizedHeader) && normalizedHeader.length > 3) {
+            score = 50 + (normalizedHeader.length / normalizedAlias.length) * 30;
           }
-          break;
+
+          if (score > 0 && (!bestMatch || score > bestMatch.score)) {
+            bestMatch = { fieldKey, alias, score };
+          }
         }
       }
+
+      if (bestMatch && bestMatch.score >= 50) {
+        console.log(`  ✓ Matched to fieldKey: "${bestMatch.fieldKey}" via alias: "${bestMatch.alias}" (score: ${bestMatch.score})`);
+
+        const linkableField = entityConfig.linkableFields?.find(lf => lf.matchField === bestMatch.fieldKey);
+        if (linkableField) {
+          linkMapping[linkableField.key] = header;
+          console.log(`  → Added to linkMapping: ${linkableField.key} = "${header}"`);
+        } else {
+          mapping[bestMatch.fieldKey] = header;
+          console.log(`  → Added to mapping: ${bestMatch.fieldKey} = "${header}"`);
+        }
+      } else {
+        console.log(`  ✗ No match found`);
+      }
     });
-    
+
+    console.log('\nFinal mapping:', mapping);
+    console.log('Final linkMapping:', linkMapping);
+    console.log('=== END AUTO-MAPPING DEBUG ===\n');
+
     return { mapping, linkMapping };
   }, []);
 
