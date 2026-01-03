@@ -93,9 +93,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [refreshData, user, authLoading]);
 
 
-  const canEdit = (ownerId?: string) => !profile ? false : profile.role === 'admin' || profile.role === 'internal' || ownerId === profile.id;
-  const canDelete = (ownerId?: string) => !profile ? false : profile.role === 'admin' || ownerId === profile.id;
-  const canCreate = () => profile?.role === 'admin' || profile?.role === 'internal';
+  const canEdit = (ownerId?: string) => !profile ? false : profile.role === 'super_admin' || profile.role === 'admin' || profile.role === 'internal' || ownerId === profile.id;
+  const canDelete = (ownerId?: string) => !profile ? false : profile.role === 'super_admin' || profile.role === 'admin' || ownerId === profile.id;
+  const canCreate = () => profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'internal';
 
   const value: AppContextType = {
     ...state, currentUser: profile, refreshData, canEdit, canDelete, canCreate,

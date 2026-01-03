@@ -540,7 +540,7 @@ export const OrgChart: React.FC = () => {
               <Shield className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{users.filter(u => u.role === 'admin').length}</p>
+              <p className="text-2xl font-bold">{users.filter(u => u.role === 'admin' || u.role === 'super_admin').length}</p>
               <p className="text-xs text-gray-500">Admins</p>
             </div>
           </div>
