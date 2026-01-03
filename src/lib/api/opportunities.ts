@@ -27,7 +27,11 @@ const toOpp = (db: DbOpportunity, partnerIds: string[] = []): Opportunity => ({
   nextActionDate: db.next_action_date ? new Date(db.next_action_date) : undefined,
   clickupLink: db.clickup_link,
   notes: db.notes,
+  maxCapacity: db.max_capacity,
   targetCapacity: db.target_capacity ?? db.target_capacity_mw ?? 0,
+  ppaTermYears: db.ppa_term,
+  epcCost: db.epc_cost,
+  manualProbability: db.manual_probability,
   reType: db.re_type as REType,
   targetDecisionDate: db.target_decision_date ? new Date(db.target_decision_date) : undefined,
   companyName: db.company_name,
@@ -72,20 +76,24 @@ export const fetchOpportunities = async (): Promise<Opportunity[]> => {
 export const createOpportunity = async (opp: Omit<Opportunity, 'id' | 'createdAt' | 'updatedAt'>): Promise<Opportunity> => {
   const { linkedPartnerIds, ...rest } = opp;
   const { data, error } = await supabase.from('opportunities').insert({
-    name: rest.name, 
+    name: rest.name,
     account_id: toUuidOrNull(rest.accountId), // Convert empty string to null
     value: rest.value,
-    stage: rest.stage, 
-    priority: rest.priority, 
+    stage: rest.stage,
+    priority: rest.priority,
     owner_id: rest.ownerId,
-    next_action: rest.nextAction, 
+    next_action: rest.nextAction,
     next_action_date: rest.nextActionDate?.toISOString(),
-    clickup_link: rest.clickupLink, 
+    clickup_link: rest.clickupLink,
     notes: rest.notes,
-    target_capacity: rest.targetCapacity, 
+    max_capacity: rest.maxCapacity,
+    target_capacity: rest.targetCapacity,
+    ppa_term: rest.ppaTermYears,
+    epc_cost: rest.epcCost,
+    manual_probability: rest.manualProbability,
     re_type: rest.reType,
     target_decision_date: rest.targetDecisionDate?.toISOString(),
-    
+
     // Taxonomy
     sector: rest.sector || null,
     industry: rest.industry || null,
@@ -116,7 +124,11 @@ export const updateOpportunity = async (id: string, updates: Partial<Opportunity
   if (rest.ownerId !== undefined) dbUpdates.owner_id = toUuidOrNull(rest.ownerId);
   if (rest.nextAction !== undefined) dbUpdates.next_action = rest.nextAction;
   if (rest.notes !== undefined) dbUpdates.notes = rest.notes;
+  if (rest.maxCapacity !== undefined) dbUpdates.max_capacity = rest.maxCapacity;
   if (rest.targetCapacity !== undefined) dbUpdates.target_capacity = rest.targetCapacity;
+  if (rest.ppaTermYears !== undefined) dbUpdates.ppa_term = rest.ppaTermYears;
+  if (rest.epcCost !== undefined) dbUpdates.epc_cost = rest.epcCost;
+  if (rest.manualProbability !== undefined) dbUpdates.manual_probability = rest.manualProbability;
   if (rest.reType !== undefined) dbUpdates.re_type = rest.reType;
   if (rest.clickupLink !== undefined) dbUpdates.clickup_link = rest.clickupLink;
   if (nextActionDate !== undefined) dbUpdates.next_action_date = nextActionDate?.toISOString() || null;

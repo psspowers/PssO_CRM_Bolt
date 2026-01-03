@@ -5,6 +5,8 @@ import { DbPartner } from './types';
 const toPartner = (db: DbPartner): Partner => ({
   id: db.id, name: db.name, region: db.region, country: db.country,
   ownerId: db.owner_id || '', email: db.email, phone: db.phone,
+  partnerType: db.partner_type,
+  companyName: db.company_name,
   clickupLink: db.clickup_link, notes: db.notes,
   createdAt: new Date(db.created_at), updatedAt: new Date(db.updated_at),
 });
@@ -13,6 +15,8 @@ const toDb = (p: Partial<Partner>): Partial<DbPartner> => ({
   ...(p.name && { name: p.name }), ...(p.region && { region: p.region }),
   ...(p.country && { country: p.country }), ...(p.ownerId && { owner_id: p.ownerId }),
   ...(p.email && { email: p.email }), ...(p.phone && { phone: p.phone }),
+  ...(p.partnerType !== undefined && { partner_type: p.partnerType }),
+  ...(p.companyName !== undefined && { company_name: p.companyName }),
   ...(p.clickupLink !== undefined && { clickup_link: p.clickupLink }),
   ...(p.notes !== undefined && { notes: p.notes }),
 });

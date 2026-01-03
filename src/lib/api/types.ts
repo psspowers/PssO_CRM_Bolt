@@ -1,7 +1,10 @@
 // Database row types matching Supabase schema - Phase 1 MVP
 export interface DbPartner {
   id: string; name: string; region: string; country: string; owner_id: string;
-  email: string; phone: string; clickup_link?: string;
+  email: string; phone: string;
+  partner_type?: string;
+  company_name?: string;
+  clickup_link?: string;
   notes?: string; created_at: string; updated_at: string;
 }
 
@@ -33,8 +36,14 @@ export interface DbOpportunity {
   id: string; name: string; account_id?: string; linked_account_id?: string;
   value?: number; value_usd?: number; stage: string;
   priority: string; owner_id: string; next_action?: string; next_action_date?: string;
-  clickup_link?: string; notes?: string; target_capacity?: number; target_capacity_mw?: number;
+  clickup_link?: string; notes?: string;
+  max_capacity?: number;
+  target_capacity?: number; target_capacity_mw?: number;
+  ppa_term?: number;
+  epc_cost?: number;
+  manual_probability?: number;
   re_type: string; target_decision_date?: string;
+  company_name?: string;
   // Thai Taxonomy Classification
   sector?: string;
   industry?: string;

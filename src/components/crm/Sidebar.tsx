@@ -35,8 +35,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { user, profile } = useAuth();
   
-  // Determine if user is admin
-  let isAdmin = profile?.role === 'admin';
+  // Determine if user is admin or super admin
+  let isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
   if (!profile?.role && user?.email) {
     isAdmin = user.email === 'sam@psspowers.com';
   }
@@ -79,7 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!collapsed && <span>New Entry</span>}
         </button>
         
-        {onBulkImport && (
+        {onBulkImport && isAdmin && (
           <button
             onClick={onBulkImport}
             className={`w-full bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${collapsed ? 'p-3' : 'px-4 py-2.5'}`}
