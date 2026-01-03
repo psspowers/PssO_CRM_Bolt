@@ -18,10 +18,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onOpportunit
   const activeDeals = opportunities.filter(o => !['Won', 'Lost'].includes(o.stage)).length;
   const wonDeals = opportunities.filter(o => o.stage === 'Won').length;
 
-  const projectStatuses = ['Won', 'Engineering', 'Permit/EPC', 'Construction', 'Commissioning', 'Operational'];
-  const totalCapacity = opportunities
-    .filter(o => projectStatuses.includes(o.stage))
-    .reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
+  const totalCapacity = projects.reduce((sum, p) => sum + (Number(p.capacity) || 0), 0);
 
   const formatValue = (val: number) => val >= 1000000 ? `฿${(val / 1000000).toFixed(1)}M` : `฿${(val / 1000).toFixed(0)}K`;
 
