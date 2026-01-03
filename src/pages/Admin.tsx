@@ -57,7 +57,7 @@ const Admin: React.FC = () => {
       if (data) {
         const totalUsers = data.length;
         const activeUsers = data.filter(u => u.is_active !== false).length;
-        const adminUsers = data.filter(u => u.role === 'admin').length;
+        const adminUsers = data.filter(u => u.role === 'admin' || u.role === 'super_admin').length;
         setStats({ totalUsers, activeUsers, adminUsers });
       }
       setStatsLoading(false);
@@ -74,7 +74,7 @@ const Admin: React.FC = () => {
     );
   }
 
-  if (!profile || profile.role !== 'admin') {
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
     return <Navigate to="/" replace />;
   }
 
