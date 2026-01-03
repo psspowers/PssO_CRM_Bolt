@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { UserRole } from '@/types/crm';
 import { Loader2, UserPlus, Mail, Shield, Users, Briefcase, Lock, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 
 interface CreateUserDialogProps {
@@ -32,6 +33,9 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
+  const { profile } = useAuth();
+
+  const isSuperAdmin = profile?.role === 'super_admin';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,12 +219,22 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">
-                  <span className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-red-500" />
-                    Admin - Full system access
-                  </span>
-                </SelectItem>
+                {isSuperAdmin && (
+                  <SelectItem value="super_admin">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-purple-500" />
+                      Super Admin - Full system access + settings
+                    </span>
+                  </SelectItem>
+                )}
+                {isSuperAdmin && (
+                  <SelectItem value="admin">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-red-500" />
+                      Admin - Global data access
+                    </span>
+                  </SelectItem>
+                )}
                 <SelectItem value="internal">
                   <span className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-orange-500" />

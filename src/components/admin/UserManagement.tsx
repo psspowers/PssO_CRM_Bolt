@@ -147,10 +147,13 @@ export const UserManagement: React.FC = () => {
   };
 
   const roleColors: Record<UserRole, string> = {
+    super_admin: 'bg-purple-100 text-purple-700 border-purple-200',
     admin: 'bg-red-100 text-red-700 border-red-200',
     internal: 'bg-orange-100 text-orange-700 border-orange-200',
     external: 'bg-gray-100 text-gray-700 border-gray-200'
   };
+
+  const isSuperAdmin = profile?.role === 'super_admin';
 
   if (loading) {
     return (
@@ -306,20 +309,31 @@ export const UserManagement: React.FC = () => {
 
                 {/* Role Select */}
                 <div className="col-span-2">
-                  <Select 
-                    value={user.role} 
+                  <Select
+                    value={user.role}
                     onValueChange={(v) => updateRole(user.id, v as UserRole)}
+                    disabled={!isSuperAdmin && (user.role === 'super_admin' || user.role === 'admin')}
                   >
                     <SelectTrigger className="h-9 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="admin">
-                        <span className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-red-500" />
-                          Admin
-                        </span>
-                      </SelectItem>
+                      {isSuperAdmin && (
+                        <SelectItem value="super_admin">
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-purple-500" />
+                            Super Admin
+                          </span>
+                        </SelectItem>
+                      )}
+                      {isSuperAdmin && (
+                        <SelectItem value="admin">
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-red-500" />
+                            Admin
+                          </span>
+                        </SelectItem>
+                      )}
                       <SelectItem value="internal">
                         <span className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-orange-500" />

@@ -13,12 +13,14 @@ import { LogOut, User, Settings, Shield, ChevronDown, Loader2 } from 'lucide-rea
 import { toast } from '@/components/ui/use-toast';
 
 const roleColors: Record<string, string> = {
-  admin: 'bg-purple-100 text-purple-700',
+  super_admin: 'bg-purple-100 text-purple-700',
+  admin: 'bg-red-100 text-red-700',
   internal: 'bg-blue-100 text-blue-700',
   external: 'bg-gray-100 text-gray-700',
 };
 
 const roleLabels: Record<string, string> = {
+  super_admin: 'Super Administrator',
   admin: 'Administrator',
   internal: 'Internal Team',
   external: 'External Partner',

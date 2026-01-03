@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'internal' | 'external';
+export type UserRole = 'super_admin' | 'admin' | 'internal' | 'external';
 export type REType = 'Solar - Rooftop' | 'Solar - Ground' | 'Solar - Floating';
 export type ContactTag = 'Decision Maker' | 'Influencer' | 'Regulator' | 'Advisor' | 'Banker' | 'Pricing' | 'Legal' | 'Policy' | 'Land' | 'Bank';
 export type OpportunityStage = 'Prospect' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Term Sheet' | 'Won' | 'Lost';

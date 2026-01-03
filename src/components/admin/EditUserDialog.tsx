@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserRole } from '@/types/crm';
-import { Loader2, Save, Mail, Shield, Users, Briefcase, User, Image } from 'lucide-react';
+import { Loader2, Save, Mail, Shield, Users, Briefcase, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 
 interface EditUserDialogProps {
@@ -40,6 +41,9 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { profile } = useAuth();
+
+  const isSuperAdmin = profile?.role === 'super_admin';
 
   useEffect(() => {
     if (user) {
@@ -182,12 +186,22 @@ export const EditUserDialog: React.FC<EditUserDialogProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">
-                  <span className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-red-500" />
-                    Admin - Full system access
-                  </span>
-                </SelectItem>
+                {isSuperAdmin && (
+                  <SelectItem value="super_admin">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-purple-500" />
+                      Super Admin - Full system access + settings
+                    </span>
+                  </SelectItem>
+                )}
+                {isSuperAdmin && (
+                  <SelectItem value="admin">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-red-500" />
+                      Admin - Global data access
+                    </span>
+                  </SelectItem>
+                )}
                 <SelectItem value="internal">
                   <span className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-orange-500" />

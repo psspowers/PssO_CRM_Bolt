@@ -26,8 +26,10 @@ export const SettingsPanel: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [seedProgress, setSeedProgress] = useState<string>('');
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
+
+  const isSuperAdmin = profile?.role === 'super_admin';
 
   const fetchSettings = async () => {
     const { data } = await supabase.from('crm_settings').select('*').order('key');
@@ -146,22 +148,39 @@ export const SettingsPanel: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Application Settings Section */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Application Settings</h3>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={fetchSettings}><RefreshCw className="w-4 h-4 mr-2" />Refresh</Button>
-            <Button onClick={saveSettings} disabled={saving} className="bg-orange-500 hover:bg-orange-600">
-              <Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save Changes'}
-            </Button>
+      {!isSuperAdmin && (
+        <div className="p-6 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-amber-900">Access Restricted</h3>
+              <p className="text-sm text-amber-700 mt-1">
+                System settings and developer tools are only accessible to Super Admins.
+                Your current role is <strong>{profile?.role}</strong>.
+              </p>
+            </div>
           </div>
         </div>
-        <div className="grid gap-4">{settings.map(renderSetting)}</div>
-      </div>
+      )}
 
-      {/* Developer Tools Section */}
-      <div className="space-y-4 pt-6 border-t border-gray-200">
+      {isSuperAdmin && (
+        <>
+          {/* Application Settings Section */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Application Settings</h3>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={fetchSettings}><RefreshCw className="w-4 h-4 mr-2" />Refresh</Button>
+                <Button onClick={saveSettings} disabled={saving} className="bg-orange-500 hover:bg-orange-600">
+                  <Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </div>
+            <div className="grid gap-4">{settings.map(renderSetting)}</div>
+          </div>
+
+          {/* Developer Tools Section */}
+          <div className="space-y-4 pt-6 border-t border-gray-200">
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-5 h-5 text-amber-500" />
           <h3 className="text-lg font-semibold text-gray-900">Developer Tools</h3>
@@ -209,6 +228,8 @@ export const SettingsPanel: React.FC = () => {
           </Button>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };
