@@ -123,7 +123,7 @@ export const UserDropdown: React.FC = () => {
           <Settings className="w-4 h-4 mr-2" />
           Settings
         </DropdownMenuItem>
-        {displayRole === 'admin' && (
+        {(displayRole === 'admin' || displayRole === 'super_admin') && (
           <DropdownMenuItem onClick={() => navigate('/admin')}>
             <Shield className="w-4 h-4 mr-2" />
             Admin Panel
