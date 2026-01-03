@@ -270,9 +270,10 @@ Deno.serve(async (req: Request) => {
 
     let inviteData = null;
     let inviteError = null;
-    
+    let inviteLink = null;
+
     if (!password) {
-      console.log('[CREATE-USER] Sending invitation email via inviteUserByEmail');
+      console.log('[CREATE-USER] Attempting to send invitation email via inviteUserByEmail');
       console.log('[CREATE-USER] Target email:', email);
       console.log('[CREATE-USER] Auth user confirmed status:', authData.user.email_confirmed_at);
 
@@ -281,31 +282,47 @@ Deno.serve(async (req: Request) => {
       inviteError = result.error;
 
       if (inviteError) {
-        console.error('[CREATE-USER] ❌ FAILED to send invitation email');
+        console.error('[CREATE-USER] ❌ FAILED to send invitation email via inviteUserByEmail');
         console.error('[CREATE-USER] Error details:', JSON.stringify(inviteError, null, 2));
         console.error('[CREATE-USER] Error message:', inviteError.message);
         console.error('[CREATE-USER] Error name:', inviteError.name);
         console.error('[CREATE-USER] Error status:', inviteError.status);
-        console.error('[CREATE-USER] Full error object:', inviteError);
 
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: `Failed to send invitation email: ${inviteError.message}`,
-            details: {
-              error_code: inviteError.status || 'unknown',
-              error_name: inviteError.name || 'unknown',
-              supabase_error: inviteError
+        console.log('[CREATE-USER] 🔄 Attempting fallback: generating invite link without email');
+
+        const linkResult = await supabaseAdmin.auth.admin.generateLink({
+          type: 'invite',
+          email: email,
+        });
+
+        if (linkResult.error) {
+          console.error('[CREATE-USER] ❌ Fallback also failed - generateLink error:', linkResult.error);
+
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: `Failed to send invitation email: ${inviteError.message}`,
+              details: {
+                error_code: inviteError.status || 'unknown',
+                error_name: inviteError.name || 'unknown',
+                supabase_error: inviteError,
+                fallback_attempted: true,
+                fallback_error: linkResult.error.message
+              }
+            }),
+            {
+              status: 500,
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json',
+              },
             }
-          }),
-          {
-            status: 500,
-            headers: {
-              ...corsHeaders,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+          );
+        } else {
+          console.log('[CREATE-USER] ✅ Fallback successful - invite link generated');
+          inviteLink = linkResult.data.properties.action_link;
+          console.log('[CREATE-USER] Generated invite link (will be returned to admin)');
+        }
       } else {
         console.log('[CREATE-USER] ✅ Invitation email sent successfully');
         console.log('[CREATE-USER] Invite data:', inviteData);
@@ -324,7 +341,8 @@ Deno.serve(async (req: Request) => {
         role
       },
       password_assigned: !!password,
-      invitation_sent: !password && !inviteError,
+      invitation_sent: !password && !inviteError && !inviteLink,
+      invite_link: inviteLink || null,
       email_error: inviteError ? {
         message: inviteError.message,
         code: inviteError.code || 'unknown',

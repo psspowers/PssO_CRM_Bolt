@@ -108,6 +108,19 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
           title: 'User Created',
           description: `User ${formData.email} created with password. They must change it on first login.`
         });
+      } else if (data.invite_link) {
+        console.log('⚠️ Email failed, but invite link generated');
+        console.log('Invite link:', data.invite_link);
+
+        navigator.clipboard.writeText(data.invite_link).catch(() => {});
+
+        toast({
+          title: 'User Created (Manual Invite)',
+          description: 'Email failed but invite link copied to clipboard. Send it to the user manually.',
+          duration: 10000
+        });
+
+        alert(`User created! Email delivery failed, but here's the invite link:\n\n${data.invite_link}\n\n(Also copied to clipboard)\n\nSend this link to ${formData.email} to let them set their password.`);
       } else if (!data.invitation_sent) {
         console.warn('⚠️ WARNING: User created but invitation email FAILED to send!');
         console.error('Email error:', data.email_error);
