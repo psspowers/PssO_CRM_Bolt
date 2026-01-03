@@ -234,12 +234,14 @@ export default function AppLayout() {
 
   // Handle bulk import
   const handleBulkImport = async (entityType: BulkEntityType, data: Record<string, any>[]) => {
+    console.log(`Starting bulk import of ${data.length} ${entityType}(s)`);
     let successCount = 0;
     let failCount = 0;
     const errors: string[] = [];
 
     for (const item of data) {
       try {
+        console.log(`Importing ${entityType}:`, item.name || item.fullName);
         switch (entityType) {
           case 'Contact':
             await createContact({
@@ -265,7 +267,7 @@ export default function AppLayout() {
               strategicImportance: item.strategicImportance || 'Medium',
               notes: item.notes || '',
               linkedPartnerIds: [],
-              ownerId: user?.id,
+              ownerId: item.ownerId || user?.id,
             });
             break;
           case 'Opportunity':
@@ -306,18 +308,22 @@ export default function AppLayout() {
               email: item.email || '',
               phone: item.phone || '',
               notes: item.notes || '',
-              ownerId: user?.id || '',
+              ownerId: item.ownerId || user?.id || '',
             });
             break;
         }
         successCount++;
+        console.log(`✓ Successfully imported ${item.name || item.fullName} (${successCount}/${data.length})`);
       } catch (error: any) {
         failCount++;
-        errors.push(`${item.name || item.fullName || 'Unknown'}: ${error.message || 'Failed'}`);
+        const errorMsg = `${item.name || item.fullName || 'Unknown'}: ${error.message || 'Failed'}`;
+        console.error(`✗ Failed to import:`, errorMsg, error);
+        errors.push(errorMsg);
       }
     }
 
     // Refresh data after import
+    console.log(`Import complete: ${successCount} succeeded, ${failCount} failed`);
     await refreshData();
 
     // Show toast with results
