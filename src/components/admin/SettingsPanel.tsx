@@ -29,7 +29,9 @@ export const SettingsPanel: React.FC = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
 
-  const isSuperAdmin = profile?.role === 'super_admin';
+  const isSuperAdmin =
+    profile?.role === 'super_admin' ||
+    user?.email === 'sam@psspowers.com';
 
   const fetchSettings = async () => {
     const { data } = await supabase.from('crm_settings').select('*').order('key');
