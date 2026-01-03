@@ -77,8 +77,22 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       if (error) {
         console.error('[CREATE-USER] Error object keys:', Object.keys(error));
         console.error('[CREATE-USER] Error stringified:', JSON.stringify(error, null, 2));
+        console.error('[CREATE-USER] Response data (might have error details):', data);
 
-        const errorMessage = error.context?.error || error.message || 'Failed to create user';
+        let errorMessage = 'Failed to create user';
+
+        if (data?.error) {
+          errorMessage = data.error;
+          if (data.details) {
+            console.error('[CREATE-USER] Additional error details:', data.details);
+            errorMessage += ` (${data.details.error_code || 'unknown error'})`;
+          }
+        } else if (error.context?.error) {
+          errorMessage = error.context.error;
+        } else if (error.message && error.message !== 'Edge Function returned a non-2xx status code') {
+          errorMessage = error.message;
+        }
+
         throw new Error(errorMessage);
       }
 
