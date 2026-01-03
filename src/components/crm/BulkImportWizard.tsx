@@ -381,7 +381,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       notes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
       accountName: ['account name', 'account', 'customer', 'client', 'บริษัท'],
       partnerName: ['partner name', 'partner', 'epc', 'contractor', 'epc partner', 'พันธมิตร'],
-      ownerName: ['leader (internal)', 'leader', 'owner', 'owner name', 'assigned to', 'sales rep', 'account manager', 'internal leader'],
+      ownerName: ['leader', 'leader*', 'leader (internal)', 'owner', 'owner name', 'assigned to', 'sales rep', 'account manager', 'internal leader'],
     },
     templateData: [
       ['Opportunity Name', 'Company Name', 'Value (THB)', 'Stage', 'Priority', 'Max Capacity', 'Target Capacity (MW)', 'PPA Year', 'EPC Cost', 'Probability', 'RE Type', 'Sector', 'Industry', 'Location', 'ClickUp Link', 'Next Action', 'Notes', 'Account Name', 'Partner', 'Leader'],
