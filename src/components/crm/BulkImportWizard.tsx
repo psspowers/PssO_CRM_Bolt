@@ -1106,7 +1106,23 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
             dataWithLinks[link.fieldKey] = link.matchedEntityId;
           }
         });
-        
+
+        // Inherit taxonomy from linked Account for Opportunities
+        if (entityType === 'Opportunity' && dataWithLinks.accountId) {
+          const linkedAccount = existingAccounts.find(a => a.id === dataWithLinks.accountId);
+          if (linkedAccount) {
+            if (!dataWithLinks.sector && linkedAccount.sector) {
+              dataWithLinks.sector = linkedAccount.sector;
+            }
+            if (!dataWithLinks.industry && linkedAccount.industry) {
+              dataWithLinks.industry = linkedAccount.industry;
+            }
+            if (!dataWithLinks.subIndustry && linkedAccount.subIndustry) {
+              dataWithLinks.subIndustry = linkedAccount.subIndustry;
+            }
+          }
+        }
+
         successfulData.push(dataWithLinks);
         results.success++;
       } catch (error: any) {
