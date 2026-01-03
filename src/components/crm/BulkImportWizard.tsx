@@ -379,9 +379,9 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       clickupLink: ['clickup link', 'clickup id', 'task id', 'clickup', 'task url'],
       nextAction: ['next action', 'next step', 'action', 'todo'],
       notes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
-      accountName: ['account', 'account name', 'customer', 'client', 'บริษัท'],
-      partnerName: ['partner', 'partner name', 'epc', 'contractor', 'พันธมิตร'],
-      ownerName: ['owner', 'leader', 'owner name', 'assigned to', 'sales rep', 'account manager'],
+      accountName: ['account name', 'account', 'customer', 'client', 'บริษัท'],
+      partnerName: ['partner name', 'partner', 'epc', 'contractor', 'epc partner', 'พันธมิตร'],
+      ownerName: ['leader (internal)', 'leader', 'owner', 'owner name', 'assigned to', 'sales rep', 'account manager', 'internal leader'],
     },
     templateData: [
       ['Opportunity Name', 'Company Name', 'Value (THB)', 'Stage', 'Priority', 'Max Capacity', 'Target Capacity (MW)', 'PPA Year', 'EPC Cost', 'Probability', 'RE Type', 'Sector', 'Industry', 'Location', 'ClickUp Link', 'Next Action', 'Notes', 'Account Name', 'Partner', 'Leader'],
