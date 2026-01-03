@@ -453,7 +453,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
             key={opp.id}
             opportunity={opp}
             accountName={accounts.find(a => a.id === opp.accountId)?.name}
-            ownerName={hierarchyView === 'team' && opp.ownerId !== user?.id ? getOwnerName(opp.ownerId) : undefined}
+            ownerName={getOwnerName(opp.ownerId)}
             onClick={() => !selectionMode && setSelectedOpp(opp)}
           />
         ))}

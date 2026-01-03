@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Save, X, Loader2, ChevronDown, TrendingUp, Info } from 'lucide-react';
 import { Opportunity, OpportunityStage, Priority, REType } from '../../types/crm';
-import { 
-  getSectors, 
-  getIndustries, 
+import { useAppContext } from '../../contexts/AppContext';
+import {
+  getSectors,
+  getIndustries,
   getSubIndustries,
   getTaxonomyInfo,
   SECTOR_ICONS,
@@ -30,11 +31,13 @@ const priorities: Priority[] = ['Low', 'Medium', 'High'];
 const reTypes: REType[] = ['Solar - Rooftop', 'Solar - Ground', 'Solar - Floating'];
 
 export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, onSave, onCancel }) => {
+  const { users } = useAppContext();
   const [form, setForm] = useState({
     name: opportunity.name,
     value: opportunity.value,
     stage: opportunity.stage,
     priority: opportunity.priority,
+    ownerId: opportunity.ownerId,
     maxCapacity: opportunity.maxCapacity || 0,
     targetCapacity: opportunity.targetCapacity || 0,
     ppaTermYears: opportunity.ppaTermYears || 0,
@@ -111,6 +114,7 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
         value: form.value,
         stage: form.stage,
         priority: form.priority,
+        ownerId: form.ownerId,
         maxCapacity: form.maxCapacity,
         targetCapacity: form.targetCapacity,
         ppaTermYears: form.ppaTermYears,
@@ -247,15 +251,34 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Priority</label>
           <div className="relative">
-            <select 
-              value={form.priority} 
-              onChange={e => setForm({ ...form, priority: e.target.value as Priority })} 
+            <select
+              value={form.priority}
+              onChange={e => setForm({ ...form, priority: e.target.value as Priority })}
               className={selectClass}
             >
               {priorities.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Owner / Leader</label>
+        <div className="relative">
+          <select
+            value={form.ownerId}
+            onChange={e => setForm({ ...form, ownerId: e.target.value })}
+            className={selectClass}
+          >
+            <option value="">-- Select Owner --</option>
+            {users.map(u => (
+              <option key={u.id} value={u.id}>
+                {u.name} ({u.email})
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         </div>
       </div>
 
