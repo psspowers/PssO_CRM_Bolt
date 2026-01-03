@@ -390,7 +390,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       { key: 'name', label: 'Project Name', type: 'text', required: true },
       { key: 'country', label: 'Country', type: 'text', required: true },
       { key: 'capacity', label: 'Capacity (MW)', type: 'number', required: true, validation: validateNumber },
-      { key: 'status', label: 'Status', type: 'select', required: true, options: ['Discovery', 'Pre-Dev', 'Dev', 'Contract', 'Construction', 'Operational'] },
+      { key: 'status', label: 'Status', type: 'select', required: true, options: ['Won', 'Engineering', 'Permit/EPC', 'Construction', 'Commissioning', 'Operational'] },
       { key: 'notes', label: 'Notes', type: 'text' },
     ],
     aliases: {

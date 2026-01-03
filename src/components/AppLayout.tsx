@@ -293,7 +293,7 @@ export default function AppLayout() {
               name: item.name || '',
               country: item.country || '',
               capacity: item.capacity || 0,
-              status: item.status || 'Discovery',
+              status: item.status || 'Won',
               linkedAccountId: item.linkedAccountId || '',
               ownerId: user?.id || '',
               linkedPartnerIds: [],

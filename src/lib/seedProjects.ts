@@ -3,11 +3,11 @@ import { PROJECT_IDS, ACCOUNT_IDS, USER_IDS, ACTIVITY_IDS, OPPORTUNITY_IDS, PART
 
 export const seedProjects = async () => {
   const projects = [
-    { id: PROJECT_IDS.pr1, name: 'Vardhman 31.5 MWp Phase 1', linked_account_id: ACCOUNT_IDS.a2, country: 'India', capacity: 31.5, status: 'Dev', owner_id: USER_IDS.u3, clickup_link: 'https://app.clickup.com/t/proj001', notes: 'Land acquisition complete' },
+    { id: PROJECT_IDS.pr1, name: 'Vardhman 31.5 MWp Phase 1', linked_account_id: ACCOUNT_IDS.a2, country: 'India', capacity: 31.5, status: 'Engineering', owner_id: USER_IDS.u3, clickup_link: 'https://app.clickup.com/t/proj001', notes: 'Land acquisition complete' },
     { id: PROJECT_IDS.pr2, name: 'SM Mall of Asia Rooftop', linked_account_id: ACCOUNT_IDS.a4, country: 'Philippines', capacity: 5.2, status: 'Construction', owner_id: USER_IDS.u5, clickup_link: 'https://app.clickup.com/t/proj002', notes: 'Phase 1 of 15 sites' },
     { id: PROJECT_IDS.pr3, name: 'Tata Power Utility 100MW', linked_account_id: ACCOUNT_IDS.a2, country: 'India', capacity: 100, status: 'Operational', owner_id: USER_IDS.u1, clickup_link: 'https://app.clickup.com/t/proj003', notes: 'Flagship project' },
-    { id: PROJECT_IDS.pr4, name: 'GreenWave Floating Solar 8MW', linked_account_id: ACCOUNT_IDS.a3, country: 'Vietnam', capacity: 8, status: 'Pre-Dev', owner_id: USER_IDS.u2, notes: 'Reservoir installation' },
-    { id: PROJECT_IDS.pr5, name: 'Central Retail Bangkok 3MW', linked_account_id: ACCOUNT_IDS.a8, country: 'Thailand', capacity: 3, status: 'Contract', owner_id: USER_IDS.u6, clickup_link: 'https://app.clickup.com/t/proj005', notes: 'First of 8 sites' },
+    { id: PROJECT_IDS.pr4, name: 'GreenWave Floating Solar 8MW', linked_account_id: ACCOUNT_IDS.a3, country: 'Vietnam', capacity: 8, status: 'Won', owner_id: USER_IDS.u2, notes: 'Reservoir installation' },
+    { id: PROJECT_IDS.pr5, name: 'Central Retail Bangkok 3MW', linked_account_id: ACCOUNT_IDS.a8, country: 'Thailand', capacity: 3, status: 'Permit/EPC', owner_id: USER_IDS.u6, clickup_link: 'https://app.clickup.com/t/proj005', notes: 'First of 8 sites' },
   ];
   const { error } = await supabase.from('projects').upsert(projects, { onConflict: 'id' });
   if (error) throw error;
