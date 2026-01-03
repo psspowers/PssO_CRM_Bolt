@@ -33,7 +33,6 @@ interface LinkableField {
 
 interface EntityConfig {
   name: EntityType;
-  pluralName: string;
   icon: React.ReactNode;
   color: string;
   fields: FieldDefinition[];
@@ -189,7 +188,6 @@ const validateRequired = (value: any): { isValid: boolean; error?: string } => {
 const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
   Contact: {
     name: 'Contact',
-    pluralName: 'Contacts',
     icon: <Users className="w-5 h-5" />,
     color: 'blue',
     fields: [
@@ -201,7 +199,6 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       { key: 'city', label: 'City', type: 'text' },
       { key: 'tags', label: 'Tags', type: 'tags', options: ['Decision Maker', 'Influencer', 'Regulator', 'Advisor', 'Banker', 'Pricing', 'Legal', 'Policy', 'Land', 'Bank'] },
       { key: 'relationshipNotes', label: 'Notes', type: 'text' },
-      { key: 'clickupLink', label: 'ClickUp Link', type: 'url', validation: validateUrl },
     ],
     aliases: {
       fullName: ['full name', 'name', 'contact name', 'person', 'ชื่อ'],
@@ -212,7 +209,6 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       city: ['city', 'location', 'town', 'เมือง'],
       tags: ['tags', 'labels', 'categories', 'type'],
       relationshipNotes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
-      clickupLink: ['clickup', 'clickup link', 'clickup url', 'clickup id'],
       // Linkable field aliases
       accountName: ['account', 'account name', 'company', 'company name', 'organization', 'employer', 'บริษัท'],
       partnerName: ['partner', 'partner name', 'พันธมิตร'],
@@ -229,7 +225,6 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
   },
   Account: {
     name: 'Account',
-    pluralName: 'Accounts',
     icon: <Building2 className="w-5 h-5" />,
     color: 'purple',
     fields: [
@@ -240,7 +235,6 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       { key: 'subIndustry', label: 'Sub-Industry', type: 'text' },
       { key: 'strategicImportance', label: 'Strategic Importance', type: 'select', options: ['Low', 'Medium', 'High'] },
       { key: 'notes', label: 'Notes', type: 'text' },
-      { key: 'clickupLink', label: 'ClickUp Link', type: 'url', validation: validateUrl },
     ],
     aliases: {
       name: ['company name', 'name', 'account name', 'organization', 'business name', 'ชื่อบริษัท'],
@@ -250,7 +244,6 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       subIndustry: ['sub-industry', 'sub industry', 'subsector', 'กลุ่มย่อย'],
       strategicImportance: ['importance', 'priority', 'strategic importance', 'tier', 'ความสำคัญ'],
       notes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
-      clickupLink: ['clickup', 'clickup link', 'clickup url', 'clickup id'],
     },
     templateData: [
       ['Company Name', 'Country', 'Sector', 'Industry', 'Sub-Industry', 'Strategic Importance', 'Notes'],
@@ -260,7 +253,6 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
   },
   Opportunity: {
     name: 'Opportunity',
-    pluralName: 'Opportunities',
     icon: <Target className="w-5 h-5" />,
     color: 'emerald',
     fields: [
@@ -279,7 +271,6 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       { key: 'subIndustry', label: 'Sub-Industry', type: 'text' },
       { key: 'nextAction', label: 'Next Action', type: 'text' },
       { key: 'notes', label: 'Notes', type: 'text' },
-      { key: 'clickupLink', label: 'ClickUp Link', type: 'url', validation: validateUrl },
     ],
     aliases: {
       name: ['opportunity name', 'name', 'deal name', 'project name', 'ชื่อโอกาส'],
@@ -297,12 +288,11 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       subIndustry: ['sub-industry', 'sub industry', 'subsector', 'กลุ่มย่อย'],
       nextAction: ['next action', 'next step', 'action', 'todo'],
       notes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
-      clickupLink: ['clickup', 'clickup link', 'clickup url', 'clickup id'],
       // Linkable field aliases
       accountName: ['account', 'account name', 'company', 'company name', 'customer', 'client', 'บริษัท'],
     },
     templateData: [
-      ['Opportunity Name', 'Value (THB)', 'Stage', 'Priority', 'Max Capacity', 'Target Capacity (MW)', 'PPA Term (Years)', 'EPC Cost', 'Probability', 'RE Type', 'Sector', 'Industry', 'Next Action', 'Notes', 'Account Name'],
+      ['Opportunity Name', 'Value (THB)', 'Stage', 'Priority', 'Max Capacity', 'Target Capacity (MW)', 'PPA Year', 'EPC Cost', 'Probability', 'RE Type', 'Sector', 'Industry', 'Next Action', 'Notes', 'Account Name'],
       ['ABC Solar Project', '15000000', 'Qualified', 'High', '3.0', '2.5', '25', '12000000', '75', 'Solar - Rooftop', 'Industrial', 'Manufacturing', 'Site visit scheduled', 'Large rooftop area', 'ABC Manufacturing'],
       ['XYZ Green Energy', '8000000', 'Proposal', 'Medium', '1.5', '1.0', '20', '6000000', '60', 'Solar - Ground', 'Agriculture', 'Farming', 'Send proposal', 'Ground mount opportunity', 'XYZ Foods'],
     ],
@@ -312,7 +302,6 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
   },
   Project: {
     name: 'Project',
-    pluralName: 'Projects',
     icon: <FolderKanban className="w-5 h-5" />,
     color: 'amber',
     fields: [
@@ -321,7 +310,6 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       { key: 'capacity', label: 'Capacity (MW)', type: 'number', required: true, validation: validateNumber },
       { key: 'status', label: 'Status', type: 'select', required: true, options: ['Discovery', 'Pre-Dev', 'Dev', 'Contract', 'Construction', 'Operational'] },
       { key: 'notes', label: 'Notes', type: 'text' },
-      { key: 'clickupLink', label: 'ClickUp Link', type: 'url', validation: validateUrl },
     ],
     aliases: {
       name: ['project name', 'name', 'site name', 'ชื่อโครงการ'],
@@ -329,7 +317,6 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       capacity: ['capacity', 'mw', 'size', 'power', 'กำลังการผลิต'],
       status: ['status', 'stage', 'phase', 'สถานะ'],
       notes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
-      clickupLink: ['clickup', 'clickup link', 'clickup url', 'clickup id'],
       // Linkable field aliases
       accountName: ['account', 'account name', 'company', 'company name', 'customer', 'client', 'บริษัท'],
     },
@@ -344,7 +331,6 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
   },
   Partner: {
     name: 'Partner',
-    pluralName: 'Partners',
     icon: <Handshake className="w-5 h-5" />,
     color: 'rose',
     fields: [
@@ -356,7 +342,6 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       { key: 'email', label: 'Email', type: 'email', validation: validateEmail },
       { key: 'phone', label: 'Phone', type: 'phone', validation: validatePhone },
       { key: 'notes', label: 'Notes', type: 'text' },
-      { key: 'clickupLink', label: 'ClickUp Link', type: 'url', validation: validateUrl },
     ],
     aliases: {
       name: ['partner name', 'name', 'company', 'organization', 'ชื่อพันธมิตร'],
@@ -367,7 +352,6 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       email: ['email', 'e-mail', 'email address', 'อีเมล'],
       phone: ['phone', 'telephone', 'mobile', 'contact number', 'โทรศัพท์'],
       notes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
-      clickupLink: ['clickup', 'clickup link', 'clickup url', 'clickup id'],
     },
     templateData: [
       ['Partner Name', 'Company Legal Name', 'Type', 'Region', 'Country', 'Email', 'Phone', 'Notes'],
@@ -1031,7 +1015,7 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">
-                {config ? `Import ${config.pluralName}` : 'Bulk Import Wizard'}
+                {config ? `Import ${config.name}s` : 'Bulk Import Wizard'}
               </h2>
               <p className="text-sm text-slate-400">
                 {config ? `Upload CSV or Excel file with ${config.name.toLowerCase()} data` : 'Import data from spreadsheets'}
@@ -1105,7 +1089,7 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
                         {entityConfig.icon}
                       </div>
                     </div>
-                    <h4 className="text-lg font-semibold text-white mb-2">{entityConfig.pluralName}</h4>
+                    <h4 className="text-lg font-semibold text-white mb-2">{entityConfig.name}s</h4>
                     <p className="text-sm text-slate-400">
                       {entityConfig.fields.length} fields available
                       {entityConfig.linkableFields && entityConfig.linkableFields.length > 0 && (
@@ -1798,7 +1782,7 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
                   className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors disabled:opacity-50"
                 >
                   <Check className="w-4 h-4" />
-                  Import {selectedRows.size} {selectedRows.size === 1 ? config?.name : config?.pluralName}
+                  Import {selectedRows.size} {config?.name}(s)
                 </button>
               )}
             </div>
