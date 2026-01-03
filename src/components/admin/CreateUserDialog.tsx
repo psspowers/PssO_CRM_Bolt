@@ -9,6 +9,7 @@ import { Loader2, UserPlus, Mail, Shield, Users, Briefcase, Lock, Eye, EyeOff } 
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -47,103 +48,97 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
     setLoading(true);
 
     try {
-      const requestBody: any = {
+      console.log('[CREATE-USER] Starting client-side user creation');
+
+      const tempClient = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_ANON_KEY,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+          }
+        }
+      );
+
+      const { data: authData, error: authError } = await tempClient.auth.signUp({
+        email: formData.email,
+        password: formData.password || `temp_${Math.random().toString(36).slice(2)}${Date.now()}`,
+        options: {
+          data: {
+            full_name: formData.name,
+          },
+          emailRedirectTo: `${window.location.origin}/reset-password`
+        }
+      });
+
+      if (authError) throw new Error(`Failed to create auth user: ${authError.message}`);
+      if (!authData.user) throw new Error('User creation failed - no user returned');
+
+      console.log('[CREATE-USER] Auth user created, creating CRM profile');
+
+      const { error: profileError } = await supabase.from('crm_users').insert({
+        id: authData.user.id,
         email: formData.email,
         name: formData.name,
         role: formData.role,
-        reports_to: formData.reports_to === 'none' ? null : formData.reports_to
-      };
+        reports_to: formData.reports_to === 'none' ? null : formData.reports_to,
+        is_active: true,
+        password_change_required: !!formData.password,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=random`
+      });
 
-      if (formData.password) {
-        requestBody.password = formData.password;
+      if (profileError) {
+        throw new Error(`Auth created, but profile failed: ${profileError.message}`);
       }
 
-      console.log('[CREATE-USER] Invoking edge function with:', {
-        ...requestBody,
-        password: formData.password ? '[REDACTED]' : undefined
-      });
+      if (formData.reports_to && formData.reports_to !== 'none') {
+        const findAllManagers = async (userId: string): Promise<string[]> => {
+          const managers: string[] = [];
+          let currentUserId: string | null = userId;
+          let depth = 1;
 
-      const { data, error } = await supabase.functions.invoke('create-user', {
-        body: requestBody
-      });
+          while (currentUserId && depth <= 10) {
+            const { data: user } = await supabase
+              .from('crm_users')
+              .select('reports_to')
+              .eq('id', currentUserId)
+              .maybeSingle();
 
-      console.log('=== CREATE USER RESPONSE ===');
-      console.log('Raw response data:', data);
-      console.log('Raw error:', error);
-      console.log('Invitation sent flag:', data?.invitation_sent);
-      console.log('Email error details:', data?.email_error);
-      console.log('==========================');
-
-      if (error) {
-        console.error('[CREATE-USER] Error object keys:', Object.keys(error));
-        console.error('[CREATE-USER] Error stringified:', JSON.stringify(error, null, 2));
-        console.error('[CREATE-USER] Response data (might have error details):', data);
-
-        let errorMessage = 'Failed to create user';
-
-        if (data?.error) {
-          errorMessage = data.error;
-          if (data.details) {
-            console.error('[CREATE-USER] Additional error details:', data.details);
-            errorMessage += ` (${data.details.error_code || 'unknown error'})`;
+            if (!user?.reports_to) break;
+            managers.push(user.reports_to);
+            currentUserId = user.reports_to;
+            depth++;
           }
-        } else if (error.context?.error) {
-          errorMessage = error.context.error;
-        } else if (error.message && error.message !== 'Edge Function returned a non-2xx status code') {
-          errorMessage = error.message;
+
+          return managers;
+        };
+
+        const allManagers = await findAllManagers(authData.user.id);
+        const hierarchyRecords = allManagers.map((managerId, index) => ({
+          manager_id: managerId,
+          subordinate_id: authData.user.id,
+          depth: index + 1
+        }));
+
+        if (hierarchyRecords.length > 0) {
+          await supabase.from('user_hierarchy').insert(hierarchyRecords);
         }
-
-        throw new Error(errorMessage);
       }
 
-      if (!data?.success) {
-        console.error('[CREATE-USER] Data indicates failure:', data);
-        throw new Error(data?.error || 'Failed to create user');
-      }
-
-      console.log('[CREATE-USER] User created successfully');
-
-      if (data.password_assigned) {
-        toast({
-          title: 'User Created',
-          description: `User ${formData.email} created with password. They must change it on first login.`
-        });
-      } else if (data.invite_link) {
-        console.log('⚠️ Email failed, but invite link generated');
-        console.log('Invite link:', data.invite_link);
-
-        navigator.clipboard.writeText(data.invite_link).catch(() => {});
-
-        toast({
-          title: 'User Created (Manual Invite)',
-          description: 'Email failed but invite link copied to clipboard. Send it to the user manually.',
-          duration: 10000
-        });
-
-        alert(`User created! Email delivery failed, but here's the invite link:\n\n${data.invite_link}\n\n(Also copied to clipboard)\n\nSend this link to ${formData.email} to let them set their password.`);
-      } else if (!data.invitation_sent) {
-        console.warn('⚠️ WARNING: User created but invitation email FAILED to send!');
-        console.error('Email error:', data.email_error);
-
-        const errorMsg = data.email_error?.message || 'Unknown email error';
-        toast({
-          title: 'User Created (Email Issue)',
-          description: `User created but email failed: ${errorMsg}. Check Supabase Auth settings.`,
-          variant: 'destructive'
-        });
-      } else {
-        console.log('✅ Invitation email sent successfully');
-        toast({
-          title: 'User Created',
-          description: `Invitation email sent to ${formData.email}`
-        });
-      }
+      toast({
+        title: 'User Created',
+        description: formData.password
+          ? `User ${formData.email} created with password. They must change it on first login.`
+          : `Invitation email sent to ${formData.email}`
+      });
 
       setFormData({ name: '', email: '', role: 'external', reports_to: 'none', password: '' });
       onOpenChange(false);
       onSuccess();
     } catch (err: any) {
-      console.error('[CREATE-USER] Final catch block error:', err);
+      console.error('[CREATE-USER] Error:', err);
       toast({
         title: 'Error',
         description: err.message || 'Failed to create user',
