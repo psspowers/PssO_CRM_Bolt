@@ -707,22 +707,26 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
     console.log('Available aliases:', entityConfig.aliases);
 
     headers.forEach(header => {
-      const normalizedHeader = header.toLowerCase().trim().replace(/[*\s]+/g, ' ').trim();
-      console.log(`\nProcessing header: "${header}" (normalized: "${normalizedHeader}")`);
+      const cleanHeader = header.replace(/[*]/g, '').trim();
+      const normalizedHeader = cleanHeader.toLowerCase().replace(/\s+/g, ' ').trim();
+      console.log(`\nProcessing header: "${header}" (cleaned: "${cleanHeader}", normalized: "${normalizedHeader}")`);
 
       let bestMatch: { fieldKey: string; alias: string; score: number } | null = null;
 
       for (const [fieldKey, aliases] of Object.entries(entityConfig.aliases)) {
         for (const alias of aliases) {
-          const normalizedAlias = alias.toLowerCase().trim();
+          const normalizedAlias = alias.toLowerCase().replace(/\s+/g, ' ').trim();
           let score = 0;
 
           if (normalizedHeader === normalizedAlias) {
             score = 100;
+            console.log(`    Exact match: "${normalizedHeader}" === "${normalizedAlias}" (field: ${fieldKey})`);
           } else if (normalizedHeader.includes(normalizedAlias) && normalizedAlias.length > 3) {
             score = 70 + (normalizedAlias.length / normalizedHeader.length) * 30;
+            console.log(`    Header contains alias: "${normalizedHeader}" includes "${normalizedAlias}" (field: ${fieldKey}, score: ${score})`);
           } else if (normalizedAlias.includes(normalizedHeader) && normalizedHeader.length > 3) {
             score = 50 + (normalizedHeader.length / normalizedAlias.length) * 30;
+            console.log(`    Alias contains header: "${normalizedAlias}" includes "${normalizedHeader}" (field: ${fieldKey}, score: ${score})`);
           }
 
           if (score > 0 && (!bestMatch || score > bestMatch.score)) {
@@ -732,7 +736,7 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
       }
 
       if (bestMatch && bestMatch.score >= 50) {
-        console.log(`  ✓ Matched to fieldKey: "${bestMatch.fieldKey}" via alias: "${bestMatch.alias}" (score: ${bestMatch.score})`);
+        console.log(`  ✓ BEST MATCH for "${header}": fieldKey="${bestMatch.fieldKey}", alias="${bestMatch.alias}", score=${bestMatch.score}`);
 
         const linkableField = entityConfig.linkableFields?.find(lf => lf.matchField === bestMatch.fieldKey);
         if (linkableField) {
@@ -743,7 +747,7 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
           console.log(`  → Added to mapping: ${bestMatch.fieldKey} = "${header}"`);
         }
       } else {
-        console.log(`  ✗ No match found`);
+        console.log(`  ✗ NO MATCH FOUND for "${header}"`);
       }
     });
 
