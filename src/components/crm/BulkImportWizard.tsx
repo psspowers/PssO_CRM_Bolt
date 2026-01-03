@@ -201,6 +201,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       { key: 'city', label: 'City', type: 'text' },
       { key: 'tags', label: 'Tags', type: 'tags', options: ['Decision Maker', 'Influencer', 'Regulator', 'Advisor', 'Banker', 'Pricing', 'Legal', 'Policy', 'Land', 'Bank'] },
       { key: 'relationshipNotes', label: 'Notes', type: 'text' },
+      { key: 'clickupLink', label: 'ClickUp Link', type: 'url', validation: validateUrl },
     ],
     aliases: {
       fullName: ['full name', 'name', 'contact name', 'person', 'ชื่อ'],
@@ -211,6 +212,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       city: ['city', 'location', 'town', 'เมือง'],
       tags: ['tags', 'labels', 'categories', 'type'],
       relationshipNotes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
+      clickupLink: ['clickup', 'clickup link', 'clickup url', 'clickup id'],
       // Linkable field aliases
       accountName: ['account', 'account name', 'company', 'company name', 'organization', 'employer', 'บริษัท'],
       partnerName: ['partner', 'partner name', 'พันธมิตร'],
@@ -238,6 +240,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       { key: 'subIndustry', label: 'Sub-Industry', type: 'text' },
       { key: 'strategicImportance', label: 'Strategic Importance', type: 'select', options: ['Low', 'Medium', 'High'] },
       { key: 'notes', label: 'Notes', type: 'text' },
+      { key: 'clickupLink', label: 'ClickUp Link', type: 'url', validation: validateUrl },
     ],
     aliases: {
       name: ['company name', 'name', 'account name', 'organization', 'business name', 'ชื่อบริษัท'],
@@ -247,6 +250,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       subIndustry: ['sub-industry', 'sub industry', 'subsector', 'กลุ่มย่อย'],
       strategicImportance: ['importance', 'priority', 'strategic importance', 'tier', 'ความสำคัญ'],
       notes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
+      clickupLink: ['clickup', 'clickup link', 'clickup url', 'clickup id'],
     },
     templateData: [
       ['Company Name', 'Country', 'Sector', 'Industry', 'Sub-Industry', 'Strategic Importance', 'Notes'],
@@ -270,13 +274,12 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       { key: 'epcCost', label: 'EPC Cost (THB)', type: 'currency', validation: validateNumber },
       { key: 'manualProbability', label: 'Probability (%)', type: 'number', validation: validateNumber },
       { key: 'reType', label: 'RE Type', type: 'select', options: ['Solar - Rooftop', 'Solar - Ground', 'Solar - Floating'] },
-      { key: 'leadPartnerCapacityMw', label: 'Lead Partner Capacity (MW)', type: 'number', validation: validateNumber },
-      { key: 'otherPartnersCapacityMw', label: 'Other Partners Capacity (MW, comma-separated)', type: 'text' },
       { key: 'sector', label: 'Sector', type: 'text' },
       { key: 'industry', label: 'Industry', type: 'text' },
       { key: 'subIndustry', label: 'Sub-Industry', type: 'text' },
       { key: 'nextAction', label: 'Next Action', type: 'text' },
       { key: 'notes', label: 'Notes', type: 'text' },
+      { key: 'clickupLink', label: 'ClickUp Link', type: 'url', validation: validateUrl },
     ],
     aliases: {
       name: ['opportunity name', 'name', 'deal name', 'project name', 'ชื่อโอกาส'],
@@ -289,27 +292,22 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       epcCost: ['epc cost', 'epc cost (thb)', 'construction cost', 'project cost'],
       manualProbability: ['probability', 'probability (%)', 'win probability', 'chance', 'likelihood'],
       reType: ['re type', 'type', 'solar type', 'technology', 'ประเภท'],
-      leadPartnerCapacityMw: ['lead partner capacity', 'lead capacity', 'lead partner mw', 'lead partner capacity (mw)'],
-      otherPartnersCapacityMw: ['other partners capacity', 'other capacity', 'other partners mw', 'other partners capacity (mw)'],
       sector: ['sector', 'business sector', 'ภาคธุรกิจ'],
       industry: ['industry', 'business type', 'อุตสาหกรรม'],
       subIndustry: ['sub-industry', 'sub industry', 'subsector', 'กลุ่มย่อย'],
       nextAction: ['next action', 'next step', 'action', 'todo'],
       notes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
+      clickupLink: ['clickup', 'clickup link', 'clickup url', 'clickup id'],
       // Linkable field aliases
       accountName: ['account', 'account name', 'company', 'company name', 'customer', 'client', 'บริษัท'],
-      leadPartnerName: ['lead partner', 'lead partner name', 'primary partner', 'main partner'],
-      otherPartnerNames: ['other partners', 'other partner names', 'additional partners', 'secondary partners'],
     },
     templateData: [
-      ['Opportunity Name', 'Value (THB)', 'Stage', 'Priority', 'Max Capacity', 'Target Capacity (MW)', 'PPA Year', 'EPC Cost', 'Probability', 'RE Type', 'Lead Partner', 'Lead Partner Capacity (MW)', 'Other Partners', 'Other Partners Capacity (MW)', 'Sector', 'Industry', 'Next Action', 'Notes', 'Account Name'],
-      ['ABC Solar Project', '15000000', 'Qualified', 'High', '3.0', '2.5', '25', '12000000', '75', 'Solar - Rooftop', 'Solar Partners Inc', '1.5', 'Green Energy Co', '1.0', 'Industrial', 'Manufacturing', 'Site visit scheduled', 'Large rooftop area', 'ABC Manufacturing'],
-      ['XYZ Green Energy', '8000000', 'Proposal', 'Medium', '1.5', '1.0', '20', '6000000', '60', 'Solar - Ground', 'EPC Solutions Ltd', '1.0', '', '', 'Agriculture', 'Farming', 'Send proposal', 'Ground mount opportunity', 'XYZ Foods'],
+      ['Opportunity Name', 'Value (THB)', 'Stage', 'Priority', 'Max Capacity', 'Target Capacity (MW)', 'PPA Term (Years)', 'EPC Cost', 'Probability', 'RE Type', 'Sector', 'Industry', 'Next Action', 'Notes', 'Account Name'],
+      ['ABC Solar Project', '15000000', 'Qualified', 'High', '3.0', '2.5', '25', '12000000', '75', 'Solar - Rooftop', 'Industrial', 'Manufacturing', 'Site visit scheduled', 'Large rooftop area', 'ABC Manufacturing'],
+      ['XYZ Green Energy', '8000000', 'Proposal', 'Medium', '1.5', '1.0', '20', '6000000', '60', 'Solar - Ground', 'Agriculture', 'Farming', 'Send proposal', 'Ground mount opportunity', 'XYZ Foods'],
     ],
     linkableFields: [
       { key: 'accountId', label: 'Link to Account', targetEntity: 'Account', matchField: 'accountName' },
-      { key: 'leadPartnerId', label: 'Link to Lead Partner', targetEntity: 'Partner', matchField: 'leadPartnerName' },
-      { key: 'otherPartnerIds', label: 'Link to Other Partners', targetEntity: 'Partner', matchField: 'otherPartnerNames' },
     ],
   },
   Project: {
@@ -323,6 +321,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       { key: 'capacity', label: 'Capacity (MW)', type: 'number', required: true, validation: validateNumber },
       { key: 'status', label: 'Status', type: 'select', required: true, options: ['Discovery', 'Pre-Dev', 'Dev', 'Contract', 'Construction', 'Operational'] },
       { key: 'notes', label: 'Notes', type: 'text' },
+      { key: 'clickupLink', label: 'ClickUp Link', type: 'url', validation: validateUrl },
     ],
     aliases: {
       name: ['project name', 'name', 'site name', 'ชื่อโครงการ'],
@@ -330,6 +329,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       capacity: ['capacity', 'mw', 'size', 'power', 'กำลังการผลิต'],
       status: ['status', 'stage', 'phase', 'สถานะ'],
       notes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
+      clickupLink: ['clickup', 'clickup link', 'clickup url', 'clickup id'],
       // Linkable field aliases
       accountName: ['account', 'account name', 'company', 'company name', 'customer', 'client', 'บริษัท'],
     },
@@ -356,6 +356,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       { key: 'email', label: 'Email', type: 'email', validation: validateEmail },
       { key: 'phone', label: 'Phone', type: 'phone', validation: validatePhone },
       { key: 'notes', label: 'Notes', type: 'text' },
+      { key: 'clickupLink', label: 'ClickUp Link', type: 'url', validation: validateUrl },
     ],
     aliases: {
       name: ['partner name', 'name', 'company', 'organization', 'ชื่อพันธมิตร'],
@@ -366,6 +367,7 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       email: ['email', 'e-mail', 'email address', 'อีเมล'],
       phone: ['phone', 'telephone', 'mobile', 'contact number', 'โทรศัพท์'],
       notes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
+      clickupLink: ['clickup', 'clickup link', 'clickup url', 'clickup id'],
     },
     templateData: [
       ['Partner Name', 'Company Legal Name', 'Type', 'Region', 'Country', 'Email', 'Phone', 'Notes'],
