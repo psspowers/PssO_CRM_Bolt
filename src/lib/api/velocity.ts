@@ -242,8 +242,8 @@ export const calculateFallbackVelocity = (
     return {
       stage,
       currentMw,
-      wowChange: period === 'wow' ? recentInStage * 0.1 : 0, // Rough estimate
-      momChange: period === 'mom' ? recentInStage * 0.15 : 0, // Rough estimate
+      wowChange: rangeType === 'wow' ? recentInStage * 0.1 : 0,
+      momChange: rangeType === 'mom' ? recentInStage * 0.15 : 0,
     };
   });
 
