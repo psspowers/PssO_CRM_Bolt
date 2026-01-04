@@ -541,33 +541,85 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
           </button>
         </div>
 
-        <div className="lg:hidden overflow-x-auto pb-2 pt-2">
-          <div className="flex flex-col items-center gap-2">
-            {pipelineStages.map((stage, index) => (
-              <div key={stage.stage} className="flex flex-col items-center">
-                <div className="flex flex-col items-center">
-                  <div className="h-5 mb-1">
-                    {stage[period === 'wow' ? 'wowChange' : 'momChange'] !== undefined && stage[period === 'wow' ? 'wowChange' : 'momChange'] !== 0 && (
-                      <div className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
-                        stage[period === 'wow' ? 'wowChange' : 'momChange'] > 0 ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
-                      }`}>
-                        {stage[period === 'wow' ? 'wowChange' : 'momChange'] > 0 ? '+' : ''}{stage[period === 'wow' ? 'wowChange' : 'momChange'].toFixed(1)}
+        <div className="lg:hidden pb-2 pt-2">
+          <div className="flex flex-col gap-3">
+            {pipelineStages.map((stage, index) => {
+              const change = stage[period === 'wow' ? 'wowChange' : 'momChange'];
+              const isPositive = change > 0;
+              const isNegative = change < 0;
+              const isNeutral = change === 0;
+
+              return (
+                <div key={stage.stage}>
+                  <div className="relative bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${stage.color}`} />
+
+                    <div className="pl-4 pr-4 py-4 ml-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-8 h-8 rounded-lg ${stage.color} flex items-center justify-center text-white shadow-sm`}>
+                            <span className="text-sm font-bold">{stage.count}</span>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-slate-900">{stage.stage}</h4>
+                            <p className="text-xs text-slate-500">Stage</p>
+                          </div>
+                        </div>
+
+                        {change !== undefined && change !== 0 && (
+                          <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold ${
+                            isPositive ? 'bg-emerald-50 text-emerald-700' :
+                            isNegative ? 'bg-red-50 text-red-700' :
+                            'bg-slate-50 text-slate-700'
+                          }`}>
+                            {isPositive && <TrendingUp className="w-3 h-3" />}
+                            {isNegative && <TrendingDown className="w-3 h-3" />}
+                            {isPositive ? '+' : ''}{change.toFixed(1)}%
+                          </div>
+                        )}
                       </div>
-                    )}
+
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                        <div>
+                          <p className="text-xs text-slate-500">Total MW Movement</p>
+                          <p className="text-lg font-bold text-slate-900">{stage.mw.toFixed(1)} MW</p>
+                        </div>
+
+                        {change !== undefined && change !== 0 && (
+                          <div className="text-right">
+                            <p className="text-xs text-slate-500">vs last {period === 'wow' ? 'week' : 'month'}</p>
+                            <div className="flex items-center gap-1 justify-end">
+                              <div className={`w-2 h-2 rounded-full ${
+                                isPositive ? 'bg-emerald-500' :
+                                isNegative ? 'bg-red-500' :
+                                'bg-slate-300'
+                              }`} />
+                              <span className={`text-xs font-semibold ${
+                                isPositive ? 'text-emerald-700' :
+                                isNegative ? 'text-red-700' :
+                                'text-slate-600'
+                              }`}>
+                                {isPositive ? 'Improving' : isNegative ? 'Declining' : 'Neutral'}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className={`w-16 h-16 rounded-2xl ${stage.color} flex flex-col items-center justify-center text-white shadow-lg`}>
-                    <span className="text-xl font-bold">{stage.count}</span>
-                    <span className="text-[10px] opacity-80">{stage.mw.toFixed(1)} MW</span>
-                  </div>
-                  <span className="text-xs font-medium text-slate-600 mt-1.5 text-center max-w-[80px]">{stage.stage}</span>
+
+                  {index !== pipelineStages.length - 1 && (
+                    <div className="flex justify-center py-1">
+                      <div className="flex flex-col items-center">
+                        <div className="w-px h-4 bg-slate-200" />
+                        <ArrowRight className="w-4 h-4 text-slate-400 transform rotate-90 my-1" />
+                        <div className="w-px h-4 bg-slate-200" />
+                      </div>
+                    </div>
+                  )}
                 </div>
-                {index !== pipelineStages.length - 1 && (
-                  <div className="flex flex-col items-center my-1">
-                    <ArrowRight className="w-4 h-4 text-slate-400 transform rotate-90" />
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -608,21 +660,51 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
           </button>
         </div>
 
-        <div className="lg:hidden overflow-x-auto pb-2 pt-2">
-          <div className="flex flex-col items-center gap-2">
+        <div className="lg:hidden pb-2 pt-2">
+          <div className="flex flex-col gap-3">
             {projectStages.map((stage, index) => (
-              <div key={stage.stage} className="flex flex-col items-center">
-                <div className="flex flex-col items-center">
-                  <div className="h-5 mb-1"></div>
-                  <div className={`w-16 h-16 rounded-2xl ${stage.color} flex flex-col items-center justify-center text-white shadow-lg`}>
-                    <span className="text-xl font-bold">{stage.count}</span>
-                    <span className="text-[10px] opacity-80">{stage.mw.toFixed(1)} MW</span>
+              <div key={stage.stage}>
+                <div className="relative bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                  <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${stage.color}`} />
+
+                  <div className="pl-4 pr-4 py-4 ml-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-lg ${stage.color} flex items-center justify-center text-white shadow-sm`}>
+                          <span className="text-sm font-bold">{stage.count}</span>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-slate-900">{stage.stage}</h4>
+                          <p className="text-xs text-slate-500">Stage</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                      <div>
+                        <p className="text-xs text-slate-500">Total Capacity</p>
+                        <p className="text-lg font-bold text-slate-900">{stage.mw.toFixed(1)} MW</p>
+                      </div>
+
+                      {stage.count > 0 && (
+                        <div className="text-right">
+                          <p className="text-xs text-slate-500">Avg per project</p>
+                          <p className="text-sm font-semibold text-slate-700">
+                            {(stage.mw / stage.count).toFixed(1)} MW
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-xs font-medium text-slate-600 mt-1.5 text-center max-w-[80px]">{stage.stage}</span>
                 </div>
+
                 {index !== projectStages.length - 1 && (
-                  <div className="flex flex-col items-center my-1">
-                    <ArrowRight className="w-4 h-4 text-slate-400 transform rotate-90" />
+                  <div className="flex justify-center py-1">
+                    <div className="flex flex-col items-center">
+                      <div className="w-px h-4 bg-slate-200" />
+                      <ArrowRight className="w-4 h-4 text-slate-400 transform rotate-90 my-1" />
+                      <div className="w-px h-4 bg-slate-200" />
+                    </div>
                   </div>
                 )}
               </div>
