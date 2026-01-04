@@ -330,6 +330,22 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
     return stages;
   }, [displayedProjects]);
 
+  const [mobilePipelineMode, setMobilePipelineMode] = useState<'deals' | 'projects'>('deals');
+
+  const finalStageMW = displayedOpportunities
+    .filter(o => ['Negotiation', 'Term Sheet'].includes(o.stage))
+    .reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
+  const finalStageCount = displayedOpportunities
+    .filter(o => ['Negotiation', 'Term Sheet'].includes(o.stage)).length;
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const newProjectsMW = displayedOpportunities
+    .filter(o => new Date(o.createdAt) > thirtyDaysAgo)
+    .reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
+
+  const movementMW = velocityMetrics.stageMovements * 2.5;
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3">
@@ -448,73 +464,59 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
           </div>
 
           <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-            <div className="bg-white/10 backdrop-blur rounded-xl p-4">
-              <p className="text-slate-300 text-xs">Pipeline Value</p>
-              <p className="text-2xl font-bold">{formatMetric(velocityMetrics.totalPipelineValue, 'currency')}</p>
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
+              <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Velocity</p>
+              <p className="text-2xl font-bold text-white">{velocityMetrics.stageMovements}</p>
+              <p className="text-xs text-emerald-400 mt-1">Score</p>
             </div>
-            <div className="bg-white/10 backdrop-blur rounded-xl p-4">
-              <p className="text-slate-300 text-xs">Active Deals</p>
-              <p className="text-2xl font-bold">{velocityMetrics.activeDeals}</p>
+
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
+              <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Hustle</p>
+              <p className="text-2xl font-bold text-white">{formatMetric(movementMW, 'capacity')}</p>
+              <p className="text-xs text-slate-400 mt-1">Total Movement</p>
             </div>
-            <div className="bg-white/10 backdrop-blur rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-slate-300 text-xs">Won This {period === 'wow' ? 'Week' : 'Month'}</p>
-                {velocityMetrics.wonPreviousPeriod > 0 && (
-                  <span className={`text-xs font-bold ${
-                    velocityMetrics.wonThisPeriod >= velocityMetrics.wonPreviousPeriod
-                      ? 'text-emerald-400'
-                      : 'text-red-400'
-                  }`}>
-                    {velocityMetrics.wonThisPeriod >= velocityMetrics.wonPreviousPeriod ? '+' : ''}
-                    {velocityMetrics.wonThisPeriod - velocityMetrics.wonPreviousPeriod}
-                  </span>
-                )}
-              </div>
-              <p className="text-2xl font-bold text-emerald-400">{velocityMetrics.wonThisPeriod}</p>
+
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
+              <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Feed</p>
+              <p className="text-2xl font-bold text-white">{formatMetric(newProjectsMW, 'capacity')}</p>
+              <p className="text-xs text-slate-400 mt-1">New This Month</p>
             </div>
-            <div className="bg-white/10 backdrop-blur rounded-xl p-4">
-              <p className="text-slate-300 text-xs">Total Capacity</p>
-              <p className="text-2xl font-bold">{formatMetric(velocityMetrics.totalCapacity, 'capacity')}</p>
+
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10 bg-gradient-to-br from-emerald-500/20 to-transparent">
+              <p className="text-emerald-300 text-xs uppercase font-bold tracking-wider">MW Harvest</p>
+              <p className="text-2xl font-bold text-white">{formatMetric(finalStageMW, 'capacity')}</p>
+              <p className="text-xs text-emerald-200/70 mt-1">{finalStageCount} Deals Closing</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <VelocityStatCard
-          title="Deal Velocity"
-          value={velocityMetrics.stageMovements}
-          currentValue={velocityMetrics.stageMovements}
-          previousValue={velocityMetrics.previousStageMovements}
-          icon={Gauge}
-          color="orange"
-          periodLabel={period === 'wow' ? 'vs last week' : 'vs last month'}
-          onClick={() => onNavigate('opportunities')}
-        />
-        <VelocityStatCard
-          title="Accounts"
-          value={velocityMetrics.accountsCount}
-          icon={Building2}
-          color="blue"
-          onClick={() => onNavigate('accounts')}
-        />
-        <VelocityStatCard
-          title="Partners"
-          value={velocityMetrics.partnersCount}
-          icon={Users}
-          color="purple"
-          onClick={() => onNavigate('partners')}
-        />
-        <VelocityStatCard
-          title="Operational MW"
-          value={formatMetric(velocityMetrics.operationalCapacity, 'capacity')}
-          icon={Zap}
-          color="emerald"
-          onClick={() => onNavigate('projects')}
-        />
+      <div className="lg:hidden mb-6">
+        <div className="flex items-center gap-2 bg-white rounded-xl p-1 shadow-sm border border-slate-200">
+          <button
+            onClick={() => setMobilePipelineMode('deals')}
+            className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+              mobilePipelineMode === 'deals'
+                ? 'bg-orange-500 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Deal Pipeline
+          </button>
+          <button
+            onClick={() => setMobilePipelineMode('projects')}
+            className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+              mobilePipelineMode === 'projects'
+                ? 'bg-purple-500 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Project Pipeline
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+      <div className={`bg-white rounded-2xl p-5 shadow-sm border border-slate-200 ${mobilePipelineMode === 'deals' ? 'lg:block' : 'lg:block hidden'}`}>
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-bold text-slate-900 flex items-center gap-2">
@@ -539,7 +541,37 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
           </button>
         </div>
 
-        <div className="overflow-x-auto pb-2 pt-2">
+        <div className="lg:hidden overflow-x-auto pb-2 pt-2">
+          <div className="flex flex-col items-center gap-2">
+            {pipelineStages.map((stage, index) => (
+              <div key={stage.stage} className="flex flex-col items-center">
+                <div className="flex flex-col items-center">
+                  <div className="h-5 mb-1">
+                    {stage[period === 'wow' ? 'wowChange' : 'momChange'] !== undefined && stage[period === 'wow' ? 'wowChange' : 'momChange'] !== 0 && (
+                      <div className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                        stage[period === 'wow' ? 'wowChange' : 'momChange'] > 0 ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+                      }`}>
+                        {stage[period === 'wow' ? 'wowChange' : 'momChange'] > 0 ? '+' : ''}{stage[period === 'wow' ? 'wowChange' : 'momChange'].toFixed(1)}
+                      </div>
+                    )}
+                  </div>
+                  <div className={`w-16 h-16 rounded-2xl ${stage.color} flex flex-col items-center justify-center text-white shadow-lg`}>
+                    <span className="text-xl font-bold">{stage.count}</span>
+                    <span className="text-[10px] opacity-80">{stage.mw.toFixed(1)} MW</span>
+                  </div>
+                  <span className="text-xs font-medium text-slate-600 mt-1.5 text-center max-w-[80px]">{stage.stage}</span>
+                </div>
+                {index !== pipelineStages.length - 1 && (
+                  <div className="flex flex-col items-center my-1">
+                    <ArrowRight className="w-4 h-4 text-slate-400 transform rotate-90" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="hidden lg:block overflow-x-auto pb-2 pt-2">
           <div className="flex items-center justify-center lg:justify-start gap-2 min-w-max">
             {pipelineStages.map((stage, index) => (
               <PipelineStage
@@ -559,7 +591,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+      <div className={`bg-white rounded-2xl p-5 shadow-sm border border-slate-200 ${mobilePipelineMode === 'projects' ? 'lg:block' : 'lg:block hidden'}`}>
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-bold text-slate-900 flex items-center gap-2">
@@ -576,7 +608,29 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
           </button>
         </div>
 
-        <div className="overflow-x-auto pb-2 pt-2">
+        <div className="lg:hidden overflow-x-auto pb-2 pt-2">
+          <div className="flex flex-col items-center gap-2">
+            {projectStages.map((stage, index) => (
+              <div key={stage.stage} className="flex flex-col items-center">
+                <div className="flex flex-col items-center">
+                  <div className="h-5 mb-1"></div>
+                  <div className={`w-16 h-16 rounded-2xl ${stage.color} flex flex-col items-center justify-center text-white shadow-lg`}>
+                    <span className="text-xl font-bold">{stage.count}</span>
+                    <span className="text-[10px] opacity-80">{stage.mw.toFixed(1)} MW</span>
+                  </div>
+                  <span className="text-xs font-medium text-slate-600 mt-1.5 text-center max-w-[80px]">{stage.stage}</span>
+                </div>
+                {index !== projectStages.length - 1 && (
+                  <div className="flex flex-col items-center my-1">
+                    <ArrowRight className="w-4 h-4 text-slate-400 transform rotate-90" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="hidden lg:block overflow-x-auto pb-2 pt-2">
           <div className="flex items-center justify-center lg:justify-start gap-2 min-w-max">
             {projectStages.map((stage, index) => (
               <PipelineStage
