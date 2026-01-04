@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { X, StickyNote, Phone, Users, MessageSquare, MapPin, Building2, Briefcase, UserPlus, Target, CheckSquare, Clock, AlertCircle, ChevronDown, TrendingUp, Info, Loader2 } from 'lucide-react';
 import { ActivityType, OpportunityStage, Priority, REType, User } from '../../types/crm';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  getSectors, 
-  getIndustries, 
+import { supabase } from '@/lib/supabase';
+import {
+  getSectors,
+  getIndustries,
   getSubIndustries,
   getTaxonomyInfo,
   SECTOR_ICONS,
@@ -48,10 +49,13 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
   const [relateToType, setRelateToType] = useState<RelateToType>('Partner');
   const [relateToId, setRelateToId] = useState('');
   const [saving, setSaving] = useState(false);
-  
+
   const [assignedToId, setAssignedToId] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
+
+  const [filteredOpportunities, setFilteredOpportunities] = useState<{id: string; name: string}[]>([]);
+  const [loadingOpportunities, setLoadingOpportunities] = useState(false);
 
   // Account form state
   const [accountForm, setAccountForm] = useState({
@@ -137,8 +141,39 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
       setRelateToId('');
       setIsTask(false);
       setTaxonomyInfo(null);
+      setAssignedToId('');
+      setFilteredOpportunities([]);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const fetchFilteredOpportunities = async () => {
+      const targetUserId = assignedToId || profile?.id;
+      if (!targetUserId || !isTask) {
+        setFilteredOpportunities([]);
+        return;
+      }
+
+      setLoadingOpportunities(true);
+      try {
+        const { data, error } = await supabase
+          .from('opportunities')
+          .select('id, name')
+          .eq('owner_id', targetUserId)
+          .order('name', { ascending: true });
+
+        if (error) throw error;
+        setFilteredOpportunities(data || []);
+      } catch (err) {
+        console.error('Error fetching opportunities:', err);
+        setFilteredOpportunities([]);
+      } finally {
+        setLoadingOpportunities(false);
+      }
+    };
+
+    fetchFilteredOpportunities();
+  }, [assignedToId, profile?.id, isTask]);
 
   if (!isOpen) return null;
 
@@ -303,12 +338,22 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
                           setRelateToId('');
                         }
                       }}
-                      className="w-full mt-1 px-3 py-2 border rounded-lg text-sm bg-white"
+                      className="w-full mt-1 px-3 py-2 border rounded-lg text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={loadingOpportunities}
                     >
-                      <option value="">-- Select Opportunity (Optional) --</option>
-                      {entities?.opportunities.map(opp => (
-                        <option key={opp.id} value={opp.id}>{opp.name}</option>
-                      ))}
+                      {loadingOpportunities ? (
+                        <option value="">Loading opportunities...</option>
+                      ) : (
+                        <>
+                          <option value="">-- Select Opportunity (Optional) --</option>
+                          {filteredOpportunities.map(opp => (
+                            <option key={opp.id} value={opp.id}>{opp.name}</option>
+                          ))}
+                          {filteredOpportunities.length === 0 && !loadingOpportunities && (
+                            <option value="" disabled>No opportunities found</option>
+                          )}
+                        </>
+                      )}
                     </select>
                   </div>
                   <div>
