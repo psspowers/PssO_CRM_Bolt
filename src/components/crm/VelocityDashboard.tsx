@@ -1,16 +1,20 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { 
-  TrendingUp, TrendingDown, Zap, Target, Building2, Users, 
-  ArrowRight, ChevronRight, Activity, BarChart3, Loader2, 
+import {
+  TrendingUp, TrendingDown, Zap, Target, Building2, Users,
+  ArrowRight, ChevronRight, Activity, BarChart3, Loader2,
   AlertCircle, RefreshCw, Calendar, Clock, ArrowUpRight,
-  Gauge, Rocket, Timer, GitBranch, Database
+  Gauge, Rocket, Timer, GitBranch, Database, User
 } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { BadgeList } from './Badge';
 import { PipelineChart } from './PipelineChart';
 import { UpcomingActions } from './UpcomingActions';
 import { Opportunity, Project, ProjectStatus, OpportunityStage } from '../../types/crm';
 import { fetchPipelineVelocity, VelocityStageData, calculateFallbackVelocity } from '../../lib/api/velocity';
+import { formatMetric } from '../../lib/utils';
+import { SegmentedControl } from '../ui/segmented-control';
+import { supabase } from '@/lib/supabase';
 
 interface VelocityDashboardProps {
   onNavigate: (tab: string) => void;
@@ -18,7 +22,9 @@ interface VelocityDashboardProps {
   onSwitchToClassic: () => void;
 }
 
-// Velocity Stat Card with Delta
+type ViewMode = 'personal' | 'my_team' | 'company_wide';
+type TimePeriod = 'week' | 'month' | 'quarter';
+
 interface VelocityStatCardProps {
   title: string;
   value: string | number;
@@ -65,8 +71,8 @@ const VelocityStatCard: React.FC<VelocityStatCardProps> = ({
         </div>
         {delta !== undefined && (
           <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold ${
-            delta >= 0 
-              ? 'bg-emerald-100 text-emerald-700' 
+            delta >= 0
+              ? 'bg-emerald-100 text-emerald-700'
               : 'bg-red-100 text-red-700'
           }`}>
             {delta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -87,7 +93,6 @@ const VelocityStatCard: React.FC<VelocityStatCardProps> = ({
   );
 };
 
-// Pipeline Flow Stage Component
 interface PipelineStageProps {
   stage: string;
   count: number;
@@ -108,7 +113,6 @@ const PipelineStage: React.FC<PipelineStageProps> = ({
   return (
     <div className="flex items-center">
       <div className="flex flex-col items-center">
-        {/* Velocity indicator - moved above box */}
         <div className="h-5 mb-1">
           {change !== undefined && change !== 0 && (
             <div className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
@@ -142,21 +146,92 @@ const PipelineStage: React.FC<PipelineStageProps> = ({
   );
 };
 
-// Week-over-Week / Month-over-Month Toggle
-type PeriodType = 'wow' | 'mom';
-
-export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({ 
-  onNavigate, 
+export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
+  onNavigate,
   onOpportunityClick,
-  onSwitchToClassic 
+  onSwitchToClassic
 }) => {
   const { opportunities, accounts, partners, projects, currentUser, loading, error, refreshData } = useAppContext();
-  const [period, setPeriod] = useState<PeriodType>('wow');
+  const { user, profile } = useAuth();
+
+  const [viewMode, setViewMode] = useState<ViewMode>('personal');
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
+  const [period, setPeriod] = useState<'wow' | 'mom'>('mom');
   const [velocityData, setVelocityData] = useState<VelocityStageData[]>([]);
   const [velocityLoading, setVelocityLoading] = useState(true);
   const [usingRealData, setUsingRealData] = useState(false);
 
-  // Fetch real velocity data from database
+  const [isManager, setIsManager] = useState(false);
+  const [directReports, setDirectReports] = useState<string[]>([]);
+
+  const userId = user?.id || profile?.id || currentUser?.id;
+  const userRole = profile?.role || currentUser?.role || 'internal';
+
+  useEffect(() => {
+    const checkManagerStatus = async () => {
+      if (!userId) return;
+
+      try {
+        const { data: reports } = await supabase
+          .from('user_hierarchy')
+          .select('child_user_id')
+          .eq('parent_user_id', userId);
+
+        const reportIds = reports?.map(r => r.child_user_id) || [];
+        setDirectReports(reportIds);
+        setIsManager(
+          reportIds.length > 0 ||
+          userRole === 'admin' ||
+          userRole === 'super_admin'
+        );
+      } catch (err) {
+        console.error('Error checking manager status:', err);
+        setIsManager(userRole === 'admin' || userRole === 'super_admin');
+      }
+    };
+
+    checkManagerStatus();
+  }, [userId, userRole]);
+
+  useEffect(() => {
+    if (!isManager) {
+      setViewMode('personal');
+    }
+  }, [isManager]);
+
+  const { displayedOpportunities, displayedProjects, displayedAccounts, displayedPartners } = useMemo(() => {
+    const personalOpps = opportunities.filter(o => o.assigned_to === userId);
+    const personalProjects = projects.filter(p => p.assigned_to === userId);
+    const personalAccounts = accounts.filter(a => a.created_by === userId);
+    const personalPartners = partners.filter(p => p.created_by === userId);
+
+    if (viewMode === 'personal') {
+      return {
+        displayedOpportunities: personalOpps,
+        displayedProjects: personalProjects,
+        displayedAccounts: personalAccounts,
+        displayedPartners: personalPartners
+      };
+    }
+
+    if (viewMode === 'my_team') {
+      const teamUserIds = [userId, ...directReports];
+      return {
+        displayedOpportunities: opportunities.filter(o => teamUserIds.includes(o.assigned_to)),
+        displayedProjects: projects.filter(p => teamUserIds.includes(p.assigned_to)),
+        displayedAccounts: accounts.filter(a => teamUserIds.includes(a.created_by)),
+        displayedPartners: partners.filter(p => teamUserIds.includes(p.created_by))
+      };
+    }
+
+    return {
+      displayedOpportunities: opportunities,
+      displayedProjects: projects,
+      displayedAccounts: accounts,
+      displayedPartners: partners
+    };
+  }, [opportunities, projects, accounts, partners, viewMode, userId, directReports]);
+
   useEffect(() => {
     const loadVelocityData = async () => {
       setVelocityLoading(true);
@@ -177,39 +252,34 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
     };
 
     loadVelocityData();
-  }, []);
+  }, [viewMode, timePeriod]);
 
-  // Calculate velocity metrics (with real data or fallback)
   const velocityMetrics = useMemo(() => {
-    // Use fallback calculation
-    return calculateFallbackVelocity(opportunities, projects, accounts, partners, period);
-  }, [opportunities, accounts, partners, projects, period]);
+    return calculateFallbackVelocity(displayedOpportunities, displayedProjects, displayedAccounts, displayedPartners, period);
+  }, [displayedOpportunities, displayedProjects, displayedAccounts, displayedPartners, period]);
 
-  // Merge real velocity data with calculated metrics
   const stageVelocityMap = useMemo(() => {
     const map = new Map<string, { wowChange: number; momChange: number }>();
-    
+
     if (usingRealData && velocityData.length > 0) {
       velocityData.forEach(v => {
-        map.set(v.stage, { 
-          wowChange: v.wow_change || 0, 
-          momChange: v.mom_change || 0 
+        map.set(v.stage, {
+          wowChange: v.wow_change || 0,
+          momChange: v.mom_change || 0
         });
       });
     } else {
-      // Use fallback velocity
       velocityMetrics.stageVelocity.forEach(v => {
-        map.set(v.stage, { 
-          wowChange: v.wowChange, 
-          momChange: v.momChange 
+        map.set(v.stage, {
+          wowChange: v.wowChange,
+          momChange: v.momChange
         });
       });
     }
-    
+
     return map;
   }, [velocityData, velocityMetrics.stageVelocity, usingRealData]);
 
-  // Pipeline stage data for flow visualization
   const pipelineStages = useMemo(() => {
     const stages: { stage: string; count: number; mw: number; color: string; wowChange: number; momChange: number }[] = [
       { stage: 'Prospect', count: 0, mw: 0, color: 'bg-slate-500', wowChange: 0, momChange: 0 },
@@ -220,7 +290,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
       { stage: 'Won', count: 0, mw: 0, color: 'bg-emerald-500', wowChange: 0, momChange: 0 },
     ];
 
-    opportunities.forEach(opp => {
+    displayedOpportunities.forEach(opp => {
       const stageIndex = stages.findIndex(s => s.stage === opp.stage);
       if (stageIndex !== -1) {
         stages[stageIndex].count++;
@@ -228,7 +298,6 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
       }
     });
 
-    // Apply velocity data
     stages.forEach(stage => {
       const velocity = stageVelocityMap.get(stage.stage);
       if (velocity) {
@@ -238,9 +307,8 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
     });
 
     return stages;
-  }, [opportunities, stageVelocityMap]);
+  }, [displayedOpportunities, stageVelocityMap]);
 
-  // Project pipeline stages
   const projectStages = useMemo(() => {
     const stages: { stage: ProjectStatus; count: number; mw: number; color: string }[] = [
       { stage: 'Won', count: 0, mw: 0, color: 'bg-slate-500' },
@@ -251,7 +319,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
       { stage: 'Operational', count: 0, mw: 0, color: 'bg-emerald-500' },
     ];
 
-    projects.forEach(proj => {
+    displayedProjects.forEach(proj => {
       const stageIndex = stages.findIndex(s => s.stage === proj.status);
       if (stageIndex !== -1) {
         stages[stageIndex].count++;
@@ -260,9 +328,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
     });
 
     return stages;
-  }, [projects]);
-
-  const formatValue = (val: number) => val >= 1000000 ? `฿${(val / 1000000).toFixed(1)}M` : `฿${(val / 1000).toFixed(0)}K`;
+  }, [displayedProjects]);
 
   if (loading) {
     return (
@@ -273,10 +339,12 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
     );
   }
 
-  const userName = currentUser?.name || 'User';
-  const userBadges = currentUser?.badges || [];
+  const userName = currentUser?.name || profile?.name || 'User';
+  const userBadges = currentUser?.badges || profile?.badges || [];
   const userInitials = userName.split(' ').map(n => n[0]).join('').slice(0, 2);
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening';
+
+  const viewModeLabel = viewMode === 'personal' ? 'My Portfolio' : viewMode === 'my_team' ? 'My Team' : 'Company Wide';
 
   return (
     <div className="space-y-6 lg:space-y-8 pb-8">
@@ -288,28 +356,25 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
         </div>
       )}
 
-      {/* Data Source Indicator */}
       {!velocityLoading && (
         <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full w-fit ${
-          usingRealData 
-            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+          usingRealData
+            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
             : 'bg-amber-50 text-amber-700 border border-amber-200'
         }`}>
           <Database className="w-3 h-3" />
-          {usingRealData 
-            ? 'Using real-time velocity data' 
+          {usingRealData
+            ? 'Using real-time velocity data'
             : 'Using calculated estimates (run SQL setup for real data)'}
         </div>
       )}
 
-      {/* Header with Beta Badge and Toggle */}
       <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl lg:rounded-3xl p-6 lg:p-8 text-white relative overflow-hidden">
-        {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500 rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2"></div>
         </div>
-        
+
         <div className="relative">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <div className="flex items-center gap-4">
@@ -324,13 +389,13 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                   </span>
                 </div>
                 <h2 className="font-bold text-xl lg:text-2xl">{userName}</h2>
+                <p className="text-sm text-slate-300 mt-1">{viewModeLabel}</p>
                 <div className="mt-1">
                   <BadgeList badges={userBadges} size="md" />
                 </div>
               </div>
             </div>
-            
-            {/* Period Toggle & Switch to Classic */}
+
             <div className="flex flex-col items-end gap-3">
               <button
                 onClick={onSwitchToClassic}
@@ -339,12 +404,30 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                 <ArrowUpRight className="w-3 h-3" />
                 Switch to Classic Dashboard
               </button>
+
+              {isManager && (
+                <SegmentedControl
+                  value={viewMode}
+                  onChange={setViewMode}
+                  options={[
+                    { value: 'personal', label: 'My Portfolio', icon: User },
+                    { value: 'my_team', label: 'My Team', icon: Users },
+                    ...(userRole === 'admin' || userRole === 'super_admin'
+                      ? [{ value: 'company_wide' as ViewMode, label: 'Company', icon: Building2 }]
+                      : []
+                    )
+                  ]}
+                  className="bg-white/10 backdrop-blur"
+                  size="sm"
+                />
+              )}
+
               <div className="flex items-center gap-2 bg-white/10 backdrop-blur rounded-xl p-1">
                 <button
                   onClick={() => setPeriod('wow')}
                   className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    period === 'wow' 
-                      ? 'bg-white text-slate-900' 
+                    period === 'wow'
+                      ? 'bg-white text-slate-900'
                       : 'text-white/70 hover:text-white'
                   }`}
                 >
@@ -353,8 +436,8 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                 <button
                   onClick={() => setPeriod('mom')}
                   className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    period === 'mom' 
-                      ? 'bg-white text-slate-900' 
+                    period === 'mom'
+                      ? 'bg-white text-slate-900'
                       : 'text-white/70 hover:text-white'
                   }`}
                 >
@@ -364,11 +447,10 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
             </div>
           </div>
 
-          {/* Quick Stats Row */}
           <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
             <div className="bg-white/10 backdrop-blur rounded-xl p-4">
               <p className="text-slate-300 text-xs">Pipeline Value</p>
-              <p className="text-2xl font-bold">{formatValue(velocityMetrics.totalPipelineValue)}</p>
+              <p className="text-2xl font-bold">{formatMetric(velocityMetrics.totalPipelineValue, 'currency')}</p>
             </div>
             <div className="bg-white/10 backdrop-blur rounded-xl p-4">
               <p className="text-slate-300 text-xs">Active Deals</p>
@@ -379,8 +461,8 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                 <p className="text-slate-300 text-xs">Won This {period === 'wow' ? 'Week' : 'Month'}</p>
                 {velocityMetrics.wonPreviousPeriod > 0 && (
                   <span className={`text-xs font-bold ${
-                    velocityMetrics.wonThisPeriod >= velocityMetrics.wonPreviousPeriod 
-                      ? 'text-emerald-400' 
+                    velocityMetrics.wonThisPeriod >= velocityMetrics.wonPreviousPeriod
+                      ? 'text-emerald-400'
                       : 'text-red-400'
                   }`}>
                     {velocityMetrics.wonThisPeriod >= velocityMetrics.wonPreviousPeriod ? '+' : ''}
@@ -392,13 +474,12 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
             </div>
             <div className="bg-white/10 backdrop-blur rounded-xl p-4">
               <p className="text-slate-300 text-xs">Total Capacity</p>
-              <p className="text-2xl font-bold">{velocityMetrics.totalCapacity.toFixed(0)} MW</p>
+              <p className="text-2xl font-bold">{formatMetric(velocityMetrics.totalCapacity, 'capacity')}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Velocity Metrics Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <VelocityStatCard
           title="Deal Velocity"
@@ -426,15 +507,13 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
         />
         <VelocityStatCard
           title="Operational MW"
-          value={velocityMetrics.operationalCapacity.toFixed(1)}
-          unit="MW"
+          value={formatMetric(velocityMetrics.operationalCapacity, 'capacity')}
           icon={Zap}
           color="emerald"
           onClick={() => onNavigate('projects')}
         />
       </div>
 
-      {/* Pipeline Flow Visualization */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -480,7 +559,6 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
         </div>
       </div>
 
-      {/* Project Pipeline Flow */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -515,92 +593,91 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
         </div>
       </div>
 
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-        {/* Pipeline Chart - Takes 2 columns on desktop */}
         <div className="lg:col-span-2">
-          <PipelineChart opportunities={opportunities} />
+          <PipelineChart opportunities={displayedOpportunities} />
         </div>
-        
-        {/* Velocity Insights */}
+
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
           <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-orange-500" />
             Velocity Insights
           </h3>
           <div className="space-y-4">
-            {/* Avg Deal Size */}
             <div className="p-4 bg-slate-50 rounded-xl">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-slate-600">Avg Deal Size</span>
-                <span className="text-lg font-bold text-slate-900">{formatValue(velocityMetrics.avgDealSize)}</span>
+                <span className="text-lg font-bold text-slate-900">{formatMetric(velocityMetrics.avgDealSize, 'currency')}</span>
               </div>
               <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
                 <div className="h-full bg-orange-500 rounded-full" style={{ width: '65%' }} />
               </div>
             </div>
 
-            {/* Win Rate */}
             <div className="p-4 bg-slate-50 rounded-xl">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-slate-600">Win Rate</span>
                 <span className="text-lg font-bold text-emerald-600">
-                  {opportunities.length > 0 
-                    ? ((velocityMetrics.wonDeals / opportunities.length) * 100).toFixed(0) 
-                    : 0}%
+                  {formatMetric(
+                    displayedOpportunities.length > 0
+                      ? (velocityMetrics.wonDeals / displayedOpportunities.length) * 100
+                      : 0,
+                    'percentage',
+                    { precision: 0 }
+                  )}
                 </span>
               </div>
               <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-emerald-500 rounded-full" 
-                  style={{ width: `${opportunities.length > 0 ? (velocityMetrics.wonDeals / opportunities.length) * 100 : 0}%` }} 
+                <div
+                  className="h-full bg-emerald-500 rounded-full"
+                  style={{ width: `${displayedOpportunities.length > 0 ? (velocityMetrics.wonDeals / displayedOpportunities.length) * 100 : 0}%` }}
                 />
               </div>
             </div>
 
-            {/* Operational Capacity */}
             <div className="p-4 bg-slate-50 rounded-xl">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-slate-600">Operational %</span>
                 <span className="text-lg font-bold text-blue-600">
-                  {velocityMetrics.totalCapacity > 0 
-                    ? ((velocityMetrics.operationalCapacity / velocityMetrics.totalCapacity) * 100).toFixed(0) 
-                    : 0}%
+                  {formatMetric(
+                    velocityMetrics.totalCapacity > 0
+                      ? (velocityMetrics.operationalCapacity / velocityMetrics.totalCapacity) * 100
+                      : 0,
+                    'percentage',
+                    { precision: 0 }
+                  )}
                 </span>
               </div>
               <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-500 rounded-full" 
-                  style={{ width: `${velocityMetrics.totalCapacity > 0 ? (velocityMetrics.operationalCapacity / velocityMetrics.totalCapacity) * 100 : 0}%` }} 
+                <div
+                  className="h-full bg-blue-500 rounded-full"
+                  style={{ width: `${velocityMetrics.totalCapacity > 0 ? (velocityMetrics.operationalCapacity / velocityMetrics.totalCapacity) * 100 : 0}%` }}
                 />
               </div>
             </div>
 
-            {/* Construction Pipeline */}
             <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl border border-orange-100">
               <div className="flex items-center gap-2 mb-1">
                 <Timer className="w-4 h-4 text-orange-500" />
                 <span className="text-sm font-medium text-slate-700">In Construction</span>
               </div>
-              <p className="text-2xl font-bold text-slate-900">{velocityMetrics.inConstructionCapacity.toFixed(1)} MW</p>
+              <p className="text-2xl font-bold text-slate-900">{formatMetric(velocityMetrics.inConstructionCapacity, 'capacity')}</p>
               <p className="text-xs text-slate-500 mt-1">Coming online soon</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-        <UpcomingActions opportunities={opportunities} accounts={accounts} onOpportunityClick={onOpportunityClick} />
-        
-        {/* Recent Activity with Velocity Context */}
+        <UpcomingActions opportunities={displayedOpportunities} accounts={displayedAccounts} onOpportunityClick={onOpportunityClick} />
+
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-bold text-slate-900 flex items-center gap-2">
               <Clock className="w-5 h-5 text-slate-400" />
               Recent Movements
             </h3>
-            <button 
+            <button
               onClick={() => onNavigate('timeline')}
               className="text-sm text-orange-600 hover:text-orange-700 font-semibold flex items-center gap-1"
             >
@@ -608,7 +685,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
             </button>
           </div>
           <div className="space-y-3">
-            {opportunities
+            {displayedOpportunities
               .filter(o => !['Won', 'Lost'].includes(o.stage))
               .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
               .slice(0, 4)
@@ -631,7 +708,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                     <p className="text-xs text-slate-500">{opp.stage} • {opp.targetCapacity} MW</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-slate-900">{formatValue(opp.value)}</p>
+                    <p className="text-sm font-bold text-slate-900">{formatMetric(opp.value, 'currency')}</p>
                     <p className="text-xs text-slate-400">{new Date(opp.updatedAt).toLocaleDateString()}</p>
                   </div>
                 </button>
