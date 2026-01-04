@@ -400,181 +400,140 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
         </div>
       )}
 
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl lg:rounded-[2rem] p-8 lg:p-10 text-white relative overflow-hidden shadow-2xl">
-        <div className="absolute inset-0 opacity-[0.15]">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-orange-500 to-orange-600 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-slate-600 to-slate-700 rounded-full blur-3xl transform -translate-x-1/3 translate-y-1/3"></div>
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl lg:rounded-3xl p-6 lg:p-8 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500 rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2"></div>
         </div>
 
         <div className="relative">
-          <div className="flex flex-col gap-8">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-5">
-                <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-3xl border-2 border-white/20 bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-xl flex items-center justify-center text-2xl lg:text-3xl font-bold shadow-lg">
-                  {userInitials}
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl border-2 border-white/20 bg-white/10 backdrop-blur flex items-center justify-center text-xl lg:text-2xl font-bold">
+                {userInitials}
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-slate-400 text-sm lg:text-base">{greeting},</p>
+                  <span className="px-2 py-0.5 bg-purple-500/30 text-purple-300 text-[10px] font-bold uppercase rounded-full border border-purple-400/30 flex items-center gap-1">
+                    <Rocket className="w-3 h-3" /> Beta
+                  </span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <p className="text-slate-300 text-sm lg:text-base font-medium">{greeting},</p>
-                    <span className="px-2.5 py-1 bg-orange-500/20 text-orange-300 text-[10px] font-bold uppercase rounded-full border border-orange-400/30 flex items-center gap-1.5 backdrop-blur-sm">
-                      <Rocket className="w-3 h-3" /> Beta
-                    </span>
-                  </div>
-                  <h2 className="font-bold text-2xl lg:text-3xl tracking-tight">{userName}</h2>
-                  <p className="text-sm lg:text-base text-slate-300 mt-2 font-medium">{viewModeLabel}</p>
-                  <div className="mt-2">
-                    <BadgeList badges={userBadges} size="md" />
-                  </div>
+                <h2 className="font-bold text-xl lg:text-2xl">{userName}</h2>
+                <p className="text-sm text-slate-300 mt-1">{viewModeLabel}</p>
+                <div className="mt-1">
+                  <BadgeList badges={userBadges} size="md" />
                 </div>
               </div>
-
-              <button
-                onClick={onSwitchToClassic}
-                className="hidden lg:flex text-sm text-slate-400 hover:text-white transition-all duration-300 items-center gap-2 px-4 py-2 rounded-xl hover:bg-white/5 active:scale-95"
-              >
-                <ArrowUpRight className="w-4 h-4" />
-                Classic View
-              </button>
             </div>
 
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col items-end gap-3">
+              <button
+                onClick={onSwitchToClassic}
+                className="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1"
+              >
+                <ArrowUpRight className="w-3 h-3" />
+                Switch to Classic Dashboard
+              </button>
+
               {isManager && (
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 bg-white/5 backdrop-blur-xl rounded-2xl p-1.5 border border-white/10 shadow-lg">
-                    <button
-                      onClick={() => setViewMode('personal')}
-                      className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
-                        viewMode === 'personal'
-                          ? 'bg-white text-slate-900 shadow-lg scale-105'
-                          : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
-                      }`}
-                    >
-                      <User className="w-4 h-4" />
-                      My Portfolio
-                    </button>
-                    <button
-                      onClick={() => setViewMode('my_team')}
-                      className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
-                        viewMode === 'my_team'
-                          ? 'bg-white text-slate-900 shadow-lg scale-105'
-                          : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
-                      }`}
-                    >
-                      <Users className="w-4 h-4" />
-                      My Team
-                    </button>
-                    {(userRole === 'admin' || userRole === 'super_admin') && (
-                      <button
-                        onClick={() => setViewMode('company_wide')}
-                        className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
-                          viewMode === 'company_wide'
-                            ? 'bg-white text-slate-900 shadow-lg scale-105'
-                            : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
-                        }`}
-                      >
-                        <Building2 className="w-4 h-4" />
-                        Company
-                      </button>
-                    )}
-                  </div>
-                </div>
+                <SegmentedControl
+                  value={viewMode}
+                  onChange={setViewMode}
+                  options={[
+                    { value: 'personal', label: 'My Portfolio', icon: User },
+                    { value: 'my_team', label: 'My Team', icon: Users },
+                    ...(userRole === 'admin' || userRole === 'super_admin'
+                      ? [{ value: 'company_wide' as ViewMode, label: 'Company', icon: Building2 }]
+                      : []
+                    )
+                  ]}
+                  className="bg-white/10 backdrop-blur"
+                  size="sm"
+                />
               )}
 
-              <div className="flex flex-wrap gap-3">
-                <div className="flex items-center gap-2 bg-white/5 backdrop-blur-xl rounded-2xl p-1.5 border border-white/10 shadow-lg">
-                  <button
-                    onClick={() => setTimePeriod('week')}
-                    className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                      timePeriod === 'week'
-                        ? 'bg-white text-slate-900 shadow-lg scale-105'
-                        : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
-                    }`}
-                  >
-                    Week
-                  </button>
-                  <button
-                    onClick={() => setTimePeriod('month')}
-                    className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                      timePeriod === 'month'
-                        ? 'bg-white text-slate-900 shadow-lg scale-105'
-                        : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
-                    }`}
-                  >
-                    Month
-                  </button>
-                  <button
-                    onClick={() => setTimePeriod('quarter')}
-                    className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                      timePeriod === 'quarter'
-                        ? 'bg-white text-slate-900 shadow-lg scale-105'
-                        : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
-                    }`}
-                  >
-                    Quarter
-                  </button>
-                </div>
+              <div className="flex items-center gap-2 bg-white/10 backdrop-blur rounded-xl p-1">
+                <button
+                  onClick={() => setTimePeriod('week')}
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    timePeriod === 'week'
+                      ? 'bg-white text-slate-900'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Week
+                </button>
+                <button
+                  onClick={() => setTimePeriod('month')}
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    timePeriod === 'month'
+                      ? 'bg-white text-slate-900'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Month
+                </button>
+                <button
+                  onClick={() => setTimePeriod('quarter')}
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    timePeriod === 'quarter'
+                      ? 'bg-white text-slate-900'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Quarter
+                </button>
+              </div>
 
-                <div className="flex items-center gap-2 bg-white/5 backdrop-blur-xl rounded-2xl p-1.5 border border-white/10 shadow-lg">
-                  <button
-                    onClick={() => setPeriod('wow')}
-                    className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
-                      period === 'wow'
-                        ? 'bg-white text-slate-900 shadow-lg scale-105'
-                        : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
-                    }`}
-                  >
-                    Week over Week
-                  </button>
-                  <button
-                    onClick={() => setPeriod('mom')}
-                    className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
-                      period === 'mom'
-                        ? 'bg-white text-slate-900 shadow-lg scale-105'
-                        : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
-                    }`}
-                  >
-                    Month over Month
-                  </button>
-                </div>
+              <div className="flex items-center gap-2 bg-white/10 backdrop-blur rounded-xl p-1">
+                <button
+                  onClick={() => setPeriod('wow')}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    period === 'wow'
+                      ? 'bg-white text-slate-900'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Week over Week
+                </button>
+                <button
+                  onClick={() => setPeriod('mom')}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    period === 'mom'
+                      ? 'bg-white text-slate-900'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Month over Month
+                </button>
               </div>
             </div>
           </div>
 
-          <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105 shadow-lg group">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Velocity</p>
-                <Gauge className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
-              </div>
-              <p className="text-3xl font-bold text-white mb-1">{velocityMetrics.stageMovements}</p>
-              <p className="text-xs text-emerald-400 font-semibold">Score</p>
+          <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
+              <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Velocity</p>
+              <p className="text-2xl font-bold text-white">{velocityMetrics.stageMovements}</p>
+              <p className="text-xs text-emerald-400 mt-1">Score</p>
             </div>
 
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105 shadow-lg group">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Hustle</p>
-                <Zap className="w-4 h-4 text-slate-400 group-hover:text-orange-400 transition-colors" />
-              </div>
-              <p className="text-3xl font-bold text-white mb-1">{formatMetric(movementMW, 'capacity')}</p>
-              <p className="text-xs text-slate-400 font-medium">Active This {periodLabel}</p>
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
+              <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Hustle</p>
+              <p className="text-2xl font-bold text-white">{formatMetric(movementMW, 'capacity')}</p>
+              <p className="text-xs text-slate-400 mt-1">Active This {periodLabel}</p>
             </div>
 
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105 shadow-lg group">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Feed</p>
-                <Target className="w-4 h-4 text-slate-400 group-hover:text-blue-400 transition-colors" />
-              </div>
-              <p className="text-3xl font-bold text-white mb-1">{formatMetric(newProjectsMW, 'capacity')}</p>
-              <p className="text-xs text-slate-400 font-medium">New This {periodLabel}</p>
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
+              <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Feed</p>
+              <p className="text-2xl font-bold text-white">{formatMetric(newProjectsMW, 'capacity')}</p>
+              <p className="text-xs text-slate-400 mt-1">New This {periodLabel}</p>
             </div>
 
-            <div className="bg-gradient-to-br from-emerald-500/20 via-white/5 to-transparent backdrop-blur-xl rounded-2xl p-5 border border-emerald-400/20 hover:border-emerald-400/40 transition-all duration-300 hover:scale-105 shadow-lg group">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-emerald-300 text-xs uppercase font-bold tracking-wider">MW Harvest</p>
-                <Rocket className="w-4 h-4 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
-              </div>
-              <p className="text-3xl font-bold text-white mb-1">{formatMetric(finalStageMW, 'capacity')}</p>
-              <p className="text-xs text-emerald-200/80 font-medium">{finalStageCount} Deals Closing</p>
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10 bg-gradient-to-br from-emerald-500/20 to-transparent">
+              <p className="text-emerald-300 text-xs uppercase font-bold tracking-wider">MW Harvest</p>
+              <p className="text-2xl font-bold text-white">{formatMetric(finalStageMW, 'capacity')}</p>
+              <p className="text-xs text-emerald-200/70 mt-1">{finalStageCount} Deals Closing</p>
             </div>
           </div>
         </div>
