@@ -530,8 +530,10 @@ const EntityLinkSelector: React.FC<EntityLinkSelectorProps> = ({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-sm transition-colors ${
-          currentLink.matchedEntityId 
-            ? 'bg-slate-700 border-slate-600 text-white' 
+          currentLink.matchedEntityId
+            ? 'bg-slate-700 border-slate-600 text-white'
+            : sourceValue
+            ? 'bg-amber-500/10 border-amber-500/50 text-amber-300 hover:bg-amber-500/20'
             : 'bg-slate-800 border-slate-700 text-slate-400'
         }`}
       >
@@ -544,10 +546,15 @@ const EntityLinkSelector: React.FC<EntityLinkSelectorProps> = ({
                 {currentLink.matchScore}%
               </span>
             </>
+          ) : sourceValue ? (
+            <>
+              <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <span className="font-medium">No Match - Click to Select</span>
+            </>
           ) : (
             <>
               <Unlink className="w-4 h-4 flex-shrink-0" />
-              <span>No match</span>
+              <span>No link</span>
             </>
           )}
         </div>
@@ -833,7 +840,8 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
         matches = findMatches(sourceValue, existingPartners, 1);
       }
 
-      if (matches.length > 0 && matches[0].score >= 50) {
+      // UPDATED: Lower threshold to 40% and remove silent fallback
+      if (matches.length > 0 && matches[0].score >= 40) {
         return {
           fieldKey: linkField.key,
           sourceColumn,
@@ -845,22 +853,7 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
         };
       }
 
-      // If it's a user field and no match found, use current user as fallback with warning
-      if (linkField.targetEntity === 'User' && currentUserId) {
-        const currentUser = availableUsers.find(u => u.id === currentUserId);
-        if (currentUser) {
-          return {
-            fieldKey: linkField.key,
-            sourceColumn,
-            matchedEntityId: currentUser.id,
-            matchedEntityName: `${currentUser.name} (fallback)`,
-            matchScore: 0,
-            matchType: 'low' as const,
-            isManualOverride: false,
-          };
-        }
-      }
-
+      // REMOVED: Silent fallback to currentUserId - force manual selection instead
       return {
         fieldKey: linkField.key,
         sourceColumn,
@@ -871,7 +864,7 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
         isManualOverride: false,
       };
     });
-  }, [existingAccounts, existingPartners, availableUsers, currentUserId]);
+  }, [existingAccounts, existingPartners, availableUsers]);
 
   // Validate a single row
   const validateRow = useCallback((
@@ -1570,6 +1563,23 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
           {/* Step 3: Entity Linking */}
           {step === 'linking' && config && hasLinkableFields && (
             <div className="space-y-6">
+              {/* Warning Banner for Unmatched Links */}
+              {linkStats && Object.values(linkStats).some(stat => stat.unlinked > 0) && (
+                <div className="bg-amber-500/10 border border-amber-500/50 rounded-xl p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <div className="font-medium text-amber-300 mb-1">Action Required: Unmatched Links Detected</div>
+                      <div className="text-amber-200 text-sm">
+                        Some rows have unmatched entity links (highlighted in amber below).
+                        You can proceed with the import, but these records will have empty owner/link fields.
+                        Click on any "No Match - Click to Select" button to manually assign the correct entity.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Link Statistics */}
               {linkStats && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1641,10 +1651,23 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
                       {validatedRows.slice(0, 50).map((row) => {
                         const nameField = config.fields.find(f => f.key === 'name' || f.key === 'fullName');
                         const recordName = nameField ? row.data[nameField.key] : `Row ${row.rowIndex + 1}`;
-                        
+
+                        // Check if any entity links are unmatched
+                        const hasUnmatchedLinks = row.entityLinks.some(link =>
+                          link.sourceColumn && !link.matchedEntityId
+                        );
+
                         return (
-                          <tr key={row.rowIndex} className="hover:bg-slate-700/30">
+                          <tr
+                            key={row.rowIndex}
+                            className={`hover:bg-slate-700/30 ${
+                              hasUnmatchedLinks ? 'bg-amber-500/10 border-l-4 border-amber-500' : ''
+                            }`}
+                          >
                             <td className="px-4 py-3 text-sm text-slate-400">
+                              {hasUnmatchedLinks && (
+                                <AlertCircle className="w-4 h-4 text-amber-400 inline mr-1" />
+                              )}
                               {row.rowIndex + 1}
                             </td>
                             <td className="px-4 py-3 text-sm text-white font-medium">
@@ -1656,7 +1679,7 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
                               const sourceValue = sourceColumn ? String(parsedData[row.rowIndex]?.[sourceColumn] || '') : '';
                               const entities = linkField.targetEntity === 'User' ? availableUsers :
                                              linkField.targetEntity === 'Account' ? existingAccounts : existingPartners;
-                              
+
                               return (
                                 <React.Fragment key={linkField.key}>
                                   <td className="px-4 py-3 text-sm text-slate-300">
@@ -1670,7 +1693,7 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
                                         sourceValue={sourceValue}
                                         currentLink={link}
                                         entities={entities}
-                                        onSelect={(entityId, entityName, score, matchType) => 
+                                        onSelect={(entityId, entityName, score, matchType) =>
                                           updateEntityLink(row.rowIndex, linkField.key, entityId, entityName, score, matchType)
                                         }
                                       />
