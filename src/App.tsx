@@ -3,6 +3,7 @@
  * Includes error boundary
  */
 
+import { useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,6 +23,7 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
+import { SplashScreen } from "@/components/ui/SplashScreen";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
@@ -108,24 +110,31 @@ const AppRoutes = () => (
 /**
  * Main App component with all providers and error handling
  */
-const App = () => (
-  <ErrorBoundary>
-    <ThemeProvider defaultTheme="light">
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <AuthProvider>
-              <AppProvider>
-                <AppRoutes />
-              </AppProvider>
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
-  </ErrorBoundary>
-);
+const App = () => {
+  const [showSplash, setShowSplash] = useState(true);
+
+  return (
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="light">
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <AuthProvider>
+                <AppProvider>
+                  {showSplash && (
+                    <SplashScreen onComplete={() => setShowSplash(false)} />
+                  )}
+                  <AppRoutes />
+                </AppProvider>
+              </AuthProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
+};
 
 export default App;
