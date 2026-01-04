@@ -378,183 +378,204 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
   const viewModeLabel = viewMode === 'personal' ? 'My Portfolio' : viewMode === 'my_team' ? 'My Team' : 'Company Wide';
 
   return (
-    <div className="space-y-10 pb-12">
+    <div className="space-y-6 lg:space-y-8 pb-8">
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-          <div className="flex-1"><p className="text-red-800 text-sm font-medium">Some data may not be available</p></div>
-          <button onClick={() => refreshData()} className="text-red-600 hover:text-red-700"><RefreshCw className="w-4 h-4" /></button>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+          <div className="flex-1"><p className="text-amber-800 text-sm">Some data may not be available</p></div>
+          <button onClick={() => refreshData()} className="text-amber-600 hover:text-amber-700"><RefreshCw className="w-4 h-4" /></button>
         </div>
       )}
 
-      <div className="flex items-center justify-between py-6 border-b border-slate-200">
-        <div className="flex items-center gap-6">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-lg font-bold shadow-sm">
-            {userInitials}
-          </div>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{userName}</h1>
-              <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold uppercase rounded">Beta</span>
-            </div>
-            <p className="text-sm text-slate-500 mt-0.5">{viewModeLabel}</p>
-          </div>
+      {!velocityLoading && (
+        <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full w-fit ${
+          usingRealData
+            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+            : 'bg-amber-50 text-amber-700 border border-amber-200'
+        }`}>
+          <Database className="w-3 h-3" />
+          {usingRealData
+            ? 'Using real-time velocity data'
+            : 'Using calculated estimates (run SQL setup for real data)'}
+        </div>
+      )}
+
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl lg:rounded-[2rem] p-8 lg:p-10 text-white relative overflow-hidden shadow-2xl">
+        <div className="absolute inset-0 opacity-[0.15]">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-orange-500 to-orange-600 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/3"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-slate-600 to-slate-700 rounded-full blur-3xl transform -translate-x-1/3 translate-y-1/3"></div>
         </div>
 
-        <button
-          onClick={onSwitchToClassic}
-          className="hidden lg:flex text-sm text-slate-500 hover:text-slate-900 transition-colors items-center gap-2"
-        >
-          Classic View
-          <ArrowUpRight className="w-4 h-4" />
-        </button>
-      </div>
+        <div className="relative">
+          <div className="flex flex-col gap-8">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-5">
+                <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-3xl border-2 border-white/20 bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-xl flex items-center justify-center text-2xl lg:text-3xl font-bold shadow-lg">
+                  {userInitials}
+                </div>
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <p className="text-slate-300 text-sm lg:text-base font-medium">{greeting},</p>
+                    <span className="px-2.5 py-1 bg-orange-500/20 text-orange-300 text-[10px] font-bold uppercase rounded-full border border-orange-400/30 flex items-center gap-1.5 backdrop-blur-sm">
+                      <Rocket className="w-3 h-3" /> Beta
+                    </span>
+                  </div>
+                  <h2 className="font-bold text-2xl lg:text-3xl tracking-tight">{userName}</h2>
+                  <p className="text-sm lg:text-base text-slate-300 mt-2 font-medium">{viewModeLabel}</p>
+                  <div className="mt-2">
+                    <BadgeList badges={userBadges} size="md" />
+                  </div>
+                </div>
+              </div>
 
-      <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6 pb-6 border-b border-slate-200">
-        {isManager && (
-          <div className="inline-flex items-center gap-1 bg-slate-100 rounded-xl p-1">
-            <button
-              onClick={() => setViewMode('personal')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                viewMode === 'personal'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              My Portfolio
-            </button>
-            <button
-              onClick={() => setViewMode('my_team')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                viewMode === 'my_team'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              My Team
-            </button>
-            {(userRole === 'admin' || userRole === 'super_admin') && (
               <button
-                onClick={() => setViewMode('company_wide')}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                  viewMode === 'company_wide'
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
+                onClick={onSwitchToClassic}
+                className="hidden lg:flex text-sm text-slate-400 hover:text-white transition-all duration-300 items-center gap-2 px-4 py-2 rounded-xl hover:bg-white/5 active:scale-95"
               >
-                Company
+                <ArrowUpRight className="w-4 h-4" />
+                Classic View
               </button>
-            )}
-          </div>
-        )}
+            </div>
 
-        <div className="inline-flex items-center gap-1 bg-slate-100 rounded-xl p-1">
-          <button
-            onClick={() => setTimePeriod('week')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              timePeriod === 'week'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Week
-          </button>
-          <button
-            onClick={() => setTimePeriod('month')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              timePeriod === 'month'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Month
-          </button>
-          <button
-            onClick={() => setTimePeriod('quarter')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              timePeriod === 'quarter'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Quarter
-          </button>
-        </div>
+            <div className="flex flex-col gap-4">
+              {isManager && (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-white/5 backdrop-blur-xl rounded-2xl p-1.5 border border-white/10 shadow-lg">
+                    <button
+                      onClick={() => setViewMode('personal')}
+                      className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                        viewMode === 'personal'
+                          ? 'bg-white text-slate-900 shadow-lg scale-105'
+                          : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
+                      }`}
+                    >
+                      <User className="w-4 h-4" />
+                      My Portfolio
+                    </button>
+                    <button
+                      onClick={() => setViewMode('my_team')}
+                      className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                        viewMode === 'my_team'
+                          ? 'bg-white text-slate-900 shadow-lg scale-105'
+                          : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
+                      }`}
+                    >
+                      <Users className="w-4 h-4" />
+                      My Team
+                    </button>
+                    {(userRole === 'admin' || userRole === 'super_admin') && (
+                      <button
+                        onClick={() => setViewMode('company_wide')}
+                        className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                          viewMode === 'company_wide'
+                            ? 'bg-white text-slate-900 shadow-lg scale-105'
+                            : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
+                        }`}
+                      >
+                        <Building2 className="w-4 h-4" />
+                        Company
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
-        <div className="inline-flex items-center gap-1 bg-slate-100 rounded-xl p-1">
-          <button
-            onClick={() => setPeriod('wow')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
-              period === 'wow'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            WoW
-          </button>
-          <button
-            onClick={() => setPeriod('mom')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
-              period === 'mom'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            MoM
-          </button>
-        </div>
-      </div>
+              <div className="flex flex-wrap gap-3">
+                <div className="flex items-center gap-2 bg-white/5 backdrop-blur-xl rounded-2xl p-1.5 border border-white/10 shadow-lg">
+                  <button
+                    onClick={() => setTimePeriod('week')}
+                    className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                      timePeriod === 'week'
+                        ? 'bg-white text-slate-900 shadow-lg scale-105'
+                        : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
+                    }`}
+                  >
+                    Week
+                  </button>
+                  <button
+                    onClick={() => setTimePeriod('month')}
+                    className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                      timePeriod === 'month'
+                        ? 'bg-white text-slate-900 shadow-lg scale-105'
+                        : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
+                    }`}
+                  >
+                    Month
+                  </button>
+                  <button
+                    onClick={() => setTimePeriod('quarter')}
+                    className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                      timePeriod === 'quarter'
+                        ? 'bg-white text-slate-900 shadow-lg scale-105'
+                        : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
+                    }`}
+                  >
+                    Quarter
+                  </button>
+                </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="group bg-white border-2 border-slate-200 rounded-3xl p-8 hover:border-slate-300 hover:shadow-xl transition-all duration-300 cursor-pointer">
-          <div className="flex items-start justify-between mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center group-hover:bg-slate-200 transition-colors">
-              <Gauge className="w-6 h-6 text-slate-600" />
+                <div className="flex items-center gap-2 bg-white/5 backdrop-blur-xl rounded-2xl p-1.5 border border-white/10 shadow-lg">
+                  <button
+                    onClick={() => setPeriod('wow')}
+                    className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
+                      period === 'wow'
+                        ? 'bg-white text-slate-900 shadow-lg scale-105'
+                        : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
+                    }`}
+                  >
+                    Week over Week
+                  </button>
+                  <button
+                    onClick={() => setPeriod('mom')}
+                    className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
+                      period === 'mom'
+                        ? 'bg-white text-slate-900 shadow-lg scale-105'
+                        : 'text-white/60 hover:text-white hover:bg-white/5 active:scale-95'
+                    }`}
+                  >
+                    Month over Month
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="space-y-2">
-            <p className="text-6xl font-bold text-slate-900 tracking-tight">{velocityMetrics.stageMovements}</p>
-            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wide">MW Velocity</p>
-            <p className="text-xs text-emerald-600 font-medium">Score</p>
-          </div>
-        </div>
 
-        <div className="group bg-white border-2 border-slate-200 rounded-3xl p-8 hover:border-orange-300 hover:shadow-xl transition-all duration-300 cursor-pointer">
-          <div className="flex items-start justify-between mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
-              <Zap className="w-6 h-6 text-orange-600" />
+          <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105 shadow-lg group">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Velocity</p>
+                <Gauge className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
+              </div>
+              <p className="text-3xl font-bold text-white mb-1">{velocityMetrics.stageMovements}</p>
+              <p className="text-xs text-emerald-400 font-semibold">Score</p>
             </div>
-          </div>
-          <div className="space-y-2">
-            <p className="text-6xl font-bold text-slate-900 tracking-tight">{formatMetric(movementMW, 'capacity')}</p>
-            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wide">MW Hustle</p>
-            <p className="text-xs text-slate-500 font-medium">Active This {periodLabel}</p>
-          </div>
-        </div>
 
-        <div className="group bg-white border-2 border-slate-200 rounded-3xl p-8 hover:border-blue-300 hover:shadow-xl transition-all duration-300 cursor-pointer">
-          <div className="flex items-start justify-between mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-              <Target className="w-6 h-6 text-blue-600" />
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105 shadow-lg group">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Hustle</p>
+                <Zap className="w-4 h-4 text-slate-400 group-hover:text-orange-400 transition-colors" />
+              </div>
+              <p className="text-3xl font-bold text-white mb-1">{formatMetric(movementMW, 'capacity')}</p>
+              <p className="text-xs text-slate-400 font-medium">Active This {periodLabel}</p>
             </div>
-          </div>
-          <div className="space-y-2">
-            <p className="text-6xl font-bold text-slate-900 tracking-tight">{formatMetric(newProjectsMW, 'capacity')}</p>
-            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wide">MW Feed</p>
-            <p className="text-xs text-slate-500 font-medium">New This {periodLabel}</p>
-          </div>
-        </div>
 
-        <div className="group bg-gradient-to-br from-emerald-500 to-emerald-600 border-2 border-emerald-600 rounded-3xl p-8 hover:shadow-2xl transition-all duration-300 cursor-pointer">
-          <div className="flex items-start justify-between mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-              <Rocket className="w-6 h-6 text-white" />
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105 shadow-lg group">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Feed</p>
+                <Target className="w-4 h-4 text-slate-400 group-hover:text-blue-400 transition-colors" />
+              </div>
+              <p className="text-3xl font-bold text-white mb-1">{formatMetric(newProjectsMW, 'capacity')}</p>
+              <p className="text-xs text-slate-400 font-medium">New This {periodLabel}</p>
             </div>
-          </div>
-          <div className="space-y-2">
-            <p className="text-6xl font-bold text-white tracking-tight">{formatMetric(finalStageMW, 'capacity')}</p>
-            <p className="text-sm font-semibold text-emerald-50 uppercase tracking-wide">MW Harvest</p>
-            <p className="text-xs text-emerald-100 font-medium">{finalStageCount} Deals Closing</p>
+
+            <div className="bg-gradient-to-br from-emerald-500/20 via-white/5 to-transparent backdrop-blur-xl rounded-2xl p-5 border border-emerald-400/20 hover:border-emerald-400/40 transition-all duration-300 hover:scale-105 shadow-lg group">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-emerald-300 text-xs uppercase font-bold tracking-wider">MW Harvest</p>
+                <Rocket className="w-4 h-4 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
+              </div>
+              <p className="text-3xl font-bold text-white mb-1">{formatMetric(finalStageMW, 'capacity')}</p>
+              <p className="text-xs text-emerald-200/80 font-medium">{finalStageCount} Deals Closing</p>
+            </div>
           </div>
         </div>
       </div>
