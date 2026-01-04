@@ -348,25 +348,15 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
   const finalStageCount = displayedOpportunities
     .filter(o => ['Negotiation', 'Term Sheet'].includes(o.stage)).length;
 
-  const newOpportunitiesMW = displayedOpportunities
+  const newProjectsMW = displayedOpportunities
     .filter(o => new Date(o.createdAt) >= startDate)
     .reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
 
-  const newProjectsCreatedMW = displayedProjects
-    .filter(p => new Date(p.createdAt) >= startDate)
-    .reduce((sum, p) => sum + (Number(p.capacity) || 0), 0);
-
-  const newProjectsMW = newOpportunitiesMW + newProjectsCreatedMW;
-
-  const opportunitiesMovedMW = displayedOpportunities
+  const activeMovedMW = displayedOpportunities
     .filter(o => new Date(o.updatedAt) >= startDate && o.stage !== 'Prospect')
     .reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
 
-  const projectsMovedMW = displayedProjects
-    .filter(p => new Date(p.updatedAt) >= startDate)
-    .reduce((sum, p) => sum + (Number(p.capacity) || 0), 0);
-
-  const movementMW = opportunitiesMovedMW + projectsMovedMW;
+  const movementMW = activeMovedMW;
 
   const periodLabel = timePeriod === 'week' ? 'Week' : timePeriod === 'month' ? 'Month' : 'Quarter';
   const periodLabelLower = periodLabel.toLowerCase();
