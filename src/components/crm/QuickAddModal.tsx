@@ -154,15 +154,17 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
         return;
       }
 
+      console.log('Fetching opportunities for user:', targetUserId, 'assignedToId:', assignedToId, 'profile?.id:', profile?.id);
       setLoadingOpportunities(true);
       try {
         const { data, error } = await supabase
           .from('opportunities')
-          .select('id, name')
+          .select('id, name, owner_id')
           .eq('owner_id', targetUserId)
           .order('name', { ascending: true });
 
         if (error) throw error;
+        console.log('Fetched opportunities:', data);
         setFilteredOpportunities(data || []);
       } catch (err) {
         console.error('Error fetching opportunities:', err);
@@ -302,7 +304,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
                       <label className="text-[10px] font-bold text-gray-400 uppercase">Assign To</label>
                       <select
                         value={assignedToId}
-                        onChange={e => setAssignedToId(e.target.value)}
+                        onChange={e => {
+                          console.log('Assignee changed to:', e.target.value);
+                          setAssignedToId(e.target.value);
+                          setRelateToId('');
+                        }}
                         className="w-full mt-1 px-3 py-2 border rounded-lg text-sm bg-white"
                         required={isTask}
                       >
