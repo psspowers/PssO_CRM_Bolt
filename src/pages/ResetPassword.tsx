@@ -24,59 +24,95 @@ const ResetPassword: React.FC = () => {
 
   // 1. SESSION HANDSHAKE LOGIC (PKCE + Hash Support)
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
     const handleSessionExchange = async () => {
       try {
-        // A. Check for PKCE Code (The DatabasePad Standard)
-        // This is what your current code was MISSING
+        console.log('Reset Password - Starting session check');
+        console.log('Search params:', location.search);
+        console.log('Hash:', location.hash);
+
+        // A. Check for PKCE Code
         const searchParams = new URLSearchParams(location.search);
         const code = searchParams.get('code');
 
         if (code) {
-          // Exchange the temporary code for a valid user session
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) throw error;
-          
-          // Clean URL to prevent re-exchange errors
+          console.log('Found PKCE code, exchanging for session');
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            console.error('PKCE exchange error:', error);
+            throw error;
+          }
+          console.log('PKCE exchange successful:', data);
+
           window.history.replaceState(null, '', window.location.pathname);
           setValidSession(true);
           return;
         }
 
-        // B. Check for Hash Fragment (Legacy Support)
+        // B. Check for Hash Fragment (Implicit Flow)
         const hashParams = new URLSearchParams(location.hash.substring(1));
         const accessToken = hashParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token');
+        const tokenType = hashParams.get('type');
+
+        console.log('Hash params check:', {
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+          tokenType
+        });
 
         if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({
+          console.log('Found tokens in hash, setting session');
+          const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken
           });
-          if (error) throw error;
-          
+          if (error) {
+            console.error('Hash session error:', error);
+            throw error;
+          }
+          console.log('Hash session set successfully:', data);
+
           window.history.replaceState(null, '', window.location.pathname);
           setValidSession(true);
           return;
         }
 
         // C. Check if already logged in via existing session
+        console.log('Checking for existing session');
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('Existing session:', session);
+
         if (session) {
+          console.log('Found existing session');
           setValidSession(true);
         } else {
-          // No code, no hash, no session = Invalid Link
+          console.log('No valid session found');
           setValidSession(false);
-          setError('No reset code found. Please request a new link.');
+          setError('Invalid or expired reset link. Please request a new one.');
         }
 
       } catch (err: any) {
         console.error('Session exchange error:', err);
         setValidSession(false);
-        setError(err.message || 'Invalid or expired link');
+        setError(err.message || 'Invalid or expired link. Please request a new one.');
       }
     };
 
+    timeoutId = setTimeout(() => {
+      if (validSession === null) {
+        console.error('Session verification timeout');
+        setValidSession(false);
+        setError('Connection timeout. Please check your internet and try again.');
+      }
+    }, 10000);
+
     handleSessionExchange();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [location]);
 
   // 2. PASSWORD VALIDATION
