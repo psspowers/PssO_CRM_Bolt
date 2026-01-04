@@ -203,10 +203,10 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
   }, [isManager]);
 
   const { displayedOpportunities, displayedProjects, displayedAccounts, displayedPartners } = useMemo(() => {
-    const personalOpps = opportunities.filter(o => o.assigned_to === userId);
-    const personalProjects = projects.filter(p => p.assigned_to === userId);
-    const personalAccounts = accounts.filter(a => a.created_by === userId);
-    const personalPartners = partners.filter(p => p.created_by === userId);
+    const personalOpps = opportunities.filter(o => o.ownerId === userId);
+    const personalProjects = projects.filter(p => p.ownerId === userId);
+    const personalAccounts = accounts.filter(a => a.ownerId === userId);
+    const personalPartners = partners.filter(p => p.ownerId === userId);
 
     if (viewMode === 'personal') {
       return {
@@ -220,10 +220,10 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
     if (viewMode === 'my_team') {
       const teamUserIds = [userId, ...directReports];
       return {
-        displayedOpportunities: opportunities.filter(o => teamUserIds.includes(o.assigned_to)),
-        displayedProjects: projects.filter(p => teamUserIds.includes(p.assigned_to)),
-        displayedAccounts: accounts.filter(a => teamUserIds.includes(a.created_by)),
-        displayedPartners: partners.filter(p => teamUserIds.includes(p.created_by))
+        displayedOpportunities: opportunities.filter(o => teamUserIds.includes(o.ownerId)),
+        displayedProjects: projects.filter(p => teamUserIds.includes(p.ownerId)),
+        displayedAccounts: accounts.filter(a => a.ownerId && teamUserIds.includes(a.ownerId)),
+        displayedPartners: partners.filter(p => teamUserIds.includes(p.ownerId))
       };
     }
 
