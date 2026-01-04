@@ -22,95 +22,69 @@ const ResetPassword: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 1. SESSION HANDSHAKE LOGIC (PKCE + Hash Support)
+  // 1. SESSION HANDSHAKE LOGIC
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
+    let isMounted = true;
 
     const handleSessionExchange = async () => {
       try {
-        console.log('Reset Password - Starting session check');
-        console.log('Search params:', location.search);
-        console.log('Hash:', location.hash);
-
-        // A. Check for PKCE Code
-        const searchParams = new URLSearchParams(location.search);
-        const code = searchParams.get('code');
-
-        if (code) {
-          console.log('Found PKCE code, exchanging for session');
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) {
-            console.error('PKCE exchange error:', error);
-            throw error;
-          }
-          console.log('PKCE exchange successful:', data);
-
-          window.history.replaceState(null, '', window.location.pathname);
-          setValidSession(true);
-          return;
-        }
-
-        // B. Check for Hash Fragment (Implicit Flow)
-        const hashParams = new URLSearchParams(location.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
-        const tokenType = hashParams.get('type');
-
-        console.log('Hash params check:', {
-          hasAccessToken: !!accessToken,
-          hasRefreshToken: !!refreshToken,
-          tokenType
+        console.log('Reset Password - URL check:', {
+          search: location.search,
+          hash: location.hash,
+          pathname: location.pathname
         });
 
-        if (accessToken && refreshToken) {
-          console.log('Found tokens in hash, setting session');
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken
-          });
-          if (error) {
-            console.error('Hash session error:', error);
-            throw error;
-          }
-          console.log('Hash session set successfully:', data);
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-          window.history.replaceState(null, '', window.location.pathname);
-          setValidSession(true);
-          return;
+        if (!isMounted) return;
+
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        console.log('Session check result:', {
+          hasSession: !!session,
+          error: sessionError,
+          user: session?.user?.email
+        });
+
+        if (sessionError) {
+          throw sessionError;
         }
 
-        // C. Check if already logged in via existing session
-        console.log('Checking for existing session');
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('Existing session:', session);
-
         if (session) {
-          console.log('Found existing session');
-          setValidSession(true);
+          console.log('Valid session found for password reset');
+          if (isMounted) {
+            setValidSession(true);
+          }
         } else {
-          console.log('No valid session found');
-          setValidSession(false);
-          setError('Invalid or expired reset link. Please request a new one.');
+          console.log('No valid session - link may be expired');
+          if (isMounted) {
+            setValidSession(false);
+            setError('Invalid or expired reset link. Please request a new one.');
+          }
         }
 
       } catch (err: any) {
-        console.error('Session exchange error:', err);
-        setValidSession(false);
-        setError(err.message || 'Invalid or expired link. Please request a new one.');
+        console.error('Session verification error:', err);
+        if (isMounted) {
+          setValidSession(false);
+          setError(err.message || 'Unable to verify reset link. Please try again.');
+        }
       }
     };
 
     timeoutId = setTimeout(() => {
-      if (validSession === null) {
-        console.error('Session verification timeout');
+      if (isMounted && validSession === null) {
+        console.error('Session verification timeout after 10 seconds');
         setValidSession(false);
-        setError('Connection timeout. Please check your internet and try again.');
+        setError('Connection timeout. Please check your internet connection and request a new reset link.');
       }
     }, 10000);
 
     handleSessionExchange();
 
     return () => {
+      isMounted = false;
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [location]);
