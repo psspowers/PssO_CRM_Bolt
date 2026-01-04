@@ -332,21 +332,14 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
                           setRelateToId('');
                         }
                       }}
-                      className="w-full mt-1 px-3 py-2 border rounded-lg text-sm bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={loadingOpportunities}
+                      className="w-full mt-1 px-3 py-2 border rounded-lg text-sm bg-white"
                     >
-                      {loadingOpportunities ? (
-                        <option value="">Loading opportunities...</option>
-                      ) : (
-                        <>
-                          <option value="">-- Select Opportunity (Optional) --</option>
-                          {filteredOpportunities.map(opp => (
-                            <option key={opp.id} value={opp.id}>{opp.name}</option>
-                          ))}
-                          {filteredOpportunities.length === 0 && !loadingOpportunities && (
-                            <option value="" disabled>No opportunities found</option>
-                          )}
-                        </>
+                      <option value="">-- Select Opportunity (Optional) --</option>
+                      {filteredOpportunities.map(opp => (
+                        <option key={opp.id} value={opp.id}>{opp.name}</option>
+                      ))}
+                      {filteredOpportunities.length === 0 && (
+                        <option value="" disabled>No opportunities found for this user</option>
                       )}
                     </select>
                   </div>
