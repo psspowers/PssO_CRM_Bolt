@@ -86,16 +86,6 @@ export const fetchPipelineSnapshots = async (days: number = 30): Promise<Pipelin
 };
 
 /**
- * Time range for velocity calculations
- */
-export type VelocityTimeRange = 'wow' | 'mom' | '3m' | 'custom';
-
-export interface DateRange {
-  start: Date;
-  end: Date;
-}
-
-/**
  * Calculate velocity metrics from opportunities data (fallback)
  * Used when the database functions are not yet set up
  */
@@ -114,14 +104,6 @@ export interface FallbackVelocityMetrics {
   accountsCount: number;
   partnersCount: number;
   projectsCount: number;
-  // Enhanced velocity metrics
-  totalMwMovement: number;
-  previousMwMovement: number;
-  newProjectsMw: number;
-  previousNewProjectsMw: number;
-  finalStageMw: number;
-  finalStageCount: number;
-  previousFinalStageMw: number;
   // Stage-specific velocity
   stageVelocity: {
     stage: string;
@@ -131,74 +113,22 @@ export interface FallbackVelocityMetrics {
   }[];
 }
 
-/**
- * Get date ranges based on time range type
- */
-export const getDateRanges = (rangeType: VelocityTimeRange, customRange?: DateRange): { current: DateRange; previous: DateRange } => {
-  const now = new Date();
-
-  if (rangeType === 'custom' && customRange) {
-    const duration = customRange.end.getTime() - customRange.start.getTime();
-    return {
-      current: customRange,
-      previous: {
-        start: new Date(customRange.start.getTime() - duration),
-        end: customRange.start
-      }
-    };
-  }
-
-  if (rangeType === 'wow') {
-    return {
-      current: {
-        start: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
-        end: now
-      },
-      previous: {
-        start: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000),
-        end: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-      }
-    };
-  }
-
-  if (rangeType === 'mom') {
-    return {
-      current: {
-        start: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
-        end: now
-      },
-      previous: {
-        start: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000),
-        end: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-      }
-    };
-  }
-
-  // 3m
-  return {
-    current: {
-      start: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000),
-      end: now
-    },
-    previous: {
-      start: new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000),
-      end: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
-    }
-  };
-};
-
 export const calculateFallbackVelocity = (
   opportunities: any[],
   projects: any[],
   accounts: any[],
   partners: any[],
-  rangeType: VelocityTimeRange,
-  customRange?: DateRange
+  period: 'wow' | 'mom'
 ): FallbackVelocityMetrics => {
-  const { current, previous } = getDateRanges(rangeType, customRange);
-  const periodStart = current.start;
-  const previousPeriodStart = previous.start;
-  const previousPeriodEnd = previous.end;
+  const now = new Date();
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+  const periodStart = period === 'wow' ? oneWeekAgo : oneMonthAgo;
+  const previousPeriodStart = period === 'wow' ? twoWeeksAgo : twoMonthsAgo;
+  const previousPeriodEnd = period === 'wow' ? oneWeekAgo : oneMonthAgo;
 
   // Current period deals
   const currentPeriodDeals = opportunities.filter(o => new Date(o.updatedAt) >= periodStart);
@@ -242,40 +172,10 @@ export const calculateFallbackVelocity = (
     return {
       stage,
       currentMw,
-      wowChange: rangeType === 'wow' ? recentInStage * 0.1 : 0,
-      momChange: rangeType === 'mom' ? recentInStage * 0.15 : 0,
+      wowChange: period === 'wow' ? recentInStage * 0.1 : 0, // Rough estimate
+      momChange: period === 'mom' ? recentInStage * 0.15 : 0, // Rough estimate
     };
   });
-
-  // Calculate Total MW Movement (all opportunities that changed stage in period)
-  // Count each stage transition - if a deal moved 2 stages, count it twice
-  const totalMwMovement = currentPeriodDeals.reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
-  const previousMwMovement = previousPeriodDeals.reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
-
-  // Calculate New Projects in System (opportunities created in the period with MW > 0)
-  const newOpportunitiesCurrent = opportunities.filter(o => {
-    const createdDate = new Date(o.createdAt);
-    return createdDate >= periodStart && (Number(o.targetCapacity) || 0) > 0;
-  });
-  const newOpportunitiesPrevious = opportunities.filter(o => {
-    const createdDate = new Date(o.createdAt);
-    return createdDate >= previousPeriodStart && createdDate < previousPeriodEnd && (Number(o.targetCapacity) || 0) > 0;
-  });
-
-  const newProjectsMw = newOpportunitiesCurrent.reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
-  const previousNewProjectsMw = newOpportunitiesPrevious.reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
-
-  // Calculate Final Stage Projects (Negotiation + Term Sheet)
-  const finalStageOpps = opportunities.filter(o => ['Negotiation', 'Term Sheet'].includes(o.stage));
-  const finalStageMw = finalStageOpps.reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
-  const finalStageCount = finalStageOpps.length;
-
-  // Previous period final stage (snapshot from previous period end)
-  const previousFinalStageOpps = opportunities.filter(o => {
-    const updatedDate = new Date(o.updatedAt);
-    return ['Negotiation', 'Term Sheet'].includes(o.stage) && updatedDate < previousPeriodEnd;
-  });
-  const previousFinalStageMw = previousFinalStageOpps.reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
 
   return {
     totalPipelineValue,
@@ -292,14 +192,6 @@ export const calculateFallbackVelocity = (
     accountsCount: accounts.length,
     partnersCount: partners.length,
     projectsCount: projects.length,
-    // New enhanced metrics
-    totalMwMovement,
-    previousMwMovement,
-    newProjectsMw,
-    previousNewProjectsMw,
-    finalStageMw,
-    finalStageCount,
-    previousFinalStageMw,
     stageVelocity,
   };
 };
