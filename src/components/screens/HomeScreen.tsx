@@ -1,9 +1,10 @@
 import React from 'react';
-import { Target, Building2, Users, Zap, Loader2, RefreshCw, AlertCircle, TrendingUp, Calendar, ArrowUpRight, Clock } from 'lucide-react';
+import { Target, Building2, Users, Zap, Loader2, RefreshCw, AlertCircle, TrendingUp, Calendar, ArrowUpRight, Clock, Phone, Mail, MessageSquare, FileText } from 'lucide-react';
 import { StatCard, PipelineChart, UpcomingActions } from '../crm';
 import { BadgeList } from '../crm/Badge';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { formatDistanceToNow } from 'date-fns';
 
 interface HomeScreenProps {
   onNavigate: (tab: string) => void;
@@ -11,7 +12,7 @@ interface HomeScreenProps {
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onOpportunityClick }) => {
-  const { opportunities, accounts, partners, projects, loading, error, refreshData } = useAppContext();
+  const { opportunities, accounts, partners, projects, activities, users, loading, error, refreshData } = useAppContext();
   const { profile, user } = useAuth();
 
   const totalPipeline = opportunities.filter(o => o.stage !== 'Lost').reduce((sum, o) => sum + (Number(o.value) || 0), 0);
@@ -30,12 +31,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onOpportunit
     negotiation: opportunities.filter(o => o.stage === 'Negotiation').length,
   };
 
-  // Recent activities (mock)
-  const recentActivities = [
-    { id: 1, action: 'Deal updated', target: 'Rayong Chemical Complex', time: '2 hours ago', type: 'update' },
-    { id: 2, action: 'New contact added', target: 'Vietnam Steel Corp', time: '4 hours ago', type: 'create' },
-    { id: 3, action: 'Meeting scheduled', target: 'Thai Textile Group', time: '1 day ago', type: 'meeting' },
-  ];
+  const recentActivities = activities
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5)
+    .map(activity => ({
+      id: activity.id,
+      action: activity.type,
+      target: activity.summary || 'Details',
+      time: formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true }),
+      type: activity.type.toLowerCase()
+    }));
 
   if (loading) {
     return (
@@ -183,27 +188,38 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, onOpportunit
             </button>
           </div>
           <div className="space-y-4">
-            {recentActivities.map((activity) => (
-              <div key={activity.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  activity.type === 'update' ? 'bg-blue-100 text-blue-600' :
-                  activity.type === 'create' ? 'bg-green-100 text-green-600' :
-                  'bg-purple-100 text-purple-600'
-                }`}>
-                  {activity.type === 'update' ? <TrendingUp className="w-5 h-5" /> :
-                   activity.type === 'create' ? <Building2 className="w-5 h-5" /> :
-                   <Calendar className="w-5 h-5" />}
+            {recentActivities.length > 0 ? (
+              recentActivities.map((activity) => (
+                <div key={activity.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    activity.type === 'call' ? 'bg-blue-100 text-blue-600' :
+                    activity.type === 'email' ? 'bg-green-100 text-green-600' :
+                    activity.type === 'meeting' ? 'bg-purple-100 text-purple-600' :
+                    activity.type === 'note' ? 'bg-amber-100 text-amber-600' :
+                    'bg-slate-100 text-slate-600'
+                  }`}>
+                    {activity.type === 'call' ? <Phone className="w-5 h-5" /> :
+                     activity.type === 'email' ? <Mail className="w-5 h-5" /> :
+                     activity.type === 'meeting' ? <Calendar className="w-5 h-5" /> :
+                     activity.type === 'note' ? <FileText className="w-5 h-5" /> :
+                     <MessageSquare className="w-5 h-5" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-900">{activity.action}</p>
+                    <p className="text-sm text-slate-500 truncate">{activity.target}</p>
+                  </div>
+                  <span className="text-xs text-slate-400 flex items-center gap-1 flex-shrink-0">
+                    <Clock className="w-3 h-3" />
+                    {activity.time}
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900">{activity.action}</p>
-                  <p className="text-sm text-slate-500 truncate">{activity.target}</p>
-                </div>
-                <span className="text-xs text-slate-400 flex items-center gap-1 flex-shrink-0">
-                  <Clock className="w-3 h-3" />
-                  {activity.time}
-                </span>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <MessageSquare className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                <p className="text-sm text-slate-500">No recent activities</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
