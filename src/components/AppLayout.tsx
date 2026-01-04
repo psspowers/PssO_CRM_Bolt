@@ -284,7 +284,7 @@ export default function AppLayout() {
               subIndustry: item.subIndustry || '',
               nextAction: item.nextAction || '',
               notes: item.notes || '',
-              ownerId: user?.id || '',
+              ownerId: item.ownerId || user?.id || '',
               linkedPartnerIds: [],
             });
             break;
@@ -295,7 +295,7 @@ export default function AppLayout() {
               capacity: item.capacity || 0,
               status: item.status || 'Won',
               linkedAccountId: item.linkedAccountId || '',
-              ownerId: user?.id || '',
+              ownerId: item.ownerId || user?.id || '',
               linkedPartnerIds: [],
               notes: item.notes || '',
             });
