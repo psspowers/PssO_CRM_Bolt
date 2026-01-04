@@ -22,7 +22,7 @@ interface QuickAddModalProps {
   onClose: () => void;
   onAdd: (data: any) => void;
   onAddEntity?: (entityType: EntityType, data: Record<string, any>) => Promise<void>;
-  entities?: { partners: {id:string,name:string}[], accounts: {id:string,name:string}[], opportunities: {id:string,name:string}[], contacts: {id:string,fullName:string}[] };
+  entities?: { partners: {id:string,name:string}[], accounts: {id:string,name:string}[], opportunities: {id:string,name:string; ownerId:string}[], contacts: {id:string,fullName:string}[] };
   users?: User[];
 }
 
@@ -54,8 +54,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
 
-  const [filteredOpportunities, setFilteredOpportunities] = useState<{id: string; name: string}[]>([]);
-  const [loadingOpportunities, setLoadingOpportunities] = useState(false);
+  const [filteredOpportunities, setFilteredOpportunities] = useState<{id: string; name: string; ownerId: string}[]>([]);
 
   // Account form state
   const [accountForm, setAccountForm] = useState({
@@ -147,35 +146,24 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
   }, [isOpen]);
 
   useEffect(() => {
-    const fetchFilteredOpportunities = async () => {
+    const filterOpportunitiesByAssignee = () => {
       const targetUserId = assignedToId || profile?.id;
-      if (!targetUserId || !isTask) {
+      if (!targetUserId || !isTask || !entities?.opportunities) {
         setFilteredOpportunities([]);
         return;
       }
 
-      console.log('Fetching opportunities for user:', targetUserId, 'assignedToId:', assignedToId, 'profile?.id:', profile?.id);
-      setLoadingOpportunities(true);
-      try {
-        const { data, error } = await supabase
-          .from('opportunities')
-          .select('id, name, owner_id')
-          .eq('owner_id', targetUserId)
-          .order('name', { ascending: true });
+      console.log('Filtering opportunities for user:', targetUserId, 'assignedToId:', assignedToId, 'profile?.id:', profile?.id);
+      const filtered = entities.opportunities
+        .filter(opp => opp.ownerId === targetUserId)
+        .sort((a, b) => a.name.localeCompare(b.name));
 
-        if (error) throw error;
-        console.log('Fetched opportunities:', data);
-        setFilteredOpportunities(data || []);
-      } catch (err) {
-        console.error('Error fetching opportunities:', err);
-        setFilteredOpportunities([]);
-      } finally {
-        setLoadingOpportunities(false);
-      }
+      console.log('Filtered opportunities:', filtered);
+      setFilteredOpportunities(filtered);
     };
 
-    fetchFilteredOpportunities();
-  }, [assignedToId, profile?.id, isTask]);
+    filterOpportunitiesByAssignee();
+  }, [assignedToId, profile?.id, isTask, entities?.opportunities]);
 
   if (!isOpen) return null;
 

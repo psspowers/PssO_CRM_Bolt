@@ -400,7 +400,7 @@ export default function AppLayout() {
   const entitiesForModal = {
     accounts: accounts.map(a => ({ id: a.id, name: a.name })),
     partners: partners.map(p => ({ id: p.id, name: p.name })),
-    opportunities: opportunities.map(o => ({ id: o.id, name: o.name })),
+    opportunities: opportunities.map(o => ({ id: o.id, name: o.name, ownerId: o.ownerId })),
     contacts: contacts.map(c => ({ id: c.id, fullName: c.fullName })),
   };
 
