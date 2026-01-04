@@ -118,13 +118,13 @@ const PipelineStage: React.FC<PipelineStageProps> = ({
             <div className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
               change > 0 ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
             }`}>
-              {change > 0 ? '+' : ''}{change.toFixed(1)}
+              {change > 0 ? '+' : ''}{change.toFixed(2)}
             </div>
           )}
         </div>
         <div className={`w-16 h-16 lg:w-20 lg:h-20 rounded-2xl ${color} flex flex-col items-center justify-center text-white shadow-lg`}>
           <span className="text-xl lg:text-2xl font-bold">{count}</span>
-          <span className="text-[10px] opacity-80">{mw.toFixed(1)} MW</span>
+          <span className="text-[10px] opacity-80">{mw.toFixed(2)} MW</span>
         </div>
         <span className="text-xs font-medium text-slate-600 mt-1.5 text-center max-w-[80px]">{stage}</span>
       </div>
@@ -622,7 +622,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                           }`}>
                             {isPositive && <TrendingUp className="w-3 h-3" />}
                             {isNegative && <TrendingDown className="w-3 h-3" />}
-                            {isPositive ? '+' : ''}{change.toFixed(1)}%
+                            {isPositive ? '+' : ''}{change.toFixed(2)}%
                           </div>
                         )}
                       </div>
@@ -630,7 +630,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                       <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                         <div>
                           <p className="text-xs text-slate-500">Total MW Movement</p>
-                          <p className="text-lg font-bold text-slate-900">{stage.mw.toFixed(1)} MW</p>
+                          <p className="text-lg font-bold text-slate-900">{stage.mw.toFixed(2)} MW</p>
                         </div>
 
                         {change !== undefined && change !== 0 && (
@@ -731,14 +731,14 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                       <div>
                         <p className="text-xs text-slate-500">Total Capacity</p>
-                        <p className="text-lg font-bold text-slate-900">{stage.mw.toFixed(1)} MW</p>
+                        <p className="text-lg font-bold text-slate-900">{stage.mw.toFixed(2)} MW</p>
                       </div>
 
                       {stage.count > 0 && (
                         <div className="text-right">
                           <p className="text-xs text-slate-500">Avg per project</p>
                           <p className="text-sm font-semibold text-slate-700">
-                            {(stage.mw / stage.count).toFixed(1)} MW
+                            {(stage.mw / stage.count).toFixed(2)} MW
                           </p>
                         </div>
                       )}

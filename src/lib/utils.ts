@@ -16,29 +16,27 @@ export function formatMetric(
   type: 'currency' | 'capacity' | 'count' | 'percentage' | 'days',
   options?: FormatMetricOptions
 ): string {
-  const { precision = 1, locale = 'th-TH', showSign = false } = options || {};
+  const { precision = 2, locale = 'th-TH', showSign = false } = options || {};
 
   const sign = showSign && value > 0 ? '+' : '';
 
   switch (type) {
     case 'capacity':
       if (value < 0.01) return `${value.toFixed(3)} MW`;
-      if (value < 1) return `${value.toFixed(2)} MW`;
-      if (value >= 1000) return `${sign}${(value / 1000).toFixed(precision)} GW`;
-      if (value >= 100) return `${sign}${Math.round(value).toLocaleString(locale)} MW`;
-      return `${sign}${value.toFixed(precision)} MW`;
+      if (value >= 1000) return `${sign}${(value / 1000).toFixed(2)} GW`;
+      return `${sign}${value.toFixed(2)} MW`;
 
     case 'currency':
       if (value >= 1_000_000_000) {
-        return `${sign}฿${(value / 1_000_000_000).toFixed(precision)}B`;
+        return `${sign}฿${(value / 1_000_000_000).toFixed(2)}B`;
       }
       if (value >= 1_000_000) {
-        return `${sign}฿${(value / 1_000_000).toFixed(precision)}M`;
+        return `${sign}฿${(value / 1_000_000).toFixed(2)}M`;
       }
       if (value >= 1_000) {
-        return `${sign}฿${(value / 1000).toFixed(0)}K`;
+        return `${sign}฿${(value / 1000).toFixed(2)}K`;
       }
-      return `${sign}฿${value.toFixed(0)}`;
+      return `${sign}฿${value.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     case 'percentage':
       return `${sign}${value.toFixed(precision)}%`;
