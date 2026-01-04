@@ -64,26 +64,28 @@ const Settings: React.FC = () => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6">
-        {/* Emergency Admin Restore Section */}
-        <div className="bg-red-50 border-2 border-red-500 rounded-xl p-6 mb-6">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-red-900 mb-2">Emergency Admin Restore</h3>
-              <p className="text-sm text-red-700 mb-4">
-                If you are locked out of the Admin Panel or your role is incorrect, use this button to restore full admin access.
-              </p>
-              <Button
-                onClick={handleForceAdminAccess}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                Force Admin Access
-              </Button>
+        {/* Emergency Admin Restore Section - Only visible to admin and super_admin */}
+        {profile?.role === 'admin' || profile?.role === 'super_admin' ? (
+          <div className="bg-red-50 border-2 border-red-500 rounded-xl p-6 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-red-900 mb-2">Emergency Admin Restore</h3>
+                <p className="text-sm text-red-700 mb-4">
+                  If you are locked out of the Admin Panel or your role is incorrect, use this button to restore full admin access.
+                </p>
+                <Button
+                  onClick={handleForceAdminAccess}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Force Admin Access
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-white border p-1 h-auto flex-wrap">
