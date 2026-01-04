@@ -5,19 +5,30 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import TwoFactorSettings from '@/components/settings/TwoFactorSettings';
 import LoginHistory from '@/components/settings/LoginHistory';
 import TrustedDevices from '@/components/settings/TrustedDevices';
 import ProfileSettings from '@/components/settings/ProfileSettings';
-import { ArrowLeft, User, Shield, Palette, Sun, Moon, Monitor, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, User, Shield, Palette, Sun, Moon, Monitor, AlertTriangle, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { toast } from '@/components/ui/use-toast';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
   const { profile, user } = useAuth();
   const [activeTab, setActiveTab] = useState('security');
-  
-  // Appearance settings state
+
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light');
   const [compactMode, setCompactMode] = useState(false);
   const [animations, setAnimations] = useState(true);
@@ -26,6 +37,37 @@ const Settings: React.FC = () => {
     setTheme(newTheme);
     // In a real app, this would persist to localStorage and update the theme
     localStorage.setItem('pss_theme', newTheme);
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast({ title: 'Error', description: 'Please fill in all fields', variant: 'destructive' });
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast({ title: 'Error', description: 'Password must be at least 8 characters', variant: 'destructive' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: 'Error', description: 'Passwords do not match', variant: 'destructive' });
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+
+      toast({ title: 'Success', description: 'Password updated successfully' });
+      setShowPasswordDialog(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to update password', variant: 'destructive' });
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const handleForceAdminAccess = async () => {
@@ -107,7 +149,10 @@ const Settings: React.FC = () => {
             <div className="bg-white rounded-xl border p-6">
               <h3 className="text-lg font-semibold mb-4">Password</h3>
               <p className="text-sm text-gray-500 mb-4">Change your password to keep your account secure.</p>
-              <Button variant="outline" onClick={() => navigate('/forgot-password')}>Change Password</Button>
+              <Button variant="outline" onClick={() => setShowPasswordDialog(true)}>
+                <Lock className="w-4 h-4 mr-2" />
+                Change Password
+              </Button>
             </div>
           </TabsContent>
 
@@ -215,6 +260,86 @@ const Settings: React.FC = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-orange-500" />
+              Change Password
+            </DialogTitle>
+            <DialogDescription>
+              Enter your new password below. Your password must be at least 8 characters long.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">New Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  id="new-password"
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="pl-10 pr-10"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  id="confirm-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pl-10 pr-10"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPasswordDialog(false)} disabled={changingPassword}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleChangePassword}
+              disabled={changingPassword}
+              className="bg-orange-500 hover:bg-orange-600"
+            >
+              {changingPassword ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Update Password'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
