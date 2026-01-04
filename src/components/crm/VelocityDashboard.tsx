@@ -23,7 +23,7 @@ interface VelocityDashboardProps {
 }
 
 type ViewMode = 'personal' | 'my_team' | 'company_wide';
-type TimePeriod = 'week' | 'month' | 'quarter';
+type TimePeriod = '7D' | '30D' | '90D';
 
 interface VelocityStatCardProps {
   title: string;
@@ -155,11 +155,12 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
   const { user, profile } = useAuth();
 
   const [viewMode, setViewMode] = useState<ViewMode>('personal');
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
-  const [period, setPeriod] = useState<'wow' | 'mom'>('mom');
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('30D');
   const [velocityData, setVelocityData] = useState<VelocityStageData[]>([]);
   const [velocityLoading, setVelocityLoading] = useState(true);
   const [usingRealData, setUsingRealData] = useState(false);
+
+  const period = timePeriod === '7D' ? 'wow' : 'mom';
 
   const [isManager, setIsManager] = useState(false);
   const [directReports, setDirectReports] = useState<string[]>([]);
@@ -334,13 +335,16 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
 
   const getStartDate = () => {
     const date = new Date();
-    if (timePeriod === 'week') date.setDate(date.getDate() - 7);
-    if (timePeriod === 'month') date.setDate(date.getDate() - 30);
-    if (timePeriod === 'quarter') date.setDate(date.getDate() - 90);
+    if (timePeriod === '7D') date.setDate(date.getDate() - 7);
+    if (timePeriod === '30D') date.setDate(date.getDate() - 30);
+    if (timePeriod === '90D') date.setDate(date.getDate() - 90);
     return date;
   };
 
   const startDate = getStartDate();
+
+  const periodLabel = timePeriod === '7D' ? 'Week' : timePeriod === '30D' ? 'Month' : 'Quarter';
+  const periodLabelLower = periodLabel.toLowerCase();
 
   const finalStageMW = displayedOpportunities
     .filter(o => ['Negotiation', 'Term Sheet'].includes(o.stage))
@@ -357,9 +361,6 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
     .reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
 
   const movementMW = activeMovedMW;
-
-  const periodLabel = timePeriod === 'week' ? 'Week' : timePeriod === 'month' ? 'Month' : 'Quarter';
-  const periodLabelLower = periodLabel.toLowerCase();
 
   if (loading) {
     return (
@@ -387,19 +388,6 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
         </div>
       )}
 
-      {!velocityLoading && (
-        <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full w-fit ${
-          usingRealData
-            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-            : 'bg-amber-50 text-amber-700 border border-amber-200'
-        }`}>
-          <Database className="w-3 h-3" />
-          {usingRealData
-            ? 'Using real-time velocity data'
-            : 'Using calculated estimates (run SQL setup for real data)'}
-        </div>
-      )}
-
       <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl lg:rounded-3xl p-6 lg:p-8 text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
@@ -407,8 +395,8 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
         </div>
 
         <div className="relative">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex items-center gap-4 lg:flex-1">
               <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl border-2 border-white/20 bg-white/10 backdrop-blur flex items-center justify-center text-xl lg:text-2xl font-bold">
                 {userInitials}
               </div>
@@ -420,14 +408,13 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                   </span>
                 </div>
                 <h2 className="font-bold text-xl lg:text-2xl">{userName}</h2>
-                <p className="text-sm text-slate-300 mt-1">{viewModeLabel}</p>
                 <div className="mt-1">
                   <BadgeList badges={userBadges} size="md" />
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-3">
+            <div className="flex flex-col items-end gap-3 lg:flex-1">
               <button
                 onClick={onSwitchToClassic}
                 className="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1"
@@ -436,76 +423,76 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                 Switch to Classic Dashboard
               </button>
 
-              {isManager && (
-                <SegmentedControl
-                  value={viewMode}
-                  onChange={setViewMode}
-                  options={[
-                    { value: 'personal', label: 'My Portfolio', icon: User },
-                    { value: 'my_team', label: 'My Team', icon: Users },
-                    ...(userRole === 'admin' || userRole === 'super_admin'
-                      ? [{ value: 'company_wide' as ViewMode, label: 'Company', icon: Building2 }]
-                      : []
-                    )
-                  ]}
-                  className="bg-white/10 backdrop-blur"
-                  size="sm"
-                />
-              )}
-
-              <div className="flex items-center gap-2 bg-white/10 backdrop-blur rounded-xl p-1">
+              <div className="flex items-center gap-2 bg-white/10 backdrop-blur rounded-lg p-1">
+                {isManager && (
+                  <>
+                    <button
+                      onClick={() => setViewMode('personal')}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-semibold transition-all ${
+                        viewMode === 'personal'
+                          ? 'bg-white text-slate-900 shadow-sm'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      <User className="w-4 h-4" />
+                      <span className="hidden lg:inline">Me</span>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('my_team')}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-semibold transition-all ${
+                        viewMode === 'my_team'
+                          ? 'bg-white text-slate-900 shadow-sm'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      <Users className="w-4 h-4" />
+                      <span className="hidden lg:inline">Team</span>
+                    </button>
+                    {(userRole === 'admin' || userRole === 'super_admin') && (
+                      <button
+                        onClick={() => setViewMode('company_wide')}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-semibold transition-all ${
+                          viewMode === 'company_wide'
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-300 hover:text-white'
+                        }`}
+                      >
+                        <Building2 className="w-4 h-4" />
+                        <span className="hidden lg:inline">All</span>
+                      </button>
+                    )}
+                    <div className="w-px h-6 bg-white/20 mx-1" />
+                  </>
+                )}
                 <button
-                  onClick={() => setTimePeriod('week')}
-                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    timePeriod === 'week'
-                      ? 'bg-white text-slate-900'
-                      : 'text-white/70 hover:text-white'
+                  onClick={() => setTimePeriod('7D')}
+                  className={`px-3 py-2 rounded-md text-sm font-semibold transition-all ${
+                    timePeriod === '7D'
+                      ? 'bg-emerald-500 text-white shadow-sm'
+                      : 'text-slate-300 hover:text-white'
                   }`}
                 >
-                  Week
+                  7D
                 </button>
                 <button
-                  onClick={() => setTimePeriod('month')}
-                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    timePeriod === 'month'
-                      ? 'bg-white text-slate-900'
-                      : 'text-white/70 hover:text-white'
+                  onClick={() => setTimePeriod('30D')}
+                  className={`px-3 py-2 rounded-md text-sm font-semibold transition-all ${
+                    timePeriod === '30D'
+                      ? 'bg-emerald-500 text-white shadow-sm'
+                      : 'text-slate-300 hover:text-white'
                   }`}
                 >
-                  Month
+                  30D
                 </button>
                 <button
-                  onClick={() => setTimePeriod('quarter')}
-                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    timePeriod === 'quarter'
-                      ? 'bg-white text-slate-900'
-                      : 'text-white/70 hover:text-white'
+                  onClick={() => setTimePeriod('90D')}
+                  className={`px-3 py-2 rounded-md text-sm font-semibold transition-all ${
+                    timePeriod === '90D'
+                      ? 'bg-emerald-500 text-white shadow-sm'
+                      : 'text-slate-300 hover:text-white'
                   }`}
                 >
-                  Quarter
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2 bg-white/10 backdrop-blur rounded-xl p-1">
-                <button
-                  onClick={() => setPeriod('wow')}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    period === 'wow'
-                      ? 'bg-white text-slate-900'
-                      : 'text-white/70 hover:text-white'
-                  }`}
-                >
-                  Week over Week
-                </button>
-                <button
-                  onClick={() => setPeriod('mom')}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    period === 'mom'
-                      ? 'bg-white text-slate-900'
-                      : 'text-white/70 hover:text-white'
-                  }`}
-                >
-                  Month over Month
+                  90D
                 </button>
               </div>
             </div>
@@ -539,24 +526,24 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
         </div>
       </div>
 
-      <div className="lg:hidden mb-6">
-        <div className="flex items-center gap-2 bg-white rounded-xl p-1 shadow-sm border border-slate-200">
+      <div className="lg:hidden mb-6 flex justify-center">
+        <div className="inline-flex items-center gap-1 bg-slate-900/50 backdrop-blur rounded-full p-1 border border-white/10">
           <button
             onClick={() => setMobilePipelineMode('deals')}
-            className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+            className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all ${
               mobilePipelineMode === 'deals'
-                ? 'bg-orange-500 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-orange-500 text-white'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             Deal Pipeline
           </button>
           <button
             onClick={() => setMobilePipelineMode('projects')}
-            className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+            className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all ${
               mobilePipelineMode === 'projects'
-                ? 'bg-purple-500 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-orange-500 text-white'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             Project Pipeline
