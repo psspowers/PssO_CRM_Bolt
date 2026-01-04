@@ -332,19 +332,34 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
 
   const [mobilePipelineMode, setMobilePipelineMode] = useState<'deals' | 'projects'>('deals');
 
+  const getStartDate = () => {
+    const date = new Date();
+    if (timePeriod === 'week') date.setDate(date.getDate() - 7);
+    if (timePeriod === 'month') date.setDate(date.getDate() - 30);
+    if (timePeriod === 'quarter') date.setDate(date.getDate() - 90);
+    return date;
+  };
+
+  const startDate = getStartDate();
+
   const finalStageMW = displayedOpportunities
     .filter(o => ['Negotiation', 'Term Sheet'].includes(o.stage))
     .reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
   const finalStageCount = displayedOpportunities
     .filter(o => ['Negotiation', 'Term Sheet'].includes(o.stage)).length;
 
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const newProjectsMW = displayedOpportunities
-    .filter(o => new Date(o.createdAt) > thirtyDaysAgo)
+    .filter(o => new Date(o.createdAt) >= startDate)
     .reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
 
-  const movementMW = velocityMetrics.stageMovements * 2.5;
+  const activeMovedMW = displayedOpportunities
+    .filter(o => new Date(o.updatedAt) >= startDate && o.stage !== 'Prospect')
+    .reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
+
+  const movementMW = activeMovedMW;
+
+  const periodLabel = timePeriod === 'week' ? 'Week' : timePeriod === 'month' ? 'Month' : 'Quarter';
+  const periodLabelLower = periodLabel.toLowerCase();
 
   if (loading) {
     return (
@@ -440,6 +455,39 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
 
               <div className="flex items-center gap-2 bg-white/10 backdrop-blur rounded-xl p-1">
                 <button
+                  onClick={() => setTimePeriod('week')}
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    timePeriod === 'week'
+                      ? 'bg-white text-slate-900'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Week
+                </button>
+                <button
+                  onClick={() => setTimePeriod('month')}
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    timePeriod === 'month'
+                      ? 'bg-white text-slate-900'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Month
+                </button>
+                <button
+                  onClick={() => setTimePeriod('quarter')}
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                    timePeriod === 'quarter'
+                      ? 'bg-white text-slate-900'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  Quarter
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 bg-white/10 backdrop-blur rounded-xl p-1">
+                <button
                   onClick={() => setPeriod('wow')}
                   className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                     period === 'wow'
@@ -473,13 +521,13 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
             <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
               <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Hustle</p>
               <p className="text-2xl font-bold text-white">{formatMetric(movementMW, 'capacity')}</p>
-              <p className="text-xs text-slate-400 mt-1">Total Movement</p>
+              <p className="text-xs text-slate-400 mt-1">Active This {periodLabel}</p>
             </div>
 
             <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
               <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Feed</p>
               <p className="text-2xl font-bold text-white">{formatMetric(newProjectsMW, 'capacity')}</p>
-              <p className="text-xs text-slate-400 mt-1">New This Month</p>
+              <p className="text-xs text-slate-400 mt-1">New This {periodLabel}</p>
             </div>
 
             <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10 bg-gradient-to-br from-emerald-500/20 to-transparent">
