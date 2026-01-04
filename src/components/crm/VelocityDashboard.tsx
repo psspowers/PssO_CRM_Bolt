@@ -3,7 +3,8 @@ import {
   TrendingUp, TrendingDown, Zap, Target, Building2, Users,
   ArrowRight, ChevronRight, Activity, BarChart3, Loader2,
   AlertCircle, RefreshCw, Calendar, Clock, ArrowUpRight,
-  Gauge, Rocket, Timer, GitBranch, Database, User
+  Gauge, Rocket, Timer, GitBranch, Database, User, TrendingUpIcon,
+  FileText, FlagTriangleRight
 } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -11,9 +12,10 @@ import { BadgeList } from './Badge';
 import { PipelineChart } from './PipelineChart';
 import { UpcomingActions } from './UpcomingActions';
 import { Opportunity, Project, ProjectStatus, OpportunityStage } from '../../types/crm';
-import { fetchPipelineVelocity, VelocityStageData, calculateFallbackVelocity } from '../../lib/api/velocity';
+import { fetchPipelineVelocity, VelocityStageData, calculateFallbackVelocity, VelocityTimeRange, DateRange } from '../../lib/api/velocity';
 import { formatMetric } from '../../lib/utils';
 import { SegmentedControl } from '../ui/segmented-control';
+import { TimeRangePicker } from '../ui/time-range-picker';
 import { supabase } from '@/lib/supabase';
 
 interface VelocityDashboardProps {
@@ -156,7 +158,8 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
 
   const [viewMode, setViewMode] = useState<ViewMode>('personal');
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
-  const [period, setPeriod] = useState<'wow' | 'mom'>('mom');
+  const [timeRange, setTimeRange] = useState<VelocityTimeRange>('mom');
+  const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const [velocityData, setVelocityData] = useState<VelocityStageData[]>([]);
   const [velocityLoading, setVelocityLoading] = useState(true);
   const [usingRealData, setUsingRealData] = useState(false);
@@ -255,8 +258,8 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
   }, [viewMode, timePeriod]);
 
   const velocityMetrics = useMemo(() => {
-    return calculateFallbackVelocity(displayedOpportunities, displayedProjects, displayedAccounts, displayedPartners, period);
-  }, [displayedOpportunities, displayedProjects, displayedAccounts, displayedPartners, period]);
+    return calculateFallbackVelocity(displayedOpportunities, displayedProjects, displayedAccounts, displayedPartners, timeRange, customRange);
+  }, [displayedOpportunities, displayedProjects, displayedAccounts, displayedPartners, timeRange, customRange]);
 
   const stageVelocityMap = useMemo(() => {
     const map = new Map<string, { wowChange: number; momChange: number }>();
@@ -422,28 +425,14 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                 />
               )}
 
-              <div className="flex items-center gap-2 bg-white/10 backdrop-blur rounded-xl p-1">
-                <button
-                  onClick={() => setPeriod('wow')}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    period === 'wow'
-                      ? 'bg-white text-slate-900'
-                      : 'text-white/70 hover:text-white'
-                  }`}
-                >
-                  Week over Week
-                </button>
-                <button
-                  onClick={() => setPeriod('mom')}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    period === 'mom'
-                      ? 'bg-white text-slate-900'
-                      : 'text-white/70 hover:text-white'
-                  }`}
-                >
-                  Month over Month
-                </button>
-              </div>
+              <TimeRangePicker
+                value={timeRange}
+                customRange={customRange}
+                onChange={(range, custom) => {
+                  setTimeRange(range);
+                  if (custom) setCustomRange(custom);
+                }}
+              />
             </div>
           </div>
 
@@ -458,7 +447,12 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
             </div>
             <div className="bg-white/10 backdrop-blur rounded-xl p-4">
               <div className="flex items-center justify-between">
-                <p className="text-slate-300 text-xs">Won This {period === 'wow' ? 'Week' : 'Month'}</p>
+                <p className="text-slate-300 text-xs">Won This {
+                  timeRange === 'wow' ? 'Week' :
+                  timeRange === 'mom' ? 'Month' :
+                  timeRange === '3m' ? 'Quarter' :
+                  'Period'
+                }</p>
                 {velocityMetrics.wonPreviousPeriod > 0 && (
                   <span className={`text-xs font-bold ${
                     velocityMetrics.wonThisPeriod >= velocityMetrics.wonPreviousPeriod
@@ -488,29 +482,58 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
           previousValue={velocityMetrics.previousStageMovements}
           icon={Gauge}
           color="orange"
-          periodLabel={period === 'wow' ? 'vs last week' : 'vs last month'}
+          periodLabel={
+            timeRange === 'wow' ? 'vs last week' :
+            timeRange === 'mom' ? 'vs last month' :
+            timeRange === '3m' ? 'vs prev 3 months' :
+            'vs previous period'
+          }
           onClick={() => onNavigate('opportunities')}
         />
         <VelocityStatCard
-          title="Accounts"
-          value={velocityMetrics.accountsCount}
-          icon={Building2}
+          title="Total MW Movement"
+          value={`${velocityMetrics.totalMwMovement.toFixed(1)} MW`}
+          currentValue={velocityMetrics.totalMwMovement}
+          previousValue={velocityMetrics.previousMwMovement}
+          icon={TrendingUpIcon}
           color="blue"
-          onClick={() => onNavigate('accounts')}
+          periodLabel={
+            timeRange === 'wow' ? 'vs last week' :
+            timeRange === 'mom' ? 'vs last month' :
+            timeRange === '3m' ? 'vs prev 3 months' :
+            'vs previous period'
+          }
+          onClick={() => onNavigate('opportunities')}
         />
         <VelocityStatCard
-          title="Partners"
-          value={velocityMetrics.partnersCount}
-          icon={Users}
+          title="New Projects in System"
+          value={`${velocityMetrics.newProjectsMw.toFixed(1)} MW`}
+          currentValue={velocityMetrics.newProjectsMw}
+          previousValue={velocityMetrics.previousNewProjectsMw}
+          icon={FileText}
           color="purple"
-          onClick={() => onNavigate('partners')}
+          periodLabel={
+            timeRange === 'wow' ? 'vs last week' :
+            timeRange === 'mom' ? 'vs last month' :
+            timeRange === '3m' ? 'vs prev 3 months' :
+            'vs previous period'
+          }
+          onClick={() => onNavigate('opportunities')}
         />
         <VelocityStatCard
-          title="Operational MW"
-          value={formatMetric(velocityMetrics.operationalCapacity, 'capacity')}
-          icon={Zap}
+          title="Final Stage Projects"
+          value={`${velocityMetrics.finalStageMw.toFixed(1)} MW (${velocityMetrics.finalStageCount})`}
+          currentValue={velocityMetrics.finalStageMw}
+          previousValue={velocityMetrics.previousFinalStageMw}
+          icon={FlagTriangleRight}
           color="emerald"
-          onClick={() => onNavigate('projects')}
+          periodLabel={
+            timeRange === 'wow' ? 'vs last week' :
+            timeRange === 'mom' ? 'vs last month' :
+            timeRange === '3m' ? 'vs prev 3 months' :
+            'vs previous period'
+          }
+          onClick={() => onNavigate('opportunities')}
         />
       </div>
 
@@ -528,7 +551,12 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
             </h3>
             <p className="text-sm text-slate-500 mt-0.5">
               MW moving through stages
-              {period === 'wow' ? ' (Week over Week)' : ' (Month over Month)'}
+              {
+                timeRange === 'wow' ? ' (Week over Week)' :
+                timeRange === 'mom' ? ' (Month over Month)' :
+                timeRange === '3m' ? ' (Last 3 Months)' :
+                ' (Custom Period)'
+              }
             </p>
           </div>
           <button
@@ -552,7 +580,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                 flowToNext={0}
                 wowChange={stage.wowChange}
                 momChange={stage.momChange}
-                showChange={period}
+                showChange={timeRange === 'wow' || timeRange === '3m' ? 'wow' : 'mom'}
               />
             ))}
           </div>
