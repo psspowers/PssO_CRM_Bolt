@@ -49,7 +49,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) 
           </button>
         ))}
 
-        <div className="relative flex items-center justify-center -top-5">
+        <div className="relative flex items-center justify-center -top-3">
           <button
             onClick={() => setIsMagicOpen(!isMagicOpen)}
             className="w-14 h-14 rounded-full bg-gradient-to-tr from-orange-500 to-orange-400 text-white flex items-center justify-center shadow-lg shadow-orange-500/40 ring-4 ring-white transition-transform active:scale-95"
