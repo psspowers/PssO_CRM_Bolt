@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
@@ -358,56 +357,50 @@ const Login: React.FC = () => {
             </div>
           )}
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <div className="relative mt-1">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="you@example.com" 
-                  value={email} 
-                  onChange={handleEmailChange} 
-                  className={`pl-10 ${error && !email ? 'border-red-300' : ''}`}
-                  disabled={loading}
-                  autoComplete="email"
-                  autoFocus
-                />
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={handleEmailChange}
+                className={`pl-11 h-12 ${error && !email ? 'border-red-300' : ''}`}
+                disabled={loading}
+                autoComplete="email"
+                autoFocus
+              />
             </div>
-            
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <div className="relative mt-1">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input 
-                  id="password" 
-                  type="password" 
-                  placeholder="••••••••" 
-                  value={password} 
-                  onChange={handlePasswordChange} 
-                  className={`pl-10 ${error && !password ? 'border-red-300' : ''}`}
-                  disabled={loading}
-                  autoComplete="current-password"
-                />
-              </div>
+
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Input
+                id="password"
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={handlePasswordChange}
+                className={`pl-11 h-12 ${error && !password ? 'border-red-300' : ''}`}
+                disabled={loading}
+                autoComplete="current-password"
+              />
             </div>
             
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="remember" 
-                  checked={rememberMe} 
-                  onCheckedChange={(checked) => setRememberMe(checked === true)} 
+                <Checkbox
+                  id="remember"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked === true)}
                   disabled={loading}
                 />
-                <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">
+                <label htmlFor="remember" className="text-sm font-normal cursor-pointer text-gray-600">
                   Remember me for 30 days
-                </Label>
+                </label>
               </div>
-              <Link 
-                to="/forgot-password" 
+              <Link
+                to="/forgot-password"
                 className="text-sm text-orange-600 hover:text-orange-700"
                 tabIndex={loading ? -1 : 0}
               >
@@ -415,9 +408,9 @@ const Login: React.FC = () => {
               </Link>
             </div>
             
-            <Button 
-              type="submit" 
-              className="w-full bg-orange-500 hover:bg-orange-600" 
+            <Button
+              type="submit"
+              className="w-full bg-orange-500 hover:bg-orange-600 h-12"
               disabled={loading}
             >
               {loading ? (

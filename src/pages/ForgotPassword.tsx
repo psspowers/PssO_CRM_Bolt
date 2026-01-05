@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Mail, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -67,15 +66,12 @@ const ForgotPassword: React.FC = () => {
               <p className="text-center text-gray-500 mb-6">
                 Enter your email and we'll send you a reset link
               </p>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Email Address</Label>
-                  <div className="relative mt-1">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="pl-10" required />
-                  </div>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Input id="email" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="pl-11 h-12" required />
                 </div>
-                <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={loading}>
+                <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600 h-12" disabled={loading}>
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                   Send Reset Link
                 </Button>
