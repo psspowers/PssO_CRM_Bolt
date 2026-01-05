@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Building2, Users } from 'lucide-react';
+import { Building2, Users, UserCircle } from 'lucide-react';
 
 interface MagicMenuProps {
   isOpen: boolean;
@@ -31,18 +31,18 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
 
         <div className="flex flex-col items-center gap-2 mb-8 transition-transform hover:scale-110">
           <button
-            onClick={() => { onNavigate('search'); onClose(); }}
+            onClick={() => { onNavigate('contacts'); onClose(); }}
             className="w-16 h-16 rounded-full bg-white text-slate-900 shadow-xl flex items-center justify-center"
           >
-            <Search className="w-8 h-8" />
+            <UserCircle className="w-8 h-8" />
           </button>
-          <span className="text-white text-xs font-bold drop-shadow-md">Search</span>
+          <span className="text-white text-xs font-bold drop-shadow-md">Contacts</span>
         </div>
 
         <div className="flex flex-col items-center gap-2 transition-transform hover:scale-110">
           <button
             onClick={() => { onNavigate('partners'); onClose(); }}
-            className="w-14 h-14 rounded-full bg-purple-500 text-white shadow-lg shadow-purple-500/30 flex items-center justify-center"
+            className="w-14 h-14 rounded-full bg-green-500 text-white shadow-lg shadow-green-500/30 flex items-center justify-center"
           >
             <Users className="w-6 h-6" />
           </button>
