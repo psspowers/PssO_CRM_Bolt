@@ -82,87 +82,92 @@ export const AccountsScreen: React.FC = () => {
   return (
     <div className="space-y-6">
       {selectionMode ? (
-        <div className="flex items-center justify-between bg-orange-50 rounded-xl lg:rounded-2xl p-4 border border-orange-200">
-          <div className="flex items-center gap-3">
-            <button onClick={exitSelectionMode} className="p-2 hover:bg-orange-100 rounded-xl transition-colors" aria-label="Exit selection mode">
-              <X className="w-5 h-5 text-gray-600" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-orange-50 rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-orange-200 gap-3">
+          <div className="flex items-center gap-2 lg:gap-3">
+            <button onClick={exitSelectionMode} className="p-2 hover:bg-orange-100 rounded-lg transition-colors flex-shrink-0" aria-label="Exit selection mode">
+              <X className="w-4 h-4 lg:w-5 lg:h-5 text-gray-600" />
             </button>
-            <span className="font-bold text-orange-800">{selectedIds.size} Selected</span>
+            <span className="font-bold text-sm lg:text-base text-orange-800">{selectedIds.size} Selected</span>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={handleSelectAll} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-100 rounded-xl transition-colors">
-              {allSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
-              {allSelected ? 'Deselect All' : 'Select All'}
+          <div className="flex items-center gap-2 lg:gap-3 w-full sm:w-auto">
+            <button onClick={handleSelectAll} className="flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 text-xs lg:text-sm font-semibold text-orange-700 hover:bg-orange-100 rounded-lg lg:rounded-xl transition-colors flex-1 sm:flex-initial justify-center">
+              {allSelected ? <CheckSquare className="w-3.5 h-3.5 lg:w-4 lg:h-4" /> : <Square className="w-3.5 h-3.5 lg:w-4 lg:h-4" />}
+              <span className="hidden sm:inline">{allSelected ? 'Deselect All' : 'Select All'}</span>
+              <span className="sm:hidden">{allSelected ? 'Deselect' : 'Select All'}</span>
             </button>
-            <button 
-              onClick={() => setShowBulkDeleteDialog(true)} 
-              disabled={selectedIds.size === 0} 
-              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-red-500 rounded-xl hover:bg-red-600 disabled:opacity-50 transition-colors"
+            <button
+              onClick={() => setShowBulkDeleteDialog(true)}
+              disabled={selectedIds.size === 0}
+              className="flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 text-xs lg:text-sm font-bold text-white bg-red-500 rounded-lg lg:rounded-xl hover:bg-red-600 disabled:opacity-50 transition-colors flex-1 sm:flex-initial justify-center"
             >
-              <Trash2 className="w-4 h-4" />Delete ({selectedIds.size})
+              <Trash2 className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+              <span className="hidden sm:inline">Delete ({selectedIds.size})</span>
+              <span className="sm:hidden">Delete</span>
             </button>
           </div>
         </div>
       ) : (
-        <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-          <div className="flex-1">
-            <SearchBar value={search} onChange={setSearch} placeholder="Search accounts, industries..." onFilterClick={() => setShowFilter(true)} />
-          </div>
-          <div className="flex items-center gap-3">
-            {/* View Toggle - Desktop Only */}
-            <div className="hidden lg:flex items-center bg-slate-100 rounded-xl p-1">
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
-                aria-label="List view"
-              >
-                <List className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
-                aria-label="Grid view"
-              >
-                <LayoutGrid className="w-5 h-5" />
-              </button>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <SearchBar value={search} onChange={setSearch} placeholder="Search accounts, industries..." onFilterClick={() => setShowFilter(true)} />
             </div>
-            {userCanDelete && (
-              <button
-                onClick={() => setSelectionMode(true)}
-                className="p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-orange-500 hover:border-orange-200 transition-colors shadow-sm"
-                aria-label="Bulk select"
-              >
-                <CheckSquare className="w-5 h-5" />
-              </button>
-            )}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* View Toggle - Desktop Only */}
+              <div className="hidden lg:flex items-center bg-slate-100 rounded-xl p-1">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
+                  aria-label="List view"
+                >
+                  <List className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
+                  aria-label="Grid view"
+                >
+                  <LayoutGrid className="w-5 h-5" />
+                </button>
+              </div>
+              {userCanDelete && (
+                <button
+                  onClick={() => setSelectionMode(true)}
+                  className="p-2.5 lg:p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-orange-500 hover:border-orange-200 transition-colors shadow-sm flex-shrink-0"
+                  aria-label="Bulk select"
+                >
+                  <CheckSquare className="w-4 h-4 lg:w-5 lg:h-5" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
-      
+
       {/* Sector Filter Pills */}
       <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
-        <button 
-          onClick={() => setSectorFilter('all')} 
-          className={`px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
-            sectorFilter === 'all' 
-              ? 'bg-orange-500 text-white shadow-lg shadow-orange-200' 
+        <button
+          onClick={() => setSectorFilter('all')}
+          className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
+            sectorFilter === 'all'
+              ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
               : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
           }`}
         >
           All Sectors
         </button>
         {availableSectors.slice(0, 6).map(sector => (
-          <button 
-            key={sector} 
-            onClick={() => setSectorFilter(sector)} 
-            className={`px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
-              sectorFilter === sector 
-                ? 'bg-orange-500 text-white shadow-lg shadow-orange-200' 
+          <button
+            key={sector}
+            onClick={() => setSectorFilter(sector)}
+            className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 lg:gap-2 flex-shrink-0 ${
+              sectorFilter === sector
+                ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
                 : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
             }`}
           >
-            <span>{SECTOR_ICONS[sector] || '📁'}</span>
-            <span className="max-w-[100px] truncate">{sector.split(' & ')[0]}</span>
+            <span className="text-base lg:text-lg">{SECTOR_ICONS[sector] || '📁'}</span>
+            <span className="max-w-[80px] lg:max-w-[100px] truncate">{sector.split(' & ')[0]}</span>
           </button>
         ))}
       </div>

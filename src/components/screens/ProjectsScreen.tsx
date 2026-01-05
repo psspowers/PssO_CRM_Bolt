@@ -227,18 +227,18 @@ export const ProjectsScreen: React.FC = () => {
             );
           })}
         </div>
-        <div className="flex flex-wrap gap-3 mt-3">
+        <div className="flex flex-wrap gap-2 lg:gap-3 mt-3">
           {PROJECT_STATUSES.map(status => (
             <button
               key={status}
               onClick={() => setStatusFilter(statusFilter === status ? 'All' : status)}
-              className={`flex items-center gap-2 text-xs px-2 py-1 rounded-lg transition-all ${
-                statusFilter === status 
-                  ? 'bg-slate-900 text-white' 
+              className={`flex items-center gap-1.5 lg:gap-2 text-[10px] lg:text-xs px-2 lg:px-2.5 py-1 lg:py-1.5 rounded-lg transition-all font-medium ${
+                statusFilter === status
+                  ? 'bg-slate-900 text-white shadow-sm'
                   : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
               }`}
             >
-              <div className={`w-2 h-2 rounded-full ${statusColors[status]}`} />
+              <div className={`w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full ${statusColors[status]}`} />
               <span>{status}</span>
               <span className="font-bold">{statusCounts[status] || 0}</span>
             </button>
@@ -247,52 +247,68 @@ export const ProjectsScreen: React.FC = () => {
       </div>
 
       {/* Search and Filters */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="flex-1">
-          <SearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="Search projects by name or country..."
-          />
-        </div>
-        <div className="flex gap-2">
-          {/* Country Filter */}
-          <div className="relative">
-            <select
-              value={countryFilter}
-              onChange={(e) => setCountryFilter(e.target.value)}
-              className="appearance-none bg-white border border-slate-200 rounded-xl px-4 py-2.5 pr-10 text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-            >
-              <option value="All">All Countries</option>
-              {countries.map(country => (
-                <option key={country} value={country}>{country}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <SearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search projects by name or country..."
+            />
           </div>
-
-          {/* Clear Filters */}
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-200 transition-colors"
-            >
-              <X className="w-4 h-4" />
-              Clear
-            </button>
-          )}
-
-          {/* Add Project Button */}
+          {/* Add Project Button - Desktop */}
           {canCreate() && (
             <button
               onClick={() => {
                 setEditingProject(null);
                 setShowForm(true);
               }}
-              className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors"
+              className="hidden sm:flex items-center gap-2 px-3 lg:px-4 py-2.5 bg-orange-500 text-white rounded-xl text-xs lg:text-sm font-semibold hover:bg-orange-600 transition-colors flex-shrink-0"
             >
               <Plus className="w-4 h-4" />
-              Add Project
+              <span>Add Project</span>
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
+          {/* Country Filter */}
+          <div className="relative flex-shrink-0">
+            <select
+              value={countryFilter}
+              onChange={(e) => setCountryFilter(e.target.value)}
+              className="appearance-none bg-white border border-slate-200 rounded-lg lg:rounded-xl px-3 lg:px-4 py-2 lg:py-2.5 pr-8 lg:pr-10 text-xs lg:text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 whitespace-nowrap"
+            >
+              <option value="All">All Countries</option>
+              {countries.map(country => (
+                <option key={country} value={country}>{country}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2 lg:right-3 top-1/2 -translate-y-1/2 w-3 h-3 lg:w-4 lg:h-4 text-slate-400 pointer-events-none" />
+          </div>
+
+          {/* Clear Filters */}
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="flex items-center gap-1.5 px-3 lg:px-4 py-2 lg:py-2.5 bg-slate-100 text-slate-600 rounded-lg lg:rounded-xl text-xs lg:text-sm font-medium hover:bg-slate-200 transition-colors flex-shrink-0"
+            >
+              <X className="w-3 h-3 lg:w-4 lg:h-4" />
+              <span>Clear</span>
+            </button>
+          )}
+
+          {/* Add Project Button - Mobile */}
+          {canCreate() && (
+            <button
+              onClick={() => {
+                setEditingProject(null);
+                setShowForm(true);
+              }}
+              className="sm:hidden flex items-center gap-1.5 px-3 py-2 bg-orange-500 text-white rounded-lg text-xs font-semibold hover:bg-orange-600 transition-colors flex-shrink-0"
+            >
+              <Plus className="w-3 h-3" />
+              <span>Add</span>
             </button>
           )}
         </div>

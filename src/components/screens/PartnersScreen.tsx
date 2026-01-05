@@ -55,28 +55,74 @@ export const PartnersScreen: React.FC = () => {
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-emerald-500" /></div>;
 
   return (
-    <div className="pb-24 space-y-4">
+    <div className="space-y-6">
       {selectionMode ? (
-        <div className="flex items-center justify-between bg-emerald-50 rounded-xl p-3 border border-emerald-200">
-          <div className="flex items-center gap-3">
-            <button onClick={exitSelectionMode} className="p-1.5 hover:bg-emerald-100 rounded-lg" aria-label="Exit selection mode"><X className="w-5 h-5 text-gray-600" /></button>
-            <span className="font-medium text-emerald-800">{selectedIds.size} selected</span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-emerald-50 rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-emerald-200 gap-3">
+          <div className="flex items-center gap-2 lg:gap-3">
+            <button onClick={exitSelectionMode} className="p-2 hover:bg-emerald-100 rounded-lg transition-colors flex-shrink-0" aria-label="Exit selection mode">
+              <X className="w-4 h-4 lg:w-5 lg:h-5 text-gray-600" />
+            </button>
+            <span className="font-bold text-sm lg:text-base text-emerald-800">{selectedIds.size} Selected</span>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={handleSelectAll} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-100 rounded-lg">{allSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}{allSelected ? 'Deselect All' : 'Select All'}</button>
-            <button onClick={() => setShowBulkDeleteDialog(true)} disabled={selectedIds.size === 0} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 disabled:opacity-50"><Trash2 className="w-4 h-4" />Delete ({selectedIds.size})</button>
+          <div className="flex items-center gap-2 lg:gap-3 w-full sm:w-auto">
+            <button onClick={handleSelectAll} className="flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 text-xs lg:text-sm font-semibold text-emerald-700 hover:bg-emerald-100 rounded-lg lg:rounded-xl transition-colors flex-1 sm:flex-initial justify-center">
+              {allSelected ? <CheckSquare className="w-3.5 h-3.5 lg:w-4 lg:h-4" /> : <Square className="w-3.5 h-3.5 lg:w-4 lg:h-4" />}
+              <span className="hidden sm:inline">{allSelected ? 'Deselect All' : 'Select All'}</span>
+              <span className="sm:hidden">{allSelected ? 'Deselect' : 'Select All'}</span>
+            </button>
+            <button
+              onClick={() => setShowBulkDeleteDialog(true)}
+              disabled={selectedIds.size === 0}
+              className="flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 text-xs lg:text-sm font-bold text-white bg-red-500 rounded-lg lg:rounded-xl hover:bg-red-600 disabled:opacity-50 transition-colors flex-1 sm:flex-initial justify-center"
+            >
+              <Trash2 className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+              <span className="hidden sm:inline">Delete ({selectedIds.size})</span>
+              <span className="sm:hidden">Delete</span>
+            </button>
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-3">
-          <div className="flex-1"><SearchBar value={search} onChange={setSearch} placeholder="Search partners..." showFilter={false} /></div>
-          {userCanDelete && <button onClick={() => setSelectionMode(true)} className="p-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200" aria-label="Bulk select"><CheckSquare className="w-5 h-5" /></button>}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <SearchBar value={search} onChange={setSearch} placeholder="Search partners..." showFilter={false} />
+            </div>
+            {userCanDelete && (
+              <button
+                onClick={() => setSelectionMode(true)}
+                className="p-2.5 lg:p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-emerald-500 hover:border-emerald-200 transition-colors shadow-sm flex-shrink-0"
+                aria-label="Bulk select"
+              >
+                <CheckSquare className="w-4 h-4 lg:w-5 lg:h-5" />
+              </button>
+            )}
+          </div>
         </div>
       )}
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
-        {['all', ...regions].map(region => (<button key={region} onClick={() => setRegionFilter(region)} className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${regionFilter === region ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600'}`}>{region === 'all' ? 'All Regions' : region}</button>))}
+
+      {/* Region Filter Pills */}
+      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
+        {['all', ...regions].map(region => (
+          <button
+            key={region}
+            onClick={() => setRegionFilter(region)}
+            className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
+              regionFilter === region
+                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200'
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+            }`}
+          >
+            {region === 'all' ? 'All Regions' : region}
+          </button>
+        ))}
       </div>
-      <p className="text-sm text-gray-500">{filtered.length} partners</p>
+
+      {/* Results Count */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-slate-500">
+          Showing <span className="font-semibold text-slate-900">{filtered.length}</span> partners
+        </p>
+      </div>
       <div className="space-y-3">
         {filtered.map(partner => <PartnerCard key={partner.id} partner={partner} onClick={() => !selectionMode && setSelectedPartner(partner)} showCheckbox={selectionMode && canDelete(partner.ownerId)} isSelected={selectedIds.has(partner.id)} onSelect={handleSelect} />)}
         {filtered.length === 0 && <p className="text-center text-gray-500 py-8">No partners found</p>}
