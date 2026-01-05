@@ -10,19 +10,13 @@ interface OpportunityCardProps {
 }
 
 const stageColors: Record<string, string> = {
-  Prospect: 'bg-slate-100 text-slate-700',
-  Qualified: 'bg-blue-100 text-blue-700',
-  Proposal: 'bg-amber-100 text-amber-700',
-  Negotiation: 'bg-purple-100 text-purple-700',
-  'Term Sheet': 'bg-teal-100 text-teal-700',
+  Prospect: 'bg-slate-100 text-slate-600',
+  Qualified: 'bg-slate-100 text-slate-600',
+  Proposal: 'bg-slate-100 text-slate-600',
+  Negotiation: 'bg-slate-100 text-slate-600',
+  'Term Sheet': 'bg-slate-100 text-slate-600',
   Won: 'bg-emerald-100 text-emerald-700',
-  Lost: 'bg-red-100 text-red-700',
-};
-
-const priorityColors: Record<string, string> = { 
-  High: 'border-l-red-500', 
-  Medium: 'border-l-amber-500', 
-  Low: 'border-l-slate-300' 
+  Lost: 'bg-slate-100 text-slate-600',
 };
 
 export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, accountName, ownerName, onClick }) => {
@@ -31,58 +25,56 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, a
   return (
     <button
       onClick={onClick}
-      className={`w-full bg-white rounded-xl lg:rounded-2xl border border-slate-200 p-4 lg:p-5 text-left shadow-sm hover:shadow-lg hover:border-slate-300 transition-all border-l-4 ${priorityColors[opportunity.priority]} group`}
+      className="w-full bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-all active:scale-[0.98] text-left group"
     >
-      {/* Top row: Owner and Stage badges */}
       <div className="flex items-center justify-between gap-3 mb-3">
         {ownerName && (
-          <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full flex items-center gap-1.5 border border-blue-100">
+          <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded-full flex items-center gap-1.5">
             <User className="w-3 h-3" />
             {ownerName}
           </span>
         )}
-        <span className={`px-3 py-1 rounded-full text-xs font-bold ml-auto ${stageColors[opportunity.stage]}`}>
+        <span className={`px-3 py-1 rounded-full text-xs font-semibold ml-auto ${stageColors[opportunity.stage]}`}>
           {opportunity.stage}
         </span>
       </div>
 
-      {/* Project name and account */}
       <div className="mb-4">
-        <h3 className="font-bold text-lg text-slate-900 mb-1 group-hover:text-orange-600 transition-colors">
+        <h3 className="text-base font-bold text-slate-900 leading-tight mb-1 group-hover:text-orange-600 transition-colors">
           {opportunity.name}
         </h3>
-        <p className="text-sm text-slate-500">{accountName || 'No account linked'}</p>
+        <p className="text-sm font-semibold text-slate-500">{accountName || 'No account linked'}</p>
       </div>
-      
+
       <div className="flex items-center gap-4 mt-4">
-        <div className="flex items-center gap-1.5 text-emerald-600">
-          <DollarSign className="w-4 h-4" />
-          <span className="font-bold">{formatValue(opportunity.value)}</span>
+        <div className="flex items-center gap-1.5">
+          <DollarSign className="w-5 h-5 text-slate-900" />
+          <span className="text-xl font-black text-slate-900 tracking-tight">{formatValue(opportunity.value)}</span>
         </div>
-        <div className="flex items-center gap-1.5 text-slate-500 text-sm">
-          <Zap className="w-4 h-4" />
-          <span>{opportunity.targetCapacity} MW</span>
+        <div className="flex items-center gap-1.5">
+          <Zap className="w-4 h-4 text-slate-500" />
+          <span className="text-sm font-semibold text-slate-500">{opportunity.targetCapacity} MW</span>
         </div>
-        <div className="hidden lg:block text-xs text-slate-400 px-2 py-1 bg-slate-100 rounded-lg">
+        <div className="hidden lg:block text-xs font-semibold text-slate-500 px-2.5 py-1 bg-slate-100 rounded-lg">
           {opportunity.reType}
         </div>
       </div>
-      
+
       {opportunity.nextAction && (
-        <div className="flex items-center gap-3 mt-4 p-3 bg-amber-50 rounded-xl border border-amber-100">
-          <Calendar className="w-4 h-4 text-amber-600 flex-shrink-0" />
-          <span className="text-sm text-amber-800 flex-1 truncate font-medium">{opportunity.nextAction}</span>
+        <div className="flex items-center gap-3 mt-4 p-3 bg-slate-100 rounded-xl">
+          <Calendar className="w-4 h-4 text-slate-600 flex-shrink-0" />
+          <span className="text-sm text-slate-700 flex-1 truncate font-medium">{opportunity.nextAction}</span>
           {opportunity.nextActionDate && (
-            <span className="text-xs text-amber-600 font-bold bg-amber-100 px-2 py-1 rounded-lg">
+            <span className="text-xs text-slate-600 font-semibold bg-white px-2.5 py-1 rounded-lg">
               {new Date(opportunity.nextActionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
           )}
         </div>
       )}
-      
+
       <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-        <span className="text-xs text-slate-600 lg:hidden">{opportunity.reType}</span>
-        <span className="text-xs text-slate-600 hidden lg:block">Click to view details</span>
+        <span className="text-xs font-semibold text-slate-500 lg:hidden">{opportunity.reType}</span>
+        <span className="text-xs font-semibold text-slate-500 hidden lg:block">Click to view details</span>
         <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-orange-500 transition-colors" />
       </div>
     </button>

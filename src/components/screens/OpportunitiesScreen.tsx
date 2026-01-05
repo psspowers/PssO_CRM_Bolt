@@ -275,7 +275,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-32">
       {/* Header & Selection Toolbar */}
       {selectionMode ? (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-orange-50 rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-orange-200 gap-3">
@@ -303,13 +303,13 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          {/* NEW: Hierarchy View Toggle - My Deals vs Team Deals */}
+        <div className="sticky top-0 z-20 glass-header px-4 py-3 -mx-4 mb-4">
           <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
-              {/* View Toggle Buttons */}
-              <div className="flex items-center bg-slate-100 rounded-xl p-1 flex-shrink-0">
-                <button
+            {/* NEW: Hierarchy View Toggle - My Deals vs Team Deals */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                {/* View Toggle Buttons */}
+                <div className="flex items-center bg-slate-100 rounded-xl p-1 flex-shrink-0">
+                  <button
                   onClick={() => setHierarchyView('mine')}
                   className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold transition-all whitespace-nowrap ${
                     hierarchyView === 'mine'
@@ -326,10 +326,10 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                     {myDealsCount}
                   </span>
                 </button>
-                <button
-                  onClick={() => setHierarchyView('team')}
-                  disabled={loadingSubordinates}
-                  className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold transition-all whitespace-nowrap ${
+                  <button
+                    onClick={() => setHierarchyView('team')}
+                    disabled={loadingSubordinates}
+                    className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold transition-all whitespace-nowrap ${
                     hierarchyView === 'team'
                       ? 'bg-white shadow-sm text-orange-600'
                       : 'text-slate-500 hover:text-slate-700'
@@ -399,8 +399,12 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
               </div>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Team View Info Banner */}
+      {/* Team View Info Banner */}
+      {!selectionMode && (
+        <>
           {hierarchyView === 'team' && subordinateIds.length > 0 && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 lg:p-4 flex items-start lg:items-center gap-2 lg:gap-3">
               <Users className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600 flex-shrink-0 mt-0.5 lg:mt-0" />
@@ -418,7 +422,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
               </p>
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* Stage Fast-Filters */}
@@ -427,10 +431,10 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           <button
             key={stage}
             onClick={() => setStageFilter(stage)}
-            className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
+            className={`px-4 lg:px-5 py-2 lg:py-2.5 rounded-full text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
               stageFilter === stage
-                ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
-                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                ? 'bg-slate-900 text-white'
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
             }`}
           >
             {stage === 'all' ? 'All Stages' : stage}
