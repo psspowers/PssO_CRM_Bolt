@@ -278,79 +278,83 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     <div className="space-y-6">
       {/* Header & Selection Toolbar */}
       {selectionMode ? (
-        <div className="flex items-center justify-between bg-orange-50 rounded-xl lg:rounded-2xl p-4 border border-orange-200">
-          <div className="flex items-center gap-3">
-            <button onClick={exitSelectionMode} className="p-2 hover:bg-orange-100 rounded-xl transition-colors">
-              <X className="w-5 h-5 text-gray-600" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-orange-50 rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-orange-200 gap-3">
+          <div className="flex items-center gap-2 lg:gap-3">
+            <button onClick={exitSelectionMode} className="p-2 hover:bg-orange-100 rounded-lg transition-colors flex-shrink-0">
+              <X className="w-4 h-4 lg:w-5 lg:h-5 text-gray-600" />
             </button>
-            <span className="font-bold text-orange-800">{selectedIds.size} Selected</span>
+            <span className="font-bold text-sm lg:text-base text-orange-800">{selectedIds.size} Selected</span>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={handleSelectAll} className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-100 rounded-xl transition-colors">
-              {allSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
-              {allSelected ? 'Deselect All' : 'Select All'}
+          <div className="flex items-center gap-2 lg:gap-3 w-full sm:w-auto">
+            <button onClick={handleSelectAll} className="flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 text-xs lg:text-sm font-semibold text-orange-700 hover:bg-orange-100 rounded-lg lg:rounded-xl transition-colors flex-1 sm:flex-initial justify-center">
+              {allSelected ? <CheckSquare className="w-3.5 h-3.5 lg:w-4 lg:h-4" /> : <Square className="w-3.5 h-3.5 lg:w-4 lg:h-4" />}
+              <span className="hidden sm:inline">{allSelected ? 'Deselect All' : 'Select All'}</span>
+              <span className="sm:hidden">{allSelected ? 'Deselect' : 'Select All'}</span>
             </button>
-            <button 
-              onClick={() => setShowBulkDeleteDialog(true)} 
-              disabled={selectedIds.size === 0} 
-              className="px-4 py-2 text-sm font-bold text-white bg-red-500 rounded-xl hover:bg-red-600 disabled:opacity-50 transition-colors flex items-center gap-2"
+            <button
+              onClick={() => setShowBulkDeleteDialog(true)}
+              disabled={selectedIds.size === 0}
+              className="px-3 lg:px-4 py-2 text-xs lg:text-sm font-bold text-white bg-red-500 rounded-lg lg:rounded-xl hover:bg-red-600 disabled:opacity-50 transition-colors flex items-center gap-1.5 lg:gap-2 flex-1 sm:flex-initial justify-center"
             >
-              <Trash2 className="w-4 h-4" />
-              Delete ({selectedIds.size})
+              <Trash2 className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+              <span className="hidden sm:inline">Delete ({selectedIds.size})</span>
+              <span className="sm:hidden">Delete</span>
             </button>
           </div>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
           {/* NEW: Hierarchy View Toggle - My Deals vs Team Deals */}
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2 overflow-x-auto pb-2">
               {/* View Toggle Buttons */}
-              <div className="flex items-center bg-slate-100 rounded-xl p-1">
-                <button 
+              <div className="flex items-center bg-slate-100 rounded-xl p-1 flex-shrink-0">
+                <button
                   onClick={() => setHierarchyView('mine')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                    hierarchyView === 'mine' 
-                      ? 'bg-white shadow-sm text-orange-600' 
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs lg:text-sm font-semibold transition-all whitespace-nowrap ${
+                    hierarchyView === 'mine'
+                      ? 'bg-white shadow-sm text-orange-600'
                       : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
-                  <User className="w-4 h-4" />
-                  <span>My Deals</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${
+                  <User className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+                  <span className="hidden sm:inline">My Deals</span>
+                  <span className="sm:hidden">Mine</span>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] lg:text-xs ${
                     hierarchyView === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
                   }`}>
                     {myDealsCount}
                   </span>
                 </button>
-                <button 
+                <button
                   onClick={() => setHierarchyView('team')}
                   disabled={loadingSubordinates}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                    hierarchyView === 'team' 
-                      ? 'bg-white shadow-sm text-orange-600' 
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs lg:text-sm font-semibold transition-all whitespace-nowrap ${
+                    hierarchyView === 'team'
+                      ? 'bg-white shadow-sm text-orange-600'
                       : 'text-slate-500 hover:text-slate-700'
                   } ${loadingSubordinates ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <Users className="w-4 h-4" />
-                  <span>Team Deals</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${
+                  <Users className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+                  <span className="hidden sm:inline">Team Deals</span>
+                  <span className="sm:hidden">Team</span>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] lg:text-xs ${
                     hierarchyView === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
                   }`}>
                     {loadingSubordinates ? '...' : teamDealsCount}
                   </span>
                 </button>
               </div>
-              
+
               {/* Info Tooltip */}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button className="p-2 text-slate-400 hover:text-slate-600 transition-colors">
+                    <button className="p-2 text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0">
                       <Info className="w-4 h-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="right" className="max-w-xs">
+                  <TooltipContent side="bottom" className="max-w-xs">
                     <p className="text-xs">
                       <strong>My Deals:</strong> Opportunities you own<br />
                       <strong>Team Deals:</strong> Your deals + deals owned by your direct and indirect reports (based on org hierarchy)
@@ -361,11 +365,11 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
             </div>
 
             {/* Search and Actions */}
-            <div className="flex items-center gap-3 flex-1 lg:flex-none lg:max-w-md">
+            <div className="flex items-center gap-2">
               <div className="flex-1">
                 <SearchBar value={search} onChange={setSearch} placeholder="Search deals..." onFilterClick={() => setShowFilter(true)} />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 {/* View Toggle - Desktop Only */}
                 <div className="hidden lg:flex items-center bg-slate-100 rounded-xl p-1">
                   <button
@@ -386,10 +390,10 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                 {userCanDelete && (
                   <button
                     onClick={() => setSelectionMode(true)}
-                    className="p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-orange-500 hover:border-orange-200 transition-colors shadow-sm"
+                    className="p-2.5 lg:p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-orange-500 hover:border-orange-200 transition-colors shadow-sm flex-shrink-0"
                     aria-label="Bulk select"
                   >
-                    <CheckSquare className="w-5 h-5" />
+                    <CheckSquare className="w-4 h-4 lg:w-5 lg:h-5" />
                   </button>
                 )}
               </div>
@@ -423,7 +427,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           <button
             key={stage}
             onClick={() => setStageFilter(stage)}
-            className={`px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
+            className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
               stageFilter === stage
                 ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
                 : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
