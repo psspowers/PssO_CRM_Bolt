@@ -59,9 +59,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) 
               className={`w-7 h-7 transition-transform ${isMagicOpen ? 'rotate-180' : ''}`}
               aria-hidden="true"
             />
-            {!isMagicOpen && (
-              <span className="absolute inset-0 rounded-full bg-orange-500 animate-ping opacity-20" />
-            )}
           </button>
         </div>
 
