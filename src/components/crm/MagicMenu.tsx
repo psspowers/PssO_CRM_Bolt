@@ -17,7 +17,7 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
         onClick={onClose}
       />
 
-      <div className="flex justify-center items-end gap-6 mb-4 pointer-events-auto animate-in slide-in-from-bottom-10 fade-in duration-300">
+      <div className="relative z-10 flex justify-center items-end gap-6 mb-4 pointer-events-auto animate-in slide-in-from-bottom-10 fade-in duration-300">
 
         <button
           onClick={() => { onNavigate('accounts'); onClose(); }}
