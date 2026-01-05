@@ -275,7 +275,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   );
 
   return (
-    <div className="space-y-6 pb-32">
+    <div className="space-y-4 lg:space-y-6 pb-24 lg:pb-32">
       {/* Header & Selection Toolbar */}
       {selectionMode ? (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-orange-50 rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-orange-200 gap-3">
@@ -303,10 +303,10 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           </div>
         </div>
       ) : (
-        <div className="sticky top-0 z-20 glass-header px-4 py-3 -mx-4 mb-4">
-          <div className="flex flex-col gap-3">
-            {/* NEW: Hierarchy View Toggle - My Deals vs Team Deals */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="flex flex-col gap-3 lg:gap-4">
+          {/* NEW: Hierarchy View Toggle - My Deals vs Team Deals */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4">
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
                 {/* View Toggle Buttons */}
                 <div className="flex items-center bg-slate-100 rounded-xl p-1 flex-shrink-0">
                   <button
@@ -431,10 +431,10 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           <button
             key={stage}
             onClick={() => setStageFilter(stage)}
-            className={`px-4 lg:px-5 py-2 lg:py-2.5 rounded-full text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
+            className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-full text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
               stageFilter === stage
                 ? 'bg-slate-900 text-white'
-                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
             {stage === 'all' ? 'All Stages' : stage}

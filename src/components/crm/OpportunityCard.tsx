@@ -25,7 +25,7 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, a
   return (
     <button
       onClick={onClick}
-      className="w-full bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-all active:scale-[0.98] text-left group"
+      className="w-full bg-white rounded-xl lg:rounded-2xl p-4 lg:p-5 shadow-sm border border-slate-100 hover:shadow-md transition-all active:scale-[0.98] text-left group"
     >
       <div className="flex items-center justify-between gap-3 mb-3">
         {ownerName && (
@@ -46,10 +46,10 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, a
         <p className="text-sm font-semibold text-slate-500">{accountName || 'No account linked'}</p>
       </div>
 
-      <div className="flex items-center gap-4 mt-4">
+      <div className="flex items-center gap-3 lg:gap-4 mt-4">
         <div className="flex items-center gap-1.5">
-          <DollarSign className="w-5 h-5 text-slate-900" />
-          <span className="text-xl font-black text-slate-900 tracking-tight">{formatValue(opportunity.value)}</span>
+          <DollarSign className="w-4 lg:w-5 h-4 lg:h-5 text-slate-900" />
+          <span className="text-lg lg:text-xl font-black text-slate-900 tracking-tight">{formatValue(opportunity.value)}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Zap className="w-4 h-4 text-slate-500" />
