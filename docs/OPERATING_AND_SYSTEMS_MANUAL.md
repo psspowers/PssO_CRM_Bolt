@@ -1,7 +1,7 @@
 # CRM Operating and Systems Manual
 
-**Version:** 1.0
-**Last Updated:** January 4, 2026
+**Version:** 1.1
+**Last Updated:** January 5, 2026
 **System Name:** Enterprise CRM for Renewable Energy Investment
 **Target Industry:** Solar PV / Renewable Energy Project Finance
 
@@ -12,8 +12,11 @@
 This manual includes ASCII diagrams for key workflows and system architecture. For a production version, consider adding actual screenshots at these locations:
 
 - Section 2.3: Screenshot of main dashboard layout
+- Section 2.3.1: Screenshot of mobile bottom navigation
 - Section 4.2: Screenshot of 2FA setup QR code screen
 - Section 5.1.3: Screenshot of Quality Gate checklist interface
+- Section 5.1.6: Screenshot of Mine/Team toggle and hierarchical view
+- Section 5.1.7: Screenshot of stage history audit trail
 - Section 6.1: Screenshot of Classic Dashboard with real data
 - Section 6.2: Screenshot of Velocity Dashboard charts
 - Section 7.1: Screenshot of Media Vault file browser
@@ -138,6 +141,80 @@ This CRM system is purpose-built for renewable energy investment firms managing 
 6. **Projects**: Active project portfolio
 7. **Activities**: Timeline of calls, meetings, notes
 8. **Tasks**: Action items and follow-ups
+
+### 2.3.1 Mobile Bottom Navigation
+
+**Purpose**: Optimized navigation for mobile devices with thumb-reachable controls and minimalist design.
+
+**Design Philosophy**:
+- Icon-only labels (no text) for clean appearance
+- Larger touch targets meeting accessibility standards (44px+ minimum)
+- Active state visual indicators (colored icon + dot below)
+- Elevated Magic button with pulse animation for discoverability
+- Grid-based layout for consistent spacing
+
+**Mobile Navigation Layout**:
+```
+┌────────────────────────────────────────────────────────┐
+│                 Main Content Area                      │
+│                    (scrollable)                        │
+│                                                        │
+│                                                        │
+│                                                        │
+└────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│  🏠     🎯     🏢     👥     🤝     📊     🗂️     ⭐    │
+│  •                                                     │
+│                                                        │
+│                    [✨ Magic Menu]                     │
+└────────────────────────────────────────────────────────┘
+```
+
+**Navigation Icons** (Left to Right):
+1. **🏠 Home** (House icon): Dashboard
+2. **🎯 Opportunities** (Target icon): Deal pipeline
+3. **🏢 Accounts** (Building icon): Companies
+4. **👥 Contacts** (Users icon): People
+5. **🤝 Partners** (Handshake icon): EPC/O&M/Tech
+6. **📊 Projects** (Folders icon): Active projects
+7. **🗂️ Activities** (File Stack icon): Call logs
+8. **⭐ Tasks** (Star icon): Action items
+
+**Active State Indicators**:
+- **Icon Color**: Changes to brand orange (`text-orange-500`)
+- **Icon Size**: Slightly larger (28px vs 24px)
+- **Dot Indicator**: Small orange dot appears below active icon
+- **Background**: Subtle gray background on tap
+
+**Magic Button**:
+- **Position**: Center of bottom navigation, elevated 12px above nav bar
+- **Design**: Circular button with gradient background
+- **Animation**: Subtle pulse effect (scale 105% → 100% loop)
+- **Icon**: Sparkles (✨) suggesting AI or special actions
+- **Function**: Opens quick action menu (Quick Add + AI features)
+
+**Touch Optimization**:
+- Minimum tap target: 44px × 44px (WCAG AAA compliance)
+- Spacing between icons: 16px minimum
+- Bottom safe area padding: Automatic iOS/Android notch handling
+- Haptic feedback on tap (iOS only)
+
+**Responsive Behavior**:
+- **Mobile** (< 1024px): Bottom navigation visible, sidebar hidden
+- **Tablet/Desktop** (≥ 1024px): Bottom navigation hidden, sidebar visible
+- **Orientation Change**: Layout adapts instantly without page reload
+
+**Usage Best Practices**:
+- Use thumb for navigation (designed for one-handed operation)
+- Swipe down from top to access search and notifications
+- Tap Magic button for quick record creation
+- Active dot helps you remember which section you're in
+
+**Accessibility**:
+- Each icon has aria-label for screen readers
+- High contrast icons (4.5:1 minimum)
+- Focus indicators for keyboard navigation (tablet mode)
+- Reduced motion option disables pulse animation
 
 ---
 
@@ -571,6 +648,222 @@ SALES PIPELINE FLOW
 - Expected Close Date (soonest first)
 - Last Modified (most recent first)
 - Alphabetical (A-Z)
+
+**Mobile-Specific UI Elements**:
+
+**Stage Filter Pills** (Horizontal Scroll):
+```
+┌──────────────────────────────────────────────────────┐
+│ ← [All] [Prospect] [Qualified] [Proposal] [Negotiat→│
+└──────────────────────────────────────────────────────┘
+```
+- Horizontal scrollable stage filter at top of list
+- Tap to filter by stage
+- Active pill highlighted with brand color
+- Count badge shows number of deals per stage
+- Smooth scroll animation with momentum
+
+**Search Bar with Filter Icon**:
+- Fixed at top, always accessible while scrolling
+- Magnifying glass icon on left
+- Filter icon on right (opens full filter modal)
+- Clear "×" button appears when typing
+- Sticky positioning maintains visibility
+
+**Card Layout**:
+- Full-width cards with 16px side margins
+- 12px spacing between cards
+- Tap entire card to view detail
+- Swipe left to reveal quick actions (Archive, Edit, Share)
+- Pull-to-refresh gesture at top of list
+
+**Owner Grouping** (Team View):
+- Opportunities grouped by assigned user
+- Collapsible sections per owner
+- Count badge shows deals per person
+- Avatar thumbnail for each owner
+
+#### 5.1.6 Hierarchical Deal Visibility (Mine vs Team)
+
+**Purpose**: Managers can view their team's pipeline while individual contributors focus on their own deals.
+
+**Segmented Control** (Top of Opportunities Screen):
+```
+┌──────────────────────────────────┐
+│   [  Mine  ] [  Team  ]          │
+└──────────────────────────────────┘
+```
+
+**Mine View**:
+- Shows only opportunities assigned to you
+- Includes opportunities you created
+- Excludes your team members' deals
+- Default view for individual contributors
+- Faster loading (smaller dataset)
+
+**Team View**:
+- Shows your opportunities PLUS subordinates' opportunities
+- Automatically includes all direct reports (defined in org chart)
+- Recursive hierarchy: If you manage A, and A manages B, you see A's and B's deals
+- Only visible if you have subordinates in `user_hierarchy` table
+- If no subordinates, Team view shows same as Mine view
+
+**How Hierarchy is Determined**:
+1. System queries `user_hierarchy` table for `parent_user_id = your_user_id`
+2. Identifies all direct reports
+3. Recursively finds reports' reports (cascading visibility)
+4. Fetches opportunities where `assigned_to` matches any user in hierarchy
+5. Results displayed grouped by owner (or ungrouped based on preference)
+
+**Visibility Example**:
+```
+Organizational Structure:
+┌────────────────┐
+│  Alice (CFO)   │
+└────────┬───────┘
+         │
+    ┌────┴─────┐
+    │          │
+┌───▼───┐  ┌───▼────┐
+│ Bob   │  │ Carol  │
+│(Mgr)  │  │ (Mgr)  │
+└───┬───┘  └───┬────┘
+    │          │
+┌───▼───┐  ┌───▼────┐
+│ David │  │ Emma   │
+└───────┘  └────────┘
+
+Alice's Team View Shows:
+- Alice's own opportunities
+- Bob's opportunities
+- Carol's opportunities
+- David's opportunities (Bob's report)
+- Emma's opportunities (Carol's report)
+
+Bob's Team View Shows:
+- Bob's own opportunities
+- David's opportunities
+
+David's Team View Shows:
+- David's own opportunities (no subordinates)
+```
+
+**Use Cases**:
+
+**For Individual Contributors**:
+- Stay in Mine view (reduces noise)
+- Focus on your deals without distraction
+- Export your own pipeline for reporting
+
+**For Managers**:
+- Switch to Team view for pipeline reviews
+- Monitor team velocity and deal health
+- Identify coaching opportunities (stalled deals)
+- Reallocate deals when team member overloaded
+
+**RLS Implementation**:
+- Row-Level Security policy checks hierarchy
+- Query: `SELECT * FROM opportunities WHERE assigned_to IN (SELECT get_subordinates(auth.uid()))`
+- Function `get_subordinates()` returns array of user IDs in hierarchy
+- Efficient with PostgreSQL recursive CTE
+
+**Performance Optimization**:
+- Hierarchy cached in session (refresh on org chart change)
+- Mine view uses simpler query (no joins)
+- Team view uses indexed foreign keys for fast lookups
+- Pagination prevents large datasets from slowing UI
+
+#### 5.1.7 Stage Transition History (Audit Trail)
+
+**Purpose**: Track when opportunities moved between stages for velocity analytics and audit compliance.
+
+**Automatic Logging**:
+- Every time opportunity stage changes, system logs:
+  - Previous stage
+  - New stage
+  - Timestamp (timezone-aware)
+  - User who made change
+  - Duration in previous stage (calculated)
+
+**Database Table**: `opportunity_stage_history`
+```
+Columns:
+- id (UUID)
+- opportunity_id (FK to opportunities)
+- from_stage (text)
+- to_stage (text)
+- changed_at (timestamptz)
+- changed_by (FK to crm_users)
+- days_in_stage (integer, calculated)
+```
+
+**Access**: Opportunity detail → "History" tab → "Stage History" section
+
+**Visual Example**:
+```
+┌─────────────────────────────────────────────────────────────┐
+│  STAGE TRANSITION HISTORY                                   │
+│                                                              │
+│  Prospect → Qualified                                       │
+│  📅 Jan 1, 2026 → Jan 15, 2026 (14 days)                   │
+│  👤 Changed by Sam Chen                                     │
+│                                                              │
+│  Qualified → Proposal                                       │
+│  📅 Jan 15, 2026 → Feb 5, 2026 (21 days)                   │
+│  👤 Changed by Sam Chen                                     │
+│                                                              │
+│  Proposal → Negotiation                                     │
+│  📅 Feb 5, 2026 → Feb 23, 2026 (18 days)                   │
+│  👤 Changed by Sarah Johnson (reassigned)                  │
+│                                                              │
+│  ⏱️ Total cycle time so far: 53 days                       │
+│  📊 Average for Negotiation stage: 28 days                 │
+│  ⚠️ This deal is ahead of average pace (+10 days faster)  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Insights Provided**:
+
+1. **Time-in-Stage Analysis**:
+   - Identify bottlenecks (deals stuck in one stage)
+   - Compare to historical averages
+   - Flag deals moving too fast (potential quality issues)
+
+2. **User Performance**:
+   - Who advances deals fastest?
+   - Are certain users consistently slower in specific stages?
+   - Training opportunities identification
+
+3. **Velocity Forecasting**:
+   - Historical data feeds Velocity Dashboard metrics
+   - Predict close dates based on current stage + average remaining time
+   - Example: Deal in Negotiation (28 days avg) + Term Sheet (35 days avg) = 63 days to close
+
+4. **Audit Compliance**:
+   - Prove adherence to quality gates
+   - Show IC approval timeline for investor reporting
+   - Regulatory audit trail (e.g., proving due diligence timelines)
+
+**Trigger Implementation**:
+- PostgreSQL trigger on `opportunities` table
+- Fires on UPDATE when `stage` column changes
+- Automatically calculates `days_in_stage` using `updated_at - (SELECT changed_at FROM stage_history WHERE opportunity_id = NEW.id ORDER BY changed_at DESC LIMIT 1)`
+- No manual logging required (zero user friction)
+
+**Stage History Export**:
+- Export opportunity with full stage history
+- CSV format includes all transitions
+- Useful for post-mortem analysis (Why did this deal take 6 months?)
+
+**Reverse Transitions Logged**:
+- If opportunity moves backward (e.g., Negotiation → Qualified), still logged
+- Indicates deal setback (credit issue discovered, decision-maker changed, etc.)
+- Flags appear in reports: "🔄 Stage Reversal: Negotiation → Qualified on Feb 10"
+
+**Integration with Quality Gates**:
+- Stage history shows if Quality Gate was 100% complete before advancement
+- Warning if stage advanced without completing checklist (admin override)
+- Ensures institutional rigor accountability
 
 ---
 
@@ -2431,6 +2724,255 @@ SECURITY LAYERS
 - Frontend updates UI without page refresh
 
 **Example**: Sam logs a call → Activity created → Realtime broadcasts → All logged-in users see new activity in Recent Activity feed immediately.
+
+---
+
+### 12.6 Mobile Architecture
+
+**Purpose**: The system implements a mobile-first responsive design ensuring optimal experience across all device sizes.
+
+#### 12.6.1 Responsive Breakpoints
+
+**Tailwind CSS Breakpoints**:
+```
+Mobile:      < 640px   (sm)
+Tablet:      640-1023px (sm to lg)
+Desktop:     ≥ 1024px  (lg)
+```
+
+**Component Visibility Patterns**:
+```typescript
+// Sidebar: Desktop only
+<div className="hidden lg:flex lg:w-64 ...">
+
+// Bottom Navigation: Mobile/Tablet only
+<div className="lg:hidden fixed bottom-0 ...">
+
+// Responsive Grid: 1 col mobile, 2 col tablet, 3 col desktop
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+```
+
+#### 12.6.2 Touch-Optimized Interactions
+
+**Minimum Touch Targets**:
+- **WCAG AAA Standard**: 44px × 44px minimum
+- **Implementation**: All interactive elements (buttons, nav icons, cards) meet or exceed
+- **Validation**: Automated accessibility testing in CI/CD
+
+**Gesture Support**:
+1. **Pull-to-Refresh**: Available on all list views
+   - iOS-style loading spinner
+   - Haptic feedback on trigger
+   - Prevents accidental activation (requires 80px pull)
+
+2. **Swipe Actions**: Context-sensitive quick actions
+   - Swipe left on opportunity card → Archive, Edit, Share
+   - Swipe right on notification → Mark as read, Delete
+   - Visual feedback with reveal animation
+
+3. **Long Press**: Alternative to right-click
+   - Long press on card → Context menu
+   - 500ms delay before activation
+   - Haptic feedback on trigger
+
+**Scroll Behavior**:
+- Smooth scrolling with momentum
+- Scroll-to-top button appears after 400px scroll
+- Sticky headers remain visible during scroll
+- Infinite scroll pagination (loads 20 items at a time)
+
+#### 12.6.3 Performance Optimization for Mobile
+
+**Code Splitting**:
+- Route-based lazy loading reduces initial bundle size
+- Critical CSS inlined in HTML
+- Non-critical components loaded on-demand
+
+**Example**:
+```typescript
+// Lazy load admin panel (only for admins)
+const AdminPanel = lazy(() => import('./pages/Admin'))
+
+// Lazy load heavy charting library
+const VelocityDashboard = lazy(() => import('./components/crm/VelocityDashboard'))
+```
+
+**Image Optimization**:
+- Responsive images with srcset
+- WebP format with JPEG fallback
+- Lazy loading for images below fold
+- Blurhash placeholders during load
+
+**Network Optimization**:
+- Service Worker caches static assets
+- Offline mode with IndexedDB fallback
+- Optimistic UI updates (immediate feedback, sync in background)
+- Debounced search (300ms delay prevents excessive API calls)
+
+**Bundle Size Targets**:
+- Initial JS bundle: < 200KB gzipped
+- CSS bundle: < 50KB gzipped
+- Time to Interactive (TTI): < 3s on 3G network
+
+#### 12.6.4 Safe Area Handling
+
+**iPhone Notch/Dynamic Island**:
+```css
+/* Bottom navigation respects safe area */
+.bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Top header avoids status bar */
+.header {
+  padding-top: env(safe-area-inset-top);
+}
+```
+
+**Android Navigation Bar**:
+- Automatic padding on devices with on-screen navigation
+- Gestures work with Android 10+ gesture navigation
+
+#### 12.6.5 Progressive Web App (PWA) Features
+
+**Capabilities**:
+1. **Add to Home Screen**: Install as native-like app
+2. **Offline Mode**: Core features work without internet
+3. **Push Notifications**: In-app notifications + browser push (opt-in)
+4. **Background Sync**: Queue actions when offline, sync when online
+
+**PWA Manifest**:
+```json
+{
+  "name": "Enterprise CRM",
+  "short_name": "CRM",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#f97316",
+  "background_color": "#ffffff",
+  "icons": [...]
+}
+```
+
+**Service Worker Strategy**:
+- **Cache First**: Static assets (JS, CSS, fonts)
+- **Network First**: API calls (opportunities, accounts, etc.)
+- **Stale While Revalidate**: User avatars, company logos
+
+#### 12.6.6 Mobile-Specific UI Components
+
+**Bottom Sheet** (used for filters, actions):
+- Swipe up to expand
+- Swipe down to dismiss
+- Backdrop overlay (50% opacity)
+- Spring animation (120ms duration)
+
+**Pull-Down Refresh Indicator**:
+- Native iOS-style spinner
+- Material Design spinner on Android
+- Positioned 60px from top
+- Rotates during pull, fades on release
+
+**Floating Action Button (FAB)**:
+- Fixed position, bottom-right corner
+- 56px diameter (meets touch target minimum)
+- Elevation shadow (4dp)
+- Pulse animation on page load
+- Morphs into sheet when tapped
+
+**Segmented Control** (Mine/Team toggle):
+- iOS-style pill selector
+- Smooth slide animation (200ms)
+- Haptic feedback on selection change
+- Full-width on mobile, auto-width on desktop
+
+#### 12.6.7 Accessibility on Mobile
+
+**Screen Reader Support**:
+- All icons have aria-labels
+- Semantic HTML (nav, main, article, aside)
+- Focus management for modals
+- Announce page title changes
+
+**Keyboard Navigation** (Bluetooth keyboard on tablet):
+- Tab order follows visual layout
+- Skip links to main content
+- Escape key closes modals
+- Arrow keys navigate lists
+
+**Contrast & Readability**:
+- WCAG AAA contrast ratios (7:1 for body text)
+- Minimum font size: 16px (prevents iOS auto-zoom)
+- Line height: 1.5 for body text
+- Max line length: 75 characters
+
+**Reduced Motion**:
+- Respects `prefers-reduced-motion` media query
+- Disables animations (pulse, slide, fade)
+- Maintains instant state changes
+- Toggle in Settings → Accessibility
+
+#### 12.6.8 Mobile Testing Strategy
+
+**Real Device Testing**:
+- iOS: iPhone SE (small), iPhone 14 Pro (notch), iPad Air (tablet)
+- Android: Pixel 6 (standard), Samsung Galaxy S23 (large), OnePlus (gesture nav)
+
+**Emulator Testing**:
+- Chrome DevTools responsive mode
+- Xcode Simulator (iOS)
+- Android Studio emulator
+
+**Network Conditions**:
+- 4G: Fast connection
+- 3G: Moderate connection
+- Slow 3G: Worst-case scenario
+- Offline: Complete loss of connectivity
+
+**Automated Testing**:
+- Lighthouse CI for performance scores
+- Axe for accessibility compliance
+- BrowserStack for cross-device compatibility
+
+#### 12.6.9 Mobile-First Development Workflow
+
+**CSS Approach**:
+```css
+/* Default styles = Mobile */
+.button {
+  font-size: 14px;
+  padding: 8px 16px;
+}
+
+/* Tablet and above */
+@media (min-width: 768px) {
+  .button {
+    font-size: 16px;
+    padding: 10px 20px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .button {
+    font-size: 18px;
+    padding: 12px 24px;
+  }
+}
+```
+
+**Component Design**:
+1. Design mobile layout first
+2. Add tablet optimizations
+3. Enhance for desktop
+4. Never rely on hover states (touch devices don't hover)
+5. Provide touch and mouse interactions
+
+**Performance Budget**:
+- Every feature must load in < 3s on 3G
+- Every interaction must respond in < 100ms
+- Every animation must run at 60fps
+- Every API call must complete in < 2s or show loading state
 
 ---
 
