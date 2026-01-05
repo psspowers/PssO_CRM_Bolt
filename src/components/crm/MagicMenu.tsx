@@ -17,37 +17,31 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
         onClick={onClose}
       />
 
-      <div className="flex justify-center items-end gap-6 mb-4 pointer-events-auto animate-in slide-in-from-bottom-10 fade-in duration-300">
+      <div className="flex justify-center items-center gap-6 mb-4 pointer-events-auto animate-in slide-in-from-bottom-10 fade-in duration-300">
 
-        <div className="flex flex-col items-center gap-2 transition-transform hover:scale-110">
-          <button
-            onClick={() => { onNavigate('accounts'); onClose(); }}
-            className="w-14 h-14 rounded-full bg-blue-500 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center"
-          >
-            <Building2 className="w-6 h-6" />
-          </button>
-          <span className="text-white text-xs font-bold drop-shadow-md">Accounts</span>
-        </div>
+        <button
+          onClick={() => { onNavigate('accounts'); onClose(); }}
+          className="w-14 h-14 rounded-full bg-blue-500/70 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center transition-all hover:scale-125 hover:bg-blue-500 hover:shadow-xl hover:shadow-blue-500/50"
+          aria-label="Accounts"
+        >
+          <Building2 className="w-6 h-6 opacity-80 hover:opacity-100" />
+        </button>
 
-        <div className="flex flex-col items-center gap-2 mb-8 transition-transform hover:scale-110">
-          <button
-            onClick={() => { onNavigate('contacts'); onClose(); }}
-            className="w-16 h-16 rounded-full bg-white text-slate-900 shadow-xl flex items-center justify-center"
-          >
-            <UserCircle className="w-8 h-8" />
-          </button>
-          <span className="text-white text-xs font-bold drop-shadow-md">Contacts</span>
-        </div>
+        <button
+          onClick={() => { onNavigate('contacts'); onClose(); }}
+          className="w-16 h-16 rounded-full bg-white/70 text-slate-900 shadow-xl flex items-center justify-center transition-all hover:scale-125 hover:bg-white hover:shadow-2xl"
+          aria-label="Contacts"
+        >
+          <UserCircle className="w-8 h-8 opacity-80 hover:opacity-100" />
+        </button>
 
-        <div className="flex flex-col items-center gap-2 transition-transform hover:scale-110">
-          <button
-            onClick={() => { onNavigate('partners'); onClose(); }}
-            className="w-14 h-14 rounded-full bg-green-500 text-white shadow-lg shadow-green-500/30 flex items-center justify-center"
-          >
-            <Users className="w-6 h-6" />
-          </button>
-          <span className="text-white text-xs font-bold drop-shadow-md">Partners</span>
-        </div>
+        <button
+          onClick={() => { onNavigate('partners'); onClose(); }}
+          className="w-14 h-14 rounded-full bg-green-500/70 text-white shadow-lg shadow-green-500/30 flex items-center justify-center transition-all hover:scale-125 hover:bg-green-500 hover:shadow-xl hover:shadow-green-500/50"
+          aria-label="Partners"
+        >
+          <Users className="w-6 h-6 opacity-80 hover:opacity-100" />
+        </button>
 
       </div>
     </div>
