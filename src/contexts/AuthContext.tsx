@@ -34,6 +34,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 const REMEMBER_ME_KEY = 'pss_remember_me';
+const SESSION_START_KEY = 'pss_session_start';
 const SESSION_WARNING_TIME = 5 * 60; // 5 minutes before expiry
 const SHORT_SESSION = 60 * 60; // 1 hour
 const LONG_SESSION = 30 * 24 * 60 * 60; // 30 days
@@ -203,44 +204,87 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const handleSignOut = useCallback(async () => {
+  const logSessionEvent = async (
+    eventType: 'login' | 'logout' | 'timeout' | 'extend_session' | 'forced_logout' | 'auto_logout',
+    logoutReason?: string,
+    userId?: string,
+    userEmail?: string
+  ) => {
+    try {
+      const userAgent = navigator.userAgent;
+      const deviceInfo = {
+        browser: /Chrome/.test(userAgent) ? 'Chrome' : /Firefox/.test(userAgent) ? 'Firefox' : /Safari/.test(userAgent) ? 'Safari' : 'Other',
+        os: /Windows/.test(userAgent) ? 'Windows' : /Mac/.test(userAgent) ? 'MacOS' : /Linux/.test(userAgent) ? 'Linux' : /Android/.test(userAgent) ? 'Android' : /iOS/.test(userAgent) ? 'iOS' : 'Other',
+        deviceType: /Mobi/.test(userAgent) ? 'Mobile' : 'Desktop'
+      };
+
+      const sessionStart = localStorage.getItem(SESSION_START_KEY);
+      const sessionDuration = sessionStart ? Math.floor((Date.now() - parseInt(sessionStart)) / 1000) : null;
+      const rememberMe = localStorage.getItem(REMEMBER_ME_KEY) === 'true';
+
+      await supabase.from('session_events').insert({
+        user_id: userId,
+        email: userEmail,
+        event_type: eventType,
+        logout_reason: logoutReason,
+        session_duration_seconds: sessionDuration,
+        remember_me: rememberMe,
+        device_type: deviceInfo.deviceType,
+        browser: deviceInfo.browser,
+        os: deviceInfo.os,
+        user_agent: userAgent
+      });
+    } catch (error) {
+      console.warn('Failed to log session event:', error);
+    }
+  };
+
+  const handleSignOut = useCallback(async (reason: 'manual' | 'timeout' | 'forced' | 'error' = 'manual') => {
     setShowTimeoutModal(false);
 
+    const currentUserId = user?.id;
+    const currentUserEmail = user?.email;
+
+    // Log the logout event with reason
+    const eventType = reason === 'timeout' ? 'auto_logout' : reason === 'forced' ? 'forced_logout' : 'logout';
+    await logSessionEvent(eventType, reason, currentUserId, currentUserEmail);
+
     // 1. CLEAR STATE FIRST
-    // This ensures UI updates immediately even if API hangs
     setUser(null);
     setSession(null);
     setProfile(null);
 
-    // 2. CLEAR STORAGE (The Critical Fix)
-    // Remove app specific keys
+    // 2. CLEAR STORAGE
     localStorage.removeItem(REMEMBER_ME_KEY);
+    localStorage.removeItem(SESSION_START_KEY);
 
     // Remove ALL Supabase tokens to prevent auto-relogin
-    // Supabase stores tokens with keys like: sb-{project-ref}-auth-token
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
         localStorage.removeItem(key);
       }
     });
 
-    // 3. ATTEMPT SERVER LOGOUT (Fire & Forget)
-    // Don't wait for this - the local session is already destroyed
+    // 3. ATTEMPT SERVER LOGOUT
     try {
       await supabase.auth.signOut();
     } catch (error) {
       console.warn('Server logout failed, but local session is destroyed:', error);
     }
 
-    // 4. FORCE REDIRECT (ensures clean state)
+    // 4. FORCE REDIRECT
     window.location.href = '/login';
-  }, []);
+  }, [user]);
 
   const extendSession = useCallback(async () => {
     setShowTimeoutModal(false);
     activityRef.current = Date.now();
+
+    // Log session extension
+    await logSessionEvent('extend_session', 'user_extended_session', user?.id, user?.email);
+
     await supabase.auth.refreshSession();
-  }, []);
+  }, [user]);
 
   const checkSessionTimeout = useCallback(() => {
     if (!session || !user) return;
@@ -249,12 +293,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const expiresAt = session.expires_at ? session.expires_at * 1000 : Date.now() + sessionDuration * 1000;
     const now = Date.now();
     const remaining = Math.floor((expiresAt - now) / 1000);
-    
+
     if (remaining <= SESSION_WARNING_TIME && remaining > 0) {
       setTimeRemaining(remaining);
       setShowTimeoutModal(true);
     } else if (remaining <= 0) {
-      handleSignOut();
+      handleSignOut('timeout');
     }
   }, [session, user, handleSignOut]);
 
@@ -321,33 +365,109 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Sign in with timeout protection
   const signIn = async (email: string, password: string, rememberMe = false): Promise<{ error: Error | null }> => {
+    let userId: string | null = null;
+
     try {
       localStorage.setItem(REMEMBER_ME_KEY, rememberMe ? 'true' : 'false');
-      
+
+      // Collect device info for logging
+      const userAgent = navigator.userAgent;
+      const deviceInfo = {
+        browser: /Chrome/.test(userAgent) ? 'Chrome' : /Firefox/.test(userAgent) ? 'Firefox' : /Safari/.test(userAgent) ? 'Safari' : 'Other',
+        os: /Windows/.test(userAgent) ? 'Windows' : /Mac/.test(userAgent) ? 'MacOS' : /Linux/.test(userAgent) ? 'Linux' : /Android/.test(userAgent) ? 'Android' : /iOS/.test(userAgent) ? 'iOS' : 'Other',
+        deviceType: /Mobi/.test(userAgent) ? 'Mobile' : 'Desktop'
+      };
+
       // Create a timeout promise (5 seconds max for login - fail fast)
       const LOGIN_TIMEOUT = 5000;
-      
+
       const loginPromise = supabase.auth.signInWithPassword({ email, password });
       const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) => {
         setTimeout(() => {
-          resolve({ 
-            data: null, 
-            error: new Error('Login request timed out. Please check your internet connection and try again.') 
+          resolve({
+            data: null,
+            error: new Error('Login request timed out. Please check your internet connection and try again.')
           });
         }, LOGIN_TIMEOUT);
       });
-      
+
       const result = await Promise.race([loginPromise, timeoutPromise]);
-      
+
       if (result.error) {
+        // Log failed login attempt
+        try {
+          await supabase.from('login_history').insert({
+            email,
+            success: false,
+            user_agent: userAgent,
+            browser: deviceInfo.browser,
+            os: deviceInfo.os,
+            device_type: deviceInfo.deviceType,
+            failure_reason: result.error.message
+          });
+        } catch (logError) {
+          console.warn('Failed to log failed login attempt:', logError);
+        }
+
         return { error: result.error };
       }
-      
+
+      // Success
+      userId = result.data?.user?.id || null;
       activityRef.current = Date.now();
+
+      // Store session start time
+      localStorage.setItem(SESSION_START_KEY, Date.now().toString());
+
+      // Log successful login attempt
+      try {
+        await supabase.from('login_history').insert({
+          user_id: userId,
+          email,
+          success: true,
+          user_agent: userAgent,
+          browser: deviceInfo.browser,
+          os: deviceInfo.os,
+          device_type: deviceInfo.deviceType,
+          failure_reason: null
+        });
+      } catch (logError) {
+        console.warn('Failed to log successful login attempt:', logError);
+      }
+
+      // Log session start event
+      try {
+        await supabase.from('session_events').insert({
+          user_id: userId,
+          email,
+          event_type: 'login',
+          remember_me: rememberMe,
+          device_type: deviceInfo.deviceType,
+          browser: deviceInfo.browser,
+          os: deviceInfo.os,
+          user_agent: userAgent
+        });
+      } catch (logError) {
+        console.warn('Failed to log session event:', logError);
+      }
+
       return { error: null };
-      
+
     } catch (error) {
       console.error('Sign in error:', error);
+
+      // Log unexpected error
+      try {
+        await supabase.from('login_history').insert({
+          email,
+          success: false,
+          user_agent: navigator.userAgent,
+          failure_reason: error instanceof Error ? error.message : 'Unknown error'
+        });
+      } catch (logError) {
+        console.warn('Failed to log error login attempt:', logError);
+      }
+
       return { error: error instanceof Error ? error : new Error('Failed to sign in. Please try again.') };
     }
   };
