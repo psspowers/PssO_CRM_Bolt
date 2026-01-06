@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://asymsthwlzdseuvqkvwl.databasepad.com';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjIxNGYwYzZlLTBlNGQtNGYzNC05NjkzLWVjZTkxMDM1MTBmYiJ9.eyJwcm9qZWN0SWQiOiJhc3ltc3Rod2x6ZHNldXZxa3Z3bCIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzY0NzEzOTI3LCJleHAiOjIwODAwNzM5MjcsImlzcyI6ImZhbW91cy5kYXRhYmFzZXBhZCIsImF1ZCI6ImZhbW91cy5jbGllbnRzIn0.-s4aAxVYVe42BDiPo99HQCq6Dp2Sc9r4VEQ7YRpqoDI';
@@ -11,13 +11,21 @@ if (import.meta.env.DEV && (!import.meta.env.VITE_SUPABASE_URL || !import.meta.e
   );
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    flowType: 'pkce',
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    persistSession: true
-  }
-});
+let supabaseInstance: SupabaseClient | null = null;
 
-export { supabase };
+function getSupabaseClient(): SupabaseClient {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        flowType: 'pkce',
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        persistSession: true
+      }
+    });
+  }
+  return supabaseInstance;
+}
+
+export const supabase = getSupabaseClient();
+export { getSupabaseClient };
