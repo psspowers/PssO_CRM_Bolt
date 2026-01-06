@@ -50,17 +50,29 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
   const fetchPaths = async () => {
     setLoading(true);
     try {
-      if (!profile?.id) return;
+      if (!profile?.id) {
+        console.log('Nexus: No profile ID');
+        return;
+      }
+
+      console.log('Nexus: Fetching paths', {
+        start_user_id: profile.id,
+        target_entity_id: entityId,
+        entityType
+      });
 
       const { data, error } = await supabase.rpc('find_nexus_paths', {
         start_user_id: profile.id,
         target_entity_id: entityId
       });
 
+      console.log('Nexus: RPC result', { data, error });
+
       if (error) {
         console.error('RPC error:', error);
         setPaths([]);
       } else {
+        console.log('Nexus: Setting paths', data);
         setPaths(data || []);
       }
     } catch (err) {
@@ -176,7 +188,7 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
     };
 
     try {
-      const { error } = await supabase.from('relationships').insert({
+      const newRelationship = {
         from_entity_id: fromId,
         from_entity_type: fromType,
         to_entity_id: entityId,
@@ -184,7 +196,13 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
         type: newRel.type,
         strength: strengthMap[newRel.strength] || 'Medium',
         notes: newRel.notes
-      });
+      };
+
+      console.log('Nexus: Creating relationship', newRelationship);
+
+      const { error, data: insertedData } = await supabase.from('relationships').insert(newRelationship).select();
+
+      console.log('Nexus: Insert result', { error, insertedData });
 
       if (error) throw error;
 
@@ -194,9 +212,11 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
       setSearchQuery('');
       setSearchResults([]);
       setNewRel({ type: 'Knows', strength: 3, notes: '' });
-      fetchPaths();
+
+      console.log('Nexus: Refetching paths after insert');
+      await fetchPaths();
     } catch (err) {
-      console.error(err);
+      console.error('Nexus: Connect error', err);
       alert('Failed to connect');
     }
   };
