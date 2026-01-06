@@ -1,358 +1,209 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Slider } from '@/components/ui/slider';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Network, Link, Star, ArrowRight, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { Network, Link, Star, Plus, User, Building2, ArrowRight, Loader2, Save, X } from 'lucide-react';
 
 interface NexusPath {
-  path_id: number;
-  hop_number: number;
-  connector_user_id: string;
-  connector_name: string;
-  connector_avatar: string;
+  id: string;
+  node_name: string;
+  node_type: string;
   relationship_type: string;
   strength: number;
-  notes: string;
 }
 
 interface NexusTabProps {
   entityId: string;
-  entityType: 'Contact' | 'Account';
+  entityType: 'Contact' | 'Account' | 'Partner';
 }
 
-const RELATIONSHIP_TYPES = [
-  'Knows',
-  'Worked With',
-  'Alumni',
-  'Family',
-  'Board Member',
-  'Advisor',
-  'Banker',
-  'Introduced By',
-  'Friend',
-  'Other'
-];
+export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
+  const { user, profile } = useAuth();
+  const [paths, setPaths] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
 
-const getStrengthColor = (strength: number): string => {
-  if (strength >= 4) return 'text-green-600';
-  if (strength >= 3) return 'text-yellow-600';
-  return 'text-red-600';
-};
-
-const getStrengthLabel = (strength: number): string => {
-  if (strength === 5) return 'Very Strong';
-  if (strength === 4) return 'Strong';
-  if (strength === 3) return 'Medium';
-  if (strength === 2) return 'Weak';
-  return 'Very Weak';
-};
-
-export default function NexusTab({ entityId, entityType }: NexusTabProps) {
-  const { profile } = useAuth();
-  const [paths, setPaths] = useState<NexusPath[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    relationshipType: 'Knows',
+  const [newRel, setNewRel] = useState({
+    type: 'Knows',
     strength: 3,
     notes: ''
   });
-  const [submitting, setSubmitting] = useState(false);
 
   const fetchPaths = async () => {
-    if (!profile?.id) return;
-
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('find_nexus_paths', {
-        target_entity_id: entityId,
-        target_entity_type: entityType,
-        start_user_id: profile.id
-      });
+      const { data, error } = await supabase
+        .from('relationships')
+        .select(`
+          *,
+          created_by_user:created_by ( name, avatar )
+        `)
+        .or(`to_entity_id.eq.${entityId},from_entity_id.eq.${entityId}`)
+        .order('strength', { ascending: false });
 
       if (error) throw error;
       setPaths(data || []);
-    } catch (error) {
-      console.error('Error fetching nexus paths:', error);
-      toast.error('Failed to load connection paths');
+    } catch (err) {
+      console.error('Error fetching nexus paths:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchPaths();
-  }, [entityId, entityType, profile?.id]);
+  useEffect(() => { fetchPaths(); }, [entityId]);
 
-  const handleAddConnection = async () => {
-    if (!profile?.id) return;
-
-    setSubmitting(true);
+  const handleConnect = async () => {
+    if (!user || !profile) return;
     try {
-      const { error } = await supabase.from('user_entity_connections').insert({
-        user_id: profile.id,
-        entity_id: entityId,
-        entity_type: entityType,
-        relationship_type: formData.relationshipType,
-        strength: formData.strength,
-        notes: formData.notes
+      const { error } = await supabase.from('relationships').insert({
+        from_entity_id: profile.id,
+        from_entity_type: 'Contact',
+        to_entity_id: entityId,
+        to_entity_type: entityType,
+        type: newRel.type,
+        strength: newRel.strength.toString(),
+        notes: newRel.notes
       });
-
       if (error) throw error;
-
-      toast.success('Connection added successfully');
-      setDialogOpen(false);
-      setFormData({
-        relationshipType: 'Knows',
-        strength: 3,
-        notes: ''
-      });
+      setShowAdd(false);
+      setNewRel({ type: 'Knows', strength: 3, notes: '' });
       fetchPaths();
-    } catch (error: any) {
-      console.error('Error adding connection:', error);
-      toast.error(error.message || 'Failed to add connection');
-    } finally {
-      setSubmitting(false);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to connect');
     }
   };
 
-  const directPaths = paths.filter(p => p.path_id === 1);
-  const indirectPaths = paths.filter(p => p.path_id === 2);
+  const getStrengthValue = (strength: any): number => {
+    if (typeof strength === 'number') return strength;
+    const strengthMap: Record<string, number> = { 'Weak': 1, 'Medium': 3, 'Strong': 5 };
+    return strengthMap[strength] || 3;
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-              <Network className="w-5 h-5 text-orange-600" />
+    <div className="space-y-4">
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-lg flex justify-between items-center">
+        <div>
+          <h3 className="font-bold text-lg flex items-center gap-2">
+            <Network className="w-5 h-5 text-emerald-400" />
+            The Nexus
+          </h3>
+          <p className="text-slate-300 text-xs mt-1">
+            Map your social capital to this target.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowAdd(true)}
+          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all active:scale-95 flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          I Know Them
+        </button>
+      </div>
+
+      {showAdd && (
+        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2">
+          <h4 className="font-bold text-orange-900 mb-3 text-sm">Add New Connection</h4>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-bold text-orange-800 uppercase">Relationship</label>
+                <select
+                  className="w-full mt-1 p-2 rounded-lg border border-orange-200 text-sm"
+                  value={newRel.type}
+                  onChange={e => setNewRel({...newRel, type: e.target.value})}
+                >
+                  <option>Knows</option>
+                  <option>Worked With</option>
+                  <option>Alumni</option>
+                  <option>Family</option>
+                  <option>Advisor</option>
+                  <option>Board Member</option>
+                  <option>Banker</option>
+                  <option>Friend</option>
+                  <option>Introduced By</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-orange-800 uppercase">Strength (1-5)</label>
+                <input
+                  type="range" min="1" max="5"
+                  className="w-full mt-2 accent-orange-500"
+                  value={newRel.strength}
+                  onChange={e => setNewRel({...newRel, strength: parseInt(e.target.value)})}
+                />
+                <div className="text-center text-xs font-bold text-orange-600">{newRel.strength} / 5</div>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-slate-900">Connection Pathfinder</h3>
-              <p className="text-sm text-slate-500">Discover how you're connected</p>
+            <textarea
+              className="w-full p-2 rounded-lg border border-orange-200 text-sm"
+              placeholder="Context (e.g. Golf buddy, Ex-Colleague...)"
+              value={newRel.notes}
+              onChange={e => setNewRel({...newRel, notes: e.target.value})}
+              rows={2}
+            />
+            <div className="flex gap-2">
+              <button onClick={handleConnect} className="flex-1 bg-orange-600 text-white py-2 rounded-lg font-bold text-xs hover:bg-orange-700 transition-colors">Save Connection</button>
+              <button onClick={() => setShowAdd(false)} className="px-3 bg-white border border-orange-200 text-orange-700 rounded-lg text-xs hover:bg-orange-50 transition-colors">Cancel</button>
             </div>
           </div>
-
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-0 shadow-lg shadow-orange-500/30"
-              >
-                <Link className="w-4 h-4 mr-2" />
-                Add Connection
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Add Your Connection</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>I know this {entityType.toLowerCase()}...</Label>
-                  <Select
-                    value={formData.relationshipType}
-                    onValueChange={(value) => setFormData({ ...formData, relationshipType: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {RELATIONSHIP_TYPES.map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Relationship Strength: {getStrengthLabel(formData.strength)}</Label>
-                  <div className="flex items-center gap-4">
-                    <Slider
-                      value={[formData.strength]}
-                      onValueChange={([value]) => setFormData({ ...formData, strength: value })}
-                      min={1}
-                      max={5}
-                      step={1}
-                      className="flex-1"
-                    />
-                    <div className="flex gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < formData.strength ? 'fill-orange-500 text-orange-500' : 'text-slate-300'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Notes</Label>
-                  <Textarea
-                    placeholder="How do you know them? Any relevant context..."
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    rows={3}
-                  />
-                </div>
-
-                <Button
-                  onClick={handleAddConnection}
-                  disabled={submitting}
-                  className="w-full bg-orange-500 hover:bg-orange-600"
-                >
-                  {submitting ? 'Adding...' : 'Add Connection'}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
         </div>
+      )}
 
+      <div className="space-y-3">
         {loading ? (
-          <div className="py-12 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
-            <p className="text-slate-500">Finding connection paths...</p>
+          <div className="text-center py-10"><Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400"/></div>
+        ) : paths.length === 0 ? (
+          <div className="text-center py-10 border-2 border-dashed border-slate-200 rounded-2xl">
+            <p className="text-slate-400 text-sm">No connections mapped yet.</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {directPaths.length === 0 && indirectPaths.length === 0 ? (
-              <div className="py-12 text-center">
-                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                  <Network className="w-8 h-8 text-slate-400" />
+          paths.map(path => {
+            const strengthValue = getStrengthValue(path.strength);
+            return (
+              <div key={path.id} className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">
+                      {profile?.name?.charAt(0) || 'U'}
+                    </div>
+                    <span className="text-[10px] text-slate-400 mt-1">Source</span>
+                  </div>
+
+                  <div className="flex flex-col items-center px-4 relative">
+                    <div className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full mb-1">
+                      {path.type || path.relationship_type || 'Connected'}
+                    </div>
+                    <div className="w-24 h-0.5 bg-slate-200 relative">
+                      <div className="absolute right-0 -top-1 w-2 h-2 border-t-2 border-r-2 border-slate-200 rotate-45"></div>
+                    </div>
+                    <div className="flex gap-0.5 mt-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={`w-3 h-3 ${i < strengthValue ? 'text-orange-400 fill-orange-400' : 'text-slate-200'}`} />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-center">
+                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                      {entityType === 'Contact' ? <User className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+                    </div>
+                    <span className="text-[10px] text-slate-400 mt-1">Target</span>
+                  </div>
                 </div>
-                <h4 className="text-lg font-medium text-slate-900 mb-2">No Paths Found</h4>
-                <p className="text-slate-500 mb-4">Be the first to connect!</p>
-                <Button
-                  onClick={() => setDialogOpen(true)}
-                  variant="outline"
-                  className="border-orange-200 text-orange-600 hover:bg-orange-50"
-                >
-                  <Link className="w-4 h-4 mr-2" />
-                  Add Your Connection
-                </Button>
+
+                {path.notes && (
+                  <div className="ml-4 pl-4 border-l border-slate-100 text-xs text-slate-500 italic max-w-[150px]">
+                    "{path.notes}"
+                  </div>
+                )}
               </div>
-            ) : (
-              <>
-                {directPaths.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                      Direct Connection
-                    </h4>
-                    <div className="space-y-3">
-                      {directPaths.map((path, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100"
-                        >
-                          <Avatar className="w-12 h-12 border-2 border-green-200">
-                            <AvatarImage src={path.connector_avatar} />
-                            <AvatarFallback className="bg-green-500 text-white">
-                              {path.connector_name.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-slate-900">You</span>
-                              <ArrowRight className="w-4 h-4 text-slate-400" />
-                              <span className="text-sm text-slate-600 font-medium">{path.relationship_type}</span>
-                              <ArrowRight className="w-4 h-4 text-slate-400" />
-                              <span className="font-medium text-slate-900">Target</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-sm">
-                              <span className={`font-medium ${getStrengthColor(path.strength)}`}>
-                                {getStrengthLabel(path.strength)}
-                              </span>
-                              <div className="flex gap-0.5">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className={`w-3 h-3 ${
-                                      i < path.strength ? 'fill-orange-500 text-orange-500' : 'text-slate-300'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                            {path.notes && (
-                              <p className="text-sm text-slate-600 mt-1">{path.notes}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {indirectPaths.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                      Through Teammates
-                    </h4>
-                    <div className="space-y-3">
-                      {indirectPaths.map((path, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-sky-50 border border-blue-100"
-                        >
-                          <Avatar className="w-12 h-12 border-2 border-blue-200">
-                            <AvatarImage src={path.connector_avatar} />
-                            <AvatarFallback className="bg-blue-500 text-white">
-                              {path.connector_name.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-slate-900">You</span>
-                              <ArrowRight className="w-4 h-4 text-slate-400" />
-                              <Users className="w-4 h-4 text-blue-600" />
-                              <span className="font-medium text-blue-600">{path.connector_name}</span>
-                              <ArrowRight className="w-4 h-4 text-slate-400" />
-                              <span className="text-sm text-slate-600 font-medium">{path.relationship_type}</span>
-                              <ArrowRight className="w-4 h-4 text-slate-400" />
-                              <span className="font-medium text-slate-900">Target</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-sm">
-                              <span className={`font-medium ${getStrengthColor(path.strength)}`}>
-                                {getStrengthLabel(path.strength)}
-                              </span>
-                              <div className="flex gap-0.5">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className={`w-3 h-3 ${
-                                      i < path.strength ? 'fill-orange-500 text-orange-500' : 'text-slate-300'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                            {path.notes && (
-                              <p className="text-sm text-slate-600 mt-1">{path.notes}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+            );
+          })
         )}
       </div>
     </div>
   );
-}
+};
+
+export default NexusTab;

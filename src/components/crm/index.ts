@@ -38,4 +38,4 @@ export { FinancialDataImport } from './FinancialDataImport';
 export { VelocityDashboard } from './VelocityDashboard';
 export { BulkImportWizard } from './BulkImportWizard';
 export type { EntityType } from './BulkImportWizard';
-export { default as NexusTab } from './NexusTab';
+export { NexusTab } from './NexusTab';

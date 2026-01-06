@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, ExternalLink, Network, Activity as ActivityIcon, Building2 } from 'lucide-react';
 import { NetworkGraph } from './NetworkGraph';
+import { NexusTab } from './NexusTab';
 import { ActivityItem } from './ActivityItem';
 import { ActivityForm } from './ActivityForm';
 import { Activity, Contact, Account, Partner, Relationship, ActivityType } from '../../types/crm';
@@ -25,7 +26,7 @@ interface DetailModalProps {
   relationships?: Relationship[];
 }
 
-type Tab = 'overview' | 'network' | 'activity';
+type Tab = 'overview' | 'nexus' | 'activity';
 
 export const DetailModal: React.FC<DetailModalProps> = ({
   isOpen, onClose, title, subtitle, entityId, entityType, clickupLink, children,
@@ -42,7 +43,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'overview', label: 'Overview', icon: Building2 },
-    ...(showNetwork ? [{ id: 'network' as Tab, label: 'Network', icon: Network }] : []),
+    ...(showNetwork ? [{ id: 'nexus' as Tab, label: 'Nexus', icon: Network }] : []),
     { id: 'activity', label: 'Activity', icon: ActivityIcon },
   ];
 
@@ -95,9 +96,8 @@ export const DetailModal: React.FC<DetailModalProps> = ({
         </div>
         <div className="flex-1 overflow-auto p-4 pb-32">
           {activeTab === 'overview' && children}
-          {activeTab === 'network' && showNetwork && (
-            <NetworkGraph entityId={entityId} entityType={entityType as 'Contact' | 'Account' | 'Partner'} maxDegrees={3}
-              contacts={contacts} accounts={accounts} partners={partners} relationships={relationships} />
+          {activeTab === 'nexus' && showNetwork && (
+            <NexusTab entityId={entityId} entityType={entityType as 'Contact' | 'Account' | 'Partner'} />
           )}
           {activeTab === 'activity' && (
             <div className="space-y-3">
