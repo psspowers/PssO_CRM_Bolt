@@ -18,8 +18,9 @@ interface NexusPath {
 interface IntermediaryOption {
   id: string;
   name: string;
-  type: 'Contact' | 'Partner';
+  type: 'User' | 'Contact' | 'Partner';
   avatar?: string;
+  role?: string;
 }
 
 interface NexusTabProps {
@@ -77,28 +78,49 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
 
     setSearching(true);
     try {
+      const usersPromise = supabase
+        .from('crm_users')
+        .select('id, name, avatar, role')
+        .ilike('name', `%${query}%`)
+        .limit(5);
+
       const contactsPromise = supabase
         .from('contacts')
-        .select('id, full_name, avatar')
+        .select('id, full_name, avatar, role')
         .ilike('full_name', `%${query}%`)
-        .limit(10);
+        .limit(5);
 
       const partnersPromise = supabase
         .from('partners')
-        .select('id, name, logo')
+        .select('id, name, logo, partner_type')
         .ilike('name', `%${query}%`)
-        .limit(10);
+        .limit(5);
 
-      const [contactsRes, partnersRes] = await Promise.all([contactsPromise, partnersPromise]);
+      const [usersRes, contactsRes, partnersRes] = await Promise.all([
+        usersPromise,
+        contactsPromise,
+        partnersPromise
+      ]);
 
       const results: IntermediaryOption[] = [];
+
+      if (usersRes.data) {
+        results.push(...usersRes.data.map(u => ({
+          id: u.id,
+          name: u.name,
+          type: 'User' as const,
+          avatar: u.avatar,
+          role: u.role
+        })));
+      }
 
       if (contactsRes.data) {
         results.push(...contactsRes.data.map(c => ({
           id: c.id,
           name: c.full_name,
           type: 'Contact' as const,
-          avatar: c.avatar
+          avatar: c.avatar,
+          role: c.role
         })));
       }
 
@@ -107,7 +129,8 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
           id: p.id,
           name: p.name,
           type: 'Partner' as const,
-          avatar: p.logo
+          avatar: p.logo,
+          role: p.partner_type
         })));
       }
 
@@ -306,37 +329,70 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
 
                 {searchResults.length > 0 && (
                   <div className="absolute z-10 w-full mt-1 bg-white border border-orange-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {searchResults.map(result => (
-                      <button
-                        key={`${result.type}-${result.id}`}
-                        onClick={() => {
-                          setSelectedSource(result);
-                          setSearchQuery(result.name);
-                          setSearchResults([]);
-                        }}
-                        className="w-full px-3 py-2 text-left hover:bg-orange-50 flex items-center gap-2 text-sm border-b border-orange-100 last:border-b-0"
-                      >
-                        <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">
-                          {result.type === 'Contact' ? <User className="w-3 h-3" /> : <Building2 className="w-3 h-3" />}
-                        </div>
-                        <div>
-                          <div className="font-medium text-slate-900">{result.name}</div>
-                          <div className="text-[10px] text-slate-500">{result.type}</div>
-                        </div>
-                      </button>
-                    ))}
+                    {searchResults.map(result => {
+                      const typeBadge = result.type === 'User' ? 'Internal' : result.type;
+                      const badgeColor = result.type === 'User' ? 'bg-blue-100 text-blue-700' :
+                                        result.type === 'Contact' ? 'bg-emerald-100 text-emerald-700' :
+                                        'bg-purple-100 text-purple-700';
+
+                      return (
+                        <button
+                          key={`${result.type}-${result.id}`}
+                          onClick={() => {
+                            setSelectedSource(result);
+                            setSearchQuery(result.name);
+                            setSearchResults([]);
+                          }}
+                          className="w-full px-3 py-2 text-left hover:bg-orange-50 flex items-center gap-2 text-sm border-b border-orange-100 last:border-b-0"
+                        >
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-slate-600 ${
+                            result.type === 'User' ? 'bg-blue-100' :
+                            result.type === 'Contact' ? 'bg-emerald-100' :
+                            'bg-purple-100'
+                          }`}>
+                            {result.type === 'Partner' ? <Building2 className="w-3 h-3" /> : <User className="w-3 h-3" />}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${badgeColor}`}>
+                                {typeBadge}
+                              </span>
+                              <span className="font-medium text-slate-900">{result.name}</span>
+                            </div>
+                            {result.role && (
+                              <div className="text-[10px] text-slate-500 mt-0.5">{result.role}</div>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
 
                 {selectedSource && (
                   <div className="mt-2 p-2 bg-orange-100 rounded-lg flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-orange-200 flex items-center justify-center text-orange-700">
-                        {selectedSource.type === 'Contact' ? <User className="w-3 h-3" /> : <Building2 className="w-3 h-3" />}
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                        selectedSource.type === 'User' ? 'bg-blue-200 text-blue-700' :
+                        selectedSource.type === 'Contact' ? 'bg-emerald-200 text-emerald-700' :
+                        'bg-purple-200 text-purple-700'
+                      }`}>
+                        {selectedSource.type === 'Partner' ? <Building2 className="w-3 h-3" /> : <User className="w-3 h-3" />}
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-orange-900">{selectedSource.name}</div>
-                        <div className="text-[10px] text-orange-600">{selectedSource.type}</div>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${
+                            selectedSource.type === 'User' ? 'bg-blue-100 text-blue-700' :
+                            selectedSource.type === 'Contact' ? 'bg-emerald-100 text-emerald-700' :
+                            'bg-purple-100 text-purple-700'
+                          }`}>
+                            {selectedSource.type === 'User' ? 'Internal' : selectedSource.type}
+                          </span>
+                          <span className="text-xs font-bold text-orange-900">{selectedSource.name}</span>
+                        </div>
+                        {selectedSource.role && (
+                          <div className="text-[10px] text-orange-600 mt-0.5">{selectedSource.role}</div>
+                        )}
                       </div>
                     </div>
                     <button
