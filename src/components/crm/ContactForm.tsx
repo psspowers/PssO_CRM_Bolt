@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Save, X, Loader2, Building2, Plus } from 'lucide-react';
 import { Contact } from '../../types/crm';
 import { useAppContext } from '../../contexts/AppContext';
+import { getSectors } from '../../data/thaiTaxonomy';
 
 interface ContactFormProps {
   contact?: Contact;
@@ -145,13 +146,17 @@ export const ContactForm: React.FC<ContactFormProps> = ({ contact, onSave, onCan
               className={inputClass}
               placeholder="Company Name"
             />
-            <input
-              type="text"
+            <select
               value={newAccountData.sector}
               onChange={e => setNewAccountData({ ...newAccountData, sector: e.target.value })}
               className={inputClass}
-              placeholder="Sector (e.g. Manufacturing)"
-            />
+              required
+            >
+              <option value="">Select Sector...</option>
+              {getSectors().map(sector => (
+                <option key={sector} value={sector}>{sector}</option>
+              ))}
+            </select>
           </div>
         )}
       </div>
