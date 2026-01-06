@@ -11,6 +11,7 @@ import TwoFactorSettings from '@/components/settings/TwoFactorSettings';
 import LoginHistory from '@/components/settings/LoginHistory';
 import TrustedDevices from '@/components/settings/TrustedDevices';
 import ProfileSettings from '@/components/settings/ProfileSettings';
+import { UserDropdown } from '@/components/crm/UserDropdown';
 import { ArrowLeft, User, Shield, Palette, Sun, Moon, Monitor, AlertTriangle, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
@@ -94,14 +95,17 @@ const Settings: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Settings</h1>
-            <p className="text-sm text-gray-500">Manage your account preferences</p>
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Settings</h1>
+              <p className="text-sm text-gray-500">Manage your account preferences</p>
+            </div>
           </div>
+          <UserDropdown />
         </div>
       </header>
 

@@ -6,6 +6,7 @@ import { UserManagement } from '@/components/admin/UserManagement';
 import { ActivityLogs } from '@/components/admin/ActivityLogs';
 import { SettingsPanel } from '@/components/admin/SettingsPanel';
 import { OrgChart } from '@/components/admin/OrgChart';
+import { UserDropdown } from '@/components/crm/UserDropdown';
 import { Users, Activity, Settings, Shield, ArrowLeft, Network } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
@@ -89,10 +90,7 @@ const Admin: React.FC = () => {
               <h1 className="text-xl font-bold">Admin Dashboard</h1>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Logged in as</span>
-            <span className="font-medium text-orange-600">{profile.name}</span>
-          </div>
+          <UserDropdown />
         </div>
       </header>
 

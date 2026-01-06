@@ -8,6 +8,7 @@ import { ProfileHeader } from '@/components/profile/ProfileHeader';
 import { ProfileStats } from '@/components/profile/ProfileStats';
 import { ProfileActivities } from '@/components/profile/ProfileActivities';
 import { ProfileEntities } from '@/components/profile/ProfileEntities';
+import { UserDropdown } from '@/components/crm/UserDropdown';
 
 const Profile: React.FC = () => {
   const { profile, user, loading: authLoading } = useAuth();
@@ -92,10 +93,13 @@ const Profile: React.FC = () => {
             </button>
             <h1 className="text-xl font-semibold">My Profile</h1>
           </div>
-          <Button variant="outline" size="sm" onClick={() => navigate('/settings')}>
-            <Settings className="w-4 h-4 mr-2" />
-            Settings
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={() => navigate('/settings')}>
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
+            <UserDropdown />
+          </div>
         </div>
       </header>
 
