@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Home, Building2, Target, Clock, Search, CheckSquare, Plus, Settings, HelpCircle, ChevronLeft, ChevronRight, FolderKanban, Users, FileSpreadsheet, Shield } from 'lucide-react';
+import { Home, Building2, Target, Clock, Search, CheckSquare, Plus, Settings, HelpCircle, ChevronLeft, ChevronRight, FolderKanban, Users, FileSpreadsheet, Shield, Network } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'projects';
 
@@ -25,21 +26,44 @@ const navItems: { id: Tab; icon: React.ElementType; label: string }[] = [
   { id: 'search', icon: Search, label: 'Search' },
 ];
 
-export const Sidebar: React.FC<SidebarProps> = ({ 
-  activeTab, 
-  onTabChange, 
+export const Sidebar: React.FC<SidebarProps> = ({
+  activeTab,
+  onTabChange,
   onQuickAdd,
   onBulkImport,
   collapsed,
   onToggleCollapse
 }) => {
   const { user, profile } = useAuth();
-  
+
   // Determine if user is admin or super admin
   let isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
   if (!profile?.role && user?.email) {
     isAdmin = user.email === 'sam@psspowers.com';
   }
+
+  // Gamification: Connection Count & Rank
+  const [connectionCount, setConnectionCount] = React.useState(0);
+
+  React.useEffect(() => {
+    const fetchScore = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('connector_leaderboard')
+        .select('connection_count')
+        .eq('user_id', user.id)
+        .single();
+      if (data) setConnectionCount(data.connection_count);
+    };
+    fetchScore();
+  }, [user]);
+
+  const getRank = (count: number) => {
+    if (count >= 50) return { label: 'Rainmaker', color: 'bg-amber-100 text-amber-700 border-amber-200' };
+    if (count >= 10) return { label: 'Connector', color: 'bg-blue-100 text-blue-700 border-blue-200' };
+    return { label: 'Novice', color: 'bg-slate-100 text-slate-600 border-slate-200' };
+  };
+  const rank = getRank(connectionCount);
 
   return (
     <aside
@@ -113,6 +137,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Bottom Section */}
       <div className="p-3 border-t border-slate-700/50 space-y-1">
+        {/* Gamification Badge */}
+        {!collapsed && user && (
+          <div className="px-3 py-2 mb-2">
+            <div className={`text-[10px] px-2 py-1 rounded-full border inline-flex items-center gap-1 font-semibold ${rank.color}`}>
+              <Network className="w-3 h-3" />
+              {rank.label} ({connectionCount})
+            </div>
+          </div>
+        )}
+
         {/* Admin Panel Link - Only for admins */}
         {isAdmin && (
           <Link
@@ -124,7 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {!collapsed && <span className="font-medium">Admin Panel</span>}
           </Link>
         )}
-        
+
         <Link
           to="/settings"
           className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all ${collapsed ? 'justify-center' : ''}`}
