@@ -105,7 +105,7 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
 
       const partnersPromise = supabase
         .from('partners')
-        .select('id, name, logo, partner_type')
+        .select('id, name, partner_type')
         .ilike('name', `%${query}%`)
         .limit(5);
 
@@ -142,7 +142,7 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
           id: p.id,
           name: p.name,
           type: 'Partner' as const,
-          avatar: p.logo,
+          avatar: undefined,
           role: p.partner_type
         })));
       }
