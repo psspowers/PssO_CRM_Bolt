@@ -169,13 +169,25 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
   }, [searchQuery, sourceMode]);
 
   const handleConnect = async () => {
-    if (!user || !profile) return;
+    if (!user || !profile) {
+      console.error('Nexus: No user or profile', { user, profile });
+      return;
+    }
 
     const fromId = sourceMode === 'me' ? profile.id : selectedSource?.id;
     const fromType = sourceMode === 'me' ? 'User' : selectedSource?.type;
 
+    console.log('Nexus: handleConnect called', {
+      sourceMode,
+      selectedSource,
+      fromId,
+      fromType,
+      entityId,
+      entityType
+    });
+
     if (!fromId || !fromType) {
-      alert('Please select who knows this person');
+      alert(`Please select who knows this person. Missing: ${!fromId ? 'ID' : 'Type'}`);
       return;
     }
 
@@ -204,7 +216,16 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
 
       console.log('Nexus: Insert result', { error, insertedData });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Nexus: Insert error details', error);
+        alert(`Failed to create connection: ${error.message}`);
+        throw error;
+      }
+
+      if (!insertedData || insertedData.length === 0) {
+        console.warn('Nexus: No data returned after insert');
+        alert('Connection created but no confirmation received');
+      }
 
       setShowAdd(false);
       setSourceMode('me');
@@ -217,7 +238,7 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
       await fetchPaths();
     } catch (err) {
       console.error('Nexus: Connect error', err);
-      alert('Failed to connect');
+      alert(`Failed to connect: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
