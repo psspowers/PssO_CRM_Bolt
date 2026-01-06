@@ -50,11 +50,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const fetchScore = async () => {
       if (!user) return;
       const { data } = await supabase
-        .from('connector_leaderboard')
-        .select('connection_count')
-        .eq('user_id', user.id)
-        .single();
-      if (data) setConnectionCount(data.connection_count);
+        .from('relationships')
+        .select('id')
+        .eq('from_entity_id', user.id);
+      if (data) setConnectionCount(data.length);
     };
     fetchScore();
   }, [user]);
