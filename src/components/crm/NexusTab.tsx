@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Network, Star, Plus, User, Building2, Loader2, Search, ArrowRight, Users } from 'lucide-react';
+import { Network, Star, Plus, User, Building2, Loader2, Search, ArrowRight, Users, Target } from 'lucide-react';
 
 interface NexusPath {
   path: Array<{
@@ -13,6 +13,7 @@ interface NexusPath {
   }>;
   total_strength: number;
   degrees: number;
+  win_probability: number;
 }
 
 interface IntermediaryOption {
@@ -488,8 +489,26 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
           paths.map((pathObj, pathIdx) => (
             <div
               key={pathIdx}
-              className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+              className="relative bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
             >
+              {/* Win Probability Badge */}
+              {pathObj.win_probability !== undefined && (
+                <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-full bg-slate-50 border border-slate-100 shadow-sm">
+                  <Target className={`w-3 h-3 ${
+                    pathObj.win_probability > 75 ? 'text-emerald-500' :
+                    pathObj.win_probability >= 40 ? 'text-amber-500' :
+                    'text-slate-400'
+                  }`} />
+                  <span className={`text-[10px] font-bold ${
+                    pathObj.win_probability > 75 ? 'text-emerald-700' :
+                    pathObj.win_probability >= 40 ? 'text-amber-700' :
+                    'text-slate-500'
+                  }`}>
+                    {pathObj.win_probability}% Win Prob.
+                  </span>
+                </div>
+              )}
+
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <div className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
