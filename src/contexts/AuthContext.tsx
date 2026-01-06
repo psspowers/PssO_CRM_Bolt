@@ -35,8 +35,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 const REMEMBER_ME_KEY = 'pss_remember_me';
 const SESSION_START_KEY = 'pss_session_start';
-const SESSION_WARNING_TIME = 5 * 60; // 5 minutes before expiry
-const SHORT_SESSION = 60 * 60; // 1 hour
+const SESSION_WARNING_TIME = 10 * 60; // 10 minutes before expiry
+const SHORT_SESSION = 3 * 60 * 60; // 3 hours
 const LONG_SESSION = 30 * 24 * 60 * 60; // 30 days
 
 // Admin email addresses that should always have admin role
@@ -363,8 +363,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Sign in with timeout protection
-  const signIn = async (email: string, password: string, rememberMe = false): Promise<{ error: Error | null }> => {
+  // Sign in with timeout protection (default 30-day session)
+  const signIn = async (email: string, password: string, rememberMe = true): Promise<{ error: Error | null }> => {
     let userId: string | null = null;
 
     try {

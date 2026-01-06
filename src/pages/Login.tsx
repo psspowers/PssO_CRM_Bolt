@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import TwoFactorVerification from '@/components/TwoFactorVerification';
@@ -54,7 +53,6 @@ const getErrorMessage = (error: Error | { message: string } | string): string =>
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [requires2FA, setRequires2FA] = useState(false);
@@ -169,8 +167,8 @@ const Login: React.FC = () => {
     }, MAX_LOGIN_TIME);
     
     try {
-      // Attempt sign in
-      const { error: signInError } = await signIn(email, password, rememberMe);
+      // Attempt sign in (defaults to 30-day session)
+      const { error: signInError } = await signIn(email, password);
       
       // If we already timed out, don't continue
       if (timedOut || !mountedRef.current) return;
@@ -279,7 +277,7 @@ const Login: React.FC = () => {
   const handle2FAVerified = async () => {
     setLoading(true);
     try {
-      const { error } = await signIn(email, password, rememberMe);
+      const { error } = await signIn(email, password);
       if (error) {
         toast({ title: 'Error', description: 'Please try logging in again', variant: 'destructive' });
         setRequires2FA(false);
@@ -386,19 +384,8 @@ const Login: React.FC = () => {
                 autoComplete="current-password"
               />
             </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="remember"
-                  checked={rememberMe}
-                  onCheckedChange={(checked) => setRememberMe(checked === true)}
-                  disabled={loading}
-                />
-                <label htmlFor="remember" className="text-sm font-normal cursor-pointer text-gray-600">
-                  Remember me for 30 days
-                </label>
-              </div>
+
+            <div className="flex items-center justify-end">
               <Link
                 to="/forgot-password"
                 className="text-sm text-orange-600 hover:text-orange-700"
