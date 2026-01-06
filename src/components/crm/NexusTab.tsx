@@ -160,12 +160,20 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
     if (!user || !profile) return;
 
     const fromId = sourceMode === 'me' ? profile.id : selectedSource?.id;
-    const fromType = sourceMode === 'me' ? 'Contact' : selectedSource?.type;
+    const fromType = sourceMode === 'me' ? 'User' : selectedSource?.type;
 
     if (!fromId || !fromType) {
       alert('Please select who knows this person');
       return;
     }
+
+    const strengthMap: Record<number, string> = {
+      1: 'Weak',
+      2: 'Weak',
+      3: 'Medium',
+      4: 'Strong',
+      5: 'Strong'
+    };
 
     try {
       const { error } = await supabase.from('relationships').insert({
@@ -174,7 +182,7 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
         to_entity_id: entityId,
         to_entity_type: entityType,
         type: newRel.type,
-        strength: newRel.strength.toString(),
+        strength: strengthMap[newRel.strength] || 'Medium',
         notes: newRel.notes
       });
 
