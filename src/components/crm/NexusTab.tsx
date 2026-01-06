@@ -8,7 +8,7 @@ interface NexusPath {
     entity_id: string;
     entity_type: string;
     entity_name: string;
-    relationship_type?: string;
+    relationship?: string;
     strength?: number;
   }>;
   total_strength: number;
@@ -232,10 +232,10 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
           </span>
         </div>
 
-        {!isLast && node.relationship_type && (
+        {!isLast && node.relationship && (
           <div className="flex flex-col items-center px-2">
             <div className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full mb-1 whitespace-nowrap">
-              {node.relationship_type}
+              {node.relationship}
             </div>
             <div className="w-16 h-0.5 bg-slate-200 relative">
               <div className="absolute right-0 -top-1 w-2 h-2 border-t-2 border-r-2 border-slate-200 rotate-45"></div>
