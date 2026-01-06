@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Users, UserCircle } from 'lucide-react';
+import { Building2, Handshake, IdCard } from 'lucide-react';
 
 interface MagicMenuProps {
   isOpen: boolean;
@@ -29,18 +29,18 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
 
         <button
           onClick={() => { onNavigate('contacts'); onClose(); }}
-          className="w-16 h-16 rounded-full bg-white hover:bg-gray-50 text-slate-900 shadow-xl flex items-center justify-center transition-all hover:scale-110 hover:shadow-2xl mb-8"
+          className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-xl shadow-cyan-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-2xl hover:shadow-cyan-500/60 mb-8"
           aria-label="Contacts"
         >
-          <UserCircle className="w-8 h-8" />
+          <IdCard className="w-8 h-8" />
         </button>
 
         <button
           onClick={() => { onNavigate('partners'); onClose(); }}
-          className="w-14 h-14 rounded-full bg-green-500 hover:bg-green-400 text-white shadow-lg shadow-green-500/30 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-green-500/50"
+          className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white shadow-lg shadow-purple-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-purple-500/60"
           aria-label="Partners"
         >
-          <Users className="w-6 h-6" />
+          <Handshake className="w-6 h-6" />
         </button>
 
       </div>

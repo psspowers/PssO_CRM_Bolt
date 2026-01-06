@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Home, Building2, Target, Clock, Search, CheckSquare, Plus, Settings, HelpCircle, ChevronLeft, ChevronRight, FolderKanban, Users, FileSpreadsheet, Shield, Network } from 'lucide-react';
+import { Home, Building2, Target, Clock, Search, CheckSquare, Plus, Settings, HelpCircle, ChevronLeft, ChevronRight, FolderKanban, Handshake, IdCard, FileSpreadsheet, Shield, Network } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 
@@ -19,7 +19,8 @@ const navItems: { id: Tab; icon: React.ElementType; label: string }[] = [
   { id: 'home', icon: Home, label: 'Dashboard' },
   { id: 'opportunities', icon: Target, label: 'Deals' },
   { id: 'accounts', icon: Building2, label: 'Accounts' },
-  { id: 'partners', icon: Users, label: 'Partners' },
+  { id: 'contacts', icon: IdCard, label: 'Contacts' },
+  { id: 'partners', icon: Handshake, label: 'Partners' },
   { id: 'projects', icon: FolderKanban, label: 'Projects' },
   { id: 'tasks', icon: CheckSquare, label: 'Tasks' },
   { id: 'timeline', icon: Clock, label: 'Timeline' },

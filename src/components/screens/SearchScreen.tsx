@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Building2, Target, Users, Briefcase, FolderKanban } from 'lucide-react';
+import { Search, Building2, Target, Handshake, IdCard, FolderKanban } from 'lucide-react';
 import { useAppContext } from '../../contexts/AppContext';
 
 type ResultType = 'account' | 'opportunity' | 'partner' | 'contact' | 'project';
@@ -56,10 +56,10 @@ export const SearchScreen: React.FC = () => {
     }));
 
     partners.filter(p => p.name.toLowerCase().includes(q) || p.country.toLowerCase().includes(q))
-      .forEach(p => res.push({ id: p.id, type: 'partner', title: p.name, subtitle: `${p.region} • ${p.country}`, icon: Users, color: 'text-purple-600 bg-purple-100' }));
+      .forEach(p => res.push({ id: p.id, type: 'partner', title: p.name, subtitle: `${p.region} • ${p.country}`, icon: Handshake, color: 'text-purple-600 bg-purple-100' }));
 
     contacts.filter(c => c.fullName.toLowerCase().includes(q) || c.role.toLowerCase().includes(q))
-      .forEach(c => res.push({ id: c.id, type: 'contact', title: c.fullName, subtitle: c.role, icon: Briefcase, color: 'text-amber-600 bg-amber-100' }));
+      .forEach(c => res.push({ id: c.id, type: 'contact', title: c.fullName, subtitle: c.role, icon: IdCard, color: 'text-cyan-600 bg-cyan-100' }));
 
     projects.filter(p => p.name.toLowerCase().includes(q) || p.country.toLowerCase().includes(q))
       .forEach(p => res.push({ id: p.id, type: 'project', title: p.name, subtitle: `${p.status} • ${p.capacity} MW`, icon: FolderKanban, color: 'text-orange-600 bg-orange-100' }));

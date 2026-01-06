@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, Target, Users, Briefcase, Calendar, Award } from 'lucide-react';
+import { TrendingUp, Target, IdCard, Briefcase, Calendar, Award } from 'lucide-react';
 
 interface StatsProps {
   activitiesCount: number;
@@ -23,7 +23,7 @@ export const ProfileStats: React.FC<StatsProps> = ({
     { label: 'This Month', value: thisMonthActivities, icon: TrendingUp, color: 'bg-green-500' },
     { label: 'Opportunities', value: opportunitiesOwned, icon: Target, color: 'bg-purple-500' },
     { label: 'Projects', value: projectsOwned, icon: Briefcase, color: 'bg-orange-500' },
-    { label: 'Contacts', value: contactsManaged, icon: Users, color: 'bg-pink-500' },
+    { label: 'Contacts', value: contactsManaged, icon: IdCard, color: 'bg-cyan-500' },
     { label: 'Win Rate', value: `${winRate}%`, icon: Award, color: 'bg-yellow-500' },
   ];
 
