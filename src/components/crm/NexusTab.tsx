@@ -50,19 +50,12 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
   const fetchPaths = async () => {
     setLoading(true);
     try {
-      if (!profile?.id) {
-        console.log('Nexus: No profile ID');
-        return;
-      }
-
-      console.log('Nexus: Fetching paths', {
-        start_user_id: profile.id,
+      console.log('Nexus: Fetching team-wide paths', {
         target_entity_id: entityId,
         entityType
       });
 
-      const { data, error } = await supabase.rpc('find_nexus_paths', {
-        start_user_id: profile.id,
+      const { data, error } = await supabase.rpc('find_team_nexus_paths', {
         target_entity_id: entityId
       });
 
@@ -157,7 +150,7 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
 
   useEffect(() => {
     fetchPaths();
-  }, [entityId, profile?.id]);
+  }, [entityId]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -307,7 +300,7 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
             The Nexus
           </h3>
           <p className="text-slate-300 text-xs mt-1">
-            Map your social capital to this target.
+            Team-wide connections to this target.
           </p>
         </div>
         <button
