@@ -17,6 +17,7 @@ interface NexusPath {
 interface NexusOrbitGraphProps {
   paths: NexusPath[];
   targetName: string;
+  onNodeClick?: (entityId: string, entityType: string) => void;
 }
 
 interface NodePosition {
@@ -28,7 +29,7 @@ interface NodePosition {
   isIntermediary: boolean;
 }
 
-export const NexusOrbitGraph: React.FC<NexusOrbitGraphProps> = ({ paths, targetName }) => {
+export const NexusOrbitGraph: React.FC<NexusOrbitGraphProps> = ({ paths, targetName, onNodeClick }) => {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [selectedPath, setSelectedPath] = useState<NexusPath | null>(null);
 
@@ -39,6 +40,10 @@ export const NexusOrbitGraph: React.FC<NexusOrbitGraphProps> = ({ paths, targetN
 
   const directPaths = paths.filter(p => p.degrees === 1);
   const indirectPaths = paths.filter(p => p.degrees > 1);
+
+  const getFirstName = (fullName: string): string => {
+    return fullName.split(' ')[0];
+  };
 
   const positionNodes = (): NodePosition[] => {
     const positions: NodePosition[] = [];
@@ -127,9 +132,9 @@ export const NexusOrbitGraph: React.FC<NexusOrbitGraphProps> = ({ paths, targetN
           cy={centerY}
           r={innerRadius}
           fill="none"
-          stroke="rgba(148, 163, 184, 0.15)"
-          strokeWidth="0.3"
-          strokeDasharray="1,1"
+          stroke="rgba(59, 130, 246, 0.3)"
+          strokeWidth="0.5"
+          strokeDasharray="2,2"
         />
 
         <circle
@@ -137,9 +142,9 @@ export const NexusOrbitGraph: React.FC<NexusOrbitGraphProps> = ({ paths, targetN
           cy={centerY}
           r={outerRadius}
           fill="none"
-          stroke="rgba(148, 163, 184, 0.15)"
-          strokeWidth="0.3"
-          strokeDasharray="1,1"
+          stroke="rgba(168, 85, 247, 0.3)"
+          strokeWidth="0.5"
+          strokeDasharray="2,2"
         />
 
         {nodePositions.map((pos, idx) => {
@@ -154,15 +159,15 @@ export const NexusOrbitGraph: React.FC<NexusOrbitGraphProps> = ({ paths, targetN
                 x2={centerX}
                 y2={centerY}
                 stroke={pos.path.degrees === 1 ? "url(#energyBeam1)" : "url(#energyBeam2)"}
-                strokeWidth={isHovered || isSelected ? "0.4" : "0.2"}
-                strokeDasharray="2,2"
-                opacity={isHovered || isSelected ? "0.8" : "0.3"}
+                strokeWidth={isHovered || isSelected ? "0.6" : "0.4"}
+                strokeDasharray="3,3"
+                opacity={isHovered || isSelected ? "0.95" : "0.6"}
                 filter="url(#glow)"
               >
                 <animate
                   attributeName="stroke-dashoffset"
                   from="0"
-                  to="4"
+                  to="6"
                   dur={pos.path.degrees === 1 ? "1.5s" : "2s"}
                   repeatCount="indefinite"
                 />
@@ -188,21 +193,26 @@ export const NexusOrbitGraph: React.FC<NexusOrbitGraphProps> = ({ paths, targetN
         {nodePositions.map((pos, idx) => {
           const colors = getNodeColor(pos.path.degrees);
           const isHovered = hoveredNode === pos.node.entity_id;
+          const nodeColor = pos.path.degrees === 1 ? 'rgba(59, 130, 246, 0.6)' : 'rgba(168, 85, 247, 0.6)';
 
           return (
             <g key={`node-${idx}`}>
               <circle
                 cx={pos.x}
                 cy={pos.y}
-                r={isHovered ? "3.5" : "3"}
-                fill="rgba(255, 255, 255, 0.1)"
+                r={isHovered ? "4" : "3.5"}
+                fill={nodeColor}
                 stroke="white"
-                strokeWidth="0.3"
+                strokeWidth="0.5"
                 filter={isHovered ? "url(#glow)" : undefined}
                 className="cursor-pointer transition-all"
                 onMouseEnter={() => setHoveredNode(pos.node.entity_id)}
                 onMouseLeave={() => setHoveredNode(null)}
-                onClick={() => setSelectedPath(selectedPath?.path === pos.path.path ? null : pos.path)}
+                onClick={() => {
+                  if (onNodeClick) {
+                    onNodeClick(pos.node.entity_id, pos.node.entity_type);
+                  }
+                }}
               />
             </g>
           );
@@ -219,9 +229,9 @@ export const NexusOrbitGraph: React.FC<NexusOrbitGraphProps> = ({ paths, targetN
       </div>
 
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 translate-y-12 pointer-events-none">
-        <div className="bg-slate-950/80 backdrop-blur-sm border border-slate-700 rounded-lg px-3 py-1.5 shadow-xl">
-          <p className="text-white font-bold text-sm text-center whitespace-nowrap">{targetName}</p>
-          <p className="text-emerald-400 text-[10px] text-center font-bold">TARGET</p>
+        <div className="bg-slate-950/80 backdrop-blur-sm border border-orange-500/50 rounded-lg px-2 py-1 shadow-xl">
+          <p className="text-white font-bold text-[11px] text-center whitespace-nowrap">{getFirstName(targetName)}</p>
+          <p className="text-emerald-400 text-[8px] text-center font-bold">TARGET</p>
         </div>
       </div>
 
@@ -245,33 +255,40 @@ export const NexusOrbitGraph: React.FC<NexusOrbitGraphProps> = ({ paths, targetN
         return (
           <div
             key={`label-${idx}`}
-            className="absolute pointer-events-none transition-opacity duration-200"
+            className="absolute pointer-events-auto transition-opacity duration-200 cursor-pointer"
             style={{
               left: `${labelX}%`,
               top: `${labelY}%`,
               transform: 'translate(-50%, -50%)',
-              opacity: isHovered ? 1 : 0.7
+              opacity: isHovered ? 1 : 0.85
+            }}
+            onMouseEnter={() => setHoveredNode(pos.node.entity_id)}
+            onMouseLeave={() => setHoveredNode(null)}
+            onClick={() => {
+              if (onNodeClick) {
+                onNodeClick(pos.node.entity_id, pos.node.entity_type);
+              }
             }}
           >
             <div className={`${
               isHovered ? 'scale-110' : 'scale-100'
             } transition-transform bg-slate-950/90 backdrop-blur-sm border ${
               pos.path.degrees === 1 ? 'border-blue-500/50' : 'border-purple-500/50'
-            } rounded-lg px-2 py-1 shadow-xl`}>
-              <div className="flex items-center gap-1.5">
+            } rounded-lg px-1.5 py-0.5 shadow-xl`}>
+              <div className="flex items-center gap-1">
                 {pos.node.entity_type === 'User' || pos.node.entity_type === 'Contact' ? (
-                  <User className="w-3 h-3 text-white" />
+                  <User className="w-2.5 h-2.5 text-white" />
                 ) : (
-                  <Building2 className="w-3 h-3 text-white" />
+                  <Building2 className="w-2.5 h-2.5 text-white" />
                 )}
-                <p className="text-white font-medium text-[10px] whitespace-nowrap max-w-[100px] truncate">
-                  {pos.node.entity_name}
+                <p className="text-white font-bold text-[9px] whitespace-nowrap">
+                  {getFirstName(pos.node.entity_name)}
                 </p>
               </div>
               {pos.node.strength && (
                 <div className="flex gap-0.5 mt-0.5 justify-center">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={`w-2 h-2 ${
+                    <Star key={i} className={`w-1.5 h-1.5 ${
                       i < getStrengthValue(pos.node.strength) ?
                       'text-orange-400 fill-orange-400' :
                       'text-slate-600'
@@ -330,7 +347,15 @@ export const NexusOrbitGraph: React.FC<NexusOrbitGraphProps> = ({ paths, targetN
 
           <div className="space-y-2">
             {selectedPath.path.map((node, idx) => (
-              <div key={idx} className="flex items-center gap-2">
+              <div
+                key={idx}
+                className="flex items-center gap-2 cursor-pointer hover:bg-slate-800/50 p-1 rounded transition-colors"
+                onClick={() => {
+                  if (onNodeClick && idx !== selectedPath.path.length - 1) {
+                    onNodeClick(node.entity_id, node.entity_type);
+                  }
+                }}
+              >
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
                   idx === 0 ? 'bg-blue-500/20' :
                   idx === selectedPath.path.length - 1 ? 'bg-orange-500/20' :
@@ -343,15 +368,15 @@ export const NexusOrbitGraph: React.FC<NexusOrbitGraphProps> = ({ paths, targetN
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className="text-white text-xs font-medium">{node.entity_name}</p>
+                  <p className="text-white text-[10px] font-bold">{getFirstName(node.entity_name)}</p>
                   {node.relationship && (
-                    <p className="text-emerald-400 text-[10px]">{node.relationship}</p>
+                    <p className="text-emerald-400 text-[9px]">{node.relationship}</p>
                   )}
                 </div>
                 {node.strength && (
                   <div className="flex gap-0.5">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} className={`w-2 h-2 ${
+                      <Star key={i} className={`w-1.5 h-1.5 ${
                         i < getStrengthValue(node.strength) ?
                         'text-orange-400 fill-orange-400' :
                         'text-slate-600'

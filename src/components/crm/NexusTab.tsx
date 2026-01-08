@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Network, Star, Plus, User, Building2, Loader2, Search, ArrowRight, Users, Target, Orbit, List } from 'lucide-react';
+import { Network, Star, Plus, User, Building2, Loader2, Search, ArrowRight, Users, Target, Orbit, List, X, ArrowLeft } from 'lucide-react';
 import { NexusOrbitGraph } from './NexusOrbitGraph';
 
 interface NexusPath {
@@ -37,6 +37,11 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
   const [showAdd, setShowAdd] = useState(false);
   const [viewMode, setViewMode] = useState<'orbit' | 'list'>('orbit');
   const [targetEntityName, setTargetEntityName] = useState<string>('Target');
+
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
+  const [selectedEntityType, setSelectedEntityType] = useState<string | null>(null);
+  const [selectedEntityData, setSelectedEntityData] = useState<any>(null);
+  const [loadingEntity, setLoadingEntity] = useState(false);
 
   const [sourceMode, setSourceMode] = useState<'me' | 'intermediary'>('me');
   const [selectedSource, setSelectedSource] = useState<IntermediaryOption | null>(null);
@@ -197,6 +202,54 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
     } catch (err) {
       console.error('Error fetching target name:', err);
     }
+  };
+
+  const handleNodeClick = async (nodeEntityId: string, nodeEntityType: string) => {
+    setSelectedEntityId(nodeEntityId);
+    setSelectedEntityType(nodeEntityType);
+    setLoadingEntity(true);
+
+    try {
+      let tableName = '';
+      let selectFields = '*';
+
+      switch (nodeEntityType) {
+        case 'Contact':
+          tableName = 'contacts';
+          break;
+        case 'User':
+          tableName = 'crm_users';
+          break;
+        case 'Account':
+          tableName = 'accounts';
+          break;
+        case 'Partner':
+          tableName = 'partners';
+          break;
+        default:
+          return;
+      }
+
+      const { data, error } = await supabase
+        .from(tableName)
+        .select(selectFields)
+        .eq('id', nodeEntityId)
+        .single();
+
+      if (!error && data) {
+        setSelectedEntityData(data);
+      }
+    } catch (err) {
+      console.error('Error fetching entity data:', err);
+    } finally {
+      setLoadingEntity(false);
+    }
+  };
+
+  const handleCloseEntityDetail = () => {
+    setSelectedEntityId(null);
+    setSelectedEntityType(null);
+    setSelectedEntityData(null);
   };
 
   const handleConnect = async () => {
@@ -592,10 +645,126 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
           <p className="text-slate-400 text-xs mt-1">Start mapping connections to build your network.</p>
         </div>
       ) : viewMode === 'orbit' ? (
-        <NexusOrbitGraph
-          paths={paths}
-          targetName={targetEntityName}
-        />
+        <>
+          <NexusOrbitGraph
+            paths={paths}
+            targetName={targetEntityName}
+            onNodeClick={handleNodeClick}
+          />
+          {selectedEntityData && (
+            <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={handleCloseEntityDetail}>
+              <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-t-2xl p-4 text-white flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleCloseEntityDetail}
+                      className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div>
+                      <h3 className="font-bold text-lg">
+                        {selectedEntityType === 'Contact' ? selectedEntityData.full_name :
+                         selectedEntityType === 'User' ? selectedEntityData.name :
+                         selectedEntityData.name}
+                      </h3>
+                      <p className="text-slate-300 text-xs">{selectedEntityType}</p>
+                    </div>
+                  </div>
+                  <button onClick={handleCloseEntityDetail} className="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+                  {loadingEntity ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                    </div>
+                  ) : (
+                    <>
+                      {selectedEntityType === 'Contact' && (
+                        <>
+                          {selectedEntityData.email && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs font-bold text-slate-600 uppercase min-w-20">Email:</span>
+                              <span className="text-sm text-slate-900">{selectedEntityData.email}</span>
+                            </div>
+                          )}
+                          {selectedEntityData.phone && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs font-bold text-slate-600 uppercase min-w-20">Phone:</span>
+                              <span className="text-sm text-slate-900">{selectedEntityData.phone}</span>
+                            </div>
+                          )}
+                          {selectedEntityData.role && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs font-bold text-slate-600 uppercase min-w-20">Role:</span>
+                              <span className="text-sm text-slate-900">{selectedEntityData.role}</span>
+                            </div>
+                          )}
+                          {selectedEntityData.company && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs font-bold text-slate-600 uppercase min-w-20">Company:</span>
+                              <span className="text-sm text-slate-900">{selectedEntityData.company}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {selectedEntityType === 'User' && (
+                        <>
+                          {selectedEntityData.email && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs font-bold text-slate-600 uppercase min-w-20">Email:</span>
+                              <span className="text-sm text-slate-900">{selectedEntityData.email}</span>
+                            </div>
+                          )}
+                          {selectedEntityData.role && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs font-bold text-slate-600 uppercase min-w-20">Role:</span>
+                              <span className="text-sm text-slate-900">{selectedEntityData.role}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {selectedEntityType === 'Partner' && (
+                        <>
+                          {selectedEntityData.partner_type && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs font-bold text-slate-600 uppercase min-w-20">Type:</span>
+                              <span className="text-sm text-slate-900">{selectedEntityData.partner_type}</span>
+                            </div>
+                          )}
+                          {selectedEntityData.description && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs font-bold text-slate-600 uppercase min-w-20">Description:</span>
+                              <span className="text-sm text-slate-900">{selectedEntityData.description}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {selectedEntityType === 'Account' && (
+                        <>
+                          {selectedEntityData.industry && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs font-bold text-slate-600 uppercase min-w-20">Industry:</span>
+                              <span className="text-sm text-slate-900">{selectedEntityData.industry}</span>
+                            </div>
+                          )}
+                          {selectedEntityData.revenue && (
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs font-bold text-slate-600 uppercase min-w-20">Revenue:</span>
+                              <span className="text-sm text-slate-900">{selectedEntityData.revenue}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <div className="space-y-3">
           {paths.map((pathObj, pathIdx) => (
