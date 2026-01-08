@@ -103,10 +103,11 @@ interface PipelineStageProps {
   wowChange?: number;
   momChange?: number;
   showChange?: 'wow' | 'mom';
+  arrowColor?: string;
 }
 
 const PipelineStage: React.FC<PipelineStageProps> = ({
-  stage, count, mw, color, isLast, flowToNext, wowChange, momChange, showChange
+  stage, count, mw, color, isLast, flowToNext, wowChange, momChange, showChange, arrowColor
 }) => {
   const change = showChange === 'wow' ? wowChange : momChange;
 
@@ -128,14 +129,14 @@ const PipelineStage: React.FC<PipelineStageProps> = ({
         </div>
         <span className="text-xs font-medium text-slate-600 mt-1.5 text-center max-w-[80px]">{stage}</span>
       </div>
-      {!isLast && flowToNext !== undefined && (
+      {!isLast && (
         <div className="flex flex-col items-center mx-2 lg:mx-4">
           <div className="h-5 mb-1"></div>
           <div className="flex items-center gap-1">
-            <div className="w-8 lg:w-12 h-0.5 bg-slate-300" />
-            <ArrowRight className="w-4 h-4 text-slate-400" />
+            <div className={`w-8 lg:w-12 h-1 ${arrowColor || 'bg-slate-500'} rounded-full`} />
+            <ArrowRight className={`w-5 h-5 ${arrowColor?.replace('bg-', 'text-') || 'text-slate-500'} stroke-[3]`} />
           </div>
-          {flowToNext > 0 ? (
+          {flowToNext !== undefined && flowToNext > 0 ? (
             <span className="text-[10px] text-emerald-600 font-bold mt-0.5">+{flowToNext}</span>
           ) : (
             <span className="text-xs font-medium text-slate-600 mt-1.5 opacity-0">-</span>
@@ -646,9 +647,9 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                   {index !== pipelineStages.length - 1 && (
                     <div className="flex justify-center py-1">
                       <div className="flex flex-col items-center">
-                        <div className="w-px h-4 bg-slate-200" />
-                        <ArrowRight className="w-4 h-4 text-slate-400 transform rotate-90 my-1" />
-                        <div className="w-px h-4 bg-slate-200" />
+                        <div className={`w-1 h-4 ${stage.color} rounded-full`} />
+                        <ArrowRight className={`w-5 h-5 ${stage.color.replace('bg-', 'text-')} stroke-[3] transform rotate-90 my-1`} />
+                        <div className={`w-1 h-4 ${stage.color} rounded-full`} />
                       </div>
                     </div>
                   )}
@@ -672,6 +673,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                 wowChange={stage.wowChange}
                 momChange={stage.momChange}
                 showChange={period}
+                arrowColor={stage.color}
               />
             ))}
           </div>
@@ -736,9 +738,9 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                 {index !== projectStages.length - 1 && (
                   <div className="flex justify-center py-1">
                     <div className="flex flex-col items-center">
-                      <div className="w-px h-4 bg-slate-200" />
-                      <ArrowRight className="w-4 h-4 text-slate-400 transform rotate-90 my-1" />
-                      <div className="w-px h-4 bg-slate-200" />
+                      <div className={`w-1 h-4 ${stage.color} rounded-full`} />
+                      <ArrowRight className={`w-5 h-5 ${stage.color.replace('bg-', 'text-')} stroke-[3] transform rotate-90 my-1`} />
+                      <div className={`w-1 h-4 ${stage.color} rounded-full`} />
                     </div>
                   </div>
                 )}
@@ -758,6 +760,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                 color={stage.color}
                 isLast={index === projectStages.length - 1}
                 flowToNext={0}
+                arrowColor={stage.color}
               />
             ))}
           </div>
