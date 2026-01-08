@@ -23,8 +23,13 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, a
     return map[stage] || 0;
   };
 
+  const toTitleCase = (str: string) => {
+    return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
   const formatValue = (val: number) => val >= 1000000 ? `฿${(val / 1000000).toFixed(1)}M` : `฿${(val / 1000).toFixed(0)}K`;
   const IndustryIcon = getIndustryIcon(opportunity.sector);
+  const formattedAccountName = accountName ? toTitleCase(accountName) : '';
 
   return (
     <button onClick={onClick} className="w-full group relative bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all active:scale-[0.98] overflow-hidden text-left">
@@ -34,7 +39,7 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, a
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-base font-bold text-slate-900 leading-tight truncate">{opportunity.name}</h3>
-          <p className="text-xs text-slate-500 font-medium truncate mt-0.5">{accountName}</p>
+          <p className="text-xs text-slate-500 font-medium truncate mt-0.5">{formattedAccountName}</p>
           <div className="flex gap-2 mt-2">
             <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wide">{opportunity.stage}</span>
           </div>
