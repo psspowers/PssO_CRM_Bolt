@@ -95,7 +95,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
         // Savings = Full Value of energy - O&M - Major Maintenance
         const peaCost = (peakGen * currentPeakTariff) + (offPeakGen * currentOffPeakTariff);
         let maintenance = 0;
-        if (year % 10 === 0) maintenance = 33900000; // Major overhaul every 10 years
+        if (year % 10 === 0) maintenance = capacity * 3000; // Major maintenance: ~3,000 THB/kWp
         savings = peaCost - currentOM - maintenance;
       }
 
@@ -448,7 +448,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
           <li>Year 1 degradation: 2.5%, thereafter: 0.5% annually</li>
           <li>Tariff escalation: 1% per year</li>
           <li>O&M escalation: 3% per year</li>
-          <li>Major maintenance: ฿33.9M every 10 years (post-handover)</li>
+          <li>Major maintenance: ~3,000 THB/kWp every 10 years</li>
           <li>Generation baseline: 1,592 kWh/kWp/year</li>
           <li>Peak/Off-Peak split: 67%/33%</li>
         </ul>
