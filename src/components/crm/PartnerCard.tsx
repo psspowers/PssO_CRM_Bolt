@@ -1,15 +1,29 @@
 import React from 'react';
-import { ChevronRight, Globe, Users, Building } from 'lucide-react';
+import { ChevronRight, Globe, Users, Building, Check } from 'lucide-react';
 import { Partner } from '../../types/crm';
 
 interface PartnerCardProps {
   partner: Partner;
   onClick: () => void;
+  showCheckbox?: boolean;
+  isSelected?: boolean;
+  onSelect?: (id: string, selected: boolean) => void;
 }
 
-export const PartnerCard: React.FC<PartnerCardProps> = ({ partner, onClick }) => {
+export const PartnerCard: React.FC<PartnerCardProps> = ({ partner, onClick, showCheckbox, isSelected, onSelect }) => {
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelect?.(partner.id, !isSelected);
+  };
+
   return (
-    <button onClick={onClick} className="w-full group bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all active:scale-[0.98] text-left overflow-hidden">
+    <div className="relative">
+      {showCheckbox && (
+        <button onClick={handleCheckboxClick} className={`absolute left-3 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${isSelected ? 'bg-purple-500 border-purple-500 text-white' : 'bg-white border-gray-300 hover:border-purple-400'}`}>
+          {isSelected && <Check className="w-4 h-4" />}
+        </button>
+      )}
+      <button onClick={onClick} className={`w-full group bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all active:scale-[0.98] text-left overflow-hidden ${showCheckbox ? 'pl-12' : ''} ${isSelected ? 'ring-2 ring-purple-500 border-purple-500' : ''}`}>
       <div className="p-4 flex items-center gap-4">
         {/* Avatar Box */}
         <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 font-black text-lg flex-shrink-0 shadow-sm">
@@ -38,6 +52,7 @@ export const PartnerCard: React.FC<PartnerCardProps> = ({ partner, onClick }) =>
           {partner.country}
         </div>
       </div>
-    </button>
+      </button>
+    </div>
   );
 };
