@@ -306,8 +306,8 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </div>
       ) : (
         <div className="flex flex-col gap-3 lg:gap-4">
-          {/* Expandable Search Header */}
-          <div className="flex items-center justify-between mb-2">
+          {/* Search in Top Right */}
+          <div className="flex items-center justify-end mb-2">
             {isSearchOpen ? (
               <div className="flex-1 flex items-center gap-2 animate-in fade-in slide-in-from-right-10 duration-200">
                 <SearchBar value={search} onChange={setSearch} placeholder="Search deals..." showFilter={false} />
@@ -322,42 +322,13 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2 flex-1">
-                <button
-                  onClick={() => setIsSearchOpen(true)}
-                  className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-colors flex-shrink-0"
-                >
-                  <Search className="w-5 h-5 text-slate-600" />
-                </button>
-
-                {/* View Toggle - Desktop Only */}
-                <div className="hidden lg:flex items-center bg-slate-100 rounded-lg p-1">
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
-                    aria-label="List view"
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
-                    aria-label="Grid view"
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {userCanDelete && (
-                  <button
-                    onClick={() => setSelectionMode(true)}
-                    className="p-2 bg-white border border-slate-200 text-slate-400 rounded-lg hover:text-orange-500 hover:border-orange-200 transition-colors shadow-sm flex-shrink-0 ml-auto"
-                    aria-label="Bulk select"
-                  >
-                    <CheckSquare className="w-5 h-5" />
-                  </button>
-                )}
-              </div>
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-colors"
+                aria-label="Search deals"
+              >
+                <Search className="w-5 h-5 text-slate-600" />
+              </button>
             )}
           </div>
 
