@@ -194,7 +194,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
           <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">PPA Phase</p>
             <p className="text-2xl font-black text-blue-600 mt-1">{formatCurrency(summaryStats.ppaPhaseTotal)}</p>
-            <p className="text-xs font-medium text-slate-500 mt-1">1-{ppaTerm}</p>
+            <p className="text-xs font-medium text-slate-500 mt-1">Years 1-{ppaTerm}</p>
           </div>
           <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Post-Handover</p>
