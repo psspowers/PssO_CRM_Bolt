@@ -1,51 +1,43 @@
 import React from 'react';
-import { MapPin, ChevronRight, ExternalLink, Check } from 'lucide-react';
+import { ChevronRight, Globe, Users, Building } from 'lucide-react';
 import { Partner } from '../../types/crm';
 
 interface PartnerCardProps {
   partner: Partner;
   onClick: () => void;
-  showCheckbox?: boolean;
-  isSelected?: boolean;
-  onSelect?: (id: string, selected: boolean) => void;
 }
 
-export const PartnerCard: React.FC<PartnerCardProps> = ({ partner, onClick, showCheckbox, isSelected, onSelect }) => {
-  const handleCheckboxClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onSelect?.(partner.id, !isSelected);
-  };
-
+export const PartnerCard: React.FC<PartnerCardProps> = ({ partner, onClick }) => {
   return (
-    <div className="relative">
-      {showCheckbox && (
-        <button onClick={handleCheckboxClick} className={`absolute left-3 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${isSelected ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-gray-300 hover:border-emerald-400'}`}>
-          {isSelected && <Check className="w-4 h-4" />}
-        </button>
-      )}
-      <button onClick={onClick} className={`w-full bg-white rounded-xl border border-gray-200 p-4 text-left shadow-sm hover:shadow-md transition-all ${showCheckbox ? 'pl-12' : ''} ${isSelected ? 'ring-2 ring-emerald-500 border-emerald-500' : ''}`}>
-        <div className="flex items-start gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">{partner.name.split(' ').map(n => n[0]).slice(0, 2).join('')}</div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900 truncate">{partner.name}</h3>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex items-center gap-1 text-gray-500 text-sm"><MapPin className="w-3 h-3" />{partner.country}</div>
-              <span className="text-xs text-gray-400">•</span>
-              <span className="text-xs text-gray-500">{partner.region}</span>
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5 text-gray-400" />
+    <button onClick={onClick} className="w-full group bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all active:scale-[0.98] text-left overflow-hidden">
+      <div className="p-4 flex items-center gap-4">
+        {/* Avatar Box */}
+        <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 font-black text-lg flex-shrink-0 shadow-sm">
+          {partner.name.substring(0, 2).toUpperCase()}
         </div>
-        {partner.notes && <p className="text-xs text-gray-500 mt-3 line-clamp-2">{partner.notes}</p>}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-          <div className="flex items-center gap-2">
-            {partner.clickupLink && (
-              <a href={partner.clickupLink} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700"><ExternalLink className="w-3 h-3" /> ClickUp</a>
-            )}
+
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-bold text-slate-900 leading-tight truncate">{partner.name}</h3>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[10px] font-bold uppercase tracking-wide">
+              {partner.partnerType || 'Partner'}
+            </span>
           </div>
-          <span className="text-xs text-gray-600">Updated {new Date(partner.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
         </div>
-      </button>
-    </div>
+        <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-purple-500 transition-colors" />
+      </div>
+
+      {/* Footer Metrics */}
+      <div className="bg-slate-50/50 px-4 py-3 flex items-center gap-4 border-t border-slate-100">
+        <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+          <Globe className="w-3.5 h-3.5 text-slate-400" />
+          {partner.region || 'Global'}
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
+          <Building className="w-3.5 h-3.5 text-slate-400" />
+          {partner.country}
+        </div>
+      </div>
+    </button>
   );
 };
