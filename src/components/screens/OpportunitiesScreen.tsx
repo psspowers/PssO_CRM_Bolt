@@ -392,32 +392,8 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           </div>
         </div>
       )}
-
-      {/* Team View Info Banner */}
-      {!selectionMode && (
-        <>
-          {hierarchyView === 'team' && subordinateIds.length > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 lg:p-4 flex items-start lg:items-center gap-2 lg:gap-3">
-              <Users className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600 flex-shrink-0 mt-0.5 lg:mt-0" />
-              <p className="text-xs lg:text-sm text-blue-700 leading-snug">
-                Viewing deals from your team ({subordinateIds.length} {subordinateIds.length === 1 ? 'subordinate' : 'subordinates'} based on org hierarchy)
-              </p>
-            </div>
-          )}
-
-          {hierarchyView === 'team' && subordinateIds.length === 0 && !loadingSubordinates && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 lg:p-4 flex items-start lg:items-center gap-2 lg:gap-3">
-              <Info className="w-4 h-4 lg:w-5 lg:h-5 text-amber-600 flex-shrink-0 mt-0.5 lg:mt-0" />
-              <p className="text-xs lg:text-sm text-amber-700 leading-snug">
-                No subordinates found in your hierarchy. Ask an admin to set up reporting relationships in the Org Chart.
-              </p>
-            </div>
-          )}
-        </>
-      )}
-
       {/* Color-Coded Stage Filters */}
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex overflow-x-auto gap-1.5 pb-1 scrollbar-hide">
         {['all', 'Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Won'].map(stage => {
           const getStageColor = (s: string) => {
             if (s === 'all') return 'bg-slate-800 text-white';
@@ -443,17 +419,10 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         })}
       </div>
 
-      {/* Results Count with Owner Info */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
-        <p className="text-sm text-slate-500">
-          Showing <span className="font-semibold text-slate-900">{filtered.length}</span> {hierarchyView === 'mine' ? 'of your' : 'team'} deals
-        </p>
-        {hierarchyView === 'team' && filtered.length > 0 && (
-          <p className="text-xs text-slate-400">
-            Grouped by owner
-          </p>
-        )}
-      </div>
+      {/* Results Count */}
+      <p className="text-sm text-slate-500">
+        Showing <span className="font-semibold text-slate-900">{filtered.length}</span> {hierarchyView === 'mine' ? 'of your' : 'team'} deals
+      </p>
 
       {/* Deals Grid/List */}
       <div className={viewMode === 'grid' && !selectionMode ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4' : 'space-y-3'}>
