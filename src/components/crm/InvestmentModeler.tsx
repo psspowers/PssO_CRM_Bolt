@@ -140,9 +140,9 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
     };
   }, [modelData]);
 
-  // Format currency in millions
+  // Format currency in millions (no decimals)
   const formatCurrency = (val: number) => {
-    return `฿${(val / 1000000).toFixed(1)}M`;
+    return `${Math.round(val / 1000000)}M`;
   };
 
   // Custom tooltip for chart
@@ -181,27 +181,30 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-          <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">30-Year Total</p>
-          <p className="text-3xl font-black text-emerald-600 mt-1">{formatCurrency(summaryStats.total30YrSavings)}</p>
-          <p className="text-xs font-medium text-slate-500 mt-1">Lifetime Savings</p>
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">30-Year Total</p>
+            <p className="text-2xl font-black text-emerald-600 mt-1">{formatCurrency(summaryStats.total30YrSavings)}</p>
+            <p className="text-xs font-medium text-slate-500 mt-1">Lifetime Savings</p>
+          </div>
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">PPA Phase</p>
+            <p className="text-2xl font-black text-blue-600 mt-1">{formatCurrency(summaryStats.ppaPhaseTotal)}</p>
+            <p className="text-xs font-medium text-slate-500 mt-1">1-{ppaTerm}</p>
+          </div>
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Post-Handover</p>
+            <p className="text-2xl font-black text-purple-600 mt-1">{formatCurrency(summaryStats.postHandoverTotal)}</p>
+            <p className="text-xs font-medium text-slate-500 mt-1">Years {ppaTerm + 1}-30</p>
+          </div>
+          <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Avg Annual</p>
+            <p className="text-2xl font-black text-amber-600 mt-1">{formatCurrency(summaryStats.avgAnnualSavings)}</p>
+            <p className="text-xs font-medium text-slate-500 mt-1">Per Year</p>
+          </div>
         </div>
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-          <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">PPA Phase</p>
-          <p className="text-3xl font-black text-blue-600 mt-1">{formatCurrency(summaryStats.ppaPhaseTotal)}</p>
-          <p className="text-xs font-medium text-slate-500 mt-1">Years 1-{ppaTerm}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-          <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Post-Handover</p>
-          <p className="text-3xl font-black text-purple-600 mt-1">{formatCurrency(summaryStats.postHandoverTotal)}</p>
-          <p className="text-xs font-medium text-slate-500 mt-1">Years {ppaTerm + 1}-30</p>
-        </div>
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-          <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Avg Annual</p>
-          <p className="text-3xl font-black text-amber-600 mt-1">{formatCurrency(summaryStats.avgAnnualSavings)}</p>
-          <p className="text-xs font-medium text-slate-500 mt-1">Per Year</p>
-        </div>
+        <p className="text-[10px] text-slate-400 text-right">All numbers in ฿ millions</p>
       </div>
 
       {/* PRIMARY INPUT GRID */}
@@ -242,7 +245,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
           />
         </div>
         <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-400 uppercase">Discount Rate (%)</label>
+          <label className="text-[10px] font-bold text-slate-400 uppercase">Discount (%)</label>
           <input
             type="number"
             value={discount}
@@ -293,7 +296,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
           <div className="grid grid-cols-4 gap-4">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Peak Rate (฿/kWh)</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase leading-tight">Peak Rate<br/>(฿/kWh)</label>
               <input
                 type="number"
                 value={peakRate}
@@ -303,7 +306,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Off-Peak Rate (฿/kWh)</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase leading-tight">Off-Peak Rate<br/>(฿/kWh)</label>
               <input
                 type="number"
                 value={offPeakRate}
@@ -313,7 +316,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Peak CUF (%)</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase leading-tight">Peak CUF<br/>(%)</label>
               <input
                 type="number"
                 value={cufPeak}
@@ -324,7 +327,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Off-Peak CUF (%)</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase leading-tight">Off-Peak CUF<br/>(%)</label>
               <input
                 type="number"
                 value={cufOffPeak}
