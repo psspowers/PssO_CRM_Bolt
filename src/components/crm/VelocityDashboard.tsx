@@ -182,10 +182,10 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
       try {
         const { data: reports } = await supabase
           .from('user_hierarchy')
-          .select('child_user_id')
-          .eq('parent_user_id', userId);
+          .select('subordinate_id')
+          .eq('manager_id', userId);
 
-        const reportIds = reports?.map(r => r.child_user_id) || [];
+        const reportIds = reports?.map(r => r.subordinate_id) || [];
         setDirectReports(reportIds);
         setIsManager(
           reportIds.length > 0 ||
