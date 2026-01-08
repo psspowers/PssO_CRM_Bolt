@@ -393,7 +393,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </div>
       )}
       {/* Color-Coded Stage Filters */}
-      <div className="flex overflow-x-auto gap-1.5 pb-1 scrollbar-hide">
+      <div className="flex flex-wrap gap-1.5">
         {['all', 'Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Won'].map(stage => {
           const getStageColor = (s: string) => {
             if (s === 'all') return 'bg-slate-800 text-white';
