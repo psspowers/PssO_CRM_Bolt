@@ -48,6 +48,9 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
   const [cufPeak, setCufPeak] = useState(99);
   const [cufOffPeak, setCufOffPeak] = useState(15);
 
+  // Generation Baseline
+  const [genBaseline, setGenBaseline] = useState(1592); // kWh/kWp/year
+
   // UI States
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -60,7 +63,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
   const modelData = useMemo(() => {
     let data: YearData[] = [];
     let cumulativeSavings = 0;
-    let yearlyGen = capacity * 1592; // Baseline generation (kWh per kWp)
+    let yearlyGen = capacity * genBaseline; // Baseline generation (kWh per kWp)
     let currentPeakTariff = peakRate;
     let currentOffPeakTariff = offPeakRate;
     let currentOM = omBase;
@@ -110,7 +113,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
       });
     }
     return data;
-  }, [capacity, ppaTerm, omBase, cufPeak, cufOffPeak, peakRate, offPeakRate, discount]);
+  }, [capacity, ppaTerm, omBase, cufPeak, cufOffPeak, peakRate, offPeakRate, discount, genBaseline]);
 
   // --- SUMMARY CALCULATIONS ---
   const summaryStats = useMemo(() => {
@@ -338,7 +341,21 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
               />
             </div>
           </div>
-          
+
+          {/* Second Row - Generation Baseline */}
+          <div className="grid grid-cols-4 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase leading-tight">Gen Baseline<br/>(kWh/kWp/yr)</label>
+              <input
+                type="number"
+                value={genBaseline}
+                onChange={e => setGenBaseline(Number(e.target.value))}
+                min={0}
+                className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none"
+              />
+            </div>
+          </div>
+
           {/* Info Box */}
           <div className="flex gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100">
             <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
@@ -451,7 +468,6 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
           <li>Tariff escalation: 1% per year</li>
           <li>O&M escalation: 3% per year</li>
           <li>Major maintenance: ~3,000 ฿/kWp every 10 years</li>
-          <li>Generation baseline: 1,592 kWh/kWp/year</li>
           <li>Peak/Off-Peak split: 67%/33%</li>
         </ul>
       </div>
