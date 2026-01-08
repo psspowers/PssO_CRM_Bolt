@@ -32,7 +32,7 @@ const Register: React.FC = () => {
       return;
     }
     setLoading(true);
-    const { error } = await signUp(email, password, name, role);
+    const { error } = await signUp(email.trim().toLowerCase(), password, name.trim(), role);
     setLoading(false);
     if (error) {
       toast({ title: 'Registration failed', description: error.message, variant: 'destructive' });

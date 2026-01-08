@@ -168,8 +168,8 @@ const Login: React.FC = () => {
     
     try {
       // Attempt sign in (defaults to 30-day session)
-      const { error: signInError } = await signIn(email, password);
-      
+      const { error: signInError } = await signIn(email.trim().toLowerCase(), password);
+
       // If we already timed out, don't continue
       if (timedOut || !mountedRef.current) return;
       
@@ -277,7 +277,7 @@ const Login: React.FC = () => {
   const handle2FAVerified = async () => {
     setLoading(true);
     try {
-      const { error } = await signIn(email, password);
+      const { error } = await signIn(email.trim().toLowerCase(), password);
       if (error) {
         toast({ title: 'Error', description: 'Please try logging in again', variant: 'destructive' });
         setRequires2FA(false);

@@ -480,17 +480,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Sign up
   const signUp = async (email: string, password: string, name: string, role: UserRole = 'external'): Promise<{ error: Error | null }> => {
     try {
-      const defaultRole = getDefaultRoleForEmail(email);
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const cleanEmail = email.trim().toLowerCase();
+      const cleanName = name.trim();
+      const defaultRole = getDefaultRoleForEmail(cleanEmail);
+      const { data, error } = await supabase.auth.signUp({ email: cleanEmail, password });
 
       if (!error && data.user) {
         try {
           await supabase.from('crm_users').insert({
             id: data.user.id,
-            name: name || getNameForEmail(email),
-            email,
+            name: cleanName || getNameForEmail(cleanEmail),
+            email: cleanEmail,
             role: defaultRole,
-            badges: getBadgesForEmail(email),
+            badges: getBadgesForEmail(cleanEmail),
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.id}`
           });
         } catch (insertError) {

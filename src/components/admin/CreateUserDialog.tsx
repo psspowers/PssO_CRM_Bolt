@@ -50,6 +50,9 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
     try {
       console.log('[CREATE-USER] Starting client-side user creation');
 
+      const cleanEmail = formData.email.trim().toLowerCase();
+      const cleanName = formData.name.trim();
+
       const tempClient = createClient(
         import.meta.env.VITE_SUPABASE_URL,
         import.meta.env.VITE_SUPABASE_ANON_KEY,
@@ -63,11 +66,11 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
       );
 
       const { data: authData, error: authError } = await tempClient.auth.signUp({
-        email: formData.email,
+        email: cleanEmail,
         password: formData.password || `temp_${Math.random().toString(36).slice(2)}${Date.now()}`,
         options: {
           data: {
-            full_name: formData.name,
+            full_name: cleanName,
           },
           emailRedirectTo: `${window.location.origin}/reset-password`
         }
@@ -80,13 +83,13 @@ export const CreateUserDialog: React.FC<CreateUserDialogProps> = ({
 
       const { error: profileError } = await supabase.from('crm_users').insert({
         id: authData.user.id,
-        email: formData.email,
-        name: formData.name,
+        email: cleanEmail,
+        name: cleanName,
         role: formData.role,
         reports_to: formData.reports_to === 'none' ? null : formData.reports_to,
         is_active: true,
         password_change_required: !!formData.password,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=random`
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=random`
       });
 
       if (profileError) {
