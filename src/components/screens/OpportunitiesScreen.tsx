@@ -156,18 +156,15 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     if (!preWinStages.includes(o.stage)) return false;
 
     // 1. HIERARCHY FILTER - Filter based on ownership/team view
+    const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+
     if (hierarchyView === 'mine') {
-      // "My Deals" - Only show deals owned by the current user
       if (o.ownerId !== user?.id) return false;
     } else {
-      // "Team Deals" - Show deals owned by the user OR their subordinates
-      // This includes:
-      // - Deals owned by the current user
-      // - Deals owned by anyone in their subordinate chain (from user_hierarchy)
       const isMyDeal = o.ownerId === user?.id;
       const isSubordinateDeal = subordinateIds.includes(o.ownerId);
 
-      if (!isMyDeal && !isSubordinateDeal) return false;
+      if (!isAdmin && !isMyDeal && !isSubordinateDeal) return false;
     }
 
     // 2. SEARCH FILTER - Match against deal name or account name
