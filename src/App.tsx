@@ -12,6 +12,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppProvider } from "@/contexts/AppContext";
+import { PresenceProvider } from "@/contexts/PresenceContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -122,12 +123,14 @@ const App = () => {
             <Sonner />
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <AuthProvider>
-                <AppProvider>
-                  {showSplash && (
-                    <SplashScreen onComplete={() => setShowSplash(false)} />
-                  )}
-                  <AppRoutes />
-                </AppProvider>
+                <PresenceProvider>
+                  <AppProvider>
+                    {showSplash && (
+                      <SplashScreen onComplete={() => setShowSplash(false)} />
+                    )}
+                    <AppRoutes />
+                  </AppProvider>
+                </PresenceProvider>
               </AuthProvider>
             </BrowserRouter>
           </TooltipProvider>

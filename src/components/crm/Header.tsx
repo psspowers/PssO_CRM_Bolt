@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Plus, Loader2, Check, Clock, ExternalLink, Trash2, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
+import { OnlineUsersStack } from './OnlineUsersStack';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -380,7 +381,12 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate }) => {
                   </div>
                 </PopoverContent>
               </Popover>
-              
+
+              {/* Online Users Stack - Desktop only */}
+              <div className="hidden lg:flex">
+                <OnlineUsersStack />
+              </div>
+
               {/* User Dropdown */}
               <UserDropdown />
             </>
