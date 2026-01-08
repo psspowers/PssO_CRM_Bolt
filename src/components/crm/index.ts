@@ -36,6 +36,7 @@ export { CreditRiskHub } from './CreditRiskHub';
 export { CounterpartyRiskHub } from './CounterpartyRiskHub';
 export { FinancialDataImport } from './FinancialDataImport';
 export { VelocityDashboard } from './VelocityDashboard';
+export { StagnationAlert } from './StagnationAlert';
 export { BulkImportWizard } from './BulkImportWizard';
 export type { EntityType } from './BulkImportWizard';
 export { NexusTab } from './NexusTab';

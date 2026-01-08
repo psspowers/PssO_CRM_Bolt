@@ -15,6 +15,7 @@ import { fetchPipelineVelocity, VelocityStageData, calculateFallbackVelocity } f
 import { formatMetric } from '../../lib/utils';
 import { SegmentedControl } from '../ui/segmented-control';
 import { supabase } from '@/lib/supabase';
+import { StagnationAlert } from './StagnationAlert';
 
 interface VelocityDashboardProps {
   onNavigate: (tab: string) => void;
@@ -387,6 +388,8 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
 
   return (
     <div className="space-y-6 lg:space-y-8 pb-8">
+      <StagnationAlert />
+
       {error && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
