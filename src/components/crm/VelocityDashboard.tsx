@@ -114,12 +114,12 @@ const PipelineStage: React.FC<PipelineStageProps> = ({
   return (
     <div className="flex items-center">
       <div className="flex flex-col items-center">
-        <div className="h-5 mb-1">
+        <div className="h-6 mb-1">
           {change !== undefined && change !== 0 && (
-            <div className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+            <div className={`px-2.5 py-1 rounded-full text-xs font-bold ${
               change > 0 ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
             }`}>
-              {change > 0 ? '+' : ''}{change.toFixed(2)}
+              {change > 0 ? '+' : ''}{change.toFixed(2)}%
             </div>
           )}
         </div>
