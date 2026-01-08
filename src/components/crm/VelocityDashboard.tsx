@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabase';
 
 interface VelocityDashboardProps {
   onNavigate: (tab: string) => void;
+  onNavigateWithStageFilter: (tab: string, stage?: string) => void;
   onOpportunityClick: (id: string) => void;
   onSwitchToClassic: () => void;
 }
@@ -104,16 +105,20 @@ interface PipelineStageProps {
   momChange?: number;
   showChange?: 'wow' | 'mom';
   arrowColor?: string;
+  onClick?: () => void;
 }
 
 const PipelineStage: React.FC<PipelineStageProps> = ({
-  stage, count, mw, color, isLast, flowToNext, wowChange, momChange, showChange, arrowColor
+  stage, count, mw, color, isLast, flowToNext, wowChange, momChange, showChange, arrowColor, onClick
 }) => {
   const change = showChange === 'wow' ? wowChange : momChange;
 
   return (
     <div className="flex items-center">
-      <div className="flex flex-col items-center">
+      <button
+        onClick={onClick}
+        className="flex flex-col items-center cursor-pointer group transition-all hover:scale-105"
+      >
         <div className="h-6 mb-1">
           {change !== undefined && change !== 0 && (
             <div className={`px-2.5 py-1 rounded-full text-xs font-bold ${
@@ -123,12 +128,12 @@ const PipelineStage: React.FC<PipelineStageProps> = ({
             </div>
           )}
         </div>
-        <div className={`w-16 h-16 lg:w-20 lg:h-20 rounded-2xl ${color} flex flex-col items-center justify-center text-white shadow-lg`}>
+        <div className={`w-16 h-16 lg:w-20 lg:h-20 rounded-2xl ${color} flex flex-col items-center justify-center text-white shadow-lg group-hover:shadow-xl transition-shadow`}>
           <span className="text-xl lg:text-2xl font-bold">{count}</span>
           <span className="text-[10px] opacity-80">{mw.toFixed(2)} MW</span>
         </div>
-        <span className="text-xs font-medium text-slate-600 mt-1.5 text-center max-w-[80px]">{stage}</span>
-      </div>
+        <span className="text-xs font-medium text-slate-600 mt-1.5 text-center max-w-[80px] group-hover:text-slate-900 transition-colors">{stage}</span>
+      </button>
       {!isLast && (
         <div className="flex flex-col items-center mx-2 lg:mx-4">
           <div className="h-5 mb-1"></div>
@@ -149,6 +154,7 @@ const PipelineStage: React.FC<PipelineStageProps> = ({
 
 export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
   onNavigate,
+  onNavigateWithStageFilter,
   onOpportunityClick,
   onSwitchToClassic
 }) => {
@@ -587,7 +593,10 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
 
               return (
                 <div key={stage.stage}>
-                  <div className="relative bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                  <button
+                    onClick={() => onNavigateWithStageFilter('opportunities', stage.stage)}
+                    className="w-full relative bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+                  >
                     <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${stage.color}`} />
 
                     <div className="pl-4 pr-4 py-4 ml-2">
@@ -642,7 +651,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                         )}
                       </div>
                     </div>
-                  </div>
+                  </button>
 
                   {index !== pipelineStages.length - 1 && (
                     <div className="flex justify-center py-1">
@@ -674,6 +683,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                 momChange={stage.momChange}
                 showChange={period}
                 arrowColor={stage.color}
+                onClick={() => onNavigateWithStageFilter('opportunities', stage.stage)}
               />
             ))}
           </div>
@@ -701,7 +711,10 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
           <div className="flex flex-col gap-3">
             {projectStages.map((stage, index) => (
               <div key={stage.stage}>
-                <div className="relative bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                <button
+                  onClick={() => onNavigate('projects')}
+                  className="w-full relative bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+                >
                   <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${stage.color}`} />
 
                   <div className="pl-4 pr-4 py-4 ml-2">
@@ -733,7 +746,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                       )}
                     </div>
                   </div>
-                </div>
+                </button>
 
                 {index !== projectStages.length - 1 && (
                   <div className="flex justify-center py-1">
@@ -761,6 +774,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                 isLast={index === projectStages.length - 1}
                 flowToNext={0}
                 arrowColor={stage.color}
+                onClick={() => onNavigate('projects')}
               />
             ))}
           </div>

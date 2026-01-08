@@ -45,6 +45,7 @@ export default function AppLayout() {
   const [autoOpenId, setAutoOpenId] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [stageFilter, setStageFilter] = useState<string | null>(null);
   
   // Dashboard mode toggle - stored in localStorage for persistence
   const [useVelocityDashboard, setUseVelocityDashboard] = useState(() => {
@@ -148,7 +149,15 @@ export default function AppLayout() {
     setActiveTab(tab);
     if (id) {
         setAutoOpenId(id);
-        setTimeout(() => setAutoOpenId(null), 300); 
+        setTimeout(() => setAutoOpenId(null), 300);
+    }
+  };
+
+  const handleNavigateWithStageFilter = (tab: Tab, stage?: string) => {
+    setActiveTab(tab);
+    if (stage) {
+      setStageFilter(stage);
+      setTimeout(() => setStageFilter(null), 300);
     }
   };
 
@@ -358,8 +367,9 @@ export default function AppLayout() {
         // Toggle between Classic and Velocity Dashboard
         if (useVelocityDashboard) {
           return (
-            <VelocityDashboard 
-              onNavigate={setActiveTab} 
+            <VelocityDashboard
+              onNavigate={setActiveTab}
+              onNavigateWithStageFilter={handleNavigateWithStageFilter}
               onOpportunityClick={(id) => handleDeepLink('opportunities', id)}
               onSwitchToClassic={() => setUseVelocityDashboard(false)}
             />
@@ -371,7 +381,7 @@ export default function AppLayout() {
             onOpportunityClick={(id) => handleDeepLink('opportunities', id)} 
           />
         );
-      case 'opportunities': return <OpportunitiesScreen forcedOpenId={autoOpenId} />;
+      case 'opportunities': return <OpportunitiesScreen forcedOpenId={autoOpenId} forcedStageFilter={stageFilter} />;
       case 'accounts': return <AccountsScreen />;
       case 'partners': return <PartnersScreen />;
       case 'contacts': return <ContactsScreen />;

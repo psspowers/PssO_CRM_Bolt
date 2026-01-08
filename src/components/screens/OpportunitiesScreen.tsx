@@ -37,12 +37,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
-// Added forcedOpenId to the Props interface
 interface OpportunitiesScreenProps {
   forcedOpenId?: string | null;
+  forcedStageFilter?: string | null;
 }
 
-export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forcedOpenId }) => {
+export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forcedOpenId, forcedStageFilter }) => {
   const {
     opportunities,
     accounts,
@@ -123,10 +123,17 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
       const target = opportunities.find(o => o.id === forcedOpenId);
       if (target) {
         setSelectedOpp(target);
-        setIsEditing(false); // Ensure we open in View mode, not Edit mode
+        setIsEditing(false);
       }
     }
   }, [forcedOpenId, opportunities]);
+
+  // Handle forced stage filter from Velocity Dashboard
+  useEffect(() => {
+    if (forcedStageFilter) {
+      setStageFilter(forcedStageFilter);
+    }
+  }, [forcedStageFilter]);
 
   const userCanDelete = canDelete();
   const userCanEdit = selectedOpp ? canEdit(selectedOpp.ownerId) : false;
