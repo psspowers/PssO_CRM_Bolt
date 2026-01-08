@@ -277,7 +277,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   );
 
   return (
-    <div className="space-y-4 lg:space-y-6 pb-24 lg:pb-32">
+    <div className="space-y-2 pb-24 lg:pb-32">
       {/* Header & Selection Toolbar */}
       {selectionMode ? (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-orange-50 rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-orange-200 gap-3">
@@ -305,9 +305,9 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-3 lg:gap-4">
-          {/* Search in Top Right */}
-          <div className="flex items-center justify-end mb-2">
+        <div className="flex flex-col gap-2">
+          {/* Title with Search Icon */}
+          <div className="flex items-center justify-between mb-1">
             {isSearchOpen ? (
               <div className="flex-1 flex items-center gap-2 animate-in fade-in slide-in-from-right-10 duration-200">
                 <SearchBar value={search} onChange={setSearch} placeholder="Search deals..." showFilter={false} />
@@ -322,18 +322,21 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-colors"
-                aria-label="Search deals"
-              >
-                <Search className="w-5 h-5 text-slate-600" />
-              </button>
+              <>
+                <h1 className="text-2xl font-bold text-slate-900">Deals</h1>
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-colors"
+                  aria-label="Search deals"
+                >
+                  <Search className="w-5 h-5 text-slate-600" />
+                </button>
+              </>
             )}
           </div>
 
           {/* Hierarchy View Toggle - My Deals vs Team Deals */}
-          <div className="flex items-center gap-2 pb-2">
+          <div className="flex items-center gap-2">
             <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
               <button
                 onClick={() => setHierarchyView('mine')}

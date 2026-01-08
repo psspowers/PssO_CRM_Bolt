@@ -439,12 +439,11 @@ export default function AppLayout() {
         <main id="main-content" className="flex-1 p-4 lg:p-8 pb-24 lg:pb-8 overflow-auto">
           <div className="max-w-7xl mx-auto">
             {/* Page Title - Desktop */}
-            {activeTab !== 'home' && activeTab !== 'search' && (
+            {activeTab !== 'home' && activeTab !== 'search' && activeTab !== 'opportunities' && (
               <div className="mb-6">
                 <h1 className="text-2xl lg:text-3xl font-bold text-slate-900">{titles[activeTab]}</h1>
                 <p className="text-slate-500 mt-1 hidden lg:block">
                   {activeTab === 'accounts' && 'Manage your customer accounts and relationships'}
-                  {activeTab === 'opportunities' && 'Track and manage your deal pipeline'}
                   {activeTab === 'partners' && 'Manage your partner network and collaborations'}
                   {activeTab === 'contacts' && 'View and manage your contacts'}
                   {activeTab === 'projects' && 'Track project development and capacity'}

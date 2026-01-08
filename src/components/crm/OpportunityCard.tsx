@@ -42,10 +42,10 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, a
         </div>
 
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-bold text-slate-900 truncate pr-2">
+          <h3 className="text-sm font-bold text-slate-900 truncate pr-2 overflow-hidden whitespace-nowrap text-ellipsis">
             {toTitleCase(opportunity.name)}
           </h3>
-          <p className="text-xs text-slate-500 truncate">
+          <p className="text-xs text-slate-500 truncate overflow-hidden whitespace-nowrap text-ellipsis">
             {toTitleCase(accountName || 'Unknown Account')}
           </p>
         </div>
@@ -63,8 +63,8 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, a
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Capacity</span>
           <div className="flex items-center gap-1">
             <Zap className="w-3 h-3 text-amber-500" />
-            <span className="text-base font-black text-slate-900 leading-none">
-              {opportunity.targetCapacity} <span className="text-xs font-normal text-slate-500">MW</span>
+            <span className="text-sm font-black text-slate-900 leading-none">
+              {opportunity.targetCapacity?.toFixed(2)} <span className="text-xs font-normal text-slate-500">MW</span>
             </span>
           </div>
         </div>
