@@ -307,7 +307,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
       ) : (
         <div className="flex flex-col gap-3 lg:gap-4">
           {/* Expandable Search Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-2">
             {isSearchOpen ? (
               <div className="flex-1 flex items-center gap-2 animate-in fade-in slide-in-from-right-10 duration-200">
                 <SearchBar value={search} onChange={setSearch} placeholder="Search deals..." showFilter={false} />
@@ -316,68 +316,64 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                     setIsSearchOpen(false);
                     setSearch('');
                   }}
-                  className="p-2.5 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
+                  className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors flex-shrink-0"
                 >
                   <X className="w-5 h-5 text-slate-600" />
                 </button>
               </div>
             ) : (
-              <>
-                <h1 className="text-2xl font-bold text-slate-900">Deals</h1>
-                <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-1">
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-colors flex-shrink-0"
+                >
+                  <Search className="w-5 h-5 text-slate-600" />
+                </button>
+
+                {/* View Toggle - Desktop Only */}
+                <div className="hidden lg:flex items-center bg-slate-100 rounded-lg p-1">
                   <button
-                    onClick={() => setIsSearchOpen(true)}
-                    className="p-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 transition-colors"
+                    onClick={() => setViewMode('list')}
+                    className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
+                    aria-label="List view"
                   >
-                    <Search className="w-5 h-5 text-slate-600" />
+                    <List className="w-4 h-4" />
                   </button>
-
-                  {/* View Toggle - Desktop Only */}
-                  <div className="hidden lg:flex items-center bg-slate-100 rounded-xl p-1">
-                    <button
-                      onClick={() => setViewMode('list')}
-                      className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
-                      aria-label="List view"
-                    >
-                      <List className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => setViewMode('grid')}
-                      className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
-                      aria-label="Grid view"
-                    >
-                      <LayoutGrid className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  {userCanDelete && (
-                    <button
-                      onClick={() => setSelectionMode(true)}
-                      className="p-2.5 lg:p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-orange-500 hover:border-orange-200 transition-colors shadow-sm flex-shrink-0"
-                      aria-label="Bulk select"
-                    >
-                      <CheckSquare className="w-4 h-4 lg:w-5 lg:h-5" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
+                    aria-label="Grid view"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
                 </div>
-              </>
+
+                {userCanDelete && (
+                  <button
+                    onClick={() => setSelectionMode(true)}
+                    className="p-2 bg-white border border-slate-200 text-slate-400 rounded-lg hover:text-orange-500 hover:border-orange-200 transition-colors shadow-sm flex-shrink-0 ml-auto"
+                    aria-label="Bulk select"
+                  >
+                    <CheckSquare className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
           {/* Hierarchy View Toggle - My Deals vs Team Deals */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
-            <div className="flex items-center bg-slate-100 rounded-xl p-1 flex-shrink-0">
+          <div className="flex items-center gap-2 pb-2">
+            <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
               <button
                 onClick={() => setHierarchyView('mine')}
-                className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold transition-all whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
                   hierarchyView === 'mine'
                     ? 'bg-white shadow-sm text-orange-600'
                     : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
-                <User className="w-3 h-3 lg:w-3.5 lg:h-3.5" />
-                <span className="hidden sm:inline">My Deals</span>
-                <span className="sm:hidden">Mine</span>
+                <User className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Mine</span>
                 <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                   hierarchyView === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
                 }`}>
@@ -387,15 +383,14 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
               <button
                 onClick={() => setHierarchyView('team')}
                 disabled={loadingSubordinates}
-                className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm font-semibold transition-all whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
                   hierarchyView === 'team'
                     ? 'bg-white shadow-sm text-orange-600'
                     : 'text-slate-500 hover:text-slate-700'
                 } ${loadingSubordinates ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <Users className="w-3 h-3 lg:w-3.5 lg:h-3.5" />
-                <span className="hidden sm:inline">Team Deals</span>
-                <span className="sm:hidden">Team</span>
+                <Users className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Team</span>
                 <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                   hierarchyView === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
                 }`}>
@@ -408,14 +403,14 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button className="p-2 text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0">
-                    <Info className="w-4 h-4 lg:w-4 lg:h-4" />
+                  <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0">
+                    <Info className="w-4 h-4" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs">
                   <p className="text-xs">
-                    <strong>My Deals:</strong> Opportunities you own<br />
-                    <strong>Team Deals:</strong> Your deals + deals owned by your direct and indirect reports (based on org hierarchy)
+                    <strong>Mine:</strong> Your opportunities<br />
+                    <strong>Team:</strong> Your deals + subordinates' deals
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -447,8 +442,8 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </>
       )}
 
-      {/* Color-Coded Stage Filters - Horizontal Scroll */}
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+      {/* Color-Coded Stage Filters */}
+      <div className="flex flex-wrap gap-1.5">
         {['all', 'Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Won'].map(stage => {
           const getStageColor = (s: string) => {
             if (s === 'all') return 'bg-slate-800 text-white';
@@ -462,9 +457,9 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
             <button
               key={stage}
               onClick={() => setStageFilter(stage)}
-              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+              className={`px-3 py-1.5 rounded-full text-[10px] font-bold whitespace-nowrap transition-all ${
                 stageFilter === stage
-                  ? `ring-2 ring-offset-1 ring-slate-900 ${getStageColor(stage)}`
+                  ? `ring-2 ring-slate-900 ${getStageColor(stage)}`
                   : `${getStageColor(stage)} opacity-60`
               }`}
             >
