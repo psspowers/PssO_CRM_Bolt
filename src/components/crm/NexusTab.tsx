@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Network, Star, Plus, User, Building2, Loader2, Search, ArrowRight, Users, Target } from 'lucide-react';
+import { Network, Star, Plus, User, Building2, Loader2, Search, ArrowRight, Users, Target, Orbit, List } from 'lucide-react';
+import { NexusOrbitGraph } from './NexusOrbitGraph';
 
 interface NexusPath {
   path: Array<{
@@ -34,6 +35,8 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
   const [paths, setPaths] = useState<NexusPath[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [viewMode, setViewMode] = useState<'orbit' | 'list'>('orbit');
+  const [targetEntityName, setTargetEntityName] = useState<string>('Target');
 
   const [sourceMode, setSourceMode] = useState<'me' | 'intermediary'>('me');
   const [selectedSource, setSelectedSource] = useState<IntermediaryOption | null>(null);
@@ -150,6 +153,7 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
 
   useEffect(() => {
     fetchPaths();
+    fetchTargetName();
   }, [entityId]);
 
   useEffect(() => {
@@ -160,6 +164,40 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery, sourceMode]);
+
+  const fetchTargetName = async () => {
+    try {
+      let tableName = '';
+      let nameField = '';
+
+      switch (entityType) {
+        case 'Contact':
+          tableName = 'contacts';
+          nameField = 'full_name';
+          break;
+        case 'Account':
+          tableName = 'accounts';
+          nameField = 'name';
+          break;
+        case 'Partner':
+          tableName = 'partners';
+          nameField = 'name';
+          break;
+      }
+
+      const { data, error } = await supabase
+        .from(tableName)
+        .select(nameField)
+        .eq('id', entityId)
+        .single();
+
+      if (!error && data) {
+        setTargetEntityName(data[nameField] || 'Target');
+      }
+    } catch (err) {
+      console.error('Error fetching target name:', err);
+    }
+  };
 
   const handleConnect = async () => {
     if (!user || !profile) {
@@ -293,23 +331,50 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
 
   return (
     <div className="space-y-4">
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-lg flex justify-between items-center">
-        <div>
-          <h3 className="font-bold text-lg flex items-center gap-2">
-            <Network className="w-5 h-5 text-emerald-400" />
-            The Nexus
-          </h3>
-          <p className="text-slate-300 text-xs mt-1">
-            Team-wide connections to this target.
-          </p>
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-lg">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h3 className="font-bold text-lg flex items-center gap-2">
+              <Network className="w-5 h-5 text-emerald-400" />
+              The Nexus
+            </h3>
+            <p className="text-slate-300 text-xs mt-1">
+              Team-wide connections to this target.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all active:scale-95 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Link
+          </button>
         </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all active:scale-95 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Link
-        </button>
+
+        <div className="flex items-center gap-2 bg-slate-800/50 rounded-lg p-1">
+          <button
+            onClick={() => setViewMode('orbit')}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-bold transition-all ${
+              viewMode === 'orbit'
+                ? 'bg-orange-500 text-white shadow-lg'
+                : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+            }`}
+          >
+            <Orbit className="w-4 h-4" />
+            Solar Nexus
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-bold transition-all ${
+              viewMode === 'list'
+                ? 'bg-orange-500 text-white shadow-lg'
+                : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+            }`}
+          >
+            <List className="w-4 h-4" />
+            List View
+          </button>
+        </div>
       </div>
 
       {showAdd && (
@@ -516,24 +581,28 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
         </div>
       )}
 
-      <div className="space-y-3">
-        {loading ? (
-          <div className="text-center py-10">
-            <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400"/>
-          </div>
-        ) : paths.length === 0 ? (
-          <div className="text-center py-10 border-2 border-dashed border-slate-200 rounded-2xl">
-            <Network className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-            <p className="text-slate-400 text-sm">No connection paths found yet.</p>
-            <p className="text-slate-400 text-xs mt-1">Start mapping connections to build your network.</p>
-          </div>
-        ) : (
-          paths.map((pathObj, pathIdx) => (
+{loading ? (
+        <div className="text-center py-10">
+          <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400"/>
+        </div>
+      ) : paths.length === 0 ? (
+        <div className="text-center py-10 border-2 border-dashed border-slate-200 rounded-2xl bg-white">
+          <Network className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+          <p className="text-slate-400 text-sm">No connection paths found yet.</p>
+          <p className="text-slate-400 text-xs mt-1">Start mapping connections to build your network.</p>
+        </div>
+      ) : viewMode === 'orbit' ? (
+        <NexusOrbitGraph
+          paths={paths}
+          targetName={targetEntityName}
+        />
+      ) : (
+        <div className="space-y-3">
+          {paths.map((pathObj, pathIdx) => (
             <div
               key={pathIdx}
               className="relative bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
             >
-              {/* Win Probability Badge */}
               {pathObj.win_probability !== undefined && (
                 <div className="absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 rounded-full bg-slate-50 border border-slate-100 shadow-sm">
                   <Target className={`w-3 h-3 ${
@@ -574,9 +643,9 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
                 )}
               </div>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
