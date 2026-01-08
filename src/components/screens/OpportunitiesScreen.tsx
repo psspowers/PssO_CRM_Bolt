@@ -425,7 +425,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
       </p>
 
       {/* Deals Grid/List */}
-      <div className={viewMode === 'grid' && !selectionMode ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4' : 'space-y-3'}>
+      <div className={`w-full max-w-full overflow-hidden ${viewMode === 'grid' && !selectionMode ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4' : 'flex flex-col gap-3'}`}>
         {filtered.map(opp => (
           <OpportunityCard
             key={opp.id}

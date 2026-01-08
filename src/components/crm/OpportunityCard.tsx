@@ -29,7 +29,7 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, a
   const IndustryIcon = getIndustryIcon(opportunity.sector);
 
   return (
-    <button onClick={onClick} className="w-full bg-white rounded-2xl border border-slate-100 shadow-sm mb-3 overflow-hidden text-left relative hover:shadow-md transition-all active:scale-[0.98]">
+    <button onClick={onClick} className="w-full max-w-full box-border bg-white rounded-2xl border border-slate-100 shadow-sm mb-3 overflow-hidden text-left relative hover:shadow-md transition-all active:scale-[0.98]">
 
       <div className="p-4 flex items-start gap-3">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm flex-shrink-0 ${
