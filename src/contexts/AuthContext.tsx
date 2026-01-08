@@ -1,6 +1,21 @@
 /**
  * Authentication Context
  * Manages user authentication state
+ *
+ * CRITICAL PRINCIPLE: SINGLE SOURCE OF TRUTH
+ * =========================================
+ * The crm_users table in the database is the ONLY source of truth for:
+ * - User roles (admin, super_admin, internal, external)
+ * - User names
+ * - User badges
+ * - All other user attributes
+ *
+ * Email-based logic (getDefaultRoleForEmail) is ONLY used when creating
+ * a NEW user for the first time. After creation, all user data comes
+ * exclusively from the crm_users table.
+ *
+ * NEVER override database values based on email address patterns.
+ * To change a user's role, update the crm_users table directly.
  */
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
@@ -39,13 +54,11 @@ const SESSION_WARNING_TIME = 10 * 60; // 10 minutes before expiry
 const SHORT_SESSION = 3 * 60 * 60; // 3 hours
 const LONG_SESSION = 30 * 24 * 60 * 60; // 30 days
 
-// Admin email addresses that should always have admin role
-// SECURITY POLICY: Only ONE Super Admin
-const ADMIN_EMAILS = ['sam@psspowers.com'];
-
-// Helper to determine role based on email
-const getRoleForEmail = (email: string): UserRole => {
-  if (ADMIN_EMAILS.includes(email.toLowerCase())) {
+// Helper to determine DEFAULT role for NEW users based on email
+// NOTE: This is ONLY used when creating a new user for the first time
+// After creation, the crm_users table is the SINGLE SOURCE OF TRUTH
+const getDefaultRoleForEmail = (email: string): UserRole => {
+  if (email.toLowerCase() === 'sam@psspowers.com') {
     return 'admin';
   }
   if (email.toLowerCase().endsWith('@psspowers.com') || email.toLowerCase().endsWith('@ycubeholdings.com')) {
@@ -91,12 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string, userEmail?: string): Promise<UserProfile | null> => {
     try {
-      // Determine the correct role based on email (this takes precedence)
-      const emailRole = userEmail ? getRoleForEmail(userEmail) : 'external';
-      const emailName = userEmail ? getNameForEmail(userEmail) : 'User';
-      const emailBadges = userEmail ? getBadgesForEmail(userEmail) : [];
-
-      // First, try to fetch by ID
+      // First, try to fetch by ID from database (DATABASE IS SOURCE OF TRUTH)
       const { data: dataById } = await supabase
         .from('crm_users')
         .select('*')
@@ -107,18 +115,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const profileData = Array.isArray(dataById) ? dataById[0] : dataById;
 
       if (profileData) {
-        // Use email-based role for admin emails to ensure they always have admin access
-        const finalRole = ADMIN_EMAILS.includes(userEmail?.toLowerCase() || '') ? 'admin' : profileData.role;
-        const finalName = ADMIN_EMAILS.includes(userEmail?.toLowerCase() || '') ? emailName : profileData.name;
-        const finalBadges = ADMIN_EMAILS.includes(userEmail?.toLowerCase() || '') ? emailBadges : (profileData.badges || []);
-
+        // USE DATABASE ROLE - No overrides!
         return {
           id: profileData.id,
-          name: finalName || emailName,
+          name: profileData.name,
           email: profileData.email,
-          role: finalRole,
+          role: profileData.role,
           avatar: profileData.avatar,
-          badges: finalBadges,
+          badges: profileData.badges || [],
           password_change_required: profileData.password_change_required || false
         };
       }
@@ -141,46 +145,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .update({ id: userId })
             .eq('email', userEmail);
 
-          // Use email-based role for admin emails
-          const finalRole = ADMIN_EMAILS.includes(userEmail.toLowerCase()) ? 'admin' : emailProfileData.role;
-          const finalName = ADMIN_EMAILS.includes(userEmail.toLowerCase()) ? emailName : emailProfileData.name;
-          const finalBadges = ADMIN_EMAILS.includes(userEmail.toLowerCase()) ? emailBadges : (emailProfileData.badges || []);
-
+          // USE DATABASE ROLE - No overrides!
           return {
             id: userId,
-            name: finalName || emailName,
+            name: emailProfileData.name,
             email: emailProfileData.email,
-            role: finalRole,
+            role: emailProfileData.role,
             avatar: emailProfileData.avatar,
-            badges: finalBadges,
+            badges: emailProfileData.badges || [],
             password_change_required: emailProfileData.password_change_required || false
           };
         }
       }
 
       // No profile found - create a default one for authenticated users
+      // Use getDefaultRoleForEmail ONLY for new user creation
       if (userEmail) {
+        const defaultRole = getDefaultRoleForEmail(userEmail);
+        const defaultName = getNameForEmail(userEmail);
+        const defaultBadges = getBadgesForEmail(userEmail);
+
         const defaultProfile: UserProfile = {
           id: userId,
-          name: emailName,
+          name: defaultName,
           email: userEmail,
-          role: emailRole,
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(emailName)}&background=f97316&color=fff&bold=true`,
-          badges: emailBadges,
+          role: defaultRole,
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(defaultName)}&background=f97316&color=fff&bold=true`,
+          badges: defaultBadges,
           password_change_required: false
         };
-        
+
         // Try to insert the new profile
         await supabase.from('crm_users').insert({
           id: userId,
           name: defaultProfile.name,
           email: userEmail,
-          role: emailRole,
-          badges: emailBadges,
+          role: defaultRole,
+          badges: defaultBadges,
           avatar: defaultProfile.avatar,
           is_active: true
         });
-        
+
         return defaultProfile;
       }
       
@@ -194,7 +199,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: userId,
           name: getNameForEmail(userEmail),
           email: userEmail,
-          role: getRoleForEmail(userEmail),
+          role: getDefaultRoleForEmail(userEmail),
           avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(getNameForEmail(userEmail))}&background=f97316&color=fff`,
           badges: getBadgesForEmail(userEmail)
         };
@@ -475,16 +480,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Sign up
   const signUp = async (email: string, password: string, name: string, role: UserRole = 'external'): Promise<{ error: Error | null }> => {
     try {
-      const actualRole = getRoleForEmail(email);
+      const defaultRole = getDefaultRoleForEmail(email);
       const { data, error } = await supabase.auth.signUp({ email, password });
-      
+
       if (!error && data.user) {
         try {
           await supabase.from('crm_users').insert({
             id: data.user.id,
             name: name || getNameForEmail(email),
             email,
-            role: actualRole,
+            role: defaultRole,
             badges: getBadgesForEmail(email),
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.user.id}`
           });
@@ -492,7 +497,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.warn('Could not create user profile during signup:', insertError);
         }
       }
-      
+
       return { error };
     } catch (error) {
       console.error('Sign up error:', error);

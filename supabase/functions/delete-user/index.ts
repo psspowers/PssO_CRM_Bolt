@@ -96,7 +96,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!requestingProfile || requestingProfile.role !== 'admin') {
+    if (!requestingProfile || !['admin', 'super_admin'].includes(requestingProfile.role)) {
       console.error('[DELETE-USER] User is not admin. Role:', requestingProfile?.role);
       return new Response(
         JSON.stringify({
@@ -135,7 +135,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Prevent self-deletion
     if (user_id === requestingUser.id) {
       console.error('[DELETE-USER] User attempting to delete themselves');
       return new Response(
@@ -153,7 +152,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Get user info before deletion for logging
     const { data: userData } = await supabaseAdmin
       .from('crm_users')
       .select('name, email')
@@ -161,14 +159,12 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     console.log('[DELETE-USER] Deleting from user_hierarchy');
-    // Delete hierarchy records (both as manager and subordinate)
     await supabaseAdmin
       .from('user_hierarchy')
       .delete()
       .or(`manager_id.eq.${user_id},subordinate_id.eq.${user_id}`);
 
     console.log('[DELETE-USER] Deleting from crm_users');
-    // Delete from CRM users
     const { error: crmDeleteError } = await supabaseAdmin
       .from('crm_users')
       .delete()
@@ -192,13 +188,10 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log('[DELETE-USER] Deleting from auth.users');
-    // Delete from Auth
     const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id);
 
     if (authDeleteError) {
       console.error('[DELETE-USER] Failed to delete auth user:', authDeleteError);
-      // CRM user is already deleted, so we log the error but still return success
-      // This handles the case where auth user might already be deleted
       console.warn('[DELETE-USER] Auth user deletion failed, but CRM user was deleted');
     }
 

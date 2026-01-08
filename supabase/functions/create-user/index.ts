@@ -102,7 +102,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!requestingProfile || requestingProfile.role !== 'admin') {
+    if (!requestingProfile || !['admin', 'super_admin'].includes(requestingProfile.role)) {
       console.error('[CREATE-USER] User is not admin. Role:', requestingProfile?.role);
       return new Response(
         JSON.stringify({
