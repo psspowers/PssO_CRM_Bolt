@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronRight, Zap, Clock, Factory, Building2, Hotel, Wheat, Briefcase } from 'lucide-react';
+import { Zap, Factory, Building2, Hotel, Wheat, Briefcase } from 'lucide-react';
 import { Opportunity } from '../../types/crm';
 
 interface OpportunityCardProps {
@@ -23,41 +23,55 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, a
     return map[stage] || 0;
   };
 
-  const toTitleCase = (str: string) => {
-    return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-  };
+  const toTitleCase = (str: string) => str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
 
   const formatValue = (val: number) => val >= 1000000 ? `฿${(val / 1000000).toFixed(1)}M` : `฿${(val / 1000).toFixed(0)}K`;
   const IndustryIcon = getIndustryIcon(opportunity.sector);
-  const formattedAccountName = accountName ? toTitleCase(accountName) : '';
 
   return (
-    <button onClick={onClick} className="w-full group relative bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all active:scale-[0.98] overflow-hidden text-left">
-      <div className="p-4 flex items-start gap-4">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 shadow-inner flex-shrink-0">
-          <IndustryIcon className="w-6 h-6" />
+    <button onClick={onClick} className="w-full bg-white rounded-2xl border border-slate-100 shadow-sm mb-3 overflow-hidden text-left relative hover:shadow-md transition-all active:scale-[0.98]">
+
+      <div className="p-4 flex items-start gap-3">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-sm flex-shrink-0 ${
+           opportunity.sector?.includes('Manuf') ? 'bg-blue-500' :
+           opportunity.sector?.includes('Agri') ? 'bg-green-500' :
+           opportunity.sector?.includes('Comm') ? 'bg-purple-500' :
+           'bg-slate-500'
+        }`}>
+          <IndustryIcon className="w-5 h-5" />
         </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-base font-bold text-slate-900 leading-tight truncate">{opportunity.name}</h3>
-          <p className="text-xs text-slate-500 font-medium truncate mt-0.5">{formattedAccountName}</p>
-          <div className="flex gap-2 mt-2">
-            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wide">{opportunity.stage}</span>
+
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-bold text-slate-900 truncate pr-2">
+            {toTitleCase(opportunity.name)}
+          </h3>
+          <p className="text-xs text-slate-500 truncate">
+            {toTitleCase(accountName || 'Unknown Account')}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between px-4 pb-4 mt-1">
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Value</span>
+          <span className="text-base font-black text-slate-900 leading-none">
+            {formatValue(opportunity.value)}
+          </span>
+        </div>
+
+        <div className="flex flex-col items-end">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Capacity</span>
+          <div className="flex items-center gap-1">
+            <Zap className="w-3 h-3 text-amber-500" />
+            <span className="text-base font-black text-slate-900 leading-none">
+              {opportunity.targetCapacity} <span className="text-xs font-normal text-slate-500">MW</span>
+            </span>
           </div>
         </div>
-        <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-orange-500 transition-colors" />
       </div>
-      <div className="grid grid-cols-2 border-t border-slate-50">
-        <div className="p-3 border-r border-slate-50 flex flex-col items-center justify-center bg-slate-50/30">
-          <span className="text-[10px] uppercase font-bold text-slate-400">Value</span>
-          <span className="text-sm font-black text-slate-900">{formatValue(opportunity.value)}</span>
-        </div>
-        <div className="p-3 flex flex-col items-center justify-center bg-slate-50/30">
-          <span className="text-[10px] uppercase font-bold text-slate-400">Capacity</span>
-          <span className="text-sm font-black text-slate-900 flex items-center gap-1"><Zap className="w-3 h-3 text-amber-500 fill-amber-500" />{opportunity.targetCapacity} MW</span>
-        </div>
-      </div>
+
       <div className="h-1 w-full bg-slate-100">
-        <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500" style={{ width: `${getProgress(opportunity.stage)}%` }} />
+        <div className="h-full bg-gradient-to-r from-blue-400 via-purple-400 to-emerald-500" style={{ width: `${getProgress(opportunity.stage)}%` }} />
       </div>
     </button>
   );
