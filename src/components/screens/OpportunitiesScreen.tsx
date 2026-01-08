@@ -277,7 +277,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   );
 
   return (
-    <div className="space-y-2 pb-24 lg:pb-32">
+    <div className="w-full max-w-full overflow-x-hidden space-y-2 pb-24 lg:pb-32">
       {/* Header & Selection Toolbar */}
       {selectionMode ? (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-orange-50 rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-orange-200 gap-3">
@@ -340,7 +340,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
             <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
               <button
                 onClick={() => setHierarchyView('mine')}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
                   hierarchyView === 'mine'
                     ? 'bg-white shadow-sm text-orange-600'
                     : 'text-slate-500 hover:text-slate-700'
@@ -357,7 +357,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
               <button
                 onClick={() => setHierarchyView('team')}
                 disabled={loadingSubordinates}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
                   hierarchyView === 'team'
                     ? 'bg-white shadow-sm text-orange-600'
                     : 'text-slate-500 hover:text-slate-700'
@@ -407,7 +407,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
             <button
               key={stage}
               onClick={() => setStageFilter(stage)}
-              className={`px-3 py-1.5 rounded-full text-[10px] font-bold whitespace-nowrap transition-all ${
+              className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all ${
                 stageFilter === stage
                   ? `ring-2 ring-slate-900 ${getStageColor(stage)}`
                   : `${getStageColor(stage)} opacity-60`
