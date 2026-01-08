@@ -36,7 +36,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
   // --- INPUT STATES ---
   const [capacity, setCapacity] = useState(initialCapacity); // kWp
   const [ppaTerm, setPpaTerm] = useState(initialPpaTerm); // Years
-  const [omBase, setOmBase] = useState(300000); // THB per year
+  const [omBase, setOmBase] = useState(300000); // ฿ per year
   const [operatingDays, setOperatingDays] = useState("5 Days");
   
   // Grid Rates
@@ -93,7 +93,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
         // Savings = Full Value of energy - O&M - Major Maintenance
         const peaCost = (peakGen * currentPeakTariff) + (offPeakGen * currentOffPeakTariff);
         let maintenance = 0;
-        if (year % 10 === 0) maintenance = capacity * 3000; // Major maintenance: ~3,000 THB/kWp
+        if (year % 10 === 0) maintenance = capacity * 3000; // Major maintenance: ~3,000 ฿/kWp
         savings = peaCost - currentOM - maintenance;
       }
 
@@ -140,12 +140,9 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
     };
   }, [modelData]);
 
-  // Format currency (THB)
+  // Format currency in millions
   const formatCurrency = (val: number) => {
-    if (Math.abs(val) >= 1000000) {
-      return `฿${(val / 1000000).toFixed(2)}M`;
-    }
-    return `฿${(val / 1000).toFixed(0)}K`;
+    return `฿${(val / 1000000).toFixed(1)}M`;
   };
 
   // Custom tooltip for chart
@@ -233,7 +230,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
           />
         </div>
         <div className="space-y-1">
-          <label className="text-[10px] font-bold text-slate-400 uppercase">O&M Base (THB/yr)</label>
+          <label className="text-[10px] font-bold text-slate-400 uppercase">O&M (฿ / yr)</label>
           <input
             type="text"
             value={formatNumber(omBase)}
@@ -294,47 +291,47 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
       {/* Advanced Settings Panel */}
       {showAdvanced && (
         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Peak Rate (THB/kWh)</label>
-              <input 
-                type="number" 
-                value={peakRate} 
-                onChange={e => setPeakRate(Number(e.target.value))} 
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Peak Rate (฿/kWh)</label>
+              <input
+                type="number"
+                value={peakRate}
+                onChange={e => setPeakRate(Number(e.target.value))}
                 step={0.01}
-                className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none" 
+                className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase">Off-Peak Rate (THB/kWh)</label>
-              <input 
-                type="number" 
-                value={offPeakRate} 
-                onChange={e => setOffPeakRate(Number(e.target.value))} 
+              <label className="text-[10px] font-bold text-slate-400 uppercase">Off-Peak Rate (฿/kWh)</label>
+              <input
+                type="number"
+                value={offPeakRate}
+                onChange={e => setOffPeakRate(Number(e.target.value))}
                 step={0.01}
-                className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none" 
+                className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none"
               />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase">Peak CUF (%)</label>
-              <input 
-                type="number" 
-                value={cufPeak} 
-                onChange={e => setCufPeak(Number(e.target.value))} 
+              <input
+                type="number"
+                value={cufPeak}
+                onChange={e => setCufPeak(Number(e.target.value))}
                 min={0}
                 max={100}
-                className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none" 
+                className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none"
               />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase">Off-Peak CUF (%)</label>
-              <input 
-                type="number" 
-                value={cufOffPeak} 
-                onChange={e => setCufOffPeak(Number(e.target.value))} 
+              <input
+                type="number"
+                value={cufOffPeak}
+                onChange={e => setCufOffPeak(Number(e.target.value))}
                 min={0}
                 max={100}
-                className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none" 
+                className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none"
               />
             </div>
           </div>
@@ -450,7 +447,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
           <li>Year 1 degradation: 2.5%, thereafter: 0.5% annually</li>
           <li>Tariff escalation: 1% per year</li>
           <li>O&M escalation: 3% per year</li>
-          <li>Major maintenance: ~3,000 THB/kWp every 10 years</li>
+          <li>Major maintenance: ~3,000 ฿/kWp every 10 years</li>
           <li>Generation baseline: 1,592 kWh/kWp/year</li>
           <li>Peak/Off-Peak split: 67%/33%</li>
         </ul>
