@@ -19,13 +19,15 @@ const stageColors: Record<string, string> = {
   Lost: 'bg-slate-100 text-slate-600',
 };
 
+const toTitleCase = (str: string) => str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+
 export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, accountName, ownerName, onClick }) => {
   const formatValue = (val: number) => val >= 1000000 ? `฿${(val / 1000000).toFixed(1)}M` : `฿${(val / 1000).toFixed(0)}K`;
 
   return (
     <button
       onClick={onClick}
-      className="w-full bg-white rounded-xl lg:rounded-2xl p-4 lg:p-5 shadow-sm border border-slate-100 hover:shadow-md transition-all active:scale-[0.98] text-left group"
+      className="w-full max-w-full overflow-hidden bg-white rounded-xl lg:rounded-2xl p-4 lg:p-5 shadow-sm border border-slate-100 hover:shadow-md transition-all active:scale-[0.98] text-left group"
     >
       <div className="flex items-center justify-between gap-3 mb-3">
         {ownerName && (
@@ -40,10 +42,10 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, a
       </div>
 
       <div className="mb-4">
-        <h3 className="text-base font-bold text-slate-900 leading-tight mb-1 group-hover:text-orange-600 transition-colors">
-          {opportunity.name}
+        <h3 className="text-base font-bold text-slate-900 leading-tight mb-1 group-hover:text-orange-600 transition-colors truncate">
+          {toTitleCase(opportunity.name)}
         </h3>
-        <p className="text-sm font-semibold text-slate-500">{accountName || 'No account linked'}</p>
+        <p className="text-sm font-semibold text-slate-500 truncate">{toTitleCase(accountName || 'No account linked')}</p>
       </div>
 
       <div className="flex items-center gap-3 lg:gap-4 mt-4">

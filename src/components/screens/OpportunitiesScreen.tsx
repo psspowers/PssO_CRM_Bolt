@@ -426,12 +426,12 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
       )}
 
       {/* Stage Fast-Filters */}
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
+      <div className="flex flex-wrap gap-2 pb-2">
         {['all', 'Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Won', 'Lost'].map(stage => (
           <button
             key={stage}
             onClick={() => setStageFilter(stage)}
-            className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-full text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
               stageFilter === stage
                 ? 'bg-slate-900 text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
