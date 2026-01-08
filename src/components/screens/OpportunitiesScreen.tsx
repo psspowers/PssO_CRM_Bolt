@@ -393,7 +393,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </div>
       )}
       {/* Color-Coded Stage Filters */}
-      <div className="flex flex-wrap gap-1.5">
+      <div className="w-full flex flex-wrap gap-1.5">
         {['all', 'Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Won'].map(stage => {
           const getStageColor = (s: string) => {
             if (s === 'all') return 'bg-slate-800 text-white';
@@ -407,7 +407,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
             <button
               key={stage}
               onClick={() => setStageFilter(stage)}
-              className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all flex-shrink-0 ${
                 stageFilter === stage
                   ? `ring-2 ring-slate-900 ${getStageColor(stage)}`
                   : `${getStageColor(stage)} opacity-60`
