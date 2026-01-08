@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { TrendingUp, Calculator, ArrowRightLeft, ShieldCheck, Zap, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingUp, Calculator, ArrowRightLeft, ShieldCheck, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 
 const DAYS = ["5 Days", "6 Days", "7 Days"];
@@ -51,11 +51,9 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
   // UI States
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // --- HELPER: PROPOSE CUF LOGIC ---
-  const proposeCUF = () => {
-    if (operatingDays === "7 Days") { setCufPeak(99); setCufOffPeak(95); }
-    else if (operatingDays === "6 Days") { setCufPeak(99); setCufOffPeak(45); }
-    else { setCufPeak(99); setCufOffPeak(15); }
+  // --- HELPER: FORMAT NUMBER WITH COMMAS ---
+  const formatNumber = (num: number) => {
+    return Math.round(num).toLocaleString();
   };
 
   // --- THE CALCULATION ENGINE ---
@@ -169,7 +167,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
   };
 
   return (
-    <div className="bg-slate-50 rounded-3xl p-6 border shadow-xl space-y-6">
+    <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3 border-b pb-4">
         <div className="p-2 bg-orange-500 rounded-lg text-white">
@@ -186,26 +184,26 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white">
-          <p className="text-[10px] font-bold uppercase opacity-80">30-Year Total</p>
-          <p className="text-2xl font-bold">{formatCurrency(summaryStats.total30YrSavings)}</p>
-          <p className="text-[10px] opacity-70">Lifetime Savings</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+          <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">30-Year Total</p>
+          <p className="text-3xl font-black text-emerald-600 mt-1">{formatCurrency(summaryStats.total30YrSavings)}</p>
+          <p className="text-xs font-medium text-slate-500 mt-1">Lifetime Savings</p>
         </div>
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white">
-          <p className="text-[10px] font-bold uppercase opacity-80">PPA Phase</p>
-          <p className="text-2xl font-bold">{formatCurrency(summaryStats.ppaPhaseTotal)}</p>
-          <p className="text-[10px] opacity-70">Years 1-{ppaTerm}</p>
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+          <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">PPA Phase</p>
+          <p className="text-3xl font-black text-blue-600 mt-1">{formatCurrency(summaryStats.ppaPhaseTotal)}</p>
+          <p className="text-xs font-medium text-slate-500 mt-1">Years 1-{ppaTerm}</p>
         </div>
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white">
-          <p className="text-[10px] font-bold uppercase opacity-80">Post-Handover</p>
-          <p className="text-2xl font-bold">{formatCurrency(summaryStats.postHandoverTotal)}</p>
-          <p className="text-[10px] opacity-70">Years {ppaTerm + 1}-30</p>
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+          <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Post-Handover</p>
+          <p className="text-3xl font-black text-purple-600 mt-1">{formatCurrency(summaryStats.postHandoverTotal)}</p>
+          <p className="text-xs font-medium text-slate-500 mt-1">Years {ppaTerm + 1}-30</p>
         </div>
-        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-4 text-white">
-          <p className="text-[10px] font-bold uppercase opacity-80">Avg Annual</p>
-          <p className="text-2xl font-bold">{formatCurrency(summaryStats.avgAnnualSavings)}</p>
-          <p className="text-[10px] opacity-70">Per Year</p>
+        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+          <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Avg Annual</p>
+          <p className="text-3xl font-black text-amber-600 mt-1">{formatCurrency(summaryStats.avgAnnualSavings)}</p>
+          <p className="text-xs font-medium text-slate-500 mt-1">Per Year</p>
         </div>
       </div>
 
@@ -213,42 +211,48 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="space-y-1">
           <label className="text-[10px] font-bold text-slate-400 uppercase">Capacity (kWp)</label>
-          <input 
-            type="number" 
-            value={capacity} 
-            onChange={e => setCapacity(Number(e.target.value))} 
-            className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none" 
+          <input
+            type="text"
+            value={formatNumber(capacity)}
+            onChange={e => {
+              const val = e.target.value.replace(/,/g, '');
+              if (!isNaN(Number(val))) setCapacity(Number(val));
+            }}
+            className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none"
           />
         </div>
         <div className="space-y-1">
           <label className="text-[10px] font-bold text-slate-400 uppercase">PPA Term (Years)</label>
-          <input 
-            type="number" 
-            value={ppaTerm} 
-            onChange={e => setPpaTerm(Number(e.target.value))} 
+          <input
+            type="number"
+            value={ppaTerm}
+            onChange={e => setPpaTerm(Number(e.target.value))}
             min={1}
             max={25}
-            className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none" 
+            className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-2 focus:ring-orange-500 outline-none"
           />
         </div>
         <div className="space-y-1">
           <label className="text-[10px] font-bold text-slate-400 uppercase">O&M Base (THB/yr)</label>
-          <input 
-            type="number" 
-            value={omBase} 
-            onChange={e => setOmBase(Number(e.target.value))} 
-            className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none" 
+          <input
+            type="text"
+            value={formatNumber(omBase)}
+            onChange={e => {
+              const val = e.target.value.replace(/,/g, '');
+              if (!isNaN(Number(val))) setOmBase(Number(val));
+            }}
+            className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none"
           />
         </div>
         <div className="space-y-1">
           <label className="text-[10px] font-bold text-slate-400 uppercase">Discount Rate (%)</label>
-          <input 
-            type="number" 
-            value={discount} 
-            onChange={e => setDiscount(Number(e.target.value))} 
+          <input
+            type="number"
+            value={discount}
+            onChange={e => setDiscount(Number(e.target.value))}
             min={0}
             max={50}
-            className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none" 
+            className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none"
           />
         </div>
       </div>
@@ -260,23 +264,21 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
           {DAYS.map(day => (
             <button
               key={day}
-              onClick={() => { setOperatingDays(day); }}
+              onClick={() => {
+                setOperatingDays(day);
+                if (day === "7 Days") { setCufPeak(99); setCufOffPeak(95); }
+                else if (day === "6 Days") { setCufPeak(99); setCufOffPeak(45); }
+                else { setCufPeak(99); setCufOffPeak(15); }
+              }}
               className={`flex-1 py-2 px-3 rounded-xl text-sm font-semibold transition-all ${
-                operatingDays === day 
-                  ? 'bg-orange-500 text-white shadow-lg' 
+                operatingDays === day
+                  ? 'bg-orange-500 text-white shadow-lg'
                   : 'bg-white border text-slate-600 hover:bg-slate-50'
               }`}
             >
               {day}
             </button>
           ))}
-          <button
-            onClick={proposeCUF}
-            className="px-4 py-2 bg-slate-800 text-white rounded-xl text-sm font-semibold hover:bg-slate-700 transition-colors flex items-center gap-2"
-          >
-            <Zap className="w-4 h-4" />
-            Auto CUF
-          </button>
         </div>
       </div>
 
@@ -291,7 +293,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
 
       {/* Advanced Settings Panel */}
       {showAdvanced && (
-        <div className="bg-white border rounded-2xl p-4 space-y-4">
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase">Peak Rate (THB/kWh)</label>
@@ -341,15 +343,15 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
           <div className="flex gap-2 p-3 bg-blue-50 rounded-xl border border-blue-100">
             <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
             <p className="text-[11px] text-blue-800 leading-tight">
-              <b>CUF (Capacity Utilization Factor):</b> Represents the percentage of generated energy actually consumed by the client. 
-              Peak hours typically have higher utilization. Click "Auto CUF" to set recommended values based on operating schedule.
+              <b>CUF (Capacity Utilization Factor):</b> Represents the percentage of generated energy actually consumed by the client.
+              Peak hours typically have higher utilization. CUF adjusts automatically based on your operating schedule selection.
             </p>
           </div>
         </div>
       )}
 
       {/* CHART */}
-      <div className="bg-white border rounded-2xl p-4">
+      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold text-slate-700 uppercase">30-Year Savings Projection</h3>
           <div className="flex items-center gap-4 text-xs">
@@ -417,24 +419,24 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
 
       {/* Phase Transition Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+        <div className="bg-white border border-emerald-200 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <ArrowRightLeft className="w-5 h-5 text-emerald-600" />
-            <h4 className="font-bold text-emerald-800">Phase 1: PPA Term</h4>
+            <h4 className="font-bold text-emerald-600">Phase 1: PPA Term</h4>
           </div>
-          <p className="text-xs text-emerald-700 leading-relaxed">
-            During years 1-{ppaTerm}, the investor owns and operates the system. 
+          <p className="text-xs text-slate-600 leading-relaxed">
+            During years 1-{ppaTerm}, the investor owns and operates the system.
             Client pays a discounted rate ({discount}% below grid tariff) for consumed energy.
             Savings represent the discount on energy costs.
           </p>
         </div>
-        <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4">
+        <div className="bg-white border border-purple-200 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-5 h-5 text-purple-600" />
-            <h4 className="font-bold text-purple-800">Phase 2: Post-Handover</h4>
+            <h4 className="font-bold text-purple-600">Phase 2: Post-Handover</h4>
           </div>
-          <p className="text-xs text-purple-700 leading-relaxed">
-            After year {ppaTerm}, ownership transfers to the client. 
+          <p className="text-xs text-slate-600 leading-relaxed">
+            After year {ppaTerm}, ownership transfers to the client.
             Savings = Full energy value minus O&M costs and periodic major maintenance.
             Significantly higher annual savings in this phase.
           </p>
