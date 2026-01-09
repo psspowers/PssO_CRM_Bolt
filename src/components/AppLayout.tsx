@@ -512,10 +512,17 @@ export default function AppLayout() {
         <Header onQuickAdd={() => setShowQuickAdd(true)} onNavigate={handleDeepLink} />
         
         {/* Main Content */}
-        <main id="main-content" className="flex-1 p-4 lg:p-8 pb-24 lg:pb-8 overflow-auto">
-          <div className="max-w-7xl mx-auto">
+        <main
+          id="main-content"
+          className={`flex-1 overflow-auto ${
+            activeTab === 'pulse'
+              ? 'p-0 pb-20'
+              : 'p-4 lg:p-8 pb-24 lg:pb-8'
+          }`}
+        >
+          <div className={activeTab === 'pulse' ? '' : 'max-w-7xl mx-auto'}>
             {/* Page Title - Desktop */}
-            {activeTab !== 'home' && activeTab !== 'search' && activeTab !== 'opportunities' && (
+            {activeTab !== 'home' && activeTab !== 'search' && activeTab !== 'opportunities' && activeTab !== 'pulse' && (
               <div className="mb-6">
                 <h1 className="text-2xl lg:text-3xl font-bold text-slate-900">{titles[activeTab]}</h1>
                 <p className="text-slate-500 mt-1 hidden lg:block">
