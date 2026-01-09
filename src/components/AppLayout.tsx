@@ -17,6 +17,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { toast } from '@/components/ui/use-toast';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
+import { supabase } from '@/lib/supabase';
 
 
 type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'projects';
@@ -253,7 +254,7 @@ export default function AppLayout() {
         console.log(`Importing ${entityType}:`, item.name || item.fullName);
         switch (entityType) {
           case 'Contact':
-            await createContact({
+            const newContact = await createContact({
               fullName: item.fullName || '',
               role: item.role || '',
               email: item.email || '',
@@ -265,6 +266,24 @@ export default function AppLayout() {
               accountId: item.accountId || undefined,
               partnerId: item.partnerId || undefined,
             });
+
+            // Auto-create Nexus relationship: Importer "Knows" the imported contact
+            if (newContact?.id && user?.id) {
+              try {
+                await supabase.from('relationships').insert({
+                  from_entity_id: user.id,
+                  from_entity_type: 'User',
+                  to_entity_id: newContact.id,
+                  to_entity_type: 'Contact',
+                  type: 'Knows',
+                  strength: 3,
+                  notes: 'Imported via Bulk Upload',
+                  created_by: user.id
+                });
+              } catch (relError: any) {
+                console.warn(`Failed to create relationship for ${item.fullName}:`, relError.message);
+              }
+            }
             break;
           case 'Account':
             await createAccount({
