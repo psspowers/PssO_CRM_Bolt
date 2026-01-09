@@ -262,10 +262,14 @@ export default function AppLayout() {
         console.log(`Importing ${entityType}:`, item.name || item.fullName);
         switch (entityType) {
           case 'Contact':
-            const combinedTags = [
-              ...(Array.isArray(item.tags) ? item.tags : []),
-              ...(options?.defaultTags ? [options.defaultTags] : [])
-            ];
+            // Resolve Tags - merge CSV tags with defaults
+            const csvTags = item.tags
+              ? (typeof item.tags === 'string' ? item.tags.split(',').map(t => t.trim()) : item.tags)
+              : [];
+            const defaultTagsArr = options?.defaultTags
+              ? options.defaultTags.split(',').map(t => t.trim()).filter(t => t)
+              : [];
+            const combinedTags = [...new Set([...csvTags, ...defaultTagsArr])];
 
             const newContact = await createContact({
               fullName: item.fullName || '',
@@ -283,8 +287,10 @@ export default function AppLayout() {
             // Auto-create Nexus relationship: Importer "Knows" the imported contact
             if (newContact?.id && user?.id) {
               try {
+                // Resolve relationship data
                 const relType = item.relationshipType || options?.defaultRelType || 'Knows';
                 const relStrength = parseInt(item.strength) || options?.defaultStrength || 3;
+                const relNotes = item.connectionNotes || 'Imported via Bulk Upload';
 
                 await supabase.from('relationships').insert({
                   from_entity_id: user.id,
@@ -293,7 +299,7 @@ export default function AppLayout() {
                   to_entity_type: 'Contact',
                   type: relType,
                   strength: relStrength,
-                  notes: 'Imported via Bulk Upload',
+                  notes: relNotes,
                   created_by: user.id
                 });
               } catch (relError: any) {
@@ -345,7 +351,7 @@ export default function AppLayout() {
             });
             break;
           case 'Partner':
-            await createPartner({
+            const newPartner = await createPartner({
               name: item.name || '',
               region: item.region || '',
               country: item.country || '',
@@ -354,6 +360,29 @@ export default function AppLayout() {
               notes: item.notes || '',
               ownerId: item.ownerId || user?.id || '',
             });
+
+            // Auto-create Nexus relationship: Importer "Knows" the imported partner
+            if (newPartner?.id && user?.id) {
+              try {
+                // Resolve relationship data
+                const relType = item.relationshipType || options?.defaultRelType || 'Knows';
+                const relStrength = parseInt(item.strength) || options?.defaultStrength || 3;
+                const relNotes = item.connectionNotes || 'Imported via Bulk Upload';
+
+                await supabase.from('relationships').insert({
+                  from_entity_id: user.id,
+                  from_entity_type: 'User',
+                  to_entity_id: newPartner.id,
+                  to_entity_type: 'Partner',
+                  type: relType,
+                  strength: relStrength,
+                  notes: relNotes,
+                  created_by: user.id
+                });
+              } catch (relError: any) {
+                console.warn(`Failed to create relationship for ${item.name}:`, relError.message);
+              }
+            }
             break;
         }
         successCount++;

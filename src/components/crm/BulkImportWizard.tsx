@@ -294,14 +294,18 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       city: ['city', 'location', 'town', 'เมือง'],
       tags: ['tags', 'labels', 'categories', 'type'],
       relationshipNotes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
+      // Relationship mapping fields
+      relationshipType: ['relationship type', 'relationship', 'rel type', 'type of relationship', 'connection type'],
+      strength: ['strength', 'strength (1-5)', 'relationship strength', 'rel strength'],
+      connectionNotes: ['connection notes', 'relationship notes', 'rel notes', 'connection'],
       // Linkable field aliases
       accountName: ['account', 'account name', 'company', 'company name', 'organization', 'employer', 'บริษัท'],
       partnerName: ['partner', 'partner name', 'พันธมิตร'],
     },
     templateData: [
-      ['Full Name', 'Role', 'Email', 'Phone', 'Country', 'City', 'Tags', 'Notes', 'Company Name'],
-      ['John Smith', 'CEO', 'john@example.com', '+66-81-234-5678', 'Thailand', 'Bangkok', 'Decision Maker', 'Key contact for solar project', 'ABC Manufacturing'],
-      ['Jane Doe', 'CFO', 'jane@example.com', '+66-82-345-6789', 'Thailand', 'Chiang Mai', 'Influencer,Banker', 'Handles financial decisions', 'XYZ Foods'],
+      ['Full Name', 'Role', 'Email', 'Phone', 'Country', 'City', 'Tags', 'Notes', 'Company Name', 'Relationship Type', 'Strength (1-5)', 'Connection Notes'],
+      ['John Smith', 'CEO', 'john@example.com', '+66-81-234-5678', 'Thailand', 'Bangkok', 'Decision Maker', 'Key contact for solar project', 'ABC Manufacturing', 'Client', '4', 'Met at solar conference'],
+      ['Jane Doe', 'CFO', 'jane@example.com', '+66-82-345-6789', 'Thailand', 'Chiang Mai', 'Influencer,Banker', 'Handles financial decisions', 'XYZ Foods', 'Knows', '3', 'Referred by partner'],
     ],
     linkableFields: [
       { key: 'accountId', label: 'Link to Account', targetEntity: 'Account', matchField: 'accountName' },
@@ -435,11 +439,15 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       phone: ['phone', 'telephone', 'mobile', 'contact number', 'โทรศัพท์'],
       notes: ['notes', 'comments', 'remarks', 'description', 'หมายเหตุ'],
       ownerName: ['owner', 'leader', 'owner name', 'assigned to', 'account manager'],
+      // Relationship mapping fields
+      relationshipType: ['relationship type', 'relationship', 'rel type', 'type of relationship', 'connection type'],
+      strength: ['strength', 'strength (1-5)', 'relationship strength', 'rel strength'],
+      connectionNotes: ['connection notes', 'relationship notes', 'rel notes', 'connection'],
     },
     templateData: [
-      ['Partner Name', 'Company Legal Name', 'Type', 'Region', 'Country', 'Email', 'Phone', 'Notes', 'Owner'],
-      ['Solar Solutions Ltd', 'Solar Solutions Limited', 'EPC', 'Southeast Asia', 'Thailand', 'info@solarsolutions.com', '+66-2-123-4567', 'EPC partner', 'John Smith'],
-      ['Green Energy Corp', 'Green Energy Corporation', 'Financier', 'Asia Pacific', 'Singapore', 'contact@greenenergy.sg', '+65-6789-0123', 'Financing partner', 'Jane Doe'],
+      ['Partner Name', 'Company Legal Name', 'Type', 'Region', 'Country', 'Email', 'Phone', 'Notes', 'Owner', 'Relationship Type', 'Strength (1-5)', 'Connection Notes'],
+      ['Solar Solutions Ltd', 'Solar Solutions Limited', 'EPC', 'Southeast Asia', 'Thailand', 'info@solarsolutions.com', '+66-2-123-4567', 'EPC partner', 'John Smith', 'Partner', '4', 'Reliable EPC contractor'],
+      ['Green Energy Corp', 'Green Energy Corporation', 'Financier', 'Asia Pacific', 'Singapore', 'contact@greenenergy.sg', '+65-6789-0123', 'Financing partner', 'Jane Doe', 'Vendor', '5', 'Preferred financing partner'],
     ],
     linkableFields: [
       { key: 'ownerId', label: 'Link to Owner', targetEntity: 'User', matchField: 'ownerName' },
@@ -1922,12 +1930,12 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
                 </div>
               )}
 
-              {entityType === 'Contact' && (
+              {(entityType === 'Contact' || entityType === 'Partner') && (
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                   <div className="flex items-center gap-2 mb-4">
                     <Handshake className="w-5 h-5 text-blue-500" />
                     <h3 className="font-semibold text-slate-900 dark:text-white">Default Relationship Settings</h3>
-                    <Info className="w-4 h-4 text-slate-400 ml-auto" title="These defaults will be applied to contacts that don't have relationship data in the CSV" />
+                    <Info className="w-4 h-4 text-slate-400 ml-auto" title={`These defaults will be applied to ${entityType.toLowerCase()}s that don't have relationship data in the CSV`} />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
