@@ -203,14 +203,14 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
           {
             name: 'Region',
             options: [
-              { label: 'All Regions', value: 'all' },
-              ...availableRegions.map(r => ({ label: r, value: r }))
+              { label: 'South East Asia (SEA)', value: 'South East Asia (SEA)' },
+              { label: 'India', value: 'India' }
             ],
             selected: regionFilter,
             onChange: setRegionFilter
           }
         ]}
-        onReset={() => setRegionFilter('all')}
+        onReset={() => setRegionFilter('South East Asia (SEA)')}
       />
 
       <DetailModal isOpen={!!selectedPartner} onClose={handleCloseModal} title={selectedPartner?.name || ''} subtitle={`${selectedPartner?.region} • ${selectedPartner?.country}`} entityId={selectedPartner?.id || ''} entityType="Partner" clickupLink={selectedPartner?.clickupLink} activities={activities} users={users} contacts={contacts} accounts={accounts} partners={partners} relationships={relationships}>
