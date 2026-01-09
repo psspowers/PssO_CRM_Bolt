@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Home, Building2, Target, Clock, Search, CheckSquare, Plus, Settings, HelpCircle, ChevronLeft, ChevronRight, FolderKanban, Handshake, IdCard, FileSpreadsheet, Shield, Network } from 'lucide-react';
+import { Home, Building2, Target, Clock, Search, Activity, Plus, Settings, HelpCircle, ChevronLeft, ChevronRight, FolderKanban, Handshake, IdCard, FileSpreadsheet, Shield, Network } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 
-type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'projects';
+type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'projects' | 'pulse';
 
 interface SidebarProps {
   activeTab: Tab;
@@ -22,7 +22,7 @@ const navItems: { id: Tab; icon: React.ElementType; label: string }[] = [
   { id: 'contacts', icon: IdCard, label: 'Contacts' },
   { id: 'partners', icon: Handshake, label: 'Partners' },
   { id: 'projects', icon: FolderKanban, label: 'Projects' },
-  { id: 'tasks', icon: CheckSquare, label: 'Tasks' },
+  { id: 'pulse', icon: Activity, label: 'Pulse' },
   { id: 'timeline', icon: Clock, label: 'Timeline' },
   { id: 'search', icon: Search, label: 'Search' },
 ];

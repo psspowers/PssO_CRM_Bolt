@@ -10,7 +10,8 @@ import {
   SearchScreen,
   ActivityTimelineScreen,
   TasksScreen,
-  ProjectsScreen
+  ProjectsScreen,
+  PulseScreen
 } from './screens';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppContext } from '@/contexts/AppContext';
@@ -20,7 +21,7 @@ import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { supabase } from '@/lib/supabase';
 
 
-type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'projects';
+type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'projects' | 'pulse';
 type EntityType = 'Account' | 'Opportunity';
 
 export default function AppLayout() {
@@ -451,6 +452,7 @@ export default function AppLayout() {
       case 'contacts': return <ContactsScreen />;
       case 'projects': return <ProjectsScreen />;
       case 'tasks': return <TasksScreen />;
+      case 'pulse': return <PulseScreen />;
       case 'timeline': return <ActivityTimelineScreen />;
       case 'search': return <SearchScreen />;
       default: return <HomeScreen onNavigate={setActiveTab} onOpportunityClick={(id) => handleDeepLink('opportunities', id)} />;
