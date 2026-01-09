@@ -379,6 +379,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
 
   const userName = currentUser?.name || profile?.name || 'User';
   const userBadges = currentUser?.badges || profile?.badges || [];
+  const userAvatar = currentUser?.avatar || profile?.avatar;
   const userInitials = userName.split(' ').map(n => n[0]).join('').slice(0, 2);
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening';
 
@@ -405,8 +406,16 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
         <div className="relative">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="flex items-center gap-4 lg:flex-1">
-              <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl border-2 border-white/20 bg-white/10 backdrop-blur flex items-center justify-center text-xl lg:text-2xl font-bold">
-                {userInitials}
+              <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl border-2 border-white/20 bg-white/10 backdrop-blur flex items-center justify-center text-xl lg:text-2xl font-bold overflow-hidden">
+                {userAvatar ? (
+                  <img
+                    src={userAvatar}
+                    alt={userName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  userInitials
+                )}
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
