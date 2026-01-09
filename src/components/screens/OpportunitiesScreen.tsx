@@ -446,8 +446,8 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                 <option value="60">&gt; 60 Days Old</option>
                 <option value="90">&gt; 90 Days Old</option>
               </select>
-              <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${stagnationFilter === 'all' ? 'text-slate-400' : 'text-current'}`}>
-                <Clock className="w-3.5 h-3.5" />
+              <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${stagnationFilter === 'all' ? 'text-orange-500' : 'text-current'}`}>
+                <Clock className="w-4 h-4" />
               </div>
             </div>
 
