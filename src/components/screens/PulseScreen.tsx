@@ -119,7 +119,7 @@ interface MarketNews {
 interface Activity {
   id: string;
   type: string;
-  description: string;
+  summary: string;
   created_at: string;
   user_name?: string;
   user_avatar?: string;
@@ -148,14 +148,14 @@ type FeedItem = {
 const formatFeedItem = (rawItem: any): FeedItem | null => {
   if (rawItem.source === 'activity') {
     const activityType = rawItem.type?.toLowerCase();
-    const description = rawItem.description || '';
+    const summary = rawItem.summary || '';
 
     switch (activityType) {
       case 'call':
         return {
           id: rawItem.id,
           type: 'activity',
-          content: `Logged a call${description ? `: ${description}` : ''}`,
+          content: `Logged a call${summary ? `: ${summary}` : ''}`,
           timestamp: rawItem.created_at,
           user_name: rawItem.user_name,
           user_avatar: rawItem.user_avatar,
@@ -168,7 +168,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         return {
           id: rawItem.id,
           type: 'activity',
-          content: `Logged a meeting${description ? `: ${description}` : ''}`,
+          content: `Logged a meeting${summary ? `: ${summary}` : ''}`,
           timestamp: rawItem.created_at,
           user_name: rawItem.user_name,
           user_avatar: rawItem.user_avatar,
@@ -181,7 +181,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         return {
           id: rawItem.id,
           type: 'activity',
-          content: `Added a note${description ? `: ${description}` : ''}`,
+          content: `Added a note${summary ? `: ${summary}` : ''}`,
           timestamp: rawItem.created_at,
           user_name: rawItem.user_name,
           user_avatar: rawItem.user_avatar,
@@ -191,11 +191,11 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         };
 
       case 'email':
-        const direction = description.toLowerCase().includes('sent') ? 'Sent' : 'Received';
+        const direction = summary.toLowerCase().includes('sent') ? 'Sent' : 'Received';
         return {
           id: rawItem.id,
           type: 'activity',
-          content: `${direction} email${description ? `: ${description}` : ''}`,
+          content: `${direction} email${summary ? `: ${summary}` : ''}`,
           timestamp: rawItem.created_at,
           user_name: rawItem.user_name,
           user_avatar: rawItem.user_avatar,
@@ -208,7 +208,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         return {
           id: rawItem.id,
           type: 'activity',
-          content: `Task${description ? `: ${description}` : ''}`,
+          content: `Task${summary ? `: ${summary}` : ''}`,
           timestamp: rawItem.created_at,
           user_name: rawItem.user_name,
           user_avatar: rawItem.user_avatar,
@@ -221,7 +221,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         return {
           id: rawItem.id,
           type: 'activity',
-          content: description || `${activityType} activity`,
+          content: summary || `${activityType} activity`,
           timestamp: rawItem.created_at,
           user_name: rawItem.user_name,
           user_avatar: rawItem.user_avatar,
@@ -388,7 +388,7 @@ export default function PulseScreen() {
       .select(`
         id,
         type,
-        description,
+        summary,
         created_at,
         created_by,
         crm_users!activities_created_by_fkey(name, avatar)
@@ -402,7 +402,7 @@ export default function PulseScreen() {
           id: activity.id,
           source: 'activity',
           type: activity.type,
-          description: activity.description,
+          summary: activity.summary,
           created_at: activity.created_at,
           user_name: activity.crm_users?.name,
           user_avatar: activity.crm_users?.avatar
