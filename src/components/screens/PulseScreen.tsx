@@ -247,7 +247,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
 };
 
 export default function PulseScreen() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState<'internal' | 'market'>('internal');
   const [showPostModal, setShowPostModal] = useState(false);
   const [marketNews, setMarketNews] = useState<MarketNews[]>([]);
@@ -255,6 +255,10 @@ export default function PulseScreen() {
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isSuperAdmin = profile?.role === 'super_admin';
+  const isAnalyst = profile?.badges?.includes('Analyst');
+  const showAnalystConsole = isSuperAdmin || isAnalyst;
 
   const [newPost, setNewPost] = useState({
     title: '',
@@ -519,22 +523,26 @@ export default function PulseScreen() {
 
             {activeTab === 'market' && (
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadTemplate}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Template
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Import
-                </Button>
+                {showAnalystConsole && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownloadTemplate}
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Template
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Import
+                    </Button>
+                  </>
+                )}
                 <Button
                   size="sm"
                   onClick={() => setShowPostModal(true)}
