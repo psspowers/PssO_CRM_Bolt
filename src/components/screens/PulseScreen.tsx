@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CheckCircle2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CheckCircle2, TrendingUp, TrendingDown, Minus, Phone, Users, FileText, Mail, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +52,198 @@ type FeedItem = {
   timestamp: string;
   user_name?: string;
   user_avatar?: string;
+  icon: React.ReactNode;
+  iconColor: string;
+  iconBgColor: string;
+};
+
+const formatFeedItem = (rawItem: any): FeedItem | null => {
+  if (rawItem.source === 'activity') {
+    const activityType = rawItem.type?.toLowerCase();
+    const description = rawItem.description || '';
+
+    switch (activityType) {
+      case 'call':
+        return {
+          id: rawItem.id,
+          type: 'activity',
+          content: `Logged a call${description ? `: ${description}` : ''}`,
+          timestamp: rawItem.created_at,
+          user_name: rawItem.user_name,
+          user_avatar: rawItem.user_avatar,
+          icon: <Phone className="w-4 h-4" />,
+          iconColor: 'text-blue-600',
+          iconBgColor: 'bg-blue-100 dark:bg-blue-900/50'
+        };
+
+      case 'meeting':
+        return {
+          id: rawItem.id,
+          type: 'activity',
+          content: `Logged a meeting${description ? `: ${description}` : ''}`,
+          timestamp: rawItem.created_at,
+          user_name: rawItem.user_name,
+          user_avatar: rawItem.user_avatar,
+          icon: <Users className="w-4 h-4" />,
+          iconColor: 'text-blue-600',
+          iconBgColor: 'bg-blue-100 dark:bg-blue-900/50'
+        };
+
+      case 'note':
+        return {
+          id: rawItem.id,
+          type: 'activity',
+          content: `Added a note${description ? `: ${description}` : ''}`,
+          timestamp: rawItem.created_at,
+          user_name: rawItem.user_name,
+          user_avatar: rawItem.user_avatar,
+          icon: <FileText className="w-4 h-4" />,
+          iconColor: 'text-slate-600',
+          iconBgColor: 'bg-slate-100 dark:bg-slate-800'
+        };
+
+      case 'email':
+        const direction = description.toLowerCase().includes('sent') ? 'Sent' : 'Received';
+        return {
+          id: rawItem.id,
+          type: 'activity',
+          content: `${direction} email${description ? `: ${description}` : ''}`,
+          timestamp: rawItem.created_at,
+          user_name: rawItem.user_name,
+          user_avatar: rawItem.user_avatar,
+          icon: direction === 'Sent' ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />,
+          iconColor: 'text-purple-600',
+          iconBgColor: 'bg-purple-100 dark:bg-purple-900/50'
+        };
+
+      case 'task':
+        return {
+          id: rawItem.id,
+          type: 'activity',
+          content: `Task${description ? `: ${description}` : ''}`,
+          timestamp: rawItem.created_at,
+          user_name: rawItem.user_name,
+          user_avatar: rawItem.user_avatar,
+          icon: <CheckCircle2 className="w-4 h-4" />,
+          iconColor: 'text-orange-600',
+          iconBgColor: 'bg-orange-100 dark:bg-orange-900/50'
+        };
+
+      default:
+        return {
+          id: rawItem.id,
+          type: 'activity',
+          content: description || `${activityType} activity`,
+          timestamp: rawItem.created_at,
+          user_name: rawItem.user_name,
+          user_avatar: rawItem.user_avatar,
+          icon: <Activity className="w-4 h-4" />,
+          iconColor: 'text-slate-600',
+          iconBgColor: 'bg-slate-100 dark:bg-slate-800'
+        };
+    }
+  }
+
+  if (rawItem.source === 'log') {
+    const details = rawItem.details || {};
+    const action = rawItem.action;
+
+    if (details.old_stage && details.new_stage) {
+      return {
+        id: rawItem.id,
+        type: 'log',
+        content: `Moved ${details.entity_name || 'deal'} to ${details.new_stage}`,
+        timestamp: rawItem.created_at,
+        user_name: rawItem.user_name,
+        user_avatar: rawItem.user_avatar,
+        icon: <TrendingUp className="w-4 h-4" />,
+        iconColor: 'text-green-600',
+        iconBgColor: 'bg-green-100 dark:bg-green-900/50'
+      };
+    }
+
+    if (action === 'update' || action === 'Update') {
+      const changes = details.changes || {};
+
+      if (changes.value || details.new_value) {
+        const newValue = changes.value || details.new_value;
+        return {
+          id: rawItem.id,
+          type: 'log',
+          content: `Updated value to ${newValue}${details.entity_name ? ` for ${details.entity_name}` : ''}`,
+          timestamp: rawItem.created_at,
+          user_name: rawItem.user_name,
+          user_avatar: rawItem.user_avatar,
+          icon: <TrendingUp className="w-4 h-4" />,
+          iconColor: 'text-green-600',
+          iconBgColor: 'bg-green-100 dark:bg-green-900/50'
+        };
+      }
+
+      if (changes.target_capacity || details.target_capacity) {
+        const capacity = changes.target_capacity || details.target_capacity;
+        return {
+          id: rawItem.id,
+          type: 'log',
+          content: `Updated capacity to ${capacity} MW${details.entity_name ? ` for ${details.entity_name}` : ''}`,
+          timestamp: rawItem.created_at,
+          user_name: rawItem.user_name,
+          user_avatar: rawItem.user_avatar,
+          icon: <Activity className="w-4 h-4" />,
+          iconColor: 'text-blue-600',
+          iconBgColor: 'bg-blue-100 dark:bg-blue-900/50'
+        };
+      }
+
+      if (changes.owner_id || details.owner_change) {
+        return {
+          id: rawItem.id,
+          type: 'log',
+          content: `Transferred ownership${details.entity_name ? ` of ${details.entity_name}` : ''}`,
+          timestamp: rawItem.created_at,
+          user_name: rawItem.user_name,
+          user_avatar: rawItem.user_avatar,
+          icon: <Users className="w-4 h-4" />,
+          iconColor: 'text-purple-600',
+          iconBgColor: 'bg-purple-100 dark:bg-purple-900/50'
+        };
+      }
+
+      return null;
+    }
+
+    if (action.toLowerCase().includes('create')) {
+      return {
+        id: rawItem.id,
+        type: 'log',
+        content: `Created ${details.entity_name || details.entity_type || 'item'}`,
+        timestamp: rawItem.created_at,
+        user_name: rawItem.user_name,
+        user_avatar: rawItem.user_avatar,
+        icon: <Plus className="w-4 h-4" />,
+        iconColor: 'text-green-600',
+        iconBgColor: 'bg-green-100 dark:bg-green-900/50'
+      };
+    }
+
+    if (details.entity_name) {
+      return {
+        id: rawItem.id,
+        type: 'log',
+        content: `${action} - ${details.entity_name}`,
+        timestamp: rawItem.created_at,
+        user_name: rawItem.user_name,
+        user_avatar: rawItem.user_avatar,
+        icon: <Activity className="w-4 h-4" />,
+        iconColor: 'text-slate-600',
+        iconBgColor: 'bg-slate-100 dark:bg-slate-800'
+      };
+    }
+
+    return null;
+  }
+
+  return null;
 };
 
 export default function PulseScreen() {
@@ -96,7 +288,7 @@ export default function PulseScreen() {
   };
 
   const loadInternalFeed = async () => {
-    const feed: FeedItem[] = [];
+    const rawFeed: any[] = [];
 
     const { data: activities } = await supabase
       .from('activities')
@@ -113,11 +305,12 @@ export default function PulseScreen() {
 
     if (activities) {
       activities.forEach((activity: any) => {
-        feed.push({
+        rawFeed.push({
           id: activity.id,
-          type: 'activity',
-          content: activity.description || `${activity.type} activity`,
-          timestamp: activity.created_at,
+          source: 'activity',
+          type: activity.type,
+          description: activity.description,
+          created_at: activity.created_at,
           user_name: activity.crm_users?.full_name,
           user_avatar: activity.crm_users?.avatar_url
         });
@@ -139,29 +332,24 @@ export default function PulseScreen() {
 
     if (logs) {
       logs.forEach((log: any) => {
-        const details = log.details || {};
-        let content = log.action;
-
-        if (details.entity_name) {
-          content = `${log.action} - ${details.entity_name}`;
-        }
-        if (details.old_stage && details.new_stage) {
-          content = `Moved ${details.entity_name} from ${details.old_stage} to ${details.new_stage}`;
-        }
-
-        feed.push({
+        rawFeed.push({
           id: log.id,
-          type: 'log',
-          content,
-          timestamp: log.created_at,
+          source: 'log',
+          action: log.action,
+          details: log.details,
+          created_at: log.created_at,
           user_name: log.crm_users?.full_name,
           user_avatar: log.crm_users?.avatar_url
         });
       });
     }
 
-    feed.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    setFeedItems(feed);
+    const formattedFeed = rawFeed
+      .map(item => formatFeedItem(item))
+      .filter((item): item is FeedItem => item !== null);
+
+    formattedFeed.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    setFeedItems(formattedFeed);
   };
 
   const loadMarketNews = async () => {
@@ -400,41 +588,56 @@ export default function PulseScreen() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
           </div>
         ) : activeTab === 'internal' ? (
-          <div className="space-y-3">
+          <div className="relative">
             {feedItems.length === 0 ? (
               <Card className="p-8 text-center">
                 <Activity className="w-12 h-12 text-slate-400 mx-auto mb-3" />
                 <p className="text-slate-600 dark:text-slate-400">No activity yet</p>
               </Card>
             ) : (
-              feedItems.map((item) => (
-                <Card key={item.id} className="p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-start gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={item.user_avatar} />
-                      <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
-                        {item.user_name?.charAt(0) || '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-slate-900 dark:text-white">
-                          {item.user_name || 'System'}
-                        </span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">
-                          {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
-                        </span>
+              <div className="relative">
+                <div className="absolute left-[46px] top-4 bottom-4 w-0.5 bg-slate-200 dark:bg-slate-700" />
+
+                <div className="space-y-4">
+                  {feedItems.map((item, index) => (
+                    <div key={item.id} className="relative flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 w-20 text-right pr-3">
+                          {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true }).replace('about ', '')}
+                        </div>
                       </div>
-                      <p className="text-sm text-slate-700 dark:text-slate-300">
-                        {item.content}
-                      </p>
+
+                      <div className={`relative flex items-center justify-center w-10 h-10 rounded-full ${item.iconBgColor} ${item.iconColor} z-10`}>
+                        {item.icon}
+                      </div>
+
+                      <Card className="flex-1 p-4 hover:shadow-md transition-shadow">
+                        <div className="flex items-start gap-3">
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={item.user_avatar} />
+                            <AvatarFallback className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs">
+                              {item.user_name?.charAt(0) || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-slate-900 dark:text-white text-sm">
+                                {item.user_name || 'System'}
+                              </span>
+                              <Badge variant="outline" className="text-xs">
+                                {item.type === 'activity' ? 'Activity' : 'Update'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-slate-700 dark:text-slate-300">
+                              {item.content}
+                            </p>
+                          </div>
+                        </div>
+                      </Card>
                     </div>
-                    <Badge variant="outline" className="text-xs">
-                      {item.type === 'activity' ? 'Activity' : 'Update'}
-                    </Badge>
-                  </div>
-                </Card>
-              ))
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         ) : (
