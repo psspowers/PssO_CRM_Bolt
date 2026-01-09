@@ -62,7 +62,7 @@ Research each company on today's target list and produce actionable intelligence
 **The Strict Output Format (CSV):**
 Return your findings ONLY in this exact CSV format with these columns:
 
-Company Name,Headline,Summary,Impact,URL
+Company Name,Headline,Summary,Impact,URL,Date
 
 **Column Definitions:**
 - **Company Name**: Exact name as provided in the target list
@@ -73,10 +73,11 @@ Company Name,Headline,Summary,Impact,URL
   - "threat" = Competitive threat, market risk, or negative indicators
   - "neutral" = Noteworthy but no clear directional signal
 - **URL**: Primary source URL for verification (use most authoritative source)
+- **Date**: YYYY-MM-DD format (Publication Date of the news/announcement)
 
 **Example Output:**
-ABC Energy Corp,Announces $200M BESS expansion across Thailand,"ABC Energy announced plans to deploy 500MW of battery storage by 2025, partnering with leading EPC firms. Strong balance sheet with $300M credit facility. Active in solar+storage integration.",opportunity,https://abcenergy.com/news/2024-expansion
-XYZ Manufacturing,Delays renewable transition amid financial restructuring,"Company postponed its 100MW solar project due to liquidity constraints. Undergoing debt restructuring with creditors. Renewable energy strategy on hold until Q3 2025.",threat,https://industry-journal.com/xyz-delays
+ABC Energy Corp,Announces $200M BESS expansion across Thailand,"ABC Energy announced plans to deploy 500MW of battery storage by 2025, partnering with leading EPC firms. Strong balance sheet with $300M credit facility. Active in solar+storage integration.",opportunity,https://abcenergy.com/news/2024-expansion,2025-12-15
+XYZ Manufacturing,Delays renewable transition amid financial restructuring,"Company postponed its 100MW solar project due to liquidity constraints. Undergoing debt restructuring with creditors. Renewable energy strategy on hold until Q3 2025.",threat,https://industry-journal.com/xyz-delays,2025-11-20
 
 **Critical Requirements:**
 - Research ALL companies on the target list
@@ -354,7 +355,8 @@ export default function PulseScreen() {
     summary: '',
     url: '',
     impact_type: 'neutral' as 'opportunity' | 'threat' | 'neutral',
-    related_account_id: ''
+    related_account_id: '',
+    news_date: new Date().toISOString().split('T')[0]
   });
 
   useEffect(() => {
@@ -446,6 +448,9 @@ export default function PulseScreen() {
   };
 
   const loadMarketNews = async () => {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     const { data, error } = await supabase
       .from('market_news')
       .select(`
@@ -453,7 +458,8 @@ export default function PulseScreen() {
         accounts(name),
         crm_users!market_news_created_by_fkey(name)
       `)
-      .order('created_at', { ascending: false });
+      .gte('news_date', thirtyDaysAgo.toISOString().split('T')[0])
+      .order('news_date', { ascending: false });
 
     if (data) {
       const formattedNews = data.map((item: any) => ({
@@ -467,10 +473,10 @@ export default function PulseScreen() {
 
   const handleDownloadTemplate = () => {
     const csv = Papa.unparse({
-      fields: ['Company Name', 'Headline', 'Summary', 'Impact', 'URL'],
+      fields: ['Company Name', 'Headline', 'Summary', 'Impact', 'URL', 'Date'],
       data: [
-        ['ABC Manufacturing', 'Expansion into renewable energy', 'Company announced $50M investment in solar', 'opportunity', 'https://example.com/news'],
-        ['XYZ Corp', 'Factory closure due to regulations', 'Government imposed new environmental standards', 'threat', 'https://example.com/news2'],
+        ['ABC Manufacturing', 'Expansion into renewable energy', 'Company announced $50M investment in solar', 'opportunity', 'https://example.com/news', '2026-01-09'],
+        ['XYZ Corp', 'Factory closure due to regulations', 'Government imposed new environmental standards', 'threat', 'https://example.com/news2', '2026-01-08'],
       ]
     });
 
@@ -520,6 +526,7 @@ export default function PulseScreen() {
             const summary = row['Summary'] || row['summary'] || row['Summary (Analysis)'] || row['Description'];
             const impactRaw = (row['Impact'] || row['impact'] || row['Type'] || '').toLowerCase().trim();
             const url = row['URL'] || row['url'] || row['Link'] || row['Source'];
+            const dateRaw = row['Date'] || row['date'] || row['News Date'] || row['Published Date'];
 
             if (!title || title.trim() === '') {
               skippedCount++;
@@ -527,6 +534,17 @@ export default function PulseScreen() {
                 errorDetails.push(`Row ${rowNumber}: Missing headline/title`);
               }
               continue;
+            }
+
+            let newsDate: Date | null = null;
+            if (dateRaw && dateRaw.trim() !== '') {
+              const parsedDate = new Date(dateRaw.trim());
+              if (!isNaN(parsedDate.getTime())) {
+                newsDate = parsedDate;
+              }
+            }
+            if (!newsDate) {
+              newsDate = new Date();
             }
 
             let accountId = null;
@@ -561,7 +579,8 @@ export default function PulseScreen() {
               impact_type: impactType,
               related_account_id: accountId,
               created_by: user?.id,
-              source_type: 'Analyst'
+              source_type: 'Analyst',
+              news_date: newsDate.toISOString().split('T')[0]
             });
 
             if (error) throw error;
@@ -586,7 +605,7 @@ export default function PulseScreen() {
           const errorSummary = errorDetails.length > 0
             ? '\n\n' + errorDetails.join('\n')
             : '';
-          toast.error('Import Failed. Please check CSV headers match: Company Name, Headline, Summary, Impact, URL.' + errorSummary, {
+          toast.error('Import Failed. Please check CSV headers match: Company Name, Headline, Summary, Impact, URL, Date.' + errorSummary, {
             duration: 10000
           });
           return;
@@ -845,7 +864,7 @@ export default function PulseScreen() {
                             </>
                           )}
                           <span className="text-slate-500 dark:text-slate-400 text-sm">
-                            {formatDistanceToNow(new Date(news.created_at), { addSuffix: true })}
+                            {news.news_date ? new Date(news.news_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : formatDistanceToNow(new Date(news.created_at), { addSuffix: true })}
                           </span>
                           <Badge
                             variant="outline"
