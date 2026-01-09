@@ -496,13 +496,17 @@ export default function PulseScreen() {
         let successCount = 0;
         let failCount = 0;
         let skippedCount = 0;
+        const errorDetails: string[] = [];
 
         if (rows.length === 0) {
           toast.error('CSV file is empty or has no valid rows.');
           return;
         }
 
-        for (const row of rows) {
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          const rowNumber = i + 2;
+
           try {
             const companyName = row['Company Name'] || row['company name'] || row['Company'] || row['Account Name'];
             const title = row['Headline'] || row['headline'] || row['Title'] || row['title'];
@@ -512,6 +516,9 @@ export default function PulseScreen() {
 
             if (!title || title.trim() === '') {
               skippedCount++;
+              if (errorDetails.length < 10) {
+                errorDetails.push(`Row ${rowNumber}: Missing headline/title`);
+              }
               continue;
             }
 
@@ -551,8 +558,14 @@ export default function PulseScreen() {
             if (error) throw error;
             successCount++;
           } catch (err) {
-            console.error('Failed to import row:', row, err);
+            const errorMsg = err instanceof Error ? err.message : String(err);
+            console.error(`Failed to import row ${rowNumber}:`, row, err);
             failCount++;
+
+            if (errorDetails.length < 10) {
+              const titlePreview = row['Headline'] || row['Title'] || row['headline'] || 'Unknown';
+              errorDetails.push(`Row ${rowNumber} (${titlePreview.substring(0, 30)}...): ${errorMsg}`);
+            }
           }
         }
 
@@ -561,13 +574,30 @@ export default function PulseScreen() {
         }
 
         if (successCount === 0 && failCount === 0 && skippedCount > 0) {
-          toast.error('Import Failed. Please check CSV headers match: Company Name, Headline, Summary, Impact, URL.');
+          const errorSummary = errorDetails.length > 0
+            ? '\n\n' + errorDetails.join('\n')
+            : '';
+          toast.error('Import Failed. Please check CSV headers match: Company Name, Headline, Summary, Impact, URL.' + errorSummary, {
+            duration: 10000
+          });
           return;
         }
 
         if (successCount === 0 && failCount > 0) {
-          toast.error(`Import Failed. ${failCount} rows had errors. Check console for details.`);
+          const errorSummary = errorDetails.length > 0
+            ? '\n\nErrors:\n' + errorDetails.join('\n') + (failCount > 10 ? `\n...and ${failCount - 10} more errors` : '')
+            : '';
+
+          alert(`Import Failed\n\n${failCount} rows had errors.${errorSummary}\n\nCheck browser console (F12) for full details.`);
           return;
+        }
+
+        if (failCount > 0 && successCount > 0) {
+          const errorSummary = errorDetails.length > 0
+            ? '\n\nSample Errors:\n' + errorDetails.join('\n') + (failCount > 10 ? `\n...and ${failCount - 10} more errors` : '')
+            : '';
+
+          alert(`Import Partially Complete\n\nSuccess: ${successCount} rows\nFailed: ${failCount} rows\nSkipped: ${skippedCount} rows${errorSummary}\n\nCheck browser console (F12) for full details.`);
         }
 
         const message = `Imported ${successCount} news items${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}${failCount > 0 ? ` (${failCount} failed)` : ''}`;
