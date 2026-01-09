@@ -388,10 +388,10 @@ export default function PulseScreen() {
       .select(`
         id,
         type,
-        description,
+        summary,
         created_at,
         created_by,
-        crm_users!activities_created_by_fkey(full_name, avatar_url)
+        crm_users!activities_created_by_fkey(name, avatar)
       `)
       .order('created_at', { ascending: false })
       .limit(50);
@@ -402,10 +402,10 @@ export default function PulseScreen() {
           id: activity.id,
           source: 'activity',
           type: activity.type,
-          description: activity.description,
+          description: activity.summary,
           created_at: activity.created_at,
-          user_name: activity.crm_users?.full_name,
-          user_avatar: activity.crm_users?.avatar_url
+          user_name: activity.crm_users?.name,
+          user_avatar: activity.crm_users?.avatar
         });
       });
     }
@@ -418,7 +418,7 @@ export default function PulseScreen() {
         details,
         created_at,
         user_id,
-        crm_users!admin_activity_logs_user_id_fkey(full_name, avatar_url)
+        crm_users!admin_activity_logs_user_id_fkey(name, avatar)
       `)
       .order('created_at', { ascending: false })
       .limit(50);
@@ -431,8 +431,8 @@ export default function PulseScreen() {
           action: log.action,
           details: log.details,
           created_at: log.created_at,
-          user_name: log.crm_users?.full_name,
-          user_avatar: log.crm_users?.avatar_url
+          user_name: log.crm_users?.name,
+          user_avatar: log.crm_users?.avatar
         });
       });
     }
@@ -451,7 +451,7 @@ export default function PulseScreen() {
       .select(`
         *,
         accounts(name),
-        crm_users!market_news_created_by_fkey(full_name)
+        crm_users!market_news_created_by_fkey(name)
       `)
       .order('created_at', { ascending: false });
 
@@ -459,7 +459,7 @@ export default function PulseScreen() {
       const formattedNews = data.map((item: any) => ({
         ...item,
         account_name: item.accounts?.name,
-        creator_name: item.crm_users?.full_name
+        creator_name: item.crm_users?.name
       }));
       setMarketNews(formattedNews);
     }
