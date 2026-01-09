@@ -276,6 +276,13 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     setSelectedOpp({ ...selectedOpp, lostReason: reason });
   };
 
+  const handlePriorityChange = async (opportunityId: string, newPriority: 'Low' | 'Medium' | 'High') => {
+    await updateOpportunity(opportunityId, { priority: newPriority });
+    if (selectedOpp && selectedOpp.id === opportunityId) {
+      setSelectedOpp({ ...selectedOpp, priority: newPriority });
+    }
+  };
+
   const handleAdvanceStage = async () => {
     if (!selectedOpp) return;
 
@@ -511,6 +518,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
             accountName={accounts.find(a => a.id === opp.accountId)?.name}
             ownerName={getOwnerName(opp.ownerId)}
             onClick={() => !selectionMode && setSelectedOpp(opp)}
+            onPriorityChange={handlePriorityChange}
           />
         ))}
       </div>

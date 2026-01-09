@@ -1,15 +1,16 @@
 import React from 'react';
-import { Zap, Factory, Building2, Hotel, Wheat, Briefcase } from 'lucide-react';
-import { Opportunity } from '../../types/crm';
+import { Zap, Factory, Building2, Hotel, Wheat, Briefcase, ChevronDown } from 'lucide-react';
+import { Opportunity, Priority } from '../../types/crm';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
   accountName?: string;
   ownerName?: string;
   onClick: () => void;
+  onPriorityChange?: (opportunityId: string, newPriority: Priority) => void;
 }
 
-export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, accountName, onClick }) => {
+export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, accountName, onClick, onPriorityChange }) => {
   const getIndustryIcon = (sector?: string) => {
     if (sector?.includes('Manuf')) return Factory;
     if (sector?.includes('Hosp')) return Hotel;
@@ -27,6 +28,15 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, a
 
   const formatValue = (val: number) => val >= 1000000 ? `฿${(val / 1000000).toFixed(1)}M` : `฿${(val / 1000).toFixed(0)}K`;
   const IndustryIcon = getIndustryIcon(opportunity.sector);
+
+  const getPriorityColor = (priority: Priority) => {
+    switch (priority) {
+      case 'High': return 'bg-red-100 text-red-700 border-red-200';
+      case 'Medium': return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'Low': return 'bg-slate-100 text-slate-600 border-slate-200';
+      default: return 'bg-slate-100 text-slate-600 border-slate-200';
+    }
+  };
 
   return (
     <button onClick={onClick} className="w-full max-w-full box-border bg-white rounded-2xl border border-slate-100 shadow-sm mb-3 overflow-hidden text-left relative hover:shadow-md transition-all active:scale-[0.98]">
@@ -57,6 +67,25 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, a
           <span className="text-base font-black text-slate-900 leading-none">
             {formatValue(opportunity.value)}
           </span>
+        </div>
+
+        <div className="flex flex-col items-center">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Priority</span>
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <select
+              value={opportunity.priority}
+              onChange={(e) => {
+                e.stopPropagation();
+                onPriorityChange?.(opportunity.id, e.target.value as Priority);
+              }}
+              className={`text-xs font-bold px-2.5 py-1 rounded-full border appearance-none cursor-pointer pr-6 ${getPriorityColor(opportunity.priority)}`}
+            >
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+            </select>
+            <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" />
+          </div>
         </div>
 
         <div className="flex flex-col items-end">
