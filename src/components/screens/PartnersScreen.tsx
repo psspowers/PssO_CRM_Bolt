@@ -14,7 +14,7 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
   const { partners, accounts, contacts, activities, opportunities, relationships, users, loading, deletePartner, updatePartner, canDelete, canEdit } = useAppContext();
   const { profile } = useAuth();
   const [search, setSearch] = useState('');
-  const [regionFilter, setRegionFilter] = useState('South East Asia (SEA)');
+  const [regionFilter, setRegionFilter] = useState('S.E.A.');
   const [showFilter, setShowFilter] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -155,14 +155,14 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
 
       <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
         <button
-          onClick={() => setRegionFilter('South East Asia (SEA)')}
+          onClick={() => setRegionFilter('S.E.A.')}
           className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
-            regionFilter === 'South East Asia (SEA)'
+            regionFilter === 'S.E.A.'
               ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
               : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
           }`}
         >
-          South East Asia (SEA)
+          S.E.A.
         </button>
         <button
           onClick={() => setRegionFilter('India')}
@@ -224,14 +224,14 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
           {
             name: 'Region',
             options: [
-              { label: 'South East Asia (SEA)', value: 'South East Asia (SEA)' },
+              { label: 'S.E.A.', value: 'S.E.A.' },
               { label: 'India', value: 'India' }
             ],
             selected: regionFilter,
             onChange: setRegionFilter
           }
         ]}
-        onReset={() => setRegionFilter('South East Asia (SEA)')}
+        onReset={() => setRegionFilter('S.E.A.')}
       />
 
       <DetailModal isOpen={!!selectedPartner} onClose={handleCloseModal} title={selectedPartner?.name || ''} subtitle={`${selectedPartner?.region} • ${selectedPartner?.country}`} entityId={selectedPartner?.id || ''} entityType="Partner" clickupLink={selectedPartner?.clickupLink} activities={activities} users={users} contacts={contacts} accounts={accounts} partners={partners} relationships={relationships}>
