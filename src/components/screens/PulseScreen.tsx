@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CheckCircle2, TrendingUp, TrendingDown, Minus, Phone, Users, FileText, Mail, ArrowRight, ArrowLeft, Settings, Zap } from 'lucide-react';
+import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CheckCircle2, TrendingUp, TrendingDown, Minus, Phone, Users, FileText, Mail, ArrowRight, ArrowLeft, Settings, Zap, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -144,6 +144,10 @@ type FeedItem = {
   icon: React.ReactNode;
   iconColor: string;
   iconBgColor: string;
+  dealName?: string;
+  relatedToId?: string;
+  relatedToType?: string;
+  activityType?: string;
 };
 
 const formatFeedItem = (rawItem: any): FeedItem | null => {
@@ -162,7 +166,11 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           user_avatar: rawItem.user_avatar,
           icon: <Phone className="w-4 h-4" />,
           iconColor: 'text-blue-600',
-          iconBgColor: 'bg-blue-100 dark:bg-blue-900/50'
+          iconBgColor: 'bg-blue-100 dark:bg-blue-900/50',
+          dealName: rawItem.deal_name,
+          relatedToId: rawItem.related_to_id,
+          relatedToType: rawItem.related_to_type,
+          activityType: 'Call'
         };
 
       case 'meeting':
@@ -175,7 +183,11 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           user_avatar: rawItem.user_avatar,
           icon: <Users className="w-4 h-4" />,
           iconColor: 'text-blue-600',
-          iconBgColor: 'bg-blue-100 dark:bg-blue-900/50'
+          iconBgColor: 'bg-blue-100 dark:bg-blue-900/50',
+          dealName: rawItem.deal_name,
+          relatedToId: rawItem.related_to_id,
+          relatedToType: rawItem.related_to_type,
+          activityType: 'Meeting'
         };
 
       case 'note':
@@ -188,7 +200,11 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           user_avatar: rawItem.user_avatar,
           icon: <FileText className="w-4 h-4" />,
           iconColor: 'text-slate-600',
-          iconBgColor: 'bg-slate-100 dark:bg-slate-800'
+          iconBgColor: 'bg-slate-100 dark:bg-slate-800',
+          dealName: rawItem.deal_name,
+          relatedToId: rawItem.related_to_id,
+          relatedToType: rawItem.related_to_type,
+          activityType: 'Note'
         };
 
       case 'email':
@@ -202,7 +218,11 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           user_avatar: rawItem.user_avatar,
           icon: direction === 'Sent' ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />,
           iconColor: 'text-purple-600',
-          iconBgColor: 'bg-purple-100 dark:bg-purple-900/50'
+          iconBgColor: 'bg-purple-100 dark:bg-purple-900/50',
+          dealName: rawItem.deal_name,
+          relatedToId: rawItem.related_to_id,
+          relatedToType: rawItem.related_to_type,
+          activityType: 'Email'
         };
 
       case 'task':
@@ -215,7 +235,45 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           user_avatar: rawItem.user_avatar,
           icon: <CheckCircle2 className="w-4 h-4" />,
           iconColor: 'text-orange-600',
-          iconBgColor: 'bg-orange-100 dark:bg-orange-900/50'
+          iconBgColor: 'bg-orange-100 dark:bg-orange-900/50',
+          dealName: rawItem.deal_name,
+          relatedToId: rawItem.related_to_id,
+          relatedToType: rawItem.related_to_type,
+          activityType: 'Task'
+        };
+
+      case 'site visit':
+        return {
+          id: rawItem.id,
+          type: 'activity',
+          content: `Site visit${summary ? `: ${summary}` : ''}`,
+          timestamp: rawItem.created_at,
+          user_name: rawItem.user_name,
+          user_avatar: rawItem.user_avatar,
+          icon: <MapPin className="w-4 h-4" />,
+          iconColor: 'text-green-600',
+          iconBgColor: 'bg-green-100 dark:bg-green-900/50',
+          dealName: rawItem.deal_name,
+          relatedToId: rawItem.related_to_id,
+          relatedToType: rawItem.related_to_type,
+          activityType: 'Site Visit'
+        };
+
+      case 'whatsapp':
+        return {
+          id: rawItem.id,
+          type: 'activity',
+          content: `WhatsApp${summary ? `: ${summary}` : ''}`,
+          timestamp: rawItem.created_at,
+          user_name: rawItem.user_name,
+          user_avatar: rawItem.user_avatar,
+          icon: <Mail className="w-4 h-4" />,
+          iconColor: 'text-green-600',
+          iconBgColor: 'bg-green-100 dark:bg-green-900/50',
+          dealName: rawItem.deal_name,
+          relatedToId: rawItem.related_to_id,
+          relatedToType: rawItem.related_to_type,
+          activityType: 'WhatsApp'
         };
 
       default:
@@ -228,7 +286,11 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           user_avatar: rawItem.user_avatar,
           icon: <Activity className="w-4 h-4" />,
           iconColor: 'text-slate-600',
-          iconBgColor: 'bg-slate-100 dark:bg-slate-800'
+          iconBgColor: 'bg-slate-100 dark:bg-slate-800',
+          dealName: rawItem.deal_name,
+          relatedToId: rawItem.related_to_id,
+          relatedToType: rawItem.related_to_type,
+          activityType: activityType
         };
     }
   }
@@ -236,6 +298,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
   if (rawItem.source === 'log') {
     const details = rawItem.details || {};
     const action = rawItem.action;
+    const dealName = details.entity_name || rawItem.deal_name;
 
     if (details.old_stage && details.new_stage) {
       return {
@@ -247,7 +310,11 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         user_avatar: rawItem.user_avatar,
         icon: <TrendingUp className="w-4 h-4" />,
         iconColor: 'text-green-600',
-        iconBgColor: 'bg-green-100 dark:bg-green-900/50'
+        iconBgColor: 'bg-green-100 dark:bg-green-900/50',
+        dealName: dealName,
+        relatedToId: details.entity_id,
+        relatedToType: details.entity_type,
+        activityType: 'Update'
       };
     }
 
@@ -265,7 +332,11 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           user_avatar: rawItem.user_avatar,
           icon: <TrendingUp className="w-4 h-4" />,
           iconColor: 'text-green-600',
-          iconBgColor: 'bg-green-100 dark:bg-green-900/50'
+          iconBgColor: 'bg-green-100 dark:bg-green-900/50',
+          dealName: dealName,
+          relatedToId: details.entity_id,
+          relatedToType: details.entity_type,
+          activityType: 'Update'
         };
       }
 
@@ -280,7 +351,11 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           user_avatar: rawItem.user_avatar,
           icon: <Activity className="w-4 h-4" />,
           iconColor: 'text-blue-600',
-          iconBgColor: 'bg-blue-100 dark:bg-blue-900/50'
+          iconBgColor: 'bg-blue-100 dark:bg-blue-900/50',
+          dealName: dealName,
+          relatedToId: details.entity_id,
+          relatedToType: details.entity_type,
+          activityType: 'Update'
         };
       }
 
@@ -294,7 +369,11 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           user_avatar: rawItem.user_avatar,
           icon: <Users className="w-4 h-4" />,
           iconColor: 'text-purple-600',
-          iconBgColor: 'bg-purple-100 dark:bg-purple-900/50'
+          iconBgColor: 'bg-purple-100 dark:bg-purple-900/50',
+          dealName: dealName,
+          relatedToId: details.entity_id,
+          relatedToType: details.entity_type,
+          activityType: 'Update'
         };
       }
 
@@ -311,7 +390,11 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         user_avatar: rawItem.user_avatar,
         icon: <Plus className="w-4 h-4" />,
         iconColor: 'text-green-600',
-        iconBgColor: 'bg-green-100 dark:bg-green-900/50'
+        iconBgColor: 'bg-green-100 dark:bg-green-900/50',
+        dealName: dealName,
+        relatedToId: details.entity_id,
+        relatedToType: details.entity_type,
+        activityType: 'Create'
       };
     }
 
@@ -325,7 +408,11 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         user_avatar: rawItem.user_avatar,
         icon: <Activity className="w-4 h-4" />,
         iconColor: 'text-slate-600',
-        iconBgColor: 'bg-slate-100 dark:bg-slate-800'
+        iconBgColor: 'bg-slate-100 dark:bg-slate-800',
+        dealName: dealName,
+        relatedToId: details.entity_id,
+        relatedToType: details.entity_type,
+        activityType: action
       };
     }
 
@@ -393,13 +480,58 @@ export default function PulseScreen() {
         summary,
         created_at,
         created_by,
+        related_to_id,
+        related_to_type,
         crm_users!activities_created_by_fkey(name, avatar)
       `)
       .order('created_at', { ascending: false })
       .limit(50);
 
     if (activities) {
-      activities.forEach((activity: any) => {
+      for (const activity of activities) {
+        let dealName = null;
+
+        if (activity.related_to_id && activity.related_to_type) {
+          const relatedType = activity.related_to_type.toLowerCase();
+
+          if (relatedType === 'opportunity') {
+            const { data } = await supabase
+              .from('opportunities')
+              .select('name')
+              .eq('id', activity.related_to_id)
+              .single();
+            dealName = data?.name;
+          } else if (relatedType === 'project') {
+            const { data } = await supabase
+              .from('projects')
+              .select('name')
+              .eq('id', activity.related_to_id)
+              .single();
+            dealName = data?.name;
+          } else if (relatedType === 'account') {
+            const { data } = await supabase
+              .from('accounts')
+              .select('name')
+              .eq('id', activity.related_to_id)
+              .single();
+            dealName = data?.name;
+          } else if (relatedType === 'contact') {
+            const { data } = await supabase
+              .from('contacts')
+              .select('full_name')
+              .eq('id', activity.related_to_id)
+              .single();
+            dealName = data?.full_name;
+          } else if (relatedType === 'partner') {
+            const { data } = await supabase
+              .from('partners')
+              .select('name')
+              .eq('id', activity.related_to_id)
+              .single();
+            dealName = data?.name;
+          }
+        }
+
         rawFeed.push({
           id: activity.id,
           source: 'activity',
@@ -407,9 +539,12 @@ export default function PulseScreen() {
           summary: activity.summary,
           created_at: activity.created_at,
           user_name: activity.crm_users?.name,
-          user_avatar: activity.crm_users?.avatar
+          user_avatar: activity.crm_users?.avatar,
+          related_to_id: activity.related_to_id,
+          related_to_type: activity.related_to_type,
+          deal_name: dealName
         });
-      });
+      }
     }
 
     const { data: logs } = await supabase
@@ -780,42 +915,92 @@ export default function PulseScreen() {
             </div>
           ) : (
             <div className="divide-y divide-slate-200 dark:divide-slate-700">
-              {feedItems.map((item) => (
-                <div key={item.id} className="px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                  <div className="flex gap-3">
-                    <Avatar className="w-10 h-10 ring-2 ring-slate-100 dark:ring-slate-700">
-                      <AvatarImage src={item.user_avatar} />
-                      <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white text-sm font-semibold">
-                        {item.user_name?.charAt(0) || '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="font-bold text-slate-900 dark:text-white text-sm">
-                          {item.user_name || 'System'}
-                        </span>
-                        <span className="text-slate-500 dark:text-slate-400 text-sm">·</span>
-                        <span className="text-slate-500 dark:text-slate-400 text-sm">
-                          {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true }).replace('about ', '')}
+              {feedItems.map((item) => {
+                const timeAgo = formatDistanceToNow(new Date(item.timestamp), { addSuffix: false })
+                  .replace('about ', '')
+                  .replace('less than a minute', '1m')
+                  .replace(' minutes', 'm')
+                  .replace(' minute', 'm')
+                  .replace(' hours', 'h')
+                  .replace(' hour', 'h')
+                  .replace(' days', 'd')
+                  .replace(' day', 'd')
+                  .replace(' months', 'mo')
+                  .replace(' month', 'mo')
+                  .replace(' years', 'y')
+                  .replace(' year', 'y');
+
+                return (
+                  <div key={item.id} className="px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <Avatar className="w-11 h-11 ring-2 ring-slate-100 dark:ring-slate-700">
+                          <AvatarImage src={item.user_avatar} />
+                          <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white text-sm font-semibold">
+                            {item.user_name?.charAt(0) || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium">
+                          {timeAgo}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className={`flex items-center justify-center w-5 h-5 rounded-full ${item.iconBgColor}`}>
-                          <div className={item.iconColor}>
-                            {item.icon}
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-bold text-slate-900 dark:text-white text-sm truncate">
+                              {item.user_name || 'System'}
+                            </span>
                           </div>
+
+                          {item.relatedToId && item.relatedToType && (
+                            <button
+                              className="flex-shrink-0 p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors"
+                              onClick={() => {
+                                const typeMap: Record<string, string> = {
+                                  'Opportunity': 'opportunities',
+                                  'Project': 'projects',
+                                  'Account': 'accounts',
+                                  'Contact': 'contacts',
+                                  'Partner': 'partners'
+                                };
+                                const view = typeMap[item.relatedToType] || 'home';
+                                window.location.href = `/?view=${view}`;
+                              }}
+                              title={`Go to ${item.relatedToType}`}
+                            >
+                              <ExternalLink className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                            </button>
+                          )}
                         </div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">
-                          {item.type === 'activity' ? 'Activity' : 'Update'}
-                        </span>
+
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={`flex items-center justify-center w-6 h-6 rounded-md ${item.iconBgColor}`}>
+                            <div className={item.iconColor}>
+                              {item.icon}
+                            </div>
+                          </div>
+                          <span className="text-xs text-slate-600 dark:text-slate-400 font-semibold">
+                            {item.activityType || (item.type === 'activity' ? 'Activity' : 'Update')}
+                          </span>
+                        </div>
+
+                        {item.dealName && (
+                          <div className="mb-2">
+                            <span className="inline-block px-2 py-1 text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 rounded-md">
+                              {item.dealName}
+                            </span>
+                          </div>
+                        )}
+
+                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                          {item.content}
+                        </p>
                       </div>
-                      <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                        {item.content}
-                      </p>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </>
