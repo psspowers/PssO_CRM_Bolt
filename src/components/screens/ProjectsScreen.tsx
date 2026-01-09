@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { SearchBar, SimpleModal, ProjectForm } from '../crm';
 import { ProjectCard } from '../crm/ProjectCard';
 import { useAppContext } from '../../contexts/AppContext';
@@ -16,7 +16,11 @@ const statusColors: Record<string, string> = {
   'Operational': 'bg-green-600',
 };
 
-export const ProjectsScreen: React.FC = () => {
+interface ProjectsScreenProps {
+  forcedOpenId?: string | null;
+}
+
+export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({ forcedOpenId }) => {
   const {
     opportunities,
     accounts,
@@ -59,6 +63,15 @@ export const ProjectsScreen: React.FC = () => {
         linkedPartnerIds: []
       }));
   }, [opportunities]);
+
+  useEffect(() => {
+    if (forcedOpenId && projects.length > 0) {
+      const target = projects.find(p => p.id === forcedOpenId);
+      if (target) {
+        setSelectedProject(target);
+      }
+    }
+  }, [forcedOpenId, projects]);
 
   // Get unique countries
   const countries = useMemo(() => {

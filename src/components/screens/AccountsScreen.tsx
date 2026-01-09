@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { SearchBar, AccountCard, FilterModal, DetailModal, AccountForm } from '../crm';
 import { useAppContext } from '../../contexts/AppContext';
 import { Account } from '../../types/crm';
@@ -6,7 +6,11 @@ import { MapPin, Star, Target, Users, Loader2, CheckSquare, Square, X, Trash2, P
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { getSectors, SECTOR_ICONS, getTaxonomyInfo, getScoreColor, getPointsColor } from '../../data/thaiTaxonomy';
 
-export const AccountsScreen: React.FC = () => {
+interface AccountsScreenProps {
+  forcedOpenId?: string | null;
+}
+
+export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) => {
   const { accounts, opportunities, partners, contacts, activities, relationships, users, loading, deleteAccount, updateAccount, canDelete, canEdit } = useAppContext();
   const [search, setSearch] = useState('');
   const [sectorFilter, setSectorFilter] = useState('all');
@@ -19,6 +23,16 @@ export const AccountsScreen: React.FC = () => {
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+
+  useEffect(() => {
+    if (forcedOpenId && accounts.length > 0) {
+      const target = accounts.find(a => a.id === forcedOpenId);
+      if (target) {
+        setSelectedAccount(target);
+        setIsEditing(false);
+      }
+    }
+  }, [forcedOpenId, accounts]);
 
   const userCanDelete = canDelete();
   const userCanEdit = selectedAccount ? canEdit(selectedAccount.ownerId) : false;

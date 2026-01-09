@@ -1,11 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { SearchBar, PartnerCard, DetailModal, PartnerForm, FilterModal } from '../crm';
 import { useAppContext } from '../../contexts/AppContext';
 import { Partner } from '../../types/crm';
 import { MapPin, Globe, Mail, Phone, Building2, Loader2, CheckSquare, Square, X, Trash2, Pencil, Users, LayoutGrid, List } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 
-export const PartnersScreen: React.FC = () => {
+interface PartnersScreenProps {
+  forcedOpenId?: string | null;
+}
+
+export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) => {
   const { partners, accounts, contacts, activities, relationships, users, loading, deletePartner, updatePartner, canDelete, canEdit } = useAppContext();
   const [search, setSearch] = useState('');
   const [regionFilter, setRegionFilter] = useState('all');
@@ -17,6 +21,16 @@ export const PartnersScreen: React.FC = () => {
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+
+  useEffect(() => {
+    if (forcedOpenId && partners.length > 0) {
+      const target = partners.find(p => p.id === forcedOpenId);
+      if (target) {
+        setSelectedPartner(target);
+        setIsEditing(false);
+      }
+    }
+  }, [forcedOpenId, partners]);
 
   const userCanDelete = canDelete();
   const userCanEdit = selectedPartner ? canEdit(selectedPartner.ownerId) : false;

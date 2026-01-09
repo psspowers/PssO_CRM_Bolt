@@ -447,10 +447,10 @@ export default function AppLayout() {
           />
         );
       case 'opportunities': return <OpportunitiesScreen forcedOpenId={autoOpenId} forcedStageFilter={stageFilter} />;
-      case 'accounts': return <AccountsScreen />;
-      case 'partners': return <PartnersScreen />;
-      case 'contacts': return <ContactsScreen />;
-      case 'projects': return <ProjectsScreen />;
+      case 'accounts': return <AccountsScreen forcedOpenId={autoOpenId} />;
+      case 'partners': return <PartnersScreen forcedOpenId={autoOpenId} />;
+      case 'contacts': return <ContactsScreen forcedOpenId={autoOpenId} />;
+      case 'projects': return <ProjectsScreen forcedOpenId={autoOpenId} />;
       case 'tasks': return <TasksScreen />;
       case 'pulse': return <PulseScreen />;
       case 'timeline': return <ActivityTimelineScreen />;

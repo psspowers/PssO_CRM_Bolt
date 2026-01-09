@@ -1,11 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { SearchBar, ContactCard, DetailModal, ContactForm, FilterModal } from '../crm';
 import { useAppContext } from '../../contexts/AppContext';
 import { Contact } from '../../types/crm';
 import { MapPin, Mail, Phone, Building2, Loader2, CheckSquare, Square, X, Trash2, Pencil, UserCircle, LayoutGrid, List } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 
-export const ContactsScreen: React.FC = () => {
+interface ContactsScreenProps {
+  forcedOpenId?: string | null;
+}
+
+export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) => {
   const { contacts, accounts, partners, activities, relationships, users, loading, deleteContact, updateContact, canDelete, canEdit } = useAppContext();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -17,6 +21,16 @@ export const ContactsScreen: React.FC = () => {
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+
+  useEffect(() => {
+    if (forcedOpenId && contacts.length > 0) {
+      const target = contacts.find(c => c.id === forcedOpenId);
+      if (target) {
+        setSelectedContact(target);
+        setIsEditing(false);
+      }
+    }
+  }, [forcedOpenId, contacts]);
 
   const userCanDelete = canDelete();
   const userCanEdit = selectedContact ? canEdit(selectedContact.ownerId) : false;
