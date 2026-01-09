@@ -30,7 +30,8 @@ import {
   User,
   Info,
   Search,
-  ChevronDown
+  ChevronDown,
+  Clock
 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -74,6 +75,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   const [isDeleting, setIsDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [stagnationFilter, setStagnationFilter] = useState<'all' | '30' | '60' | '90'>('all');
   
   // NEW: Hierarchy View Filter State
   // 'mine' = Only deals owned by the current user
@@ -200,9 +202,17 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     // 4. PRIORITY FILTER
     const matchesPriority = priorityFilter === 'all' || o.priority === priorityFilter;
 
+    // 5. STAGNATION FILTER - Check days since last update
+    if (stagnationFilter !== 'all') {
+      const daysSinceUpdate = (new Date().getTime() - new Date(o.updatedAt).getTime()) / (1000 * 3600 * 24);
+      if (stagnationFilter === '30' && daysSinceUpdate < 30) return false;
+      if (stagnationFilter === '60' && daysSinceUpdate < 60) return false;
+      if (stagnationFilter === '90' && daysSinceUpdate < 90) return false;
+    }
+
     return matchesSearch && matchesStage && matchesPriority;
   });
-  }, [opportunities, accounts, search, stageFilter, priorityFilter, hierarchyView, user?.id, subordinateIds, selectedMemberId, profile]);
+  }, [opportunities, accounts, search, stageFilter, priorityFilter, hierarchyView, user?.id, subordinateIds, selectedMemberId, profile, stagnationFilter]);
 
   // Calculate stats for the header (only count pre-win opportunities)
   const preWinStages = ['Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Lost'];
@@ -418,6 +428,28 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                 </div>
               </div>
             )}
+
+            {/* Stagnation Filter */}
+            <div className="relative ml-2">
+              <select
+                value={stagnationFilter}
+                onChange={(e) => setStagnationFilter(e.target.value as 'all' | '30' | '60' | '90')}
+                className={`appearance-none text-xs font-bold pl-8 pr-4 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none transition-colors ${
+                  stagnationFilter === 'all' ? 'bg-slate-100 text-slate-500' :
+                  stagnationFilter === '30' ? 'bg-yellow-100 text-yellow-700 ring-1 ring-yellow-300' :
+                  stagnationFilter === '60' ? 'bg-orange-100 text-orange-700 ring-1 ring-orange-300' :
+                  'bg-red-100 text-red-700 ring-1 ring-red-300'
+                }`}
+              >
+                <option value="all">Any Time</option>
+                <option value="30">&gt; 30 Days Old</option>
+                <option value="60">&gt; 60 Days Old</option>
+                <option value="90">&gt; 90 Days Old</option>
+              </select>
+              <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${stagnationFilter === 'all' ? 'text-slate-400' : 'text-current'}`}>
+                <Clock className="w-3.5 h-3.5" />
+              </div>
+            </div>
 
             {/* Info Tooltip */}
             <TooltipProvider>
