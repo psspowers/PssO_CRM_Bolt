@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { SearchBar, PartnerCard, DetailModal, PartnerForm, FilterModal } from '../crm';
 import { useAppContext } from '../../contexts/AppContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { Partner } from '../../types/crm';
 import { MapPin, Globe, Mail, Phone, Building2, Loader2, CheckSquare, Square, X, Trash2, Pencil, Users, LayoutGrid, List } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
@@ -11,6 +12,7 @@ interface PartnersScreenProps {
 
 export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) => {
   const { partners, accounts, contacts, activities, relationships, users, loading, deletePartner, updatePartner, canDelete, canEdit } = useAppContext();
+  const { profile } = useAuth();
   const [search, setSearch] = useState('');
   const [regionFilter, setRegionFilter] = useState('all');
   const [showFilter, setShowFilter] = useState(false);
@@ -34,6 +36,7 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
 
   const userCanDelete = canDelete();
   const userCanEdit = selectedPartner ? canEdit(selectedPartner.ownerId) : false;
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
   const availableRegions = useMemo(() => {
     return [...new Set(partners.map(p => p.region))].sort();
@@ -129,7 +132,7 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
                   <LayoutGrid className="w-5 h-5" />
                 </button>
               </div>
-              {userCanDelete && (
+              {isAdmin && (
                 <button
                   onClick={() => setSelectionMode(true)}
                   className="p-2.5 lg:p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-orange-500 hover:border-orange-200 transition-colors shadow-sm flex-shrink-0"

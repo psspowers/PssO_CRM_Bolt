@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { SearchBar, ContactCard, DetailModal, ContactForm, FilterModal } from '../crm';
 import { useAppContext } from '../../contexts/AppContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { Contact } from '../../types/crm';
 import { MapPin, Mail, Phone, Building2, Loader2, CheckSquare, Square, X, Trash2, Pencil, UserCircle, LayoutGrid, List } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
@@ -11,6 +12,7 @@ interface ContactsScreenProps {
 
 export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) => {
   const { contacts, accounts, partners, activities, relationships, users, loading, deleteContact, updateContact, canDelete, canEdit } = useAppContext();
+  const { profile } = useAuth();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [showFilter, setShowFilter] = useState(false);
@@ -34,6 +36,7 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
 
   const userCanDelete = canDelete();
   const userCanEdit = selectedContact ? canEdit(selectedContact.ownerId) : false;
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
   const availableRoles = useMemo(() => {
     const roles = new Set(contacts.map(c => c.role).filter(Boolean));
@@ -136,7 +139,7 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
                   <LayoutGrid className="w-5 h-5" />
                 </button>
               </div>
-              {userCanDelete && (
+              {isAdmin && (
                 <button
                   onClick={() => setSelectionMode(true)}
                   className="p-2.5 lg:p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-orange-500 hover:border-orange-200 transition-colors shadow-sm flex-shrink-0"

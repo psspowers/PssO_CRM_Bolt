@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { SearchBar, AccountCard, FilterModal, DetailModal, AccountForm } from '../crm';
 import { useAppContext } from '../../contexts/AppContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { Account } from '../../types/crm';
 import { MapPin, Star, Target, Users, Loader2, CheckSquare, Square, X, Trash2, Pencil, Building2, TrendingUp, LayoutGrid, List } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
@@ -12,6 +13,7 @@ interface AccountsScreenProps {
 
 export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) => {
   const { accounts, opportunities, partners, contacts, activities, relationships, users, loading, deleteAccount, updateAccount, canDelete, canEdit } = useAppContext();
+  const { profile } = useAuth();
   const [search, setSearch] = useState('');
   const [sectorFilter, setSectorFilter] = useState('all');
   const [importanceFilter, setImportanceFilter] = useState('all');
@@ -36,6 +38,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
 
   const userCanDelete = canDelete();
   const userCanEdit = selectedAccount ? canEdit(selectedAccount.ownerId) : false;
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
   
   // Get unique sectors from accounts and taxonomy
   const availableSectors = useMemo(() => {
@@ -144,7 +147,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
                   <LayoutGrid className="w-5 h-5" />
                 </button>
               </div>
-              {userCanDelete && (
+              {isAdmin && (
                 <button
                   onClick={() => setSelectionMode(true)}
                   className="p-2.5 lg:p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-orange-500 hover:border-orange-200 transition-colors shadow-sm flex-shrink-0"
