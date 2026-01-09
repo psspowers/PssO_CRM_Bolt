@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CheckCircle2, TrendingUp, TrendingDown, Minus, Phone, Users, FileText, Mail, ArrowRight, ArrowLeft, Settings } from 'lucide-react';
+import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CheckCircle2, TrendingUp, TrendingDown, Minus, Phone, Users, FileText, Mail, ArrowRight, ArrowLeft, Settings, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,94 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import Papa from 'papaparse';
+
+const ANALYST_PROMPT_TEMPLATE = `**Role & Context:**
+You are a Senior Energy Investment Analyst specializing in the **Southeast Asian Renewable Energy** market, with deep expertise in Battery Energy Storage Systems (BESS), solar, wind, and grid integration projects. Your primary responsibility is to conduct comprehensive market intelligence research on target companies to assess their potential as investment opportunities, strategic partners, or acquisition targets.
+
+**Your Mission:**
+Research each company on today's target list and produce actionable intelligence that helps our investment team make informed decisions about market opportunities worth $50M-$500M+ in renewable energy infrastructure.
+
+**Research Focus Areas:**
+
+1. **Business Overview & Strategic Position**
+   - Core business model and revenue streams
+   - Market position in renewable energy sector
+   - Geographic footprint and operational scale
+   - Key competitive advantages or unique capabilities
+
+2. **Financial Health & Growth Trajectory**
+   - Recent financial performance and trends
+   - Investment capacity and capital structure
+   - Growth indicators and expansion plans
+   - Notable recent transactions or funding rounds
+
+3. **Renewable Energy Portfolio & Capabilities**
+   - Existing renewable energy assets and projects
+   - Technical capabilities in BESS, solar, or wind
+   - Project pipeline and development capacity
+   - Innovation initiatives and technology partnerships
+
+4. **Investment Readiness & Strategic Fit**
+   - Appetite for renewable energy investments
+   - Partnership or M&A activity
+   - Alignment with ESG and sustainability goals
+   - Regulatory compliance and certifications
+
+5. **Market Intelligence & Risk Factors**
+   - Recent news, press releases, or announcements
+   - Leadership changes or strategic shifts
+   - Regulatory challenges or opportunities
+   - Competitive threats or market disruptions
+
+**Research Guidelines:**
+- Prioritize recent information (last 12-18 months)
+- Focus on publicly available sources: company websites, press releases, industry publications, financial filings, news articles
+- Verify information from multiple sources when possible
+- Identify data gaps and flag them clearly
+- Look for signals of investment readiness and strategic intent
+
+**The Strict Output Format (CSV):**
+Return your findings ONLY in this exact CSV format with these columns:
+
+Company Name,Headline,Summary,Impact,URL
+
+**Column Definitions:**
+- **Company Name**: Exact name as provided in the target list
+- **Headline**: One compelling insight (8-12 words max) that captures the most important finding
+- **Summary**: Brief intelligence summary (2-3 sentences, 150 words max) covering key findings from research focus areas
+- **Impact**: Must be EXACTLY one of these three values:
+  - "opportunity" = Strong investment potential, positive signals, strategic alignment
+  - "threat" = Competitive threat, market risk, or negative indicators
+  - "neutral" = Noteworthy but no clear directional signal
+- **URL**: Primary source URL for verification (use most authoritative source)
+
+**Example Output:**
+ABC Energy Corp,Announces $200M BESS expansion across Thailand,"ABC Energy announced plans to deploy 500MW of battery storage by 2025, partnering with leading EPC firms. Strong balance sheet with $300M credit facility. Active in solar+storage integration.",opportunity,https://abcenergy.com/news/2024-expansion
+XYZ Manufacturing,Delays renewable transition amid financial restructuring,"Company postponed its 100MW solar project due to liquidity constraints. Undergoing debt restructuring with creditors. Renewable energy strategy on hold until Q3 2025.",threat,https://industry-journal.com/xyz-delays
+
+**Critical Requirements:**
+- Research ALL companies on the target list
+- Do NOT skip companies even if information is limited
+- If you find minimal information, still create an entry with "neutral" impact and note data limitations in Summary
+- Ensure CSV is properly formatted with commas separating fields and quotes around fields containing commas
+- Include header row exactly as specified
+- Do NOT add any commentary, explanations, or text outside the CSV format
+
+**THE TARGET LIST FOR TODAY:**
+`;
+
+const ANALYST_INSTRUCTIONS_ADDENDUM = `
+
+**After copying this prompt:**
+1. Go to ChatGPT (GPT-4 or higher)
+2. Paste this entire prompt
+3. Wait for the CSV output
+4. Copy the CSV results
+5. Return to Pulse > Market Intel tab
+6. Click the Settings icon (gear) > Import CSV
+7. Upload the CSV file or paste the results
+
+The system will automatically parse and import all intelligence items.`;
 
 interface MarketNews {
   id: string;
@@ -491,6 +579,36 @@ export default function PulseScreen() {
     loadMarketNews();
   };
 
+  const handleGenerateDailyMission = async () => {
+    try {
+      const { data, error } = await supabase.rpc('fetch_daily_scan_targets', { batch_size: 30 });
+
+      if (error) {
+        toast.error('Failed to fetch targets: ' + error.message);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        toast.error('No accounts found for scanning');
+        return;
+      }
+
+      const listText = data.map((item: { name: string }, index: number) => `${index + 1}. ${item.name}`).join('\n');
+      const fullPrompt = ANALYST_PROMPT_TEMPLATE + '\n' + listText + ANALYST_INSTRUCTIONS_ADDENDUM;
+
+      await navigator.clipboard.writeText(fullPrompt);
+
+      toast.success(`Mission Generated! ${data.length} targets copied to clipboard. Paste into ChatGPT.`, {
+        duration: 5000
+      });
+
+      setShowAnalystModal(false);
+    } catch (err) {
+      toast.error('Failed to generate mission');
+      console.error(err);
+    }
+  };
+
   const getImpactColor = (impact: string) => {
     switch (impact) {
       case 'opportunity': return 'border-green-500 bg-green-500/5';
@@ -806,54 +924,66 @@ export default function PulseScreen() {
           <DialogHeader>
             <DialogTitle>Analyst Console</DialogTitle>
             <DialogDescription>
-              Bulk import market intelligence or post individual items
+              Smart rotation automatically selects the 30 companies that need scanning
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3">
             <Button
-              variant="outline"
-              className="w-full justify-start h-auto py-4"
-              onClick={() => {
-                handleDownloadTemplate();
-                setShowAnalystModal(false);
-              }}
+              className="w-full justify-center h-auto py-6 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg"
+              onClick={handleGenerateDailyMission}
             >
-              <Download className="w-5 h-5 mr-3 text-blue-600" />
+              <Zap className="w-6 h-6 mr-3" />
               <div className="text-left">
-                <div className="font-semibold">Download Template</div>
-                <div className="text-xs text-slate-500">Get CSV template for bulk import</div>
+                <div className="text-lg font-bold">Generate Daily Mission</div>
+                <div className="text-xs text-orange-100">Auto-select 30 targets + copy mega-prompt</div>
               </div>
             </Button>
 
-            <Button
-              variant="outline"
-              className="w-full justify-start h-auto py-4"
-              onClick={() => {
-                fileInputRef.current?.click();
-                setShowAnalystModal(false);
-              }}
-            >
-              <Upload className="w-5 h-5 mr-3 text-green-600" />
-              <div className="text-left">
-                <div className="font-semibold">Import CSV</div>
-                <div className="text-xs text-slate-500">Bulk import market intelligence</div>
-              </div>
-            </Button>
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-3 mt-4">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 text-center">
+                Additional Tools
+              </p>
 
-            <Button
-              className="w-full justify-start h-auto py-4 bg-orange-500 hover:bg-orange-600 text-white"
-              onClick={() => {
-                setShowAnalystModal(false);
-                setShowPostModal(true);
-              }}
-            >
-              <Plus className="w-5 h-5 mr-3" />
-              <div className="text-left">
-                <div className="font-semibold">Post Intel</div>
-                <div className="text-xs text-orange-100">Manually post a single item</div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    handleDownloadTemplate();
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Template
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    fileInputRef.current?.click();
+                  }}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Import CSV
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowAnalystModal(false);
+                    setShowPostModal(true);
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Post
+                </Button>
               </div>
-            </Button>
+            </div>
           </div>
 
           <DialogFooter>
