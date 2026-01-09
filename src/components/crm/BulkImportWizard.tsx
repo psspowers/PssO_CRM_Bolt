@@ -474,7 +474,11 @@ interface RowValidation {
 }
 
 interface BulkImportWizardProps {
-  onImport: (entityType: EntityType, data: Record<string, any>[]) => Promise<void>;
+  onImport: (entityType: EntityType, data: Record<string, any>[], options?: {
+    defaultRelType?: string;
+    defaultStrength?: number;
+    defaultTags?: string;
+  }) => Promise<void>;
   onClose: () => void;
   defaultEntityType?: EntityType;
   existingAccounts?: Account[];
@@ -672,6 +676,10 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [defaultRelType, setDefaultRelType] = useState('Knows');
+  const [defaultStrength, setDefaultStrength] = useState(3);
+  const [defaultTags, setDefaultTags] = useState('');
 
   const config = entityType ? ENTITY_CONFIGS[entityType] : null;
   const hasLinkableFields = config?.linkableFields && config.linkableFields.length > 0;
@@ -1126,7 +1134,11 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
     }
     
     try {
-      await onImport(entityType, successfulData);
+      await onImport(entityType, successfulData, {
+        defaultRelType,
+        defaultStrength,
+        defaultTags
+      });
     } catch (error: any) {
       results.failed = successfulData.length;
       results.success = 0;
@@ -1906,6 +1918,73 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
                         </span>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {entityType === 'Contact' && (
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Handshake className="w-5 h-5 text-blue-500" />
+                    <h3 className="font-semibold text-slate-900 dark:text-white">Default Relationship Settings</h3>
+                    <Info className="w-4 h-4 text-slate-400 ml-auto" title="These defaults will be applied to contacts that don't have relationship data in the CSV" />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Relationship Type
+                      </label>
+                      <select
+                        value={defaultRelType}
+                        onChange={(e) => setDefaultRelType(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="Knows">Knows</option>
+                        <option value="Worked With">Worked With</option>
+                        <option value="Client">Client</option>
+                        <option value="Partner">Partner</option>
+                        <option value="Vendor">Vendor</option>
+                        <option value="Friend">Friend</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Relationship Strength (1-5)
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="range"
+                          min="1"
+                          max="5"
+                          value={defaultStrength}
+                          onChange={(e) => setDefaultStrength(parseInt(e.target.value))}
+                          className="flex-1"
+                        />
+                        <span className="text-lg font-bold text-blue-500 w-8 text-center">
+                          {defaultStrength}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        <span>Weak</span>
+                        <span>Strong</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                        Add Tag (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={defaultTags}
+                        onChange={(e) => setDefaultTags(e.target.value)}
+                        placeholder="e.g., Import 2024"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
                   </div>
                 </div>
               )}

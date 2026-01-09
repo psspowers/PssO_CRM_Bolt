@@ -243,7 +243,15 @@ export default function AppLayout() {
   };
 
   // Handle bulk import
-  const handleBulkImport = async (entityType: BulkEntityType, data: Record<string, any>[]) => {
+  const handleBulkImport = async (
+    entityType: BulkEntityType,
+    data: Record<string, any>[],
+    options?: {
+      defaultRelType?: string;
+      defaultStrength?: number;
+      defaultTags?: string;
+    }
+  ) => {
     console.log(`Starting bulk import of ${data.length} ${entityType}(s)`);
     let successCount = 0;
     let failCount = 0;
@@ -254,6 +262,11 @@ export default function AppLayout() {
         console.log(`Importing ${entityType}:`, item.name || item.fullName);
         switch (entityType) {
           case 'Contact':
+            const combinedTags = [
+              ...(Array.isArray(item.tags) ? item.tags : []),
+              ...(options?.defaultTags ? [options.defaultTags] : [])
+            ];
+
             const newContact = await createContact({
               fullName: item.fullName || '',
               role: item.role || '',
@@ -261,7 +274,7 @@ export default function AppLayout() {
               phone: item.phone || '',
               country: item.country || '',
               city: item.city || '',
-              tags: Array.isArray(item.tags) ? item.tags : [],
+              tags: combinedTags,
               relationshipNotes: item.relationshipNotes || '',
               accountId: item.accountId || undefined,
               partnerId: item.partnerId || undefined,
@@ -270,13 +283,16 @@ export default function AppLayout() {
             // Auto-create Nexus relationship: Importer "Knows" the imported contact
             if (newContact?.id && user?.id) {
               try {
+                const relType = item.relationshipType || options?.defaultRelType || 'Knows';
+                const relStrength = parseInt(item.strength) || options?.defaultStrength || 3;
+
                 await supabase.from('relationships').insert({
                   from_entity_id: user.id,
                   from_entity_type: 'User',
                   to_entity_id: newContact.id,
                   to_entity_type: 'Contact',
-                  type: 'Knows',
-                  strength: 3,
+                  type: relType,
+                  strength: relStrength,
                   notes: 'Imported via Bulk Upload',
                   created_by: user.id
                 });
