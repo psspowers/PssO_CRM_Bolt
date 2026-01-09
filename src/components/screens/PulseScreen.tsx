@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CheckCircle2, TrendingUp, TrendingDown, Minus, Phone, Users, FileText, Mail, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CheckCircle2, TrendingUp, TrendingDown, Minus, Phone, Users, FileText, Mail, ArrowRight, ArrowLeft, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -250,6 +250,7 @@ export default function PulseScreen() {
   const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState<'internal' | 'market'>('internal');
   const [showPostModal, setShowPostModal] = useState(false);
+  const [showAnalystModal, setShowAnalystModal] = useState(false);
   const [marketNews, setMarketNews] = useState<MarketNews[]>([]);
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -507,222 +508,177 @@ export default function PulseScreen() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto pb-20 min-h-screen bg-gradient-to-b from-slate-50 to-orange-50/30 dark:from-slate-900 dark:to-slate-900">
-      <div className="max-w-4xl mx-auto p-4 space-y-6">
-        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-2xl p-6 shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Activity className="w-7 h-7 text-orange-500" />
-                The Pulse
-              </h1>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Internal updates and market intelligence
-              </p>
-            </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-24">
+      <div className="sticky top-0 z-20 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700">
+        <div className="px-4 py-3 flex justify-between items-center">
+          <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+            The Pulse
+          </h1>
 
-            {activeTab === 'market' && (
-              <div className="flex gap-2">
-                {showAnalystConsole && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDownloadTemplate}
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Template
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Import
-                    </Button>
-                  </>
-                )}
-                <Button
-                  size="sm"
-                  onClick={() => setShowPostModal(true)}
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Post Intel
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv"
-                  className="hidden"
-                  onChange={handleImportCSV}
-                />
-              </div>
-            )}
-          </div>
+          {activeTab === 'market' && showAnalystConsole && (
+            <button
+              onClick={() => setShowAnalystModal(true)}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+            >
+              <Settings className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+            </button>
+          )}
         </div>
 
-        <div className="bg-slate-200/50 dark:bg-slate-800/50 p-1 rounded-full flex gap-1 w-fit mx-auto">
+        <div className="flex w-full">
           <button
             onClick={() => setActiveTab('internal')}
-            className={`px-6 py-2.5 font-medium transition-all rounded-full flex items-center gap-2 ${
-              activeTab === 'internal'
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-            }`}
+            className="flex-1 py-3 text-sm font-bold text-center relative hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors"
           >
-            <Activity className="w-4 h-4" />
-            For You
+            <span className={activeTab === 'internal' ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}>
+              For You
+            </span>
+            {activeTab === 'internal' && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 rounded-t-full mx-12" />
+            )}
           </button>
           <button
             onClick={() => setActiveTab('market')}
-            className={`px-6 py-2.5 font-medium transition-all rounded-full flex items-center gap-2 ${
-              activeTab === 'market'
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-            }`}
+            className="flex-1 py-3 text-sm font-bold text-center relative hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors"
           >
-            <Newspaper className="w-4 h-4" />
-            Market Intel
+            <span className={activeTab === 'market' ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}>
+              Market Intel
+            </span>
+            {activeTab === 'market' && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 rounded-t-full mx-12" />
+            )}
           </button>
         </div>
+      </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
-          </div>
-        ) : activeTab === 'internal' ? (
-          <div className="relative">
-            {feedItems.length === 0 ? (
-              <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 rounded-2xl p-12 text-center shadow-sm">
-                <Activity className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">No activity yet</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Your team's momentum will appear here</p>
-              </div>
-            ) : (
-              <div className="relative">
-                <div className="absolute left-[46px] top-8 bottom-8 w-0.5 bg-gradient-to-b from-orange-200 via-slate-200 to-slate-200 dark:from-orange-900/50 dark:via-slate-700 dark:to-slate-700" />
-
-                <div className="space-y-6">
-                  {feedItems.map((item, index) => (
-                    <div key={item.id} className="relative flex gap-4">
-                      <div className="flex flex-col items-center">
-                        <div className="text-xs text-slate-500 dark:text-slate-400 w-20 text-right pr-3 font-medium">
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+        </div>
+      ) : activeTab === 'internal' ? (
+        <>
+          {feedItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <Activity className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
+              <h3 className="text-base font-semibold text-slate-700 dark:text-slate-300 mb-1">No activity yet</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Your team's momentum will appear here</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-200 dark:divide-slate-700">
+              {feedItems.map((item) => (
+                <div key={item.id} className="px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                  <div className="flex gap-3">
+                    <Avatar className="w-10 h-10 ring-2 ring-slate-100 dark:ring-slate-700">
+                      <AvatarImage src={item.user_avatar} />
+                      <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white text-sm font-semibold">
+                        {item.user_name?.charAt(0) || '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="font-bold text-slate-900 dark:text-white text-sm">
+                          {item.user_name || 'System'}
+                        </span>
+                        <span className="text-slate-500 dark:text-slate-400 text-sm">·</span>
+                        <span className="text-slate-500 dark:text-slate-400 text-sm">
                           {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true }).replace('about ', '')}
-                        </div>
+                        </span>
                       </div>
-
-                      <div className={`relative flex items-center justify-center w-10 h-10 rounded-full ${item.iconBgColor} ${item.iconColor} z-10 ring-4 ring-white dark:ring-slate-900 shadow-sm`}>
-                        {item.icon}
-                      </div>
-
-                      <div className="flex-1 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 rounded-xl p-4 hover:shadow-lg hover:scale-[1.01] transition-all">
-                        <div className="flex items-start gap-3">
-                          <Avatar className="w-9 h-9 ring-2 ring-slate-100 dark:ring-slate-700">
-                            <AvatarImage src={item.user_avatar} />
-                            <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white text-xs font-semibold">
-                              {item.user_name?.charAt(0) || '?'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-semibold text-slate-900 dark:text-white text-sm">
-                                {item.user_name || 'System'}
-                              </span>
-                              <Badge variant="outline" className="text-xs border-slate-300 dark:border-slate-600">
-                                {item.type === 'activity' ? 'Activity' : 'Update'}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                              {item.content}
-                            </p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className={`flex items-center justify-center w-5 h-5 rounded-full ${item.iconBgColor}`}>
+                          <div className={item.iconColor}>
+                            {item.icon}
                           </div>
                         </div>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">
+                          {item.type === 'activity' ? 'Activity' : 'Update'}
+                        </span>
                       </div>
+                      <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                        {item.content}
+                      </p>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {marketNews.length === 0 ? (
-              <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border border-slate-200/50 dark:border-slate-700/50 rounded-2xl p-12 text-center shadow-sm">
-                <Newspaper className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">No market intelligence yet</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Start tracking market opportunities and threats</p>
-                <Button
-                  onClick={() => setShowPostModal(true)}
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Post First Intel
-                </Button>
-              </div>
-            ) : (
-              marketNews.map((news) => {
-                const borderColor = news.impact_type === 'opportunity'
-                  ? 'border-l-4 border-emerald-400'
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {marketNews.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <Newspaper className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
+              <h3 className="text-base font-semibold text-slate-700 dark:text-slate-300 mb-1">No market intelligence yet</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Start tracking market opportunities and threats</p>
+              <Button
+                onClick={() => setShowPostModal(true)}
+                size="sm"
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Post First Intel
+              </Button>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-200 dark:divide-slate-700">
+              {marketNews.map((news) => {
+                const impactColor = news.impact_type === 'opportunity'
+                  ? 'bg-green-50 dark:bg-green-950/20'
                   : news.impact_type === 'threat'
-                  ? 'border-l-4 border-red-400'
-                  : 'border-l-4 border-slate-300 dark:border-slate-600';
+                  ? 'bg-red-50 dark:bg-red-950/20'
+                  : 'bg-white dark:bg-slate-800';
 
                 return (
                   <div
                     key={news.id}
-                    className={`bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border border-slate-100 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all relative overflow-hidden ${borderColor}`}
+                    className={`px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${impactColor}`}
                   >
-                    <div className="flex items-start gap-4">
+                    <div className="flex gap-3">
                       <div className="flex-shrink-0 mt-1">
                         {getImpactIcon(news.impact_type)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-3 mb-2">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                {formatDistanceToNow(new Date(news.created_at), { addSuffix: true })}
+                        <div className="flex items-center gap-2 mb-2">
+                          {news.creator_name && (
+                            <>
+                              <span className="font-bold text-slate-900 dark:text-white text-sm">
+                                {news.creator_name}
                               </span>
-                              <Badge
-                                variant="outline"
-                                className={`text-xs ${
-                                  news.impact_type === 'opportunity'
-                                    ? 'border-emerald-400 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30'
-                                    : news.impact_type === 'threat'
-                                    ? 'border-red-400 text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/30'
-                                    : 'border-slate-300 text-slate-600 dark:text-slate-400'
-                                }`}
-                              >
-                                {news.impact_type}
-                              </Badge>
-                            </div>
-                            <h3 className="font-bold text-slate-900 dark:text-white text-base mb-2 leading-tight">
-                              {news.title}
-                            </h3>
-                          </div>
+                              <span className="text-slate-500 dark:text-slate-400 text-sm">·</span>
+                            </>
+                          )}
+                          <span className="text-slate-500 dark:text-slate-400 text-sm">
+                            {formatDistanceToNow(new Date(news.created_at), { addSuffix: true })}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${
+                              news.impact_type === 'opportunity'
+                                ? 'border-emerald-400 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30'
+                                : news.impact_type === 'threat'
+                                ? 'border-red-400 text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/30'
+                                : 'border-slate-300 text-slate-600 dark:text-slate-400'
+                            }`}
+                          >
+                            {news.impact_type}
+                          </Badge>
                         </div>
+                        <h3 className="font-bold text-slate-900 dark:text-white text-base mb-2 leading-tight">
+                          {news.title}
+                        </h3>
 
                         {news.summary && (
-                          <p className="text-sm text-slate-700 dark:text-slate-300 mb-3 line-clamp-2 leading-relaxed">
+                          <p className="text-sm text-slate-700 dark:text-slate-300 mb-2 leading-relaxed">
                             {news.summary}
                           </p>
                         )}
 
-                        <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mb-4">
-                          {news.creator_name && (
-                            <span className="flex items-center gap-1">
-                              <span className="font-medium">{news.creator_name}</span>
-                            </span>
-                          )}
-                          {news.account_name && (
-                            <>
-                              {news.creator_name && <span>•</span>}
-                              <span className="font-semibold text-slate-700 dark:text-slate-300">{news.account_name}</span>
-                            </>
-                          )}
-                        </div>
+                        {news.account_name && (
+                          <div className="text-xs text-slate-600 dark:text-slate-400 mb-3">
+                            Related: <span className="font-semibold">{news.account_name}</span>
+                          </div>
+                        )}
 
                         <div className="flex gap-2">
                           {news.url && (
@@ -730,7 +686,7 @@ export default function PulseScreen() {
                               variant="ghost"
                               size="sm"
                               onClick={() => window.open(news.url!, '_blank')}
-                              className="text-xs h-8"
+                              className="text-xs h-7 px-2"
                             >
                               <ExternalLink className="w-3 h-3 mr-1" />
                               Source
@@ -738,7 +694,7 @@ export default function PulseScreen() {
                           )}
                           {news.related_account_id && (
                             <button
-                              className="flex items-center gap-1 text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 px-3 py-1.5 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-950/50 transition-colors"
+                              className="flex items-center gap-1 text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 px-2 py-1 rounded-md hover:bg-orange-100 dark:hover:bg-orange-950/50 transition-colors"
                             >
                               <Network className="w-3 h-3" />
                               Map Nexus
@@ -749,11 +705,11 @@ export default function PulseScreen() {
                     </div>
                   </div>
                 );
-              })
-            )}
-          </div>
-        )}
-      </div>
+              })}
+            </div>
+          )}
+        </>
+      )}
 
       <Dialog open={showPostModal} onOpenChange={setShowPostModal}>
         <DialogContent className="max-w-2xl">
@@ -844,6 +800,77 @@ export default function PulseScreen() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={showAnalystModal} onOpenChange={setShowAnalystModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Analyst Console</DialogTitle>
+            <DialogDescription>
+              Bulk import market intelligence or post individual items
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto py-4"
+              onClick={() => {
+                handleDownloadTemplate();
+                setShowAnalystModal(false);
+              }}
+            >
+              <Download className="w-5 h-5 mr-3 text-blue-600" />
+              <div className="text-left">
+                <div className="font-semibold">Download Template</div>
+                <div className="text-xs text-slate-500">Get CSV template for bulk import</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full justify-start h-auto py-4"
+              onClick={() => {
+                fileInputRef.current?.click();
+                setShowAnalystModal(false);
+              }}
+            >
+              <Upload className="w-5 h-5 mr-3 text-green-600" />
+              <div className="text-left">
+                <div className="font-semibold">Import CSV</div>
+                <div className="text-xs text-slate-500">Bulk import market intelligence</div>
+              </div>
+            </Button>
+
+            <Button
+              className="w-full justify-start h-auto py-4 bg-orange-500 hover:bg-orange-600 text-white"
+              onClick={() => {
+                setShowAnalystModal(false);
+                setShowPostModal(true);
+              }}
+            >
+              <Plus className="w-5 h-5 mr-3" />
+              <div className="text-left">
+                <div className="font-semibold">Post Intel</div>
+                <div className="text-xs text-orange-100">Manually post a single item</div>
+              </div>
+            </Button>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowAnalystModal(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv"
+        className="hidden"
+        onChange={handleImportCSV}
+      />
     </div>
   );
 }
