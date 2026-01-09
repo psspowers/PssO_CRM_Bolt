@@ -391,7 +391,7 @@ export default function PulseScreen() {
         description,
         created_at,
         created_by,
-        crm_users!activities_created_by_fkey(name, avatar_url)
+        crm_users!activities_created_by_fkey(name, avatar)
       `)
       .order('created_at', { ascending: false })
       .limit(50);
@@ -405,7 +405,7 @@ export default function PulseScreen() {
           description: activity.description,
           created_at: activity.created_at,
           user_name: activity.crm_users?.name,
-          user_avatar: activity.crm_users?.avatar_url
+          user_avatar: activity.crm_users?.avatar
         });
       });
     }
@@ -418,7 +418,7 @@ export default function PulseScreen() {
         details,
         created_at,
         user_id,
-        crm_users!admin_activity_logs_user_id_fkey(name, avatar_url)
+        crm_users!admin_activity_logs_user_id_fkey(name, avatar)
       `)
       .order('created_at', { ascending: false })
       .limit(50);
@@ -432,7 +432,7 @@ export default function PulseScreen() {
           details: log.details,
           created_at: log.created_at,
           user_name: log.crm_users?.name,
-          user_avatar: log.crm_users?.avatar_url
+          user_avatar: log.crm_users?.avatar
         });
       });
     }
