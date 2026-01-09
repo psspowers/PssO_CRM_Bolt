@@ -495,34 +495,53 @@ export default function PulseScreen() {
         const rows = results.data as any[];
         let successCount = 0;
         let failCount = 0;
+        let skippedCount = 0;
+
+        if (rows.length === 0) {
+          toast.error('CSV file is empty or has no valid rows.');
+          return;
+        }
 
         for (const row of rows) {
           try {
-            const companyName = row['Company Name'] || row['company name'] || row['Company'];
-            let accountId = null;
+            const companyName = row['Company Name'] || row['company name'] || row['Company'] || row['Account Name'];
+            const title = row['Headline'] || row['headline'] || row['Title'] || row['title'];
+            const summary = row['Summary'] || row['summary'] || row['Summary (Analysis)'] || row['Description'];
+            const impactRaw = (row['Impact'] || row['impact'] || row['Type'] || '').toLowerCase().trim();
+            const url = row['URL'] || row['url'] || row['Link'] || row['Source'];
 
-            if (companyName) {
+            if (!title || title.trim() === '') {
+              skippedCount++;
+              continue;
+            }
+
+            let accountId = null;
+            if (companyName && companyName.trim() !== '') {
               const { data: matchedAccount } = await supabase
                 .from('accounts')
                 .select('id, name')
-                .ilike('name', `%${companyName}%`)
+                .ilike('name', `%${companyName.trim()}%`)
                 .limit(1)
-                .single();
+                .maybeSingle();
 
               if (matchedAccount) {
                 accountId = matchedAccount.id;
               }
             }
 
-            const impactRaw = (row['Impact'] || row['impact'] || 'neutral').toLowerCase();
-            const impactType = ['opportunity', 'threat', 'neutral'].includes(impactRaw)
-              ? impactRaw
-              : 'neutral';
+            let impactType: 'opportunity' | 'threat' | 'neutral' = 'neutral';
+            if (impactRaw.includes('opp')) {
+              impactType = 'opportunity';
+            } else if (impactRaw.includes('threat') || impactRaw.includes('risk')) {
+              impactType = 'threat';
+            } else if (['opportunity', 'threat', 'neutral'].includes(impactRaw)) {
+              impactType = impactRaw as 'opportunity' | 'threat' | 'neutral';
+            }
 
             const { error } = await supabase.from('market_news').insert({
-              title: row['Headline'] || row['headline'] || row['Title'] || 'Untitled',
-              summary: row['Summary'] || row['summary'] || null,
-              url: row['URL'] || row['url'] || null,
+              title: title.trim(),
+              summary: summary && summary.trim() !== '' ? summary.trim() : null,
+              url: url && url.trim() !== '' ? url.trim() : null,
               impact_type: impactType,
               related_account_id: accountId,
               created_by: user?.id,
@@ -537,17 +556,31 @@ export default function PulseScreen() {
           }
         }
 
-        toast.success(`Imported ${successCount} news items${failCount > 0 ? ` (${failCount} failed)` : ''}`);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+
+        if (successCount === 0 && failCount === 0 && skippedCount > 0) {
+          toast.error('Import Failed. Please check CSV headers match: Company Name, Headline, Summary, Impact, URL.');
+          return;
+        }
+
+        if (successCount === 0 && failCount > 0) {
+          toast.error(`Import Failed. ${failCount} rows had errors. Check console for details.`);
+          return;
+        }
+
+        const message = `Imported ${successCount} news items${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}${failCount > 0 ? ` (${failCount} failed)` : ''}`;
+        toast.success(message, { duration: 5000 });
         loadMarketNews();
       },
       error: (error) => {
-        toast.error('Failed to parse CSV: ' + error.message);
+        toast.error('Failed to parse CSV file: ' + error.message);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
     });
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
   };
 
   const handlePostIntel = async () => {
