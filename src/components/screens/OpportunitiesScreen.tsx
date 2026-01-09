@@ -29,7 +29,8 @@ import {
   Users,
   User,
   Info,
-  Search
+  Search,
+  ChevronDown
 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -78,10 +79,13 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   // 'mine' = Only deals owned by the current user
   // 'team' = All deals visible to the user (includes subordinates' deals via RLS)
   const [hierarchyView, setHierarchyView] = useState<'mine' | 'team'>('mine');
-  
+
   // Track subordinate IDs for the team view
   const [subordinateIds, setSubordinateIds] = useState<string[]>([]);
   const [loadingSubordinates, setLoadingSubordinates] = useState(false);
+
+  // Team member drill-down filter
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
 
   // Fetch subordinates when component mounts or user changes
   // This uses the user_hierarchy table populated by the org-hierarchy edge function
@@ -115,6 +119,22 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
 
     fetchSubordinates();
   }, [user?.id]);
+
+  // Reset member filter when switching back to "Mine"
+  useEffect(() => {
+    if (hierarchyView === 'mine') setSelectedMemberId('all');
+  }, [hierarchyView]);
+
+  // Calculate team members list for dropdown
+  const teamMembers = useMemo(() => {
+    if (profile?.role === 'admin' || profile?.role === 'super_admin') {
+      // Admins see all Internal/Admin users
+      return users.filter(u => ['internal', 'admin', 'super_admin'].includes(u.role));
+    } else {
+      // Managers see themselves + subordinates
+      return users.filter(u => subordinateIds.includes(u.id) || u.id === user?.id);
+    }
+  }, [users, subordinateIds, profile, user]);
 
   // --- DEEP LINKING LOGIC ---
   // This hook "watches" for an ID coming from a notification click
@@ -167,6 +187,9 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
       if (!isAdmin && !isMyDeal && !isSubordinateDeal) return false;
     }
 
+    // Team Member Filter (drill-down within team view)
+    if (selectedMemberId !== 'all' && o.ownerId !== selectedMemberId) return false;
+
     // 2. SEARCH FILTER - Match against deal name or account name
     const matchesSearch = o.name.toLowerCase().includes(search.toLowerCase()) ||
                           accounts.find(a => a.id === o.accountId)?.name.toLowerCase().includes(search.toLowerCase());
@@ -179,7 +202,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
 
     return matchesSearch && matchesStage && matchesPriority;
   });
-  }, [opportunities, accounts, search, stageFilter, priorityFilter, hierarchyView, user?.id, subordinateIds]);
+  }, [opportunities, accounts, search, stageFilter, priorityFilter, hierarchyView, user?.id, subordinateIds, selectedMemberId, profile]);
 
   // Calculate stats for the header (only count pre-win opportunities)
   const preWinStages = ['Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Lost'];
@@ -376,6 +399,25 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                 </span>
               </button>
             </div>
+
+            {/* Team Member Drill-Down Filter */}
+            {hierarchyView === 'team' && (
+              <div className="relative ml-2 animate-in fade-in slide-in-from-left-2">
+                <select
+                  value={selectedMemberId}
+                  onChange={(e) => setSelectedMemberId(e.target.value)}
+                  className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-3 pr-8 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none"
+                >
+                  <option value="all">All Members ({teamDealsCount})</option>
+                  {teamMembers.map(m => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                  <ChevronDown className="w-3 h-3" />
+                </div>
+              </div>
+            )}
 
             {/* Info Tooltip */}
             <TooltipProvider>
