@@ -11,7 +11,7 @@ interface PartnersScreenProps {
 }
 
 export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) => {
-  const { partners, accounts, contacts, activities, relationships, users, loading, deletePartner, updatePartner, canDelete, canEdit } = useAppContext();
+  const { partners, accounts, contacts, activities, opportunities, relationships, users, loading, deletePartner, updatePartner, canDelete, canEdit } = useAppContext();
   const { profile } = useAuth();
   const [search, setSearch] = useState('');
   const [regionFilter, setRegionFilter] = useState('South East Asia (SEA)');
@@ -37,6 +37,26 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
   const userCanDelete = canDelete();
   const userCanEdit = selectedPartner ? canEdit(selectedPartner.ownerId) : false;
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+
+  const calculateStats = (id: string) => {
+    const partnerOpps = opportunities.filter(o => o.linkedPartnerIds?.includes(id));
+    const active = partnerOpps.filter(o => !['Won', 'Lost'].includes(o.stage));
+    const won = partnerOpps.filter(o => o.stage === 'Won');
+    const lost = partnerOpps.filter(o => o.stage === 'Lost');
+
+    const meetings = activities.filter(a => a.relatedToId === id && ['Meeting', 'Call', 'Site Visit'].includes(a.type));
+    meetings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return {
+      activeDeals: active.length,
+      activeMW: active.reduce((s, o) => s + (Number(o.targetCapacity) || 0), 0),
+      wonDeals: won.length,
+      wonMW: won.reduce((s, o) => s + (Number(o.targetCapacity) || 0), 0),
+      lostDeals: lost.length,
+      lostMW: lost.reduce((s, o) => s + (Number(o.targetCapacity) || 0), 0),
+      lastMeeting: meetings[0]?.createdAt || null
+    };
+  };
 
   const filtered = useMemo(() => partners.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -181,6 +201,7 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
             showCheckbox={selectionMode && canDelete(partner.ownerId)}
             isSelected={selectedIds.has(partner.id)}
             onSelect={handleSelect}
+            stats={calculateStats(partner.id)}
           />
         ))}
       </div>
