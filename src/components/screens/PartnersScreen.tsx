@@ -14,7 +14,7 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
   const { partners, accounts, contacts, activities, relationships, users, loading, deletePartner, updatePartner, canDelete, canEdit } = useAppContext();
   const { profile } = useAuth();
   const [search, setSearch] = useState('');
-  const [regionFilter, setRegionFilter] = useState('all');
+  const [regionFilter, setRegionFilter] = useState('South East Asia (SEA)');
   const [showFilter, setShowFilter] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -38,15 +38,11 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
   const userCanEdit = selectedPartner ? canEdit(selectedPartner.ownerId) : false;
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
-  const availableRegions = useMemo(() => {
-    return [...new Set(partners.map(p => p.region))].sort();
-  }, [partners]);
-
   const filtered = useMemo(() => partners.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
                           p.country.toLowerCase().includes(search.toLowerCase()) ||
                           p.region.toLowerCase().includes(search.toLowerCase());
-    const matchesRegion = regionFilter === 'all' || p.region === regionFilter;
+    const matchesRegion = p.region === regionFilter;
     return matchesSearch && matchesRegion;
   }), [partners, search, regionFilter]);
 
@@ -139,28 +135,25 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
 
       <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
         <button
-          onClick={() => setRegionFilter('all')}
+          onClick={() => setRegionFilter('South East Asia (SEA)')}
           className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
-            regionFilter === 'all'
+            regionFilter === 'South East Asia (SEA)'
               ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
               : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
           }`}
         >
-          All Regions
+          South East Asia (SEA)
         </button>
-        {availableRegions.slice(0, 6).map(region => (
-          <button
-            key={region}
-            onClick={() => setRegionFilter(region)}
-            className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
-              regionFilter === region
-                ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
-                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-            }`}
-          >
-            {region}
-          </button>
-        ))}
+        <button
+          onClick={() => setRegionFilter('India')}
+          className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
+            regionFilter === 'India'
+              ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+          }`}
+        >
+          India
+        </button>
       </div>
 
       <div className="flex items-center justify-between">
