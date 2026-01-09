@@ -132,15 +132,6 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
                   <LayoutGrid className="w-5 h-5" />
                 </button>
               </div>
-              {isAdmin && (
-                <button
-                  onClick={() => setSelectionMode(true)}
-                  className="p-2.5 lg:p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-orange-500 hover:border-orange-200 transition-colors shadow-sm flex-shrink-0"
-                  aria-label="Bulk select"
-                >
-                  <CheckSquare className="w-4 h-4 lg:w-5 lg:h-5" />
-                </button>
-              )}
             </div>
           </div>
         </div>
@@ -176,6 +167,16 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
         <p className="text-sm text-slate-500">
           Showing <span className="font-semibold text-slate-900">{filtered.length}</span> partners
         </p>
+        {isAdmin && (
+          <button
+            onClick={() => setSelectionMode(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:text-orange-600 hover:border-orange-300 transition-colors"
+            aria-label="Bulk select"
+          >
+            <CheckSquare className="w-3.5 h-3.5" />
+            <span>Bulk Select</span>
+          </button>
+        )}
       </div>
 
       <div className={viewMode === 'grid' && !selectionMode ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4' : 'space-y-3'}>
