@@ -21,7 +21,6 @@ interface VelocityDashboardProps {
   onNavigate: (tab: string) => void;
   onNavigateWithStageFilter: (tab: string, stage?: string) => void;
   onOpportunityClick: (id: string) => void;
-  onSwitchToClassic: () => void;
 }
 
 type ViewMode = 'personal' | 'my_team' | 'company_wide';
@@ -156,8 +155,7 @@ const PipelineStage: React.FC<PipelineStageProps> = ({
 export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
   onNavigate,
   onNavigateWithStageFilter,
-  onOpportunityClick,
-  onSwitchToClassic
+  onOpportunityClick
 }) => {
   const { opportunities, accounts, partners, projects, currentUser, loading, error, refreshData } = useAppContext();
   const { user, profile } = useAuth();
@@ -425,14 +423,6 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
             </div>
 
             <div className="flex flex-col items-end gap-3 lg:flex-1">
-              <button
-                onClick={onSwitchToClassic}
-                className="text-xs text-slate-400 hover:text-white transition-colors flex items-center gap-1"
-              >
-                <ArrowUpRight className="w-3 h-3" />
-                Switch to Classic Dashboard
-              </button>
-
               <div className="flex items-center gap-2 bg-white/10 backdrop-blur rounded-lg p-1">
                 {isManager && (
                   <>

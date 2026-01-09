@@ -1,4 +1,3 @@
-export { HomeScreen } from './HomeScreen';
 export { AccountsScreen } from './AccountsScreen';
 export { ContactsScreen } from './ContactsScreen';
 export { OpportunitiesScreen } from './OpportunitiesScreen';

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Header, BottomNav, Sidebar, QuickAddModal, OnboardingModal, VelocityDashboard, BulkImportWizard } from './crm';
 import type { EntityType as BulkEntityType } from './crm';
 import {
-  HomeScreen,
   OpportunitiesScreen,
   AccountsScreen,
   PartnersScreen,
@@ -48,17 +47,6 @@ export default function AppLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [stageFilter, setStageFilter] = useState<string | null>(null);
-  
-  // Dashboard mode toggle - stored in localStorage for persistence
-  const [useVelocityDashboard, setUseVelocityDashboard] = useState(() => {
-    const saved = localStorage.getItem('pss-velocity-dashboard');
-    return saved === 'true';
-  });
-
-  // Persist dashboard preference
-  useEffect(() => {
-    localStorage.setItem('pss-velocity-dashboard', String(useVelocityDashboard));
-  }, [useVelocityDashboard]);
 
   // Keyboard shortcuts
   const shortcuts = useKeyboardShortcuts({
@@ -426,24 +414,13 @@ export default function AppLayout() {
   };
 
   const renderScreen = () => {
-
     switch (activeTab) {
-      case 'home': 
-        // Toggle between Classic and Velocity Dashboard
-        if (useVelocityDashboard) {
-          return (
-            <VelocityDashboard
-              onNavigate={setActiveTab}
-              onNavigateWithStageFilter={handleNavigateWithStageFilter}
-              onOpportunityClick={(id) => handleDeepLink('opportunities', id)}
-              onSwitchToClassic={() => setUseVelocityDashboard(false)}
-            />
-          );
-        }
+      case 'home':
         return (
-          <HomeScreen 
-            onNavigate={setActiveTab} 
-            onOpportunityClick={(id) => handleDeepLink('opportunities', id)} 
+          <VelocityDashboard
+            onNavigate={setActiveTab}
+            onNavigateWithStageFilter={handleNavigateWithStageFilter}
+            onOpportunityClick={(id) => handleDeepLink('opportunities', id)}
           />
         );
       case 'opportunities': return <OpportunitiesScreen forcedOpenId={autoOpenId} forcedStageFilter={stageFilter} />;
@@ -455,7 +432,14 @@ export default function AppLayout() {
       case 'pulse': return <PulseScreen />;
       case 'timeline': return <ActivityTimelineScreen />;
       case 'search': return <SearchScreen />;
-      default: return <HomeScreen onNavigate={setActiveTab} onOpportunityClick={(id) => handleDeepLink('opportunities', id)} />;
+      default:
+        return (
+          <VelocityDashboard
+            onNavigate={setActiveTab}
+            onNavigateWithStageFilter={handleNavigateWithStageFilter}
+            onOpportunityClick={(id) => handleDeepLink('opportunities', id)}
+          />
+        );
     }
   };
 
@@ -535,23 +519,7 @@ export default function AppLayout() {
                 </p>
               </div>
             )}
-            
-            {/* Dashboard Toggle Button - Only show on home tab with classic dashboard */}
-            {activeTab === 'home' && !useVelocityDashboard && (
-              <div className="mb-6 flex justify-end">
-                <button
-                  onClick={() => setUseVelocityDashboard(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-orange-500 text-white rounded-xl text-sm font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Velocity Dashboard
-                  <span className="px-1.5 py-0.5 bg-white/20 rounded text-[10px] font-bold uppercase">Beta</span>
-                </button>
-              </div>
-            )}
-            
+
             {renderScreen()}
           </div>
         </main>
