@@ -357,20 +357,45 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
               )}
 
               <div className="space-y-3">
-                <input 
-                  type="text" 
-                  value={summary} 
-                  onChange={e => setSummary(e.target.value)} 
-                  placeholder={isTask ? "What needs to be done?" : "Summary of activity..."} 
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none" 
-                  required 
+                {!isTask && (
+                  <div>
+                    <label className="text-xs font-bold text-gray-700 uppercase block mb-1.5">Link to Opportunity *</label>
+                    <div className="relative">
+                      <select
+                        value={relateToType === 'Opportunity' ? relateToId : ''}
+                        onChange={e => {
+                          if (e.target.value) {
+                            setRelateToType('Opportunity');
+                            setRelateToId(e.target.value);
+                          }
+                        }}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none appearance-none bg-white"
+                        required
+                      >
+                        <option value="">-- Select Opportunity --</option>
+                        {entities?.opportunities.map(opp => (
+                          <option key={opp.id} value={opp.id}>{opp.name}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+                )}
+
+                <input
+                  type="text"
+                  value={summary}
+                  onChange={e => setSummary(e.target.value)}
+                  placeholder={isTask ? "What needs to be done?" : "Summary of activity..."}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none"
+                  required
                 />
-                <textarea 
-                  value={details} 
-                  onChange={e => setDetails(e.target.value)} 
-                  placeholder="Additional details (optional)..." 
-                  rows={2} 
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-none outline-none" 
+                <textarea
+                  value={details}
+                  onChange={e => setDetails(e.target.value)}
+                  placeholder="Additional details (optional)..."
+                  rows={2}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl resize-none outline-none"
                 />
               </div>
 
