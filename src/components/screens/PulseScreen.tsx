@@ -496,12 +496,19 @@ export default function PulseScreen() {
         let successCount = 0;
         let failCount = 0;
         let skippedCount = 0;
+        let linkedCount = 0;
         const errorDetails: string[] = [];
 
         if (rows.length === 0) {
           toast.error('CSV file is empty or has no valid rows.');
           return;
         }
+
+        const normalize = (str: string) =>
+          str
+            .toLowerCase()
+            .replace(/co\.?,?|ltd\.?|plc\.?|pcl\.?|group|holdings/g, '')
+            .replace(/[^a-z0-9]/g, '');
 
         for (let i = 0; i < rows.length; i++) {
           const row = rows[i];
@@ -524,15 +531,17 @@ export default function PulseScreen() {
 
             let accountId = null;
             if (companyName && companyName.trim() !== '') {
-              const { data: matchedAccount } = await supabase
-                .from('accounts')
-                .select('id, name')
-                .ilike('name', `%${companyName.trim()}%`)
-                .limit(1)
-                .maybeSingle();
+              const csvName = companyName.trim();
+
+              const matchedAccount = accounts.find(a => {
+                const dbName = normalize(a.name);
+                const importName = normalize(csvName);
+                return dbName.includes(importName) || importName.includes(dbName);
+              });
 
               if (matchedAccount) {
                 accountId = matchedAccount.id;
+                linkedCount++;
               }
             }
 
@@ -600,7 +609,8 @@ export default function PulseScreen() {
           alert(`Import Partially Complete\n\nSuccess: ${successCount} rows\nFailed: ${failCount} rows\nSkipped: ${skippedCount} rows${errorSummary}\n\nCheck browser console (F12) for full details.`);
         }
 
-        const message = `Imported ${successCount} news items${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}${failCount > 0 ? ` (${failCount} failed)` : ''}`;
+        const linkInfo = linkedCount > 0 ? ` ${linkedCount} linked to Accounts.` : '';
+        const message = `Imported ${successCount} news items.${linkInfo}${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}${failCount > 0 ? ` (${failCount} failed)` : ''}`;
         toast.success(message, { duration: 5000 });
         loadMarketNews();
       },
