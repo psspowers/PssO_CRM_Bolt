@@ -148,6 +148,69 @@ const { data } = await supabase
 3. **Natural Pacing:** Mimics real-time market intelligence flow
 4. **Professional UX:** Similar to social media feeds (Twitter, LinkedIn)
 
+## Tesla UI Polish
+
+### Visual Enhancements Implemented
+
+**1. Critical Updates Box (Pinned Vertical)**
+- **Location:** Top of Market Intel feed, below favorites
+- **Visibility:** Shows when high-impact items (opportunities/threats) exist
+- **Design:** Premium gradient background with Zap icon
+- **Content:** Top 3 critical items with color-coded accent bars
+- **Interaction:** Click to scroll to full item in main feed
+
+**2. Read More / Show Less**
+- **Trigger:** Automatically shown for summaries over 150 characters
+- **Behavior:** Expands/collapses text with line-clamp-3
+- **State Management:** Individual per-item tracking with Set
+- **Styling:** Orange branded link with hover underline
+
+**3. Refined Action Bar**
+- **Layout:** Horizontal split - actions left, AI button right
+- **Source Button:** Prominent external link with hover state
+- **Icon Actions:** Save (Star), Create Task, Hide - grouped with tooltips
+- **AI Integration:** "Dig Deeper" button with indigo hover color
+- **Spacing:** Consistent padding and border separator
+
+### UI Components Structure
+
+```tsx
+Market Intel Feed Layout:
+├── Pinned Intel (Favorites - Horizontal Scroll)
+├── Critical Updates Box (Top 3 High-Impact - Vertical Stack)
+└── Main Feed
+    └── News Card
+        ├── Header (Icon, Creator, Date, Badge)
+        ├── Content
+        │   ├── Title
+        │   ├── Summary (with Read More)
+        │   └── Related Account
+        └── Action Bar
+            ├── Source Link
+            ├── Action Icons (Save, Task, Hide)
+            └── Dig Deeper (AI)
+```
+
+### Design System
+- **Colors:** Orange brand primary, Indigo for AI, Green/Red for impact
+- **Spacing:** 8px grid system maintained
+- **Typography:** Bold titles, relaxed line-height for readability
+- **Borders:** Subtle slate dividers, full-bleed cards
+- **Hover States:** Consistent transitions across all interactive elements
+
+### State Management
+```typescript
+const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+const toggleExpand = (id: string) => {
+  setExpandedIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+};
+```
+
 ## Future Enhancements
 1. Persistent hide functionality (add `user_hidden_news` table)
 2. Sorting options for pinned items
@@ -155,3 +218,5 @@ const { data } = await supabase
 4. Export favorite news as report
 5. Manual publish time override for urgent news
 6. Pause/resume drip feed functionality
+7. Swipe gestures for mobile actions
+8. Keyboard shortcuts for power users

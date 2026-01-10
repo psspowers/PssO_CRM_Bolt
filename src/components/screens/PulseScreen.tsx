@@ -437,11 +437,20 @@ export default function PulseScreen() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [hiddenNews, setHiddenNews] = useState<Set<string>>(new Set());
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isSuperAdmin = profile?.role === 'super_admin';
   const isAnalyst = profile?.badges?.includes('Analyst');
   const showAnalystConsole = isSuperAdmin || isAnalyst;
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
 
   const [newPost, setNewPost] = useState({
     title: '',
@@ -1122,6 +1131,44 @@ export default function PulseScreen() {
             </div>
           )}
 
+          {marketNews.some(n => n.impact_type !== 'neutral' && !hiddenNews.has(n.id)) && (
+            <div className="mx-4 mt-4 mb-6 bg-gradient-to-br from-orange-50 to-white dark:from-slate-800 dark:to-slate-900 p-4 rounded-2xl border border-orange-100 dark:border-slate-700 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-full">
+                  <Zap className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400 fill-orange-600" />
+                </div>
+                <h3 className="text-xs font-black uppercase text-orange-900 dark:text-orange-200 tracking-wider">Critical Updates</h3>
+              </div>
+              <div className="flex flex-col gap-3">
+                {marketNews
+                  .filter(n => n.impact_type !== 'neutral' && !hiddenNews.has(n.id))
+                  .slice(0, 3)
+                  .map(news => (
+                    <div
+                      key={'pinned-' + news.id}
+                      className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex gap-3 cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => {
+                        document.getElementById(`news-${news.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }}
+                    >
+                      <div className={`w-1.5 self-stretch rounded-full flex-shrink-0 ${news.impact_type === 'opportunity' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-2">
+                          <h4 className="font-bold text-sm text-slate-900 dark:text-white leading-tight">{news.title}</h4>
+                          <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                            {formatDistanceToNow(new Date(news.published_at || news.created_at), { addSuffix: true })}
+                          </span>
+                        </div>
+                        {news.summary && (
+                          <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 mt-1">{news.summary}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
           {marketNews.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4">
               <Newspaper className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
@@ -1151,135 +1198,134 @@ export default function PulseScreen() {
                   <div
                     id={`news-${news.id}`}
                     key={news.id}
-                    className={`px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${impactColor}`}
+                    className="p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                   >
-                    <div className="flex gap-3">
+                    <div className="flex items-start gap-2 mb-2">
                       <div className="flex-shrink-0 mt-1">
                         {getImpactIcon(news.impact_type)}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          {news.creator_name && (
-                            <>
-                              <span className="font-bold text-slate-900 dark:text-white text-sm">
-                                {news.creator_name}
-                              </span>
-                              <span className="text-slate-500 dark:text-slate-400 text-sm">·</span>
-                            </>
-                          )}
-                          <span className="text-slate-500 dark:text-slate-400 text-sm">
-                            {news.news_date ? new Date(news.news_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : formatDistanceToNow(new Date(news.created_at), { addSuffix: true })}
-                          </span>
-                          <Badge
-                            variant="outline"
-                            className={`text-xs ${
-                              news.impact_type === 'opportunity'
-                                ? 'border-emerald-400 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30'
-                                : news.impact_type === 'threat'
-                                ? 'border-red-400 text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/30'
-                                : 'border-slate-300 text-slate-600 dark:text-slate-400'
-                            }`}
-                          >
-                            {news.impact_type}
-                          </Badge>
-                        </div>
-                        <h3 className="font-bold text-slate-900 dark:text-white text-base mb-2 leading-tight">
-                          {news.title}
-                        </h3>
+                      <div className="flex-1 min-w-0 flex items-center gap-2">
+                        {news.creator_name && (
+                          <>
+                            <span className="font-bold text-slate-900 dark:text-white text-sm">
+                              {news.creator_name}
+                            </span>
+                            <span className="text-slate-500 dark:text-slate-400 text-sm">·</span>
+                          </>
+                        )}
+                        <span className="text-slate-500 dark:text-slate-400 text-sm">
+                          {news.news_date ? new Date(news.news_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : formatDistanceToNow(new Date(news.created_at), { addSuffix: true })}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${
+                            news.impact_type === 'opportunity'
+                              ? 'border-emerald-400 text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30'
+                              : news.impact_type === 'threat'
+                              ? 'border-red-400 text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/30'
+                              : 'border-slate-300 text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          {news.impact_type}
+                        </Badge>
+                      </div>
+                    </div>
 
-                        {news.summary && (
-                          <p className="text-sm text-slate-700 dark:text-slate-300 mb-2 leading-relaxed">
+                    <div className="mt-2">
+                      <h3 className="font-bold text-base text-slate-900 dark:text-white leading-snug mb-2">
+                        {news.title}
+                      </h3>
+
+                      {news.summary && (
+                        <div className="relative">
+                          <p className={`text-sm text-slate-600 dark:text-slate-300 leading-relaxed ${expandedIds.has(news.id) ? '' : 'line-clamp-3'}`}>
                             {news.summary}
                           </p>
-                        )}
-
-                        {news.account_name && (
-                          <div className="text-xs text-slate-600 dark:text-slate-400 mb-3">
-                            Related: <span className="font-semibold">{news.account_name}</span>
-                          </div>
-                        )}
-
-                        <div className="flex gap-2">
-                          {news.url && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => window.open(news.url!, '_blank')}
-                              className="text-xs h-7 px-2"
-                            >
-                              <ExternalLink className="w-3 h-3 mr-1" />
-                              Source
-                            </Button>
-                          )}
-                          {news.related_account_id && (
+                          {(news.summary?.length || 0) > 150 && (
                             <button
-                              className="flex items-center gap-1 text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 px-2 py-1 rounded-md hover:bg-orange-100 dark:hover:bg-orange-950/50 transition-colors"
+                              onClick={() => toggleExpand(news.id)}
+                              className="text-xs font-bold text-orange-600 dark:text-orange-400 mt-1 hover:underline"
                             >
-                              <Network className="w-3 h-3" />
-                              Map Nexus
+                              {expandedIds.has(news.id) ? 'Show Less' : 'Read More'}
                             </button>
                           )}
                         </div>
+                      )}
 
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                          <div className="flex gap-1">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    onClick={() => handleToggleFavorite(news.id)}
-                                    className={`p-2 rounded-full transition-colors ${
-                                      isFavorited
-                                        ? 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
-                                        : 'text-slate-400 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
-                                    }`}
-                                  >
-                                    <Star className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent>{isFavorited ? 'Unfavorite' : 'Favorite'}</TooltipContent>
-                              </Tooltip>
-
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    onClick={() => handleCreateTask(news)}
-                                    className="p-2 text-slate-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full transition-colors"
-                                  >
-                                    <CheckCircle2 className="w-4 h-4" />
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent>Create Task</TooltipContent>
-                              </Tooltip>
-
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    onClick={() => handleHideNews(news.id)}
-                                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent>Hide</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-
-                          <button
-                            onClick={() => {
-                              const prompt = "Analyze investment impact of: " + news.title;
-                              navigator.clipboard.writeText(prompt);
-                              window.open("https://chat.openai.com");
-                              toast.success("AI Prompt Copied!");
-                            }}
-                            className="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 px-3 py-1.5 rounded-full transition-colors"
-                          >
-                            <BrainCircuit className="w-3.5 h-3.5" />
-                            Dig Deeper
-                          </button>
+                      {news.account_name && (
+                        <div className="text-xs text-slate-600 dark:text-slate-400 mt-2">
+                          Related: <span className="font-semibold">{news.account_name}</span>
                         </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/50">
+                      <div className="flex items-center gap-1">
+                        {news.url && (
+                          <button
+                            onClick={() => window.open(news.url!, '_blank')}
+                            className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-orange-600 bg-slate-50 dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 px-2.5 py-1.5 rounded-lg transition-colors mr-2"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            Source
+                          </button>
+                        )}
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => handleToggleFavorite(news.id)}
+                                className={`p-2 rounded-full transition-colors ${
+                                  isFavorited
+                                    ? 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+                                    : 'text-slate-400 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
+                                }`}
+                              >
+                                <Star className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>Save</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => handleCreateTask(news)}
+                                className="p-2 text-slate-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full transition-colors"
+                              >
+                                <CheckCircle2 className="w-4 h-4" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>Create Task</TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => handleHideNews(news.id)}
+                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>Hide</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
+
+                      <button
+                        onClick={() => {
+                          const prompt = "Analyze investment impact of: " + news.title;
+                          navigator.clipboard.writeText(prompt);
+                          window.open("https://chat.openai.com");
+                          toast.success("AI Prompt Copied!");
+                        }}
+                        className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-indigo-600 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 px-3 py-1.5 rounded-full transition-colors"
+                      >
+                        <BrainCircuit className="w-3.5 h-3.5" />
+                        Dig Deeper
+                      </button>
                     </div>
                   </div>
                 );
