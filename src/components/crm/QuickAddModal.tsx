@@ -24,6 +24,14 @@ interface QuickAddModalProps {
   onAddEntity?: (entityType: EntityType, data: Record<string, any>) => Promise<void>;
   entities?: { partners: {id:string,name:string}[], accounts: {id:string,name:string}[], opportunities: {id:string,name:string; ownerId:string}[], contacts: {id:string,fullName:string}[] };
   users?: User[];
+  initialData?: {
+    mode?: 'activity' | 'entity';
+    isTask?: boolean;
+    summary?: string;
+    details?: string;
+    relateToType?: 'Account' | 'Opportunity';
+    relateToId?: string;
+  };
 }
 
 const activityTypes: { type: ActivityType; icon: React.ElementType; label: string; color: string }[] = [
@@ -38,7 +46,7 @@ const stages: OpportunityStage[] = ['Prospect', 'Qualified', 'Proposal', 'Negoti
 const priorities: Priority[] = ['Low', 'Medium', 'High'];
 const reTypes: REType[] = ['Solar - Rooftop', 'Solar - Ground', 'Solar - Floating'];
 
-export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, onAdd, onAddEntity, entities, users = [] }) => {
+export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, onAdd, onAddEntity, entities, users = [], initialData }) => {
   const { profile } = useAuth();
   const [mode, setMode] = useState<AddMode>('activity');
   const [entityType, setEntityType] = useState<EntityType>('Account');
@@ -107,9 +115,31 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
     }
   }, [accountForm.subIndustry, oppForm.subIndustry, entityType]);
 
-  // Reset form when modal closes
+  // Initialize or reset form when modal opens/closes
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      if (initialData) {
+        // Pre-fill from props
+        setMode(initialData.mode || 'activity');
+        setIsTask(initialData.isTask || false);
+        setSummary(initialData.summary || '');
+        setDetails(initialData.details || '');
+        if (initialData.relateToType) setRelateToType(initialData.relateToType);
+        if (initialData.relateToId) setRelateToId(initialData.relateToId);
+      } else {
+        // Reset to defaults
+        setMode('activity');
+        setIsTask(false);
+        setSummary('');
+        setDetails('');
+        setRelateToId('');
+        setAssignedToId('');
+        setSelectedType('Note');
+        setDueDate('');
+        setPriority('Medium');
+      }
+    } else {
+      // Reset everything when modal closes
       setAccountForm({
         name: '',
         country: 'Thailand',
@@ -142,8 +172,12 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
       setTaxonomyInfo(null);
       setAssignedToId('');
       setFilteredOpportunities([]);
+      setMode('activity');
+      setSelectedType('Note');
+      setDueDate('');
+      setPriority('Medium');
     }
-  }, [isOpen]);
+  }, [isOpen, initialData]);
 
   useEffect(() => {
     const filterOpportunitiesByAssignee = () => {
