@@ -400,6 +400,23 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
 
           {/* Hierarchy View Toggle - My Deals vs Team Deals */}
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide max-w-full">
+            {/* Info Tooltip */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-colors flex-shrink-0">
+                    <Info className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p className="text-xs">
+                    <strong>Mine:</strong> Your opportunities<br />
+                    <strong>Team:</strong> Your deals + subordinates' deals
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
             <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
               <button
                 onClick={() => setHierarchyView('mine')}
