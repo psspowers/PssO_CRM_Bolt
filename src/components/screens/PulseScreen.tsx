@@ -113,8 +113,11 @@ interface MarketNews {
   related_account_id: string | null;
   created_by: string | null;
   created_at: string;
+  published_at: string;
+  news_date?: string;
   account_name?: string;
   creator_name?: string;
+  is_favorite?: boolean;
 }
 
 interface Activity {
@@ -593,8 +596,9 @@ export default function PulseScreen() {
         accounts(name),
         crm_users!market_news_created_by_fkey(name)
       `)
+      .lte('published_at', new Date().toISOString())
       .gte('news_date', thirtyDaysAgo.toISOString().split('T')[0])
-      .order('news_date', { ascending: false });
+      .order('published_at', { ascending: false });
 
     if (data) {
       const formattedNews = data.map((item: any) => ({
@@ -651,6 +655,8 @@ export default function PulseScreen() {
             .replace(/co\.?,?|ltd\.?|plc\.?|pcl\.?|group|holdings/g, '')
             .replace(/[^a-z0-9]/g, '');
 
+        let lastPublishTime = new Date();
+
         for (let i = 0; i < rows.length; i++) {
           const row = rows[i];
           const rowNumber = i + 2;
@@ -681,6 +687,10 @@ export default function PulseScreen() {
             if (!newsDate) {
               newsDate = new Date();
             }
+
+            const delayMinutes = Math.floor(Math.random() * (60 - 40 + 1) + 40);
+            const publishTime = new Date(lastPublishTime.getTime() + delayMinutes * 60000);
+            lastPublishTime = publishTime;
 
             let accountId = null;
             if (companyName && companyName.trim() !== '') {
@@ -715,7 +725,8 @@ export default function PulseScreen() {
               related_account_id: accountId,
               created_by: user?.id,
               source_type: 'Analyst',
-              news_date: newsDate.toISOString().split('T')[0]
+              news_date: newsDate.toISOString().split('T')[0],
+              published_at: publishTime.toISOString()
             });
 
             if (error) throw error;
@@ -786,7 +797,8 @@ export default function PulseScreen() {
     const { error } = await supabase.from('market_news').insert({
       ...newPost,
       created_by: user?.id,
-      source_type: 'Manual'
+      source_type: 'Manual',
+      published_at: new Date().toISOString()
     });
 
     if (error) {
@@ -801,7 +813,8 @@ export default function PulseScreen() {
       summary: '',
       url: '',
       impact_type: 'neutral',
-      related_account_id: ''
+      related_account_id: '',
+      news_date: new Date().toISOString().split('T')[0]
     });
     loadMarketNews();
   };
