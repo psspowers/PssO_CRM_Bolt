@@ -1035,8 +1035,32 @@ export default function PulseScreen() {
               </Button>
             </div>
           ) : (
-            <div className="divide-y divide-slate-200 dark:divide-slate-700">
-              {marketNews.map((news) => {
+            <>
+              {marketNews.some(n => n.impact_type !== 'neutral') && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-2 px-4 pt-4">
+                    <Zap className="w-4 h-4 text-orange-500 fill-orange-500 animate-pulse" />
+                    <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider">High Impact</h3>
+                  </div>
+                  <div className="flex gap-3 overflow-x-auto px-4 pb-4 snap-x hide-scrollbar">
+                    {marketNews.filter(n => n.impact_type !== 'neutral').slice(0, 5).map(news => (
+                      <div key={'pinned-'+news.id} className="snap-center min-w-[280px] bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div className="flex justify-between items-start mb-2">
+                          <Badge variant="outline" className={news.impact_type === 'opportunity' ? 'text-green-600 border-green-200 bg-green-50' : 'text-red-600 border-red-200 bg-red-50'}>
+                            {news.impact_type}
+                          </Badge>
+                          <span className="text-[10px] text-slate-400">{formatDistanceToNow(new Date(news.created_at))} ago</span>
+                        </div>
+                        <p className="font-bold text-sm text-slate-900 dark:text-white line-clamp-2 mb-1">{news.title}</p>
+                        <p className="text-xs text-slate-500 line-clamp-2">{news.summary}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="divide-y divide-slate-200 dark:divide-slate-700">
+                {marketNews.map((news) => {
                 const impactColor = news.impact_type === 'opportunity'
                   ? 'bg-green-50 dark:bg-green-950/20'
                   : news.impact_type === 'threat'
@@ -1166,7 +1190,8 @@ export default function PulseScreen() {
                   </div>
                 );
               })}
-            </div>
+              </div>
+            </>
           )}
         </>
       )}
