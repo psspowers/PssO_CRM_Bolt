@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CheckCircle2, TrendingUp, TrendingDown, Minus, Phone, Users, FileText, Mail, ArrowRight, ArrowLeft, Settings, Zap, MapPin, Star, Search as SearchIcon, Brain, Lightbulb } from 'lucide-react';
+import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CheckCircle2, TrendingUp, TrendingDown, Minus, Phone, Users, FileText, Mail, ArrowRight, ArrowLeft, Settings, Zap, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -113,10 +113,8 @@ interface MarketNews {
   related_account_id: string | null;
   created_by: string | null;
   created_at: string;
-  published_at?: string;
   account_name?: string;
   creator_name?: string;
-  is_favorited?: boolean;
 }
 
 interface Activity {
@@ -433,8 +431,6 @@ export default function PulseScreen() {
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<any[]>([]);
-  const [showTaskDialog, setShowTaskDialog] = useState(false);
-  const [taskTitle, setTaskTitle] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isSuperAdmin = profile?.role === 'super_admin';
@@ -598,22 +594,13 @@ export default function PulseScreen() {
         crm_users!market_news_created_by_fkey(name)
       `)
       .gte('news_date', thirtyDaysAgo.toISOString().split('T')[0])
-      .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`)
-      .order('published_at', { ascending: false, nullsFirst: false });
+      .order('news_date', { ascending: false });
 
-    if (data && user) {
-      const { data: favorites } = await supabase
-        .from('market_news_favorites')
-        .select('news_id')
-        .eq('user_id', user.id);
-
-      const favoriteIds = new Set(favorites?.map(f => f.news_id) || []);
-
+    if (data) {
       const formattedNews = data.map((item: any) => ({
         ...item,
         account_name: item.accounts?.name,
-        creator_name: item.crm_users?.name,
-        is_favorited: favoriteIds.has(item.id)
+        creator_name: item.crm_users?.name
       }));
       setMarketNews(formattedNews);
     }
@@ -664,8 +651,6 @@ export default function PulseScreen() {
             .replace(/co\.?,?|ltd\.?|plc\.?|pcl\.?|group|holdings/g, '')
             .replace(/[^a-z0-9]/g, '');
 
-        let lastPublishedTime = new Date();
-
         for (let i = 0; i < rows.length; i++) {
           const row = rows[i];
           const rowNumber = i + 2;
@@ -696,10 +681,6 @@ export default function PulseScreen() {
             if (!newsDate) {
               newsDate = new Date();
             }
-
-            const delayMinutes = Math.floor(Math.random() * (60 - 40 + 1) + 40);
-            const publishedAt = new Date(lastPublishedTime.getTime() + delayMinutes * 60000);
-            lastPublishedTime = publishedAt;
 
             let accountId = null;
             if (companyName && companyName.trim() !== '') {
@@ -734,8 +715,7 @@ export default function PulseScreen() {
               related_account_id: accountId,
               created_by: user?.id,
               source_type: 'Analyst',
-              news_date: newsDate.toISOString().split('T')[0],
-              published_at: publishedAt.toISOString()
+              news_date: newsDate.toISOString().split('T')[0]
             });
 
             if (error) throw error;
@@ -806,8 +786,7 @@ export default function PulseScreen() {
     const { error } = await supabase.from('market_news').insert({
       ...newPost,
       created_by: user?.id,
-      source_type: 'Manual',
-      published_at: new Date().toISOString()
+      source_type: 'Manual'
     });
 
     if (error) {
@@ -822,47 +801,9 @@ export default function PulseScreen() {
       summary: '',
       url: '',
       impact_type: 'neutral',
-      related_account_id: '',
-      news_date: new Date().toISOString().split('T')[0]
+      related_account_id: ''
     });
     loadMarketNews();
-  };
-
-  const toggleFavorite = async (newsId: string, isFavorited: boolean) => {
-    if (!user) return;
-
-    if (isFavorited) {
-      await supabase
-        .from('market_news_favorites')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('news_id', newsId);
-    } else {
-      await supabase
-        .from('market_news_favorites')
-        .insert({ user_id: user.id, news_id: newsId });
-    }
-
-    setMarketNews(prev =>
-      prev.map(news =>
-        news.id === newsId ? { ...news, is_favorited: !isFavorited } : news
-      )
-    );
-  };
-
-  const handleCreateTask = (headline: string) => {
-    setTaskTitle(`Follow up: ${headline}`);
-    setShowTaskDialog(true);
-  };
-
-  const handleSearch = (headline: string) => {
-    window.open(`https://www.google.com/search?q=${encodeURIComponent(headline + ' renewable energy')}`, '_blank');
-  };
-
-  const handleDigDeeper = async (headline: string) => {
-    const prompt = `Analyze the investment impact of: ${headline}`;
-    await navigator.clipboard.writeText(prompt);
-    toast.success('AI prompt copied to clipboard');
   };
 
   const handleGenerateDailyMission = async () => {
@@ -912,8 +853,8 @@ export default function PulseScreen() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] bg-slate-50 dark:bg-slate-900">
-      <div className="flex-none sticky top-0 z-20 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md shadow-sm">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-24">
+      <div className="sticky top-0 z-20 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md shadow-sm pt-safe">
         <div className="px-4 py-3 flex justify-between items-center border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2">
             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-500">
@@ -924,7 +865,7 @@ export default function PulseScreen() {
             </h1>
           </div>
 
-          {showAnalystConsole && (
+          {activeTab === 'market' && showAnalystConsole && (
             <button
               onClick={() => setShowAnalystModal(true)}
               className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
@@ -933,92 +874,154 @@ export default function PulseScreen() {
             </button>
           )}
         </div>
+
+        <div className="flex w-full border-b border-slate-200 dark:border-slate-700">
+          <button
+            onClick={() => setActiveTab('internal')}
+            className="flex-1 py-3 text-sm font-bold text-center relative hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            <span className={activeTab === 'internal' ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}>
+              For You
+            </span>
+            {activeTab === 'internal' && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 rounded-t-full mx-12" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('market')}
+            className="flex-1 py-3 text-sm font-bold text-center relative hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors"
+          >
+            <span className={activeTab === 'market' ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}>
+              Market Intel
+            </span>
+            {activeTab === 'market' && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 rounded-t-full mx-12" />
+            )}
+          </button>
+        </div>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
         </div>
-      ) : (
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <div className="flex-none bg-white dark:bg-slate-800 border-b-4 border-orange-500">
-            <div className="px-4 py-3 flex items-center gap-2">
-              <Activity className="w-5 h-5 text-orange-600" />
-              <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wide">The Heartbeat</h2>
+      ) : activeTab === 'internal' ? (
+        <>
+          {feedItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <Activity className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
+              <h3 className="text-base font-semibold text-slate-700 dark:text-slate-300 mb-1">No activity yet</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Your team's momentum will appear here</p>
             </div>
-            <div className="max-h-80 overflow-y-auto divide-y divide-slate-200 dark:divide-slate-700">
-              {feedItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 px-4">
-                  <Activity className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-2" />
-                  <p className="text-sm text-slate-500 dark:text-slate-400">No team activity yet</p>
-                </div>
-              ) : (
-                feedItems.slice(0, 5).map((item) => {
-                  const timeAgo = formatDistanceToNow(new Date(item.timestamp), { addSuffix: false })
-                    .replace('about ', '')
-                    .replace('less than a minute', '1m')
-                    .replace(' minutes', 'm')
-                    .replace(' minute', 'm')
-                    .replace(' hours', 'h')
-                    .replace(' hour', 'h')
-                    .replace(' days', 'd')
-                    .replace(' day', 'd')
-                    .replace(' months', 'mo')
-                    .replace(' month', 'mo')
-                    .replace(' years', 'y')
-                    .replace(' year', 'y');
+          ) : (
+            <div className="divide-y divide-slate-200 dark:divide-slate-700">
+              {feedItems.map((item) => {
+                const timeAgo = formatDistanceToNow(new Date(item.timestamp), { addSuffix: false })
+                  .replace('about ', '')
+                  .replace('less than a minute', '1m')
+                  .replace(' minutes', 'm')
+                  .replace(' minute', 'm')
+                  .replace(' hours', 'h')
+                  .replace(' hour', 'h')
+                  .replace(' days', 'd')
+                  .replace(' day', 'd')
+                  .replace(' months', 'mo')
+                  .replace(' month', 'mo')
+                  .replace(' years', 'y')
+                  .replace(' year', 'y');
 
-                  return (
-                    <div key={item.id} className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                      <div className="flex gap-3">
-                        <Avatar className="w-9 h-9 ring-2 ring-slate-100 dark:ring-slate-700">
+                return (
+                  <div key={item.id} className="px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div className="flex gap-3">
+                      <div className="flex flex-col items-center">
+                        <Avatar className="w-11 h-11 ring-2 ring-slate-100 dark:ring-slate-700">
                           <AvatarImage src={item.user_avatar} />
-                          <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white text-xs font-semibold">
+                          <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white text-sm font-semibold">
                             {item.user_name?.charAt(0) || '?'}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-bold text-slate-900 dark:text-white text-xs truncate">
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium">
+                          {timeAgo}
+                        </span>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-bold text-slate-900 dark:text-white text-sm truncate">
                               {item.user_name || 'System'}
                             </span>
-                            <span className="text-[10px] text-slate-400 dark:text-slate-500">{timeAgo}</span>
                           </div>
-                          <p className="text-xs text-slate-700 dark:text-slate-300 leading-snug">
-                            {item.content}
-                          </p>
+
+                          {item.relatedToId && item.relatedToType && (
+                            <button
+                              className="flex-shrink-0 p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors"
+                              onClick={() => {
+                                const typeMap: Record<string, string> = {
+                                  'Opportunity': 'opportunities',
+                                  'Project': 'projects',
+                                  'Account': 'accounts',
+                                  'Contact': 'contacts',
+                                  'Partner': 'partners'
+                                };
+                                const view = typeMap[item.relatedToType] || 'home';
+                                window.location.href = `/?view=${view}`;
+                              }}
+                              title={`Go to ${item.relatedToType}`}
+                            >
+                              <ExternalLink className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                            </button>
+                          )}
                         </div>
+
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={`flex items-center justify-center w-6 h-6 rounded-md ${item.iconBgColor}`}>
+                            <div className={item.iconColor}>
+                              {item.icon}
+                            </div>
+                          </div>
+                          <span className="text-xs text-slate-600 dark:text-slate-400 font-semibold">
+                            {item.activityType || (item.type === 'activity' ? 'Activity' : 'Update')}
+                          </span>
+                        </div>
+
+                        {item.dealName && (
+                          <div className="mb-2">
+                            <span className="inline-block px-2 py-1 text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 rounded-md">
+                              {item.dealName}
+                            </span>
+                          </div>
+                        )}
+
+                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                          {item.content}
+                        </p>
                       </div>
                     </div>
-                  );
-                })
-              )}
+                  </div>
+                );
+              })}
             </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900">
-            <div className="px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-2">
-                <Newspaper className="w-5 h-5 text-orange-600" />
-                <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wide">Market Intel</h2>
-              </div>
+          )}
+        </>
+      ) : (
+        <>
+          {marketNews.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <Newspaper className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
+              <h3 className="text-base font-semibold text-slate-700 dark:text-slate-300 mb-1">No market intelligence yet</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Start tracking market opportunities and threats</p>
+              <Button
+                onClick={() => setShowPostModal(true)}
+                size="sm"
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Post First Intel
+              </Button>
             </div>
-            {marketNews.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 px-4">
-                <Newspaper className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
-                <h3 className="text-base font-semibold text-slate-700 dark:text-slate-300 mb-1">No market intelligence yet</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Start tracking market opportunities and threats</p>
-                <Button
-                  onClick={() => setShowPostModal(true)}
-                  size="sm"
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Post First Intel
-                </Button>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-200 dark:divide-slate-700">
+          ) : (
+            <div className="divide-y divide-slate-200 dark:divide-slate-700">
               {marketNews.map((news) => {
                 const impactColor = news.impact_type === 'opportunity'
                   ? 'bg-green-50 dark:bg-green-950/20'
@@ -1077,39 +1080,7 @@ export default function PulseScreen() {
                           </div>
                         )}
 
-                        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                          <button
-                            onClick={() => toggleFavorite(news.id, news.is_favorited || false)}
-                            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
-                              news.is_favorited
-                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                                : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                            }`}
-                            title="Save to favorites"
-                          >
-                            <Star className={`w-3.5 h-3.5 ${news.is_favorited ? 'fill-current' : ''}`} />
-                          </button>
-                          <button
-                            onClick={() => handleCreateTask(news.title)}
-                            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all"
-                            title="Create task"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleSearch(news.title)}
-                            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all"
-                            title="Google search"
-                          >
-                            <SearchIcon className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDigDeeper(news.title)}
-                            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-all"
-                            title="AI analysis prompt"
-                          >
-                            <Brain className="w-3.5 h-3.5" />
-                          </button>
+                        <div className="flex gap-2">
                           {news.url && (
                             <Button
                               variant="ghost"
@@ -1121,6 +1092,14 @@ export default function PulseScreen() {
                               Source
                             </Button>
                           )}
+                          {news.related_account_id && (
+                            <button
+                              className="flex items-center gap-1 text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 px-2 py-1 rounded-md hover:bg-orange-100 dark:hover:bg-orange-950/50 transition-colors"
+                            >
+                              <Network className="w-3 h-3" />
+                              Map Nexus
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1128,9 +1107,8 @@ export default function PulseScreen() {
                 );
               })}
             </div>
-            )}
-          </div>
-        </div>
+          )}
+        </>
       )}
 
       <Dialog open={showPostModal} onOpenChange={setShowPostModal}>
@@ -1305,43 +1283,6 @@ export default function PulseScreen() {
         className="hidden"
         onChange={handleImportCSV}
       />
-
-      <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create Task from Intel</DialogTitle>
-            <DialogDescription>
-              Track follow-up actions on this market intelligence
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Task Title</label>
-              <Input
-                value={taskTitle}
-                onChange={(e) => setTaskTitle(e.target.value)}
-                placeholder="What needs to be done?"
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTaskDialog(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                toast.success('Task created (feature coming soon)');
-                setShowTaskDialog(false);
-                setTaskTitle('');
-              }}
-            >
-              Create Task
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
