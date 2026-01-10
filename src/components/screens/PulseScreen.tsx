@@ -720,7 +720,7 @@ export default function PulseScreen() {
             .replace(/co\.?,?|ltd\.?|plc\.?|pcl\.?|group|holdings/g, '')
             .replace(/[^a-z0-9]/g, '');
 
-        let lastPublishTime = new Date();
+        let scheduledTime = new Date();
 
         for (let i = 0; i < rows.length; i++) {
           const row = rows[i];
@@ -754,8 +754,7 @@ export default function PulseScreen() {
             }
 
             const delayMinutes = Math.floor(Math.random() * (60 - 40 + 1) + 40);
-            const publishTime = new Date(lastPublishTime.getTime() + delayMinutes * 60000);
-            lastPublishTime = publishTime;
+            scheduledTime = new Date(scheduledTime.getTime() + delayMinutes * 60000);
 
             let accountId = null;
             if (companyName && companyName.trim() !== '') {
@@ -791,7 +790,7 @@ export default function PulseScreen() {
               created_by: user?.id,
               source_type: 'Analyst',
               news_date: newsDate.toISOString().split('T')[0],
-              published_at: publishTime.toISOString()
+              published_at: scheduledTime.toISOString()
             });
 
             if (error) throw error;
@@ -840,7 +839,8 @@ export default function PulseScreen() {
         }
 
         const linkInfo = linkedCount > 0 ? ` ${linkedCount} linked to Accounts.` : '';
-        const message = `Imported ${successCount} news items.${linkInfo}${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}${failCount > 0 ? ` (${failCount} failed)` : ''}`;
+        const dripFeedHours = Math.round((successCount * 50) / 60);
+        const message = `Imported ${successCount} items. They will drip-feed over the next ${dripFeedHours} hours.${linkInfo}${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}${failCount > 0 ? ` (${failCount} failed)` : ''}`;
         toast.success(message, { duration: 5000 });
         loadMarketNews();
       },

@@ -1,7 +1,7 @@
 # Pulse Screen Refactor - Performance & Features
 
 ## Overview
-Completed comprehensive refactor of `PulseScreen.tsx` addressing critical N+1 query performance issue and implementing missing interactive features.
+Completed comprehensive refactor of `PulseScreen.tsx` addressing critical N+1 query performance issue, implementing missing interactive features, and adding intelligent drip feed scheduling.
 
 ## Performance Optimization
 
@@ -96,8 +96,62 @@ opportunitiesRes.data?.forEach((o: any) => nameMap.set(o.id, o.name));
 - **Load Time:** Estimated 70-80% faster on slow networks
 - **Scalability:** Linear growth vs exponential growth with N activities
 
+## Drip Feed System
+
+### Purpose
+Prevents information overload by gradually releasing imported news items over time rather than flooding the feed immediately.
+
+### How It Works
+
+**CSV Import Scheduling:**
+1. When CSV is imported, each item is assigned a future `published_at` timestamp
+2. Items are scheduled with 40-60 minute random intervals between each
+3. Formula: `scheduledTime += random(40-60) minutes`
+4. All items are inserted immediately but remain hidden until their release time
+
+**Display Logic:**
+1. Fetch query filters: `.lte('published_at', new Date().toISOString())`
+2. Only shows items where `published_at` is in the past
+3. Sorted by `published_at` (descending) - most recently released first
+
+**User Feedback:**
+- Success message shows estimated drip-feed duration
+- Formula: `hours = Math.round((itemCount * 50) / 60)`
+- Example: 30 items = ~25 hours of gradual release
+
+### Technical Implementation
+
+```typescript
+// Import: Schedule each item for future release
+let scheduledTime = new Date();
+for (const row of rows) {
+  const delayMinutes = Math.floor(Math.random() * (60 - 40 + 1) + 40);
+  scheduledTime = new Date(scheduledTime.getTime() + delayMinutes * 60000);
+
+  await supabase.from('market_news').insert({
+    ...newsData,
+    published_at: scheduledTime.toISOString()
+  });
+}
+
+// Fetch: Only show released items
+const { data } = await supabase
+  .from('market_news')
+  .select('*')
+  .lte('published_at', new Date().toISOString())
+  .order('published_at', { ascending: false });
+```
+
+### Benefits
+1. **Reduced Cognitive Load:** Users see digestible chunks of information
+2. **Continuous Engagement:** Feed stays fresh throughout the day
+3. **Natural Pacing:** Mimics real-time market intelligence flow
+4. **Professional UX:** Similar to social media feeds (Twitter, LinkedIn)
+
 ## Future Enhancements
 1. Persistent hide functionality (add `user_hidden_news` table)
 2. Sorting options for pinned items
 3. Bulk favorite/unfavorite actions
 4. Export favorite news as report
+5. Manual publish time override for urgent news
+6. Pause/resume drip feed functionality
