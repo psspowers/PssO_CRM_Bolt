@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { QuickAddModal } from '../crm/QuickAddModal';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -438,6 +439,8 @@ export default function PulseScreen() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [hiddenNews, setHiddenNews] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [taskInitialData, setTaskInitialData] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isSuperAdmin = profile?.role === 'super_admin';
@@ -655,27 +658,40 @@ export default function PulseScreen() {
     }
   };
 
-  const handleCreateTask = async (news: MarketNews) => {
-    if (!user?.id) return;
+  const handleOpenTaskModal = (news: MarketNews) => {
+    setTaskInitialData({
+      mode: 'activity',
+      isTask: true,
+      summary: `Follow up: ${news.title}`,
+      details: `Source: ${news.url || 'Internal Feed'}\n\nSummary: ${news.summary || ''}`,
+      relateToType: news.related_account_id ? 'Account' : undefined,
+      relateToId: news.related_account_id || undefined
+    });
+    setShowQuickAdd(true);
+  };
 
-    const taskSummary = `Follow up on: ${news.title}`;
-
-    const { error } = await supabase
-      .from('activities')
-      .insert({
-        type: 'Task',
-        summary: taskSummary,
-        notes: news.summary || '',
-        created_by: user.id,
-        related_to_type: news.related_account_id ? 'Account' : null,
-        related_to_id: news.related_account_id,
-        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  const handleQuickAddSubmit = async (data: any) => {
+    try {
+      const { error } = await supabase.from('activities').insert({
+        type: data.type,
+        summary: data.summary,
+        notes: data.details,
+        is_task: data.isTask,
+        status: data.isTask ? data.taskStatus : undefined,
+        due_date: data.dueDate,
+        priority: data.priority,
+        assigned_to: data.assignedToId || user?.id,
+        related_to_type: data.relatedToType,
+        related_to_id: data.relatedToId,
+        created_by: user?.id
       });
 
-    if (error) {
-      toast.error('Failed to create task');
-    } else {
-      toast.success('Task created');
+      if (error) throw error;
+      toast.success("Task created successfully");
+      setShowQuickAdd(false);
+      loadInternalFeed();
+    } catch (e: any) {
+      toast.error("Failed to create task: " + e.message);
     }
   };
 
@@ -1291,7 +1307,7 @@ export default function PulseScreen() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
-                                onClick={() => handleCreateTask(news)}
+                                onClick={() => handleOpenTaskModal(news)}
                                 className="p-2 text-slate-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full transition-colors"
                               >
                                 <CheckCircle2 className="w-4 h-4" />
@@ -1506,6 +1522,15 @@ export default function PulseScreen() {
         accept=".csv"
         className="hidden"
         onChange={handleImportCSV}
+      />
+
+      <QuickAddModal
+        isOpen={showQuickAdd}
+        onClose={() => setShowQuickAdd(false)}
+        onAdd={handleQuickAddSubmit}
+        initialData={taskInitialData}
+        entities={{ accounts: accounts, partners: [], opportunities: [], contacts: [] }}
+        users={[]}
       />
     </div>
   );
