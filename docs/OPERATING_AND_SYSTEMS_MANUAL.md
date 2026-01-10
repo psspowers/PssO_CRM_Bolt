@@ -1,7 +1,7 @@
 # CRM Operating and Systems Manual
 
-**Version:** 1.1
-**Last Updated:** January 5, 2026
+**Version:** 1.2
+**Last Updated:** January 10, 2026
 **System Name:** Enterprise CRM for Renewable Energy Investment
 **Target Industry:** Solar PV / Renewable Energy Project Finance
 
@@ -19,6 +19,9 @@ This manual includes ASCII diagrams for key workflows and system architecture. F
 - Section 5.1.7: Screenshot of stage history audit trail
 - Section 6.1: Screenshot of Classic Dashboard with real data
 - Section 6.2: Screenshot of Velocity Dashboard charts
+- Section 5.7.1: Screenshot of The Pulse "For You" feed
+- Section 5.7.2: Screenshot of Market Intel tab with news cards
+- Section 5.7.3: Screenshot of Analyst Console modal
 - Section 7.1: Screenshot of Media Vault file browser
 - Section 7.2: Screenshot of Network Graph visualization
 - Section 7.4: Screenshots of each Bulk Import Wizard step
@@ -139,8 +142,9 @@ This CRM system is purpose-built for renewable energy investment firms managing 
 4. **Contacts**: Individual stakeholder directory
 5. **Partners**: EPC contractors, O&M providers, technology partners
 6. **Projects**: Active project portfolio
-7. **Activities**: Timeline of calls, meetings, notes
-8. **Tasks**: Action items and follow-ups
+7. **The Pulse**: Real-time activity feed and market intelligence
+8. **Activities**: Timeline of calls, meetings, notes
+9. **Tasks**: Action items and follow-ups
 
 ### 2.3.1 Mobile Bottom Navigation
 
@@ -1330,6 +1334,600 @@ Operational:  Energization → Performance → Revenue
 - Real-time updates (when Sam logs a call, it appears immediately)
 - Click activity to view full detail
 - Relative timestamps ("2 hours ago", "Just now")
+
+---
+
+### 5.7 The Pulse
+
+**Purpose**: Real-time activity feed providing team-wide visibility into dealmaking momentum and market intelligence gathering. The Pulse serves as the heartbeat of the organization, combining internal team activities with external market research in a single, scrollable feed.
+
+**Key Capabilities**:
+- Team activity feed (calls, meetings, stage changes, deal updates)
+- Market intelligence tracking with analyst workflow automation
+- Smart rotation system for systematic market scanning
+- ChatGPT integration for rapid research execution
+- CSV import/export for intelligence gathering
+- Account linking for Nexus integration
+
+**Access**: Main navigation → The Pulse (icon: Activity pulse symbol)
+
+---
+
+#### 5.7.1 The Pulse Interface
+
+**Dual-Tab Design**:
+```
+┌──────────────────────────────────────────────────────┐
+│  [Activity Icon] The Pulse              [Settings⚙] │
+├──────────────────────────────────────────────────────┤
+│                                                      │
+│  ┌─────────────┐  ┌─────────────┐                  │
+│  │   For You   │  │ Market Intel│                  │
+│  └─────────────┘  └─────────────┘                  │
+│       (Active - Orange underline)                    │
+│                                                      │
+│  ┌────────────────────────────────────────────────┐ │
+│  │ [Avatar] Sam Chen · 2h                         │ │
+│  │ [📞] Call  ABC Manufacturing                   │ │
+│  │ Logged a call: Discussed 50MW rooftop...      │ │
+│  │                                        [→ Link]│ │
+│  └────────────────────────────────────────────────┘ │
+│                                                      │
+│  ┌────────────────────────────────────────────────┐ │
+│  │ [Avatar] Sarah Johnson · 5h                    │ │
+│  │ [📈] Update  XYZ Corp Project                  │ │
+│  │ Moved XYZ Corp Project to Negotiation          │ │
+│  │                                        [→ Link]│ │
+│  └────────────────────────────────────────────────┘ │
+│                                                      │
+│  (Scroll for more...)                               │
+└──────────────────────────────────────────────────────┘
+```
+
+**Tab 1: For You** (Internal Activity Feed)
+- Chronological feed of team activities (newest first)
+- Combines Activities table + Admin Activity Logs
+- Real-time updates (WebSocket subscriptions)
+- Shows last 50 items by default
+- Auto-refresh on new activity
+
+**Tab 2: Market Intel** (External Intelligence)
+- Market news and research findings
+- Analyst-generated intelligence
+- Links to external sources
+- Account associations for Nexus mapping
+- 30-day rolling window (configurable)
+
+---
+
+#### 5.7.2 For You Tab (Team Activity Feed)
+
+**Purpose**: Provides real-time visibility into what the team is working on, creating transparency and enabling rapid response to emerging opportunities or blockers.
+
+**Activity Types Displayed**:
+
+1. **Calls** (Blue phone icon)
+   - Format: "Sam Chen logged a call: Discussed 50MW proposal with CFO"
+   - Shows: User, timestamp, deal name (if linked), summary
+   - Click arrow to navigate to related opportunity/account
+
+2. **Meetings** (Blue users icon)
+   - Format: "Sarah Johnson logged a meeting: Site visit at ABC Factory"
+   - Shows: User, timestamp, deal name, summary
+
+3. **Notes** (Gray document icon)
+   - Format: "Alex Wong added a note: Credit report received from bank"
+   - Shows: User, timestamp, deal name, note preview
+
+4. **Emails** (Purple arrow icons)
+   - Format: "Tom Lee sent email: Term sheet draft to XYZ Corp"
+   - Direction indicators: Right arrow (sent), Left arrow (received)
+
+5. **Site Visits** (Green map pin icon)
+   - Format: "Sam Chen site visit: Inspected rooftop at ABC Manufacturing"
+   - Shows: User, timestamp, location, summary
+
+6. **WhatsApp** (Green message icon)
+   - Format: "Sarah Johnson WhatsApp: Quick check-in with decision maker"
+   - Shows: User, timestamp, deal name, message summary
+
+7. **Stage Changes** (Green trending up icon)
+   - Format: "Sarah Johnson moved XYZ Corp to Negotiation"
+   - Shows: User, old stage, new stage, deal name
+   - Source: Admin activity logs (automatic from stage trigger)
+
+8. **Deal Value Updates** (Green trending up icon)
+   - Format: "Alex Wong updated value to ฿75M for ABC Solar Project"
+   - Shows: User, new value, deal name
+
+9. **Ownership Transfers** (Purple users icon)
+   - Format: "Tom Lee transferred ownership of DEF Project"
+   - Shows: User, deal name, transfer action
+
+10. **Record Creation** (Green plus icon)
+    - Format: "Sam Chen created ABC Manufacturing"
+    - Shows: User, entity type, entity name
+
+**Feed Item Structure**:
+```
+┌────────────────────────────────────────────────────────┐
+│ [Avatar]          [User Name · Time Ago]     [→ Link] │
+│    ↓                                                   │
+│   [Icon Type Badge]  Activity Type                     │
+│                                                        │
+│   [Deal Name Badge] (if linked to entity)              │
+│                                                        │
+│   Activity Content / Summary Text (2-3 lines max)      │
+└────────────────────────────────────────────────────────┘
+```
+
+**Visual Design Elements**:
+- **Avatar**: User profile picture with orange gradient fallback
+- **Time Stamps**: Relative format (2h, 5h, 1d, 2mo)
+- **Icon Badges**: Colored background (blue for calls/meetings, green for progress, purple for transfers)
+- **Deal Name Badge**: Orange pill badge with entity name
+- **Link Button**: Small external link icon to jump to related record
+
+**User Interactions**:
+- **Tap avatar**: View user's profile (if permitted)
+- **Tap deal badge**: Navigate to that opportunity/account
+- **Tap link arrow**: Jump to related entity detail
+- **Pull to refresh**: Reload latest activities
+- **Infinite scroll**: Loads more items as you scroll down
+
+**Filtering** (Future Enhancement):
+- Filter by user (see only one person's activities)
+- Filter by type (calls only, meetings only, etc.)
+- Filter by date range (today, this week, custom)
+
+**Use Cases**:
+
+**For Managers**:
+- Monitor team productivity and momentum
+- Identify deals with recent activity spikes (hot opportunities)
+- Spot stagnant deals (no activity in 7+ days)
+- Recognize team members' contributions
+
+**For Individual Contributors**:
+- Stay informed about team progress
+- Learn from colleagues' deal strategies
+- Identify collaboration opportunities
+- Celebrate wins in real-time
+
+**For Analysts**:
+- Track deal flow velocity
+- Identify high-activity accounts
+- Monitor stage progression patterns
+- Spot bottlenecks or delays
+
+---
+
+#### 5.7.3 Market Intel Tab
+
+**Purpose**: Systematic tracking of market intelligence, competitive moves, regulatory changes, and strategic opportunities identified through research. Enables the investment team to maintain situational awareness of the renewable energy market in Southeast Asia.
+
+**Interface Overview**:
+```
+┌──────────────────────────────────────────────────────┐
+│  Market Intel                           [⚙ Settings] │
+├──────────────────────────────────────────────────────┤
+│                                                      │
+│  ┌────────────────────────────────────────────────┐ │
+│  │ [↗ Opportunity Icon]                           │ │
+│  │ Sam Chen · Jan 8, 2026      [Opportunity]      │ │
+│  │                                                │ │
+│  │ ABC Energy announces $200M BESS expansion      │ │
+│  │                                                │ │
+│  │ ABC Energy announced plans to deploy 500MW    │ │
+│  │ of battery storage by 2025, partnering with   │ │
+│  │ leading EPC firms. Strong balance sheet...    │ │
+│  │                                                │ │
+│  │ Related: ABC Energy Corp                       │ │
+│  │ [🔗 Source] [🕸️ Map Nexus]                    │ │
+│  └────────────────────────────────────────────────┘ │
+│                                                      │
+│  ┌────────────────────────────────────────────────┐ │
+│  │ [↘ Threat Icon]                                │ │
+│  │ Sarah Johnson · Jan 7, 2026     [Threat]       │ │
+│  │                                                │ │
+│  │ XYZ Manufacturing delays renewable transition  │ │
+│  │                                                │ │
+│  │ Company postponed its 100MW solar project due │ │
+│  │ to liquidity constraints. Undergoing debt...  │ │
+│  │                                                │ │
+│  │ Related: XYZ Manufacturing                     │ │
+│  │ [🔗 Source]                                    │ │
+│  └────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────┘
+```
+
+**News Card Components**:
+
+1. **Impact Icon** (Top Left):
+   - **Green ↗ Trending Up**: Opportunity (investment potential, expansion, positive signal)
+   - **Red ↘ Trending Down**: Threat (competitive risk, financial distress, negative indicator)
+   - **Gray — Line**: Neutral (noteworthy but no directional signal)
+
+2. **Metadata Line**:
+   - Creator name (analyst who posted)
+   - News date (publication date of the news, not post date)
+   - Impact badge (Opportunity/Threat/Neutral pill)
+
+3. **Headline** (Bold, 1-2 lines):
+   - Compelling, action-oriented summary
+   - 8-12 words maximum
+   - Captures key insight
+
+4. **Summary** (2-4 lines):
+   - Brief intelligence summary (150 words max)
+   - Key findings from research
+   - Context and implications
+
+5. **Related Account** (If linked):
+   - Shows which company this intelligence relates to
+   - Enables one-click navigation to account detail
+   - Enables Nexus mapping (see connections)
+
+6. **Action Buttons**:
+   - **Source** button: Opens external URL in new tab
+   - **Map Nexus** button: Visualizes network connections to this account
+
+**Visual Design**:
+- **Opportunity** cards: Green-tinted background (#F0FDF4)
+- **Threat** cards: Red-tinted background (#FEF2F2)
+- **Neutral** cards: White background
+
+**Data Model** (market_news table):
+```
+Fields:
+- title: Headline text (required)
+- summary: Intelligence summary (optional)
+- url: Source URL for verification (optional)
+- impact_type: 'opportunity' | 'threat' | 'neutral' (required)
+- related_account_id: Foreign key to accounts table (optional)
+- created_by: User ID who posted (required)
+- source_type: 'Analyst' | 'Manual' (default: 'Analyst')
+- news_date: Publication date of the news (YYYY-MM-DD format)
+- created_at: Timestamp when posted to system
+```
+
+**Use Cases**:
+
+**For Investment Team**:
+- Track competitor moves and market consolidation
+- Identify acquisition targets showing distress signals
+- Monitor regulatory changes affecting project economics
+- Spot emerging opportunities in adjacent markets
+
+**For Business Development**:
+- Prioritize outreach based on expansion signals
+- Avoid pursuing accounts showing financial stress
+- Leverage positive news in sales conversations
+- Time engagement based on strategic windows
+
+**For Risk Management**:
+- Early warning system for counterparty credit issues
+- Regulatory risk monitoring
+- Competitive threat assessment
+- Market trend analysis
+
+---
+
+#### 5.7.4 Analyst Console (Research Automation Workflow)
+
+**Purpose**: Streamline market intelligence gathering through a ChatGPT-assisted workflow that systematically scans all accounts in the CRM database, ensuring no company is overlooked and research efforts are evenly distributed.
+
+**Access**: Market Intel tab → Click ⚙ Settings icon → Analyst Console modal opens
+
+**Who Can Access**:
+- Super Admin (always)
+- Users with "Analyst" badge (assigned by admin)
+
+**Analyst Console Interface**:
+```
+┌─────────────────────────────────────────────────┐
+│  Analyst Console                                │
+│  Smart rotation automatically selects 30       │
+│  companies that need scanning                  │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  ┌───────────────────────────────────────────┐ │
+│  │ ⚡ Generate Daily Mission                  │ │
+│  │                                           │ │
+│  │ Auto-select 30 targets + copy mega-prompt│ │
+│  └───────────────────────────────────────────┘ │
+│                                                 │
+│  ─────────── Additional Tools ───────────      │
+│                                                 │
+│  [📥 Download Template] [📤 Import CSV]        │
+│  [➕ Post Manual Intel]                         │
+└─────────────────────────────────────────────────┘
+```
+
+**Primary Workflow: Generate Daily Mission**
+
+**Purpose**: Eliminate decision fatigue by automatically selecting which companies to research today, generate a comprehensive research prompt, and deliver it to ChatGPT for batch execution.
+
+**Step-by-Step Process**:
+
+**1. Click "Generate Daily Mission" Button**
+   - System calls `fetch_daily_scan_targets(30)` RPC function
+   - Function queries accounts table:
+     ```sql
+     SELECT id, name, last_market_scan_at
+     FROM accounts
+     WHERE status != 'Archived'
+     ORDER BY last_market_scan_at ASC NULLS FIRST
+     LIMIT 30
+     ```
+   - **Smart Rotation Logic**:
+     - `NULLS FIRST` ensures never-scanned companies get highest priority
+     - Oldest `last_market_scan_at` timestamp = longest time since last scan
+     - Selected companies' timestamps updated to NOW() (sent to back of queue)
+     - This ensures all accounts eventually get scanned (fair rotation)
+
+**2. System Generates Mega-Prompt**
+   - Combines:
+     - Role description (Senior Energy Investment Analyst)
+     - Research focus areas (5 pillars: Business Overview, Financial Health, RE Portfolio, Investment Readiness, Market Intelligence)
+     - Strict CSV output format specification
+     - The 30 company names from rotation query
+     - Instructions for next steps
+   - Full prompt ~1,500 words (comprehensive instructions)
+
+**3. Prompt Copied to Clipboard**
+   - One-click copy (no manual selection needed)
+   - Toast notification: "Mission Generated! 30 targets copied to clipboard. Paste into ChatGPT."
+
+**4. User Opens ChatGPT** (GPT-4 or higher recommended)
+   - Paste the mega-prompt
+   - ChatGPT researches all 30 companies in one session
+   - Output: CSV with 6 columns (Company Name, Headline, Summary, Impact, URL, Date)
+
+**5. User Copies CSV Output**
+   - Select ChatGPT's CSV response (usually 30+ rows)
+   - Copy to clipboard
+
+**6. Return to Pulse → Analyst Console → Click "Import CSV"**
+   - Paste CSV or upload .csv file
+   - System parses and validates each row
+
+**7. Automated Account Linking**
+   - For each company name in CSV:
+     - System fuzzy-matches against accounts table
+     - Normalizes names (removes "Co., Ltd., PLC, Group, Holdings")
+     - Strips special characters
+     - Checks if DB name contains import name OR vice versa
+     - If match found → `related_account_id` populated
+   - **Result**: Market news automatically linked to CRM accounts
+
+**8. Intelligence Posted to Market Intel Tab**
+   - Each CSV row becomes a news card
+   - Displays immediately in chronological order
+   - Team can now view, filter, and act on intelligence
+
+**Benefits of This Workflow**:
+
+1. **Zero Decision Fatigue**: No need to decide which companies to research
+2. **Fair Coverage**: Every account eventually gets scanned (no favorites bias)
+3. **Batch Efficiency**: 30 companies researched in one ChatGPT session (~10-15 minutes)
+4. **Consistent Format**: CSV ensures structured data entry
+5. **Auto-Linking**: No manual matching of companies to CRM records
+6. **Persistent Tracking**: `last_market_scan_at` timestamp prevents duplicate work
+
+**Mega-Prompt Template** (Abbreviated):
+```
+**Role & Context:**
+You are a Senior Energy Investment Analyst specializing in the
+Southeast Asian Renewable Energy market...
+
+**Research Focus Areas:**
+1. Business Overview & Strategic Position
+2. Financial Health & Growth Trajectory
+3. Renewable Energy Portfolio & Capabilities
+4. Investment Readiness & Strategic Fit
+5. Market Intelligence & Risk Factors
+
+**The Strict Output Format (CSV):**
+Company Name,Headline,Summary,Impact,URL,Date
+
+**Column Definitions:**
+- Company Name: Exact name as provided
+- Headline: One compelling insight (8-12 words max)
+- Summary: Brief intelligence summary (2-3 sentences, 150 words max)
+- Impact: EXACTLY one of: "opportunity" / "threat" / "neutral"
+- URL: Primary source URL for verification
+- Date: YYYY-MM-DD format (Publication Date)
+
+**THE TARGET LIST FOR TODAY:**
+1. ABC Manufacturing
+2. XYZ Energy Corp
+...
+30. DEF Industries
+
+**After copying this prompt:**
+1. Go to ChatGPT (GPT-4 or higher)
+2. Paste this entire prompt
+3. Wait for CSV output
+4. Copy the CSV results
+5. Return to Pulse > Market Intel > Settings > Import CSV
+```
+
+---
+
+#### 5.7.5 Manual Intelligence Posting
+
+**Access**: Analyst Console → Click "Post Manual Intel" button
+
+**Purpose**: For ad-hoc intelligence that doesn't fit the batch workflow (e.g., breaking news, urgent threats, event-driven insights).
+
+**Post Intel Form**:
+```
+┌─────────────────────────────────────────────────┐
+│  Post Market Intelligence                       │
+│  Share important market news with the team      │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  Headline*                                      │
+│  [________________________________]             │
+│  e.g., Major renewable energy expansion        │
+│                                                 │
+│  Summary                                        │
+│  ┌─────────────────────────────────────────┐   │
+│  │                                         │   │
+│  │  Provide context and key details...    │   │
+│  │                                         │   │
+│  └─────────────────────────────────────────┘   │
+│                                                 │
+│  Impact Type*         Related Account          │
+│  [Opportunity ▼]      [Optional ▼]             │
+│                                                 │
+│  Source URL (Optional)                          │
+│  [________________________________]             │
+│  https://...                                    │
+│                                                 │
+│  News Date*                                     │
+│  [2026-01-10 (calendar picker)]                │
+│                                                 │
+│  [Cancel]  [✓ Post Intel]                      │
+└─────────────────────────────────────────────────┘
+```
+
+**Fields**:
+- **Headline** (required): Compelling title (8-12 words)
+- **Summary** (optional): Context and implications (150 words max)
+- **Impact Type** (required): Opportunity / Threat / Neutral
+- **Related Account** (optional): Link to company in CRM
+- **Source URL** (optional): External reference link
+- **News Date** (required): When the news was published
+
+**Source Type**: Automatically set to "Manual" (vs "Analyst" for CSV imports)
+
+**Use Cases**:
+- Breaking news about a specific counterparty
+- Urgent competitive intelligence
+- Regulatory announcements
+- Single-company deep dives
+
+---
+
+#### 5.7.6 CSV Import/Export
+
+**Download Template**:
+- Analyst Console → Click "Download Template"
+- Generates example .csv with proper formatting
+- Columns: Company Name, Headline, Summary, Impact, URL, Date
+- Includes 2 sample rows for reference
+- Opens "Save As" dialog
+
+**Import CSV**:
+- Analyst Console → Click "Import CSV"
+- File picker opens OR paste CSV text directly
+- System validates:
+  - Headers match expected columns (flexible: accepts variations like "Title"/"Headline", "Company"/"Company Name")
+  - Required fields present (Headline/Title must exist)
+  - Impact values valid ('opportunity', 'threat', 'neutral', or variations like 'opp', 'risk')
+  - Date format parseable (YYYY-MM-DD, MM/DD/YYYY, or natural language)
+- Fuzzy name matching for account linking
+- Progress indicator shows: Success count, Failed count, Skipped count, Linked count
+- Error report generated if failures occur (up to 10 error details shown)
+
+**Import Results Toast**:
+```
+Success: "Imported 28 news items. 24 linked to Accounts. (2 failed)"
+Partial: "Imported 15 of 30. 15 failed. Check console (F12) for errors."
+Failure: "Import Failed. Check CSV headers match: Company Name, Headline, Summary, Impact, URL, Date"
+```
+
+**Export** (Future Enhancement):
+- Export current Market Intel feed as CSV
+- Filter by date range, impact type, or account
+- Use case: Quarterly intelligence reports, investor briefings
+
+---
+
+#### 5.7.7 Integration with Other Modules
+
+**The Pulse + Nexus**:
+- Market news cards show "Map Nexus" button if `related_account_id` exists
+- Click to visualize relationship graph (who on your team knows contacts at this company)
+- Use case: "We have hot intel on ABC Corp's expansion → Who can intro us to their CFO?"
+
+**The Pulse + Opportunities**:
+- Activity feed shows when deals move stages
+- Click deal badge → Jump to opportunity detail
+- Use case: Manager sees "XYZ deal moved to Term Sheet" → Reviews deal urgency
+
+**The Pulse + Accounts**:
+- Market intel linked to accounts (via `related_account_id`)
+- Account detail page shows "Recent Intel" tab (pulls from market_news)
+- Use case: Before calling ABC Corp → Check if any recent news/signals
+
+**The Pulse + Admin Logs**:
+- Feed includes admin actions (user created, role changed, etc.)
+- Super Admin visibility into team management activities
+- Use case: Audit trail for compliance
+
+---
+
+#### 5.7.8 Data Retention and Archiving
+
+**Activity Feed Retention**:
+- Displays last 50 items by default (in-memory buffer)
+- Full history retained in database indefinitely
+- Realtime subscription auto-updates on new activity
+
+**Market Intel Retention**:
+- Default: 30-day rolling window displayed
+- Full history retained in database indefinitely
+- Configurable filter: "Show last 7 days / 30 days / 90 days / All Time"
+
+**Database Tables**:
+```
+market_news:
+- id (uuid, primary key)
+- title (text, required)
+- summary (text, nullable)
+- url (text, nullable)
+- impact_type (enum: opportunity/threat/neutral)
+- source_type (text: 'Analyst' or 'Manual')
+- related_account_id (uuid, FK to accounts)
+- created_by (uuid, FK to auth.users)
+- news_date (date, required - publication date)
+- created_at (timestamptz, auto - post timestamp)
+```
+
+**Account Scan Tracking**:
+```
+accounts.last_market_scan_at:
+- timestamptz column
+- NULL = never scanned (highest priority)
+- Updated to NOW() when company included in daily batch
+- Used by rotation algorithm for fair distribution
+```
+
+---
+
+#### 5.7.9 Best Practices
+
+**For Analysts**:
+1. **Run Daily Mission Daily**: Consistency ensures all accounts stay current
+2. **Verify Fuzzy Matches**: Check auto-linked accounts are correct
+3. **Write Actionable Headlines**: Team should understand impact at a glance
+4. **Include Source URLs**: Enable verification and deeper research
+5. **Tag Impact Accurately**: Misclassified threats/opportunities degrade signal quality
+
+**For Investment Team**:
+1. **Check Pulse Before Calls**: Review recent intel on account
+2. **Act on Opportunities Fast**: Market windows close quickly
+3. **Share Context in Activities**: Rich activity logs help team learn
+4. **Use Nexus Mapping**: Warm intros beat cold outreach
+
+**For Managers**:
+1. **Review Pulse Weekly**: Spot team momentum trends
+2. **Celebrate Wins Publicly**: Stage advancements create positive reinforcement
+3. **Address Stagnation**: If no activity on deal in 7+ days, intervene
+4. **Allocate Research Budget**: Analyst time is high-ROI (30 companies/day)
 
 ---
 
@@ -2615,6 +3213,9 @@ IP: 203.154.12.45
 - `notifications`: In-app notification queue
 - `admin_activity_logs`: Audit trail
 - `media_vault_files`: File metadata (actual files in Storage)
+- `market_news`: Market intelligence and research findings (The Pulse)
+- `opportunity_stage_history`: Stage transition tracking for velocity analytics
+- `session_tracking`: User session monitoring
 
 **Storage Buckets**:
 - `company-assets`: Company logos, branding files

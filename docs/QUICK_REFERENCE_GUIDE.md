@@ -126,6 +126,44 @@ Prospect → Qualified → Proposal → Negotiation → Term Sheet → Won
 
 ---
 
+## The Pulse (Activity Feed & Market Intel)
+
+**Access**: Main navigation → The Pulse
+
+**Two Tabs**:
+- **For You**: Team activity feed (calls, meetings, stage changes)
+- **Market Intel**: Market news and research findings
+
+**For You Tab**:
+- See what your team is working on in real-time
+- Activities auto-feed from calls, meetings, deal updates
+- Click any item to jump to related record
+- Pull to refresh for latest updates
+
+**Market Intel Tab**:
+- Market intelligence tracking (opportunities/threats/neutral)
+- Analyst-generated research findings
+- Linked to CRM accounts for Nexus mapping
+- Shows last 30 days by default
+
+**Analyst Console** (Settings icon, Analysts/Super Admins only):
+1. Click **Generate Daily Mission** → Auto-selects 30 companies to research
+2. Prompt copied to clipboard → Paste into ChatGPT
+3. ChatGPT returns CSV with research findings
+4. Click **Import CSV** → Intelligence automatically posted
+5. System auto-links news to accounts in CRM
+
+**Manual Intel Posting**:
+- Market Intel tab → Settings → Post Manual Intel
+- Fill: Headline, Summary, Impact Type, Related Account, Source URL, Date
+- Use for breaking news or ad-hoc insights
+
+**CSV Template**:
+- Columns: Company Name, Headline, Summary, Impact, URL, Date
+- Impact must be: "opportunity", "threat", or "neutral"
+
+---
+
 ## Project Status Lifecycle
 
 ```
@@ -193,4 +231,4 @@ Development → Construction → Operational
 ---
 
 **For full details, see the comprehensive Operating and Systems Manual**
-**Version 1.0 | Last Updated: January 4, 2026**
+**Version 1.1 | Last Updated: January 10, 2026**

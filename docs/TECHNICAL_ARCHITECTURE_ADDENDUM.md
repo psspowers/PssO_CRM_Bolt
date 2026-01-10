@@ -1,7 +1,7 @@
 # Technical Architecture Addendum
 
-**Version:** 1.0
-**Last Updated:** January 5, 2026
+**Version:** 1.1
+**Last Updated:** January 10, 2026
 **Target Audience:** Software Developers, DevOps Engineers, Technical Architects
 **System:** Enterprise CRM for Renewable Energy Investment
 
@@ -596,6 +596,118 @@ BEGIN
   SELECT subordinate_id FROM subordinates;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+
+#### 4.1.5 market_news
+
+**Purpose**: Market intelligence tracking for The Pulse (Market Intel tab)
+
+```sql
+CREATE TABLE market_news (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  summary TEXT,
+  url TEXT,
+  impact_type TEXT NOT NULL CHECK (impact_type IN ('opportunity', 'threat', 'neutral')),
+  source_type TEXT DEFAULT 'Analyst',
+  related_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL,
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  news_date DATE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CONSTRAINT valid_impact_type CHECK (impact_type IN ('opportunity', 'threat', 'neutral'))
+);
+
+CREATE INDEX idx_market_news_account ON market_news(related_account_id);
+CREATE INDEX idx_market_news_created_at ON market_news(created_at DESC);
+CREATE INDEX idx_market_news_news_date ON market_news(news_date DESC);
+CREATE INDEX idx_market_news_impact ON market_news(impact_type);
+```
+
+**RLS Policies**:
+```sql
+-- All authenticated users can read all news
+CREATE POLICY "Read news"
+  ON market_news
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- Users can post news (assigned to them)
+CREATE POLICY "Write news"
+  ON market_news
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = created_by);
+
+-- Users can update their own news
+CREATE POLICY "Update own news"
+  ON market_news
+  FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = created_by)
+  WITH CHECK (auth.uid() = created_by);
+
+-- Users can delete their own news
+CREATE POLICY "Delete own news"
+  ON market_news
+  FOR DELETE
+  TO authenticated
+  USING (auth.uid() = created_by);
+```
+
+**Analyst Rotation Function**:
+```sql
+-- Smart rotation: selects accounts that need market scanning
+CREATE OR REPLACE FUNCTION fetch_daily_scan_targets(batch_size INT DEFAULT 30)
+RETURNS TABLE (name TEXT)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  selected_ids UUID[];
+BEGIN
+  -- Find accounts needing scanning (never scanned or oldest scans first)
+  SELECT array_agg(id) INTO selected_ids
+  FROM (
+    SELECT id
+    FROM accounts
+    WHERE status != 'Archived'
+    ORDER BY last_market_scan_at ASC NULLS FIRST
+    LIMIT batch_size
+  ) sub;
+
+  IF selected_ids IS NULL THEN
+    RETURN;
+  END IF;
+
+  -- Update scan timestamps (atomic operation)
+  UPDATE accounts
+  SET last_market_scan_at = NOW()
+  WHERE id = ANY(selected_ids);
+
+  -- Return company names
+  RETURN QUERY
+  SELECT a.name
+  FROM accounts a
+  WHERE a.id = ANY(selected_ids)
+  ORDER BY a.last_market_scan_at ASC NULLS FIRST;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION fetch_daily_scan_targets TO authenticated;
+```
+
+**Account Schema Addition**:
+```sql
+-- Added to accounts table to support rotation
+ALTER TABLE accounts
+ADD COLUMN IF NOT EXISTS last_market_scan_at TIMESTAMPTZ;
+
+-- Index for rotation query performance
+CREATE INDEX IF NOT EXISTS idx_accounts_last_scan
+ON accounts(last_market_scan_at ASC NULLS FIRST);
 ```
 
 ### 4.2 Database Conventions

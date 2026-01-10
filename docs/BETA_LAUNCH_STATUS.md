@@ -1,1 +1,1 @@
-Couldn't find the requested file /docs/BETA_LAUNCH_STATUS.md in psspowers/psso-crm.
+https://cdn.jsdelivr.net/gh/psspowers/psso-crm@82eac51e9db9b24df1ca95ddb3a537dc9478967e/docs/BETA_LAUNCH_STATUS.md
