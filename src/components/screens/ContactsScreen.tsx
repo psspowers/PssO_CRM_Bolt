@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { SearchBar, ContactCard, DetailModal, ContactForm, FilterModal } from '../crm';
+import { ContactCard, DetailModal, ContactForm, FilterModal } from '../crm';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Contact } from '../../types/crm';
-import { MapPin, Mail, Phone, Building2, Loader2, CheckSquare, Square, X, Trash2, Pencil, UserCircle, LayoutGrid, List } from 'lucide-react';
+import { MapPin, Mail, Phone, Building2, Loader2, CheckSquare, Square, X, Trash2, Pencil, UserCircle, Search, Filter } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import { Input } from '../ui/input';
 
 interface ContactsScreenProps {
   forcedOpenId?: string | null;
@@ -15,6 +16,8 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
   const { profile } = useAuth();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [showSearch, setShowSearch] = useState(false);
+  const [showFilterPills, setShowFilterPills] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -22,7 +25,6 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   useEffect(() => {
     if (forcedOpenId && contacts.length > 0) {
@@ -54,12 +56,10 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
   const deletableContacts = filtered.filter(c => canDelete());
   const allSelected = deletableContacts.length > 0 && deletableContacts.every(c => selectedIds.has(c.id));
   const getOrg = (c: Contact) => {
-    // Use accountId/partnerId from the Contact type
     if (c.accountId) return accounts.find(a => a.id === c.accountId)?.name;
     if (c.partnerId) return partners.find(p => p.id === c.partnerId)?.name;
     return undefined;
   };
-
 
   const handleSelect = (id: string, selected: boolean) => {
     setSelectedIds(prev => { const next = new Set(prev); selected ? next.add(id) : next.delete(id); return next; });
@@ -83,6 +83,16 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
 
   const handleCloseModal = () => { setSelectedContact(null); setIsEditing(false); };
 
+  const handleToggleSearch = () => {
+    setShowSearch(!showSearch);
+    if (showSearch) setSearch('');
+  };
+
+  const handleToggleFilterPills = () => {
+    setShowFilterPills(!showFilterPills);
+    setShowFilter(true);
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center h-64">
       <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
@@ -90,7 +100,7 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {selectionMode ? (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-orange-50 rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-orange-200 gap-3">
           <div className="flex items-center gap-2 lg:gap-3">
@@ -117,64 +127,75 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <div className="flex-1">
-              <SearchBar value={search} onChange={setSearch} placeholder="Search contacts, roles, emails..." onFilterClick={() => setShowFilter(true)} />
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="hidden lg:flex items-center bg-slate-100 rounded-xl p-1">
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
-                  aria-label="List view"
-                >
-                  <List className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
-                  aria-label="Grid view"
-                >
-                  <LayoutGrid className="w-5 h-5" />
-                </button>
-              </div>
+        <>
+          <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100 -mx-4 px-4 py-3 flex items-center justify-between">
+            <h1 className="text-xl font-bold text-slate-900">Contacts</h1>
+            <div className="flex gap-2">
+              <button
+                onClick={handleToggleSearch}
+                className={`p-2 rounded-full transition-colors ${showSearch ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
+                aria-label="Toggle search"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleToggleFilterPills}
+                className={`p-2 rounded-full transition-colors ${showFilterPills || roleFilter !== 'all' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
+                aria-label="Toggle filters"
+              >
+                <Filter className="w-5 h-5" />
+              </button>
             </div>
           </div>
-        </div>
+
+          {showSearch && (
+            <div className="relative">
+              <Input
+                type="text"
+                placeholder="Search contacts, roles, emails..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+          )}
+
+          {showFilterPills && (
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
+              <button
+                onClick={() => setRoleFilter('all')}
+                className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
+                  roleFilter === 'all'
+                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                }`}
+              >
+                All Roles
+              </button>
+              {availableRoles.slice(0, 6).map(role => (
+                <button
+                  key={role}
+                  onClick={() => setRoleFilter(role)}
+                  className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
+                    roleFilter === role
+                      ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+                      : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                  }`}
+                >
+                  {role}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
-        <button
-          onClick={() => setRoleFilter('all')}
-          className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
-            roleFilter === 'all'
-              ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
-              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-          }`}
-        >
-          All Roles
-        </button>
-        {availableRoles.slice(0, 6).map(role => (
-          <button
-            key={role}
-            onClick={() => setRoleFilter(role)}
-            className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
-              roleFilter === role
-                ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
-                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-            }`}
-          >
-            {role}
-          </button>
-        ))}
-      </div>
-
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">
-          Showing <span className="font-semibold text-slate-900">{filtered.length}</span> contacts
+        <p className="text-xs lg:text-sm text-slate-500 font-medium">
+          Showing <span className="text-slate-900 font-bold">{filtered.length}</span> contacts
         </p>
-        {isAdmin && (
+        {isAdmin && !selectionMode && (
           <button
             onClick={() => setSelectionMode(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:text-orange-600 hover:border-orange-300 transition-colors"
@@ -186,7 +207,7 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
         )}
       </div>
 
-      <div className={viewMode === 'grid' && !selectionMode ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4' : 'space-y-3'}>
+      <div className="space-y-2">
         {filtered.map(contact => (
           <ContactCard
             key={contact.id}

@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { SearchBar, AccountCard, FilterModal, DetailModal, AccountForm } from '../crm';
+import { AccountCard, FilterModal, DetailModal, AccountForm } from '../crm';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Account } from '../../types/crm';
-import { MapPin, Star, Target, Users, Loader2, CheckSquare, Square, X, Trash2, Pencil, Building2, TrendingUp, LayoutGrid, List } from 'lucide-react';
+import { MapPin, Star, Target, Users, Loader2, CheckSquare, Square, X, Trash2, Pencil, Building2, TrendingUp, Search, Filter } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { getSectors, SECTOR_ICONS, getTaxonomyInfo, getScoreColor, getPointsColor } from '../../data/thaiTaxonomy';
+import { Input } from '../ui/input';
 
 interface AccountsScreenProps {
   forcedOpenId?: string | null;
@@ -17,6 +18,8 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
   const [search, setSearch] = useState('');
   const [sectorFilter, setSectorFilter] = useState('all');
   const [importanceFilter, setImportanceFilter] = useState('all');
+  const [showSearch, setShowSearch] = useState(false);
+  const [showFilterPills, setShowFilterPills] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -24,7 +27,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   useEffect(() => {
     if (forcedOpenId && accounts.length > 0) {
@@ -39,17 +41,15 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
   const userCanDelete = canDelete();
   const userCanEdit = selectedAccount ? canEdit(selectedAccount.ownerId) : false;
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
-  
-  // Get unique sectors from accounts and taxonomy
+
   const availableSectors = useMemo(() => {
     const accountSectors = new Set(accounts.map(a => a.sector).filter(Boolean));
     const taxonomySectors = getSectors();
-    // Combine and sort
     return Array.from(new Set([...accountSectors, ...taxonomySectors.slice(0, 10)])).sort();
   }, [accounts]);
 
   const filtered = useMemo(() => accounts.filter(a => {
-    const matchesSearch = a.name.toLowerCase().includes(search.toLowerCase()) || 
+    const matchesSearch = a.name.toLowerCase().includes(search.toLowerCase()) ||
                           a.country.toLowerCase().includes(search.toLowerCase()) ||
                           (a.industry || '').toLowerCase().includes(search.toLowerCase()) ||
                           (a.subIndustry || '').toLowerCase().includes(search.toLowerCase());
@@ -65,7 +65,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
   const linkedPartners = selectedAccount ? partners.filter(p => selectedAccount.linkedPartnerIds.includes(p.id)) : [];
   const linkedOpps = selectedAccount ? opportunities.filter(o => o.accountId === selectedAccount.id) : [];
 
-  // Get taxonomy info for selected account
   const selectedTaxonomyInfo = selectedAccount?.subIndustry ? getTaxonomyInfo(selectedAccount.subIndustry) : null;
 
   const handleSelect = (id: string, selected: boolean) => {
@@ -90,6 +89,16 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
 
   const handleCloseModal = () => { setSelectedAccount(null); setIsEditing(false); };
 
+  const handleToggleSearch = () => {
+    setShowSearch(!showSearch);
+    if (showSearch) setSearch('');
+  };
+
+  const handleToggleFilterPills = () => {
+    setShowFilterPills(!showFilterPills);
+    setShowFilter(true);
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center h-64">
       <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
@@ -97,7 +106,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {selectionMode ? (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-orange-50 rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-orange-200 gap-3">
           <div className="flex items-center gap-2 lg:gap-3">
@@ -124,68 +133,76 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <div className="flex-1">
-              <SearchBar value={search} onChange={setSearch} placeholder="Search accounts, industries..." onFilterClick={() => setShowFilter(true)} />
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {/* View Toggle - Desktop Only */}
-              <div className="hidden lg:flex items-center bg-slate-100 rounded-xl p-1">
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
-                  aria-label="List view"
-                >
-                  <List className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-400 hover:text-slate-600'}`}
-                  aria-label="Grid view"
-                >
-                  <LayoutGrid className="w-5 h-5" />
-                </button>
-              </div>
+        <>
+          <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100 -mx-4 px-4 py-3 flex items-center justify-between">
+            <h1 className="text-xl font-bold text-slate-900">Accounts</h1>
+            <div className="flex gap-2">
+              <button
+                onClick={handleToggleSearch}
+                className={`p-2 rounded-full transition-colors ${showSearch ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
+                aria-label="Toggle search"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleToggleFilterPills}
+                className={`p-2 rounded-full transition-colors ${showFilterPills || sectorFilter !== 'all' || importanceFilter !== 'all' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
+                aria-label="Toggle filters"
+              >
+                <Filter className="w-5 h-5" />
+              </button>
             </div>
           </div>
-        </div>
+
+          {showSearch && (
+            <div className="relative">
+              <Input
+                type="text"
+                placeholder="Search accounts, industries..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+          )}
+
+          {showFilterPills && (
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
+              <button
+                onClick={() => setSectorFilter('all')}
+                className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
+                  sectorFilter === 'all'
+                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                }`}
+              >
+                All Sectors
+              </button>
+              {availableSectors.slice(0, 6).map(sector => (
+                <button
+                  key={sector}
+                  onClick={() => setSectorFilter(sector)}
+                  className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 lg:gap-2 flex-shrink-0 ${
+                    sectorFilter === sector
+                      ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+                      : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                  }`}
+                >
+                  <span className="text-base lg:text-lg">{SECTOR_ICONS[sector] || '📁'}</span>
+                  <span className="max-w-[80px] lg:max-w-[100px] truncate">{sector.split(' & ')[0]}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
-      {/* Sector Filter Pills */}
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
-        <button
-          onClick={() => setSectorFilter('all')}
-          className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
-            sectorFilter === 'all'
-              ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
-              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-          }`}
-        >
-          All Sectors
-        </button>
-        {availableSectors.slice(0, 6).map(sector => (
-          <button
-            key={sector}
-            onClick={() => setSectorFilter(sector)}
-            className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 lg:gap-2 flex-shrink-0 ${
-              sectorFilter === sector
-                ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
-                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-            }`}
-          >
-            <span className="text-base lg:text-lg">{SECTOR_ICONS[sector] || '📁'}</span>
-            <span className="max-w-[80px] lg:max-w-[100px] truncate">{sector.split(' & ')[0]}</span>
-          </button>
-        ))}
-      </div>
-      
-      {/* Results Count */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">
-          Showing <span className="font-semibold text-slate-900">{filtered.length}</span> accounts
+        <p className="text-xs lg:text-sm text-slate-500 font-medium">
+          Showing <span className="text-slate-900 font-bold">{filtered.length}</span> accounts
         </p>
-        {isAdmin && (
+        {isAdmin && !selectionMode && (
           <button
             onClick={() => setSelectionMode(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:text-orange-600 hover:border-orange-300 transition-colors"
@@ -196,18 +213,17 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
           </button>
         )}
       </div>
-      
-      {/* Accounts Grid/List */}
-      <div className={viewMode === 'grid' && !selectionMode ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4' : 'space-y-3'}>
+
+      <div className="space-y-2">
         {filtered.map(account => (
-          <AccountCard 
-            key={account.id} 
-            account={account} 
-            onClick={() => !selectionMode && setSelectedAccount(account)} 
-            opportunityCount={getOppCount(account.id)} 
-            showCheckbox={selectionMode && canDelete(account.ownerId)} 
-            isSelected={selectedIds.has(account.id)} 
-            onSelect={handleSelect} 
+          <AccountCard
+            key={account.id}
+            account={account}
+            onClick={() => !selectionMode && setSelectedAccount(account)}
+            opportunityCount={getOppCount(account.id)}
+            showCheckbox={selectionMode && canDelete(account.ownerId)}
+            isSelected={selectedIds.has(account.id)}
+            onSelect={handleSelect}
           />
         ))}
       </div>
@@ -221,22 +237,22 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
           <p className="text-slate-500">Try adjusting your filters or search query</p>
         </div>
       )}
-      
-      <FilterModal 
-        isOpen={showFilter} 
-        onClose={() => setShowFilter(false)} 
-        title="Filter Accounts" 
+
+      <FilterModal
+        isOpen={showFilter}
+        onClose={() => setShowFilter(false)}
+        title="Filter Accounts"
         filters={[
-          { 
-            name: 'Importance', 
+          {
+            name: 'Importance',
             options: [
-              { label: 'All', value: 'all' }, 
-              { label: 'High', value: 'High' }, 
-              { label: 'Medium', value: 'Medium' }, 
+              { label: 'All', value: 'all' },
+              { label: 'High', value: 'High' },
+              { label: 'Medium', value: 'Medium' },
               { label: 'Low', value: 'Low' }
-            ], 
-            selected: importanceFilter, 
-            onChange: setImportanceFilter 
+            ],
+            selected: importanceFilter,
+            onChange: setImportanceFilter
           },
           {
             name: 'Sector',
@@ -247,23 +263,23 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
             selected: sectorFilter,
             onChange: setSectorFilter
           }
-        ]} 
-        onReset={() => { setSectorFilter('all'); setImportanceFilter('all'); }} 
+        ]}
+        onReset={() => { setSectorFilter('all'); setImportanceFilter('all'); }}
       />
-      
-      <DetailModal 
-        isOpen={!!selectedAccount} 
-        onClose={handleCloseModal} 
-        title={selectedAccount?.name || ''} 
-        subtitle={selectedAccount?.sector || 'Unclassified'} 
-        entityId={selectedAccount?.id || ''} 
-        entityType="Account" 
-        clickupLink={selectedAccount?.clickupLink} 
-        activities={activities} 
-        users={users} 
-        contacts={contacts} 
-        accounts={accounts} 
-        partners={partners} 
+
+      <DetailModal
+        isOpen={!!selectedAccount}
+        onClose={handleCloseModal}
+        title={selectedAccount?.name || ''}
+        subtitle={selectedAccount?.sector || 'Unclassified'}
+        entityId={selectedAccount?.id || ''}
+        entityType="Account"
+        clickupLink={selectedAccount?.clickupLink}
+        activities={activities}
+        users={users}
+        contacts={contacts}
+        accounts={accounts}
+        partners={partners}
         relationships={relationships}
       >
         {selectedAccount && (isEditing ? (
@@ -271,15 +287,14 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
         ) : (
           <div className="space-y-4">
             {userCanEdit && (
-              <button 
-                onClick={() => setIsEditing(true)} 
+              <button
+                onClick={() => setIsEditing(true)}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors font-semibold"
               >
                 <Pencil className="w-4 h-4" />Edit Account
               </button>
             )}
-            
-            {/* Classification Card */}
+
             {selectedAccount.sector && (
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                 <div className="flex items-center gap-2 mb-3">
@@ -299,8 +314,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
                       )}
                     </div>
                   </div>
-                  
-                  {/* Credit Score Display */}
+
                   {selectedTaxonomyInfo && (
                     <div className="flex gap-2 mt-3 pt-3 border-t border-slate-200">
                       <div className={`flex-1 rounded-lg p-2 ${getScoreColor(selectedTaxonomyInfo.score)}`}>
@@ -316,7 +330,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
                 </div>
               </div>
             )}
-            
+
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-gray-50 rounded-xl p-3 text-center">
                 <MapPin className="w-5 h-5 text-gray-600 mx-auto mb-1" />
@@ -334,7 +348,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
                 <p className="font-semibold text-sm">{linkedOpps.length}</p>
               </div>
             </div>
-            
+
             {linkedPartners.length > 0 && (
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
@@ -347,7 +361,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
                 </div>
               </div>
             )}
-            
+
             {selectedAccount.notes && (
               <div className="bg-gray-50 rounded-xl p-3">
                 <p className="text-xs text-gray-500 mb-1">Notes</p>
@@ -357,7 +371,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
           </div>
         ))}
       </DetailModal>
-      
+
       <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -369,7 +383,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleBulkDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700">
-              {isDeleting ? 'Deleting...' : `Delete`}
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
