@@ -542,11 +542,11 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
       )}
 
       {/* INVESTOR DETAIL MODAL */}
-      <DetailModal 
-        isOpen={!!selectedOpp} 
-        onClose={handleCloseModal} 
-        title={selectedOpp?.name || ''} 
-        subtitle={linkedAccount?.name || 'Unlinked Account'} 
+      <DetailModal
+        isOpen={!!selectedOpp}
+        onClose={handleCloseModal}
+        title={selectedOpp?.name || ''}
+        subtitle={linkedAccount?.name || 'Unlinked Account'}
         entityId={selectedOpp?.id || ''}
         entityType="Opportunity"
         clickupLink={selectedOpp?.clickupLink}
@@ -556,81 +556,148 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         accounts={accounts}
         partners={partners}
         relationships={relationships}
+        velocityContent={
+          selectedOpp && !isEditing ? (
+            <div className="space-y-6 pb-20">
+              {/* Owner Info Banner (for team deals not owned by current user) */}
+              {selectedOpp.ownerId !== user?.id && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 lg:p-4 flex items-start lg:items-center gap-2 lg:gap-3">
+                  <User className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600 flex-shrink-0 mt-0.5 lg:mt-0" />
+                  <div>
+                    <p className="text-xs lg:text-sm font-medium text-blue-800">
+                      Owned by {getOwnerName(selectedOpp.ownerId)}
+                    </p>
+                    <p className="text-[10px] lg:text-xs text-blue-600">
+                      You're viewing this deal as their manager
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <Tabs defaultValue="underwriting" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-100 p-1 rounded-2xl">
+                  <TabsTrigger value="underwriting" className="text-[10px] font-black uppercase flex gap-1"><ShieldCheck className="w-3 h-3" /> Risk</TabsTrigger>
+                  <TabsTrigger value="technical" className="text-[10px] font-black uppercase flex gap-1"><Zap className="w-3 h-3" /> Tech</TabsTrigger>
+                  <TabsTrigger value="financial" className="text-[10px] font-black uppercase flex gap-1"><PieChart className="w-3 h-3" /> Math</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="underwriting" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                  <QualityGate
+                    currentStage={selectedOpp.stage}
+                    completedItems={selectedOpp.completedMilestones || []}
+                    onToggleItem={handleToggleMilestone}
+                    lostReason={selectedOpp.lostReason}
+                    onLostReasonChange={handleLostReasonChange}
+                    onAdvanceStage={handleAdvanceStage}
+                  />
+                  <CreditRiskHub
+                    sector={selectedOpp.sector || 'Other Industrial'}
+                    accountName={linkedAccount?.name || 'this entity'}
+                    subIndustry={selectedOpp.subIndustry}
+                  />
+                </TabsContent>
+
+                <TabsContent value="technical" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                  <LoadAnalyzer
+                    initialDays={selectedOpp.operatingDays}
+                  />
+                  <MediaVault />
+                </TabsContent>
+
+                <TabsContent value="financial" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
+                      <p className="text-[10px] font-bold text-emerald-600 uppercase">PPA Value</p>
+                      <p className="text-xl font-black text-gray-900">{formatValue(selectedOpp.value)}</p>
+                    </div>
+                    <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+                      <p className="text-[10px] font-bold text-blue-600 uppercase">Capacity</p>
+                      <p className="text-xl font-black text-gray-900">{selectedOpp.targetCapacity || 0} MW</p>
+                    </div>
+                  </div>
+                  <InvestmentModeler
+                    initialCapacity={selectedOpp.targetCapacity ? selectedOpp.targetCapacity * 1000 : 11300}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+          ) : undefined
+        }
       >
         {selectedOpp && (isEditing ? (
           <OpportunityForm opportunity={selectedOpp} onSave={handleSaveOpportunity} onCancel={() => setIsEditing(false)} />
         ) : (
-          <div className="space-y-6 pb-20">
-            {/* Owner Info Banner (for team deals not owned by current user) */}
-            {selectedOpp.ownerId !== user?.id && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 lg:p-4 flex items-start lg:items-center gap-2 lg:gap-3">
-                <User className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600 flex-shrink-0 mt-0.5 lg:mt-0" />
+          <div className="space-y-4 pb-20">
+            {/* Basic Info Grid - Read Only */}
+            <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs lg:text-sm font-medium text-blue-800">
-                    Owned by {getOwnerName(selectedOpp.ownerId)}
-                  </p>
-                  <p className="text-[10px] lg:text-xs text-blue-600">
-                    You're viewing this deal as their manager
-                  </p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Deal Name</p>
+                  <p className="text-sm font-semibold text-slate-900">{selectedOpp.name}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Account</p>
+                  <p className="text-sm font-semibold text-slate-900">{linkedAccount?.name || 'Unlinked'}</p>
                 </div>
               </div>
-            )}
 
-            <Tabs defaultValue="underwriting" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-100 p-1 rounded-2xl">
-                <TabsTrigger value="underwriting" className="text-[10px] font-black uppercase flex gap-1"><ShieldCheck className="w-3 h-3" /> Risk</TabsTrigger>
-                <TabsTrigger value="technical" className="text-[10px] font-black uppercase flex gap-1"><Zap className="w-3 h-3" /> Tech</TabsTrigger>
-                <TabsTrigger value="financial" className="text-[10px] font-black uppercase flex gap-1"><PieChart className="w-3 h-3" /> Math</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="underwriting" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-                <QualityGate
-                  currentStage={selectedOpp.stage}
-                  completedItems={selectedOpp.completedMilestones || []}
-                  onToggleItem={handleToggleMilestone}
-                  lostReason={selectedOpp.lostReason}
-                  onLostReasonChange={handleLostReasonChange}
-                  onAdvanceStage={handleAdvanceStage}
-                />
-                <CreditRiskHub 
-                  sector={selectedOpp.sector || 'Other Industrial'} 
-                  accountName={linkedAccount?.name || 'this entity'} 
-                  subIndustry={selectedOpp.subIndustry}
-                />
-              </TabsContent>
-
-              <TabsContent value="technical" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-                <LoadAnalyzer 
-                  initialDays={selectedOpp.operatingDays} 
-                />
-                <MediaVault />
-              </TabsContent>
-
-              <TabsContent value="financial" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
-                    <p className="text-[10px] font-bold text-emerald-600 uppercase">PPA Value</p>
-                    <p className="text-xl font-black text-gray-900">{formatValue(selectedOpp.value)}</p>
-                  </div>
-                  <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
-                    <p className="text-[10px] font-bold text-blue-600 uppercase">Capacity</p>
-                    <p className="text-xl font-black text-gray-900">{selectedOpp.targetCapacity || 0} MW</p>
-                  </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">PPA Value</p>
+                  <p className="text-sm font-semibold text-slate-900">{formatValue(selectedOpp.value)}</p>
                 </div>
-                <InvestmentModeler 
-                  initialCapacity={selectedOpp.targetCapacity ? selectedOpp.targetCapacity * 1000 : 11300}
-                />
-              </TabsContent>
-            </Tabs>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Target Capacity</p>
+                  <p className="text-sm font-semibold text-slate-900">{selectedOpp.targetCapacity || 0} MW</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Max Capacity</p>
+                  <p className="text-sm font-semibold text-slate-900">{selectedOpp.maxCapacity || 0} MW</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Probability</p>
+                  <p className="text-sm font-semibold text-slate-900">{selectedOpp.manualProbability || 0}%</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">PPA Term</p>
+                  <p className="text-sm font-semibold text-slate-900">{selectedOpp.ppaTermYears || 0} years</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">EPC Cost</p>
+                  <p className="text-sm font-semibold text-slate-900">{formatValue(selectedOpp.epcCost || 0)}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Owner</p>
+                  <p className="text-sm font-semibold text-slate-900">{getOwnerName(selectedOpp.ownerId)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Priority</p>
+                  <p className="text-sm font-semibold text-slate-900">{selectedOpp.priority}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Stage</p>
+                  <p className="text-sm font-semibold text-slate-900">{selectedOpp.stage}</p>
+                </div>
+              </div>
+            </div>
 
             {userCanEdit && (
-              <button onClick={() => setIsEditing(true)} className="w-full flex items-center justify-center gap-2 px-4 py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm hover:bg-slate-800 transition-all">
-                <Pencil className="w-4 h-4" /> Edit Deal Parameters
+              <button onClick={() => setIsEditing(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all">
+                <Pencil className="w-4 h-4" /> Edit Deal
               </button>
             )}
 
             {selectedOpp.notes && (
-              <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
+              <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
                 <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">Internal Notes</p>
                 <p className="text-sm text-amber-900 leading-relaxed">{selectedOpp.notes}</p>
               </div>
