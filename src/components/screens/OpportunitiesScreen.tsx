@@ -531,7 +531,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </p>
 
         {/* RIGHT: Stagnation Controls (Moved Here) */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-auto">
           {/* TEAM VIEW: Dropdown */}
           {hierarchyView === 'team' && (
             <div className="relative">
@@ -539,6 +539,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                 value={stagnationFilter}
                 onChange={(e) => setStagnationFilter(e.target.value as 'all' | '30' | '60' | '90')}
                 className="appearance-none bg-white border border-slate-200 text-xs font-bold pl-2 pr-6 py-1 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none w-24 truncate"
+                style={{ direction: 'ltr' }}
               >
                 <option value="all">Any Time</option>
                 <option value="30">&gt; 30 Days</option>
