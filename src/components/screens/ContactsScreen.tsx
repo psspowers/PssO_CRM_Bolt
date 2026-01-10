@@ -100,136 +100,136 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
   );
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col w-full max-w-full overflow-x-hidden bg-slate-50 min-h-screen pb-20">
       {selectionMode ? (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-orange-50 rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-orange-200 gap-3">
-          <div className="flex items-center gap-2 lg:gap-3">
-            <button onClick={exitSelectionMode} className="p-2 hover:bg-orange-100 rounded-lg transition-colors flex-shrink-0" aria-label="Exit selection mode">
-              <X className="w-4 h-4 lg:w-5 lg:h-5 text-gray-600" />
-            </button>
-            <span className="font-bold text-sm lg:text-base text-orange-800">{selectedIds.size} Selected</span>
-          </div>
-          <div className="flex items-center gap-2 lg:gap-3 w-full sm:w-auto">
-            <button onClick={handleSelectAll} className="flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 text-xs lg:text-sm font-semibold text-orange-700 hover:bg-orange-100 rounded-lg lg:rounded-xl transition-colors flex-1 sm:flex-initial justify-center">
-              {allSelected ? <CheckSquare className="w-3.5 h-3.5 lg:w-4 lg:h-4" /> : <Square className="w-3.5 h-3.5 lg:w-4 lg:h-4" />}
-              <span className="hidden sm:inline">{allSelected ? 'Deselect All' : 'Select All'}</span>
-              <span className="sm:hidden">{allSelected ? 'Deselect' : 'Select All'}</span>
-            </button>
-            <button
-              onClick={() => setShowBulkDeleteDialog(true)}
-              disabled={selectedIds.size === 0}
-              className="flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 text-xs lg:text-sm font-bold text-white bg-red-500 rounded-lg lg:rounded-xl hover:bg-red-600 disabled:opacity-50 transition-colors flex-1 sm:flex-initial justify-center"
-            >
-              <Trash2 className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
-              <span className="hidden sm:inline">Delete ({selectedIds.size})</span>
-              <span className="sm:hidden">Delete</span>
-            </button>
+        <div className="sticky top-0 z-30 bg-orange-50 backdrop-blur-sm border-b border-orange-200 px-4 py-3 shadow-sm w-full">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <button onClick={exitSelectionMode} className="p-2 hover:bg-orange-100 rounded-lg transition-colors flex-shrink-0" aria-label="Exit selection mode">
+                <X className="w-4 h-4 text-gray-600" />
+              </button>
+              <span className="font-bold text-sm text-orange-800">{selectedIds.size} Selected</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={handleSelectAll} className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-orange-700 hover:bg-orange-100 rounded-lg transition-colors">
+                {allSelected ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
+                <span className="hidden sm:inline">{allSelected ? 'Deselect All' : 'Select All'}</span>
+              </button>
+              <button
+                onClick={() => setShowBulkDeleteDialog(true)}
+                disabled={selectedIds.size === 0}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-red-500 rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Delete ({selectedIds.size})</span>
+              </button>
+            </div>
           </div>
         </div>
       ) : (
-        <>
-          <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100 -mx-4 px-4 py-3 flex items-center justify-between">
-            <h1 className="text-xl font-bold text-slate-900">Contacts</h1>
-            <div className="flex gap-2">
-              <button
-                onClick={handleToggleSearch}
-                className={`p-2 rounded-full transition-colors ${showSearch ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
-                aria-label="Toggle search"
-              >
-                <Search className="w-5 h-5" />
-              </button>
-              <button
-                onClick={handleToggleFilterPills}
-                className={`p-2 rounded-full transition-colors ${showFilterPills || roleFilter !== 'all' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
-                aria-label="Toggle filters"
-              >
-                <Filter className="w-5 h-5" />
-              </button>
-            </div>
+        <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 py-3 shadow-sm flex items-center justify-between w-full">
+          <h1 className="text-lg font-bold text-slate-900">Contacts</h1>
+          <div className="flex gap-2">
+            <button
+              onClick={handleToggleSearch}
+              className={`p-2 rounded-full transition-colors ${showSearch ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
+              aria-label="Toggle search"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleToggleFilterPills}
+              className={`p-2 rounded-full transition-colors ${showFilterPills || roleFilter !== 'all' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
+              aria-label="Toggle filters"
+            >
+              <Filter className="w-5 h-5" />
+            </button>
           </div>
+        </div>
+      )}
 
-          {showSearch && (
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Search contacts, roles, emails..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-              />
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            </div>
-          )}
+      <div className="flex flex-col gap-3 p-3 w-full">
+        {showSearch && (
+          <div className="relative">
+            <Input
+              type="text"
+              placeholder="Search contacts, roles, emails..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+            />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          </div>
+        )}
 
-          {showFilterPills && (
-            <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
+        {showFilterPills && (
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <button
+              onClick={() => setRoleFilter('all')}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
+                roleFilter === 'all'
+                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+              }`}
+            >
+              All Roles
+            </button>
+            {availableRoles.slice(0, 6).map(role => (
               <button
-                onClick={() => setRoleFilter('all')}
-                className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
-                  roleFilter === 'all'
+                key={role}
+                onClick={() => setRoleFilter(role)}
+                className={`px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
+                  roleFilter === role
                     ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
                     : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
                 }`}
               >
-                All Roles
+                {role}
               </button>
-              {availableRoles.slice(0, 6).map(role => (
-                <button
-                  key={role}
-                  onClick={() => setRoleFilter(role)}
-                  className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
-                    roleFilter === role
-                      ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
-                      : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-                  }`}
-                >
-                  {role}
-                </button>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+            ))}
+          </div>
+        )}
 
-      <div className="flex items-center justify-between">
-        <p className="text-xs lg:text-sm text-slate-500 font-medium">
-          Showing <span className="text-slate-900 font-bold">{filtered.length}</span> contacts
-        </p>
-        {isAdmin && !selectionMode && (
-          <button
-            onClick={() => setSelectionMode(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:text-orange-600 hover:border-orange-300 transition-colors"
-            aria-label="Bulk select"
-          >
-            <CheckSquare className="w-3.5 h-3.5" />
-            <span>Bulk Select</span>
-          </button>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-slate-500 font-medium">
+            Showing <span className="text-slate-900 font-bold">{filtered.length}</span> contacts
+          </p>
+          {isAdmin && !selectionMode && (
+            <button
+              onClick={() => setSelectionMode(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:text-orange-600 hover:border-orange-300 transition-colors"
+              aria-label="Bulk select"
+            >
+              <CheckSquare className="w-3.5 h-3.5" />
+              <span>Bulk Select</span>
+            </button>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2 w-full">
+          {filtered.map(contact => (
+            <ContactCard
+              key={contact.id}
+              contact={contact}
+              organizationName={getOrg(contact)}
+              onClick={() => !selectionMode && setSelectedContact(contact)}
+              showCheckbox={selectionMode && canDelete(contact.ownerId)}
+              isSelected={selectedIds.has(contact.id)}
+              onSelect={handleSelect}
+            />
+          ))}
+        </div>
+
+        {filtered.length === 0 && (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <UserCircle className="w-8 h-8 text-slate-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">No contacts found</h3>
+            <p className="text-slate-500">Try adjusting your filters or search query</p>
+          </div>
         )}
       </div>
-
-      <div className="space-y-2">
-        {filtered.map(contact => (
-          <ContactCard
-            key={contact.id}
-            contact={contact}
-            organizationName={getOrg(contact)}
-            onClick={() => !selectionMode && setSelectedContact(contact)}
-            showCheckbox={selectionMode && canDelete(contact.ownerId)}
-            isSelected={selectedIds.has(contact.id)}
-            onSelect={handleSelect}
-          />
-        ))}
-      </div>
-
-      {filtered.length === 0 && (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <UserCircle className="w-8 h-8 text-slate-400" />
-          </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">No contacts found</h3>
-          <p className="text-slate-500">Try adjusting your filters or search query</p>
-        </div>
-      )}
 
       <FilterModal
         isOpen={showFilter}
