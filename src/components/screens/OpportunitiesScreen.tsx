@@ -314,6 +314,13 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     return owner?.name || 'Unknown';
   };
 
+  // Format short name for compact display (e.g., "Sam Y.")
+  const formatShortName = (name: string) => {
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) return parts[0];
+    return `${parts[0]} ${parts[1][0]}.`;
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center h-64">
       <Loader2 className="w-10 h-10 animate-spin text-orange-500" />
@@ -380,7 +387,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           </div>
 
           {/* Hierarchy View Toggle - My Deals vs Team Deals */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide max-w-full">
             <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
               <button
                 onClick={() => setHierarchyView('mine')}
@@ -419,25 +426,25 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
 
             {/* Team Member Drill-Down Filter */}
             {hierarchyView === 'team' && (
-              <div className="relative ml-2 animate-in fade-in slide-in-from-left-2">
+              <div className="relative flex-shrink-0 animate-in fade-in slide-in-from-left-2">
                 <select
                   value={selectedMemberId}
                   onChange={(e) => setSelectedMemberId(e.target.value)}
-                  className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-3 pr-8 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none"
+                  className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-2 pr-6 py-1 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-auto max-w-[120px] truncate"
                 >
-                  <option value="all">All Members ({teamDealsCount})</option>
+                  <option value="all">All ({teamDealsCount})</option>
                   {teamMembers.map(m => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
+                    <option key={m.id} value={m.id}>{formatShortName(m.name)}</option>
                   ))}
                 </select>
-                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
                   <ChevronDown className="w-3 h-3" />
                 </div>
               </div>
             )}
 
             {/* Stagnation Filter */}
-            <div className="relative ml-2">
+            <div className="relative flex-shrink-0">
               <select
                 value={stagnationFilter}
                 onChange={(e) => setStagnationFilter(e.target.value as 'all' | '30' | '60' | '90')}
