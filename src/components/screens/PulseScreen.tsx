@@ -436,6 +436,8 @@ export default function PulseScreen() {
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [opportunities, setOpportunities] = useState<any[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [hiddenNews, setHiddenNews] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -466,15 +468,29 @@ export default function PulseScreen() {
 
   useEffect(() => {
     loadData();
-    loadAccounts();
+    loadEntityData();
   }, [activeTab]);
 
-  const loadAccounts = async () => {
-    const { data } = await supabase
+  const loadEntityData = async () => {
+    const { data: accData } = await supabase
       .from('accounts')
       .select('id, name')
       .order('name');
-    if (data) setAccounts(data);
+    if (accData) setAccounts(accData);
+
+    const { data: userData } = await supabase
+      .from('crm_users')
+      .select('id, name, avatar_url, role')
+      .neq('status', 'suspended');
+    if (userData) setUsers(userData);
+
+    const { data: oppData } = await supabase
+      .from('opportunities')
+      .select('id, name, owner_id')
+      .neq('stage', 'Won')
+      .neq('stage', 'Lost')
+      .order('name');
+    if (oppData) setOpportunities(oppData);
   };
 
   const loadData = async () => {
@@ -1529,8 +1545,8 @@ export default function PulseScreen() {
         onClose={() => setShowQuickAdd(false)}
         onAdd={handleQuickAddSubmit}
         initialData={taskInitialData}
-        entities={{ accounts: accounts, partners: [], opportunities: [], contacts: [] }}
-        users={[]}
+        entities={{ accounts: accounts, partners: [], opportunities: opportunities, contacts: [] }}
+        users={users}
       />
     </div>
   );
