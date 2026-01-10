@@ -471,71 +471,6 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                 </div>
               </div>
             )}
-
-            {/* Stagnation Filter - Team View (Dropdown) */}
-            {hierarchyView === 'team' && (
-              <div className="relative flex-shrink-0">
-                <select
-                  value={stagnationFilter}
-                  onChange={(e) => setStagnationFilter(e.target.value as 'all' | '30' | '60' | '90')}
-                  className={`appearance-none text-xs font-bold pl-7 pr-3 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none transition-colors ${
-                    stagnationFilter === 'all' ? 'bg-slate-100 text-slate-500' :
-                    stagnationFilter === '30' ? 'bg-yellow-100 text-yellow-700 ring-1 ring-yellow-300' :
-                    stagnationFilter === '60' ? 'bg-orange-100 text-orange-700 ring-1 ring-orange-300' :
-                    'bg-red-100 text-red-700 ring-1 ring-red-300'
-                  }`}
-                >
-                  <option value="all">Any Time</option>
-                  <option value="30">&gt;30d</option>
-                  <option value="60">&gt;60d</option>
-                  <option value="90">&gt;90d</option>
-                </select>
-                <div className={`absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none ${stagnationFilter === 'all' ? 'text-orange-500' : 'text-current'}`}>
-                  <Clock className="w-3.5 h-3.5" />
-                </div>
-              </div>
-            )}
-
-            {/* Stagnation Counters - Mine View (Rot Badges) */}
-            {hierarchyView === 'mine' && (
-              <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
-                <button
-                  onClick={() => setStagnationFilter(stagnationFilter === '30' ? 'all' : '30')}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${
-                    stagnationFilter === '30'
-                      ? 'bg-yellow-100 border-yellow-300 text-yellow-700 ring-1 ring-yellow-400'
-                      : 'bg-white border-slate-200 text-slate-400 hover:border-yellow-300 hover:text-yellow-600'
-                  }`}
-                >
-                  <Flag className="w-4 h-4" />
-                  {stagnationStats.warning}
-                </button>
-
-                <button
-                  onClick={() => setStagnationFilter(stagnationFilter === '60' ? 'all' : '60')}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${
-                    stagnationFilter === '60'
-                      ? 'bg-orange-100 border-orange-300 text-orange-700 ring-1 ring-orange-400'
-                      : 'bg-white border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-600'
-                  }`}
-                >
-                  <Flag className="w-4 h-4" />
-                  {stagnationStats.danger}
-                </button>
-
-                <button
-                  onClick={() => setStagnationFilter(stagnationFilter === '90' ? 'all' : '90')}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${
-                    stagnationFilter === '90'
-                      ? 'bg-red-100 border-red-300 text-red-700 ring-1 ring-red-400'
-                      : 'bg-white border-slate-200 text-slate-400 hover:border-red-300 hover:text-red-600'
-                  }`}
-                >
-                  <Flag className="w-4 h-4 animate-pulse" />
-                  {stagnationStats.critical}
-                </button>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -595,10 +530,45 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </div>
       </div>
 
-      {/* Results Count */}
-      <p className="text-sm text-slate-500">
-        Showing <span className="font-semibold text-slate-900">{filtered.length}</span> {hierarchyView === 'mine' ? 'of your' : 'team'} deals
-      </p>
+      {/* Results Count with Stagnation Filter */}
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm text-slate-500">
+          Showing <span className="font-semibold text-slate-900">{filtered.length}</span> {hierarchyView === 'mine' ? 'of your' : 'team'} deals
+        </p>
+
+        {/* Stagnation Filter - Compact Dropdown */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-shrink-0">
+            <select
+              value={stagnationFilter}
+              onChange={(e) => setStagnationFilter(e.target.value as 'all' | '30' | '60' | '90')}
+              className={`appearance-none text-xs font-bold pl-7 pr-3 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none transition-colors ${
+                stagnationFilter === 'all' ? 'bg-slate-100 text-slate-500' :
+                stagnationFilter === '30' ? 'bg-yellow-100 text-yellow-700 ring-1 ring-yellow-300' :
+                stagnationFilter === '60' ? 'bg-orange-100 text-orange-700 ring-1 ring-orange-300' :
+                'bg-red-100 text-red-700 ring-1 ring-red-300'
+              }`}
+            >
+              <option value="all">Any Time</option>
+              <option value="30">&gt;30d stale</option>
+              <option value="60">&gt;60d stale</option>
+              <option value="90">&gt;90d stale</option>
+            </select>
+            <div className={`absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none ${stagnationFilter === 'all' ? 'text-orange-500' : 'text-current'}`}>
+              <Clock className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          {hierarchyView === 'mine' && stagnationFilter !== 'all' && (
+            <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+              <span className="hidden sm:inline">
+                {stagnationFilter === '30' && `${stagnationStats.warning} deals`}
+                {stagnationFilter === '60' && `${stagnationStats.danger} deals`}
+                {stagnationFilter === '90' && `${stagnationStats.critical} deals`}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Deals Grid/List */}
       <div className={`w-full max-w-full overflow-hidden ${viewMode === 'grid' && !selectionMode ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4' : 'flex flex-col gap-3'}`}>
