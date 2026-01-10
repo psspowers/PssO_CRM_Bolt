@@ -416,69 +416,68 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           </div>
 
           {/* Hierarchy View Toggle - My Deals vs Team Deals */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
-              <button
-                onClick={() => setHierarchyView('mine')}
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                  hierarchyView === 'mine'
-                    ? 'bg-white shadow-sm text-orange-600'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                <User className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Mine</span>
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  hierarchyView === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
-                }`}>
-                  {myDealsCount}
-                </span>
-              </button>
-              <button
-                onClick={() => setHierarchyView('team')}
-                disabled={loadingSubordinates}
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                  hierarchyView === 'team'
-                    ? 'bg-white shadow-sm text-orange-600'
-                    : 'text-slate-500 hover:text-slate-700'
-                } ${loadingSubordinates ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Team</span>
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  hierarchyView === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
-                }`}>
-                  {loadingSubordinates ? '...' : teamDealsCount}
-                </span>
-              </button>
-            </div>
+          <div className="flex items-center bg-slate-100 rounded-lg p-1 w-fit">
+            <button
+              onClick={() => setHierarchyView('mine')}
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                hierarchyView === 'mine'
+                  ? 'bg-white shadow-sm text-orange-600'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <User className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Mine</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                hierarchyView === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
+              }`}>
+                {myDealsCount}
+              </span>
+            </button>
+            <button
+              onClick={() => setHierarchyView('team')}
+              disabled={loadingSubordinates}
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                hierarchyView === 'team'
+                  ? 'bg-white shadow-sm text-orange-600'
+                  : 'text-slate-500 hover:text-slate-700'
+              } ${loadingSubordinates ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Team</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                hierarchyView === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
+              }`}>
+                {loadingSubordinates ? '...' : teamDealsCount}
+              </span>
+            </button>
+          </div>
 
-            {/* Team Member Drill-Down Filter */}
-            {hierarchyView === 'team' && (
-              <div className="relative flex-shrink-0 animate-in fade-in slide-in-from-left-2">
+          {/* Team Filters Row - Only show when Team view is active */}
+          {hierarchyView === 'team' && (
+            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
+              {/* Team Member Drill-Down Filter */}
+              <div className="relative flex-1 min-w-0">
                 <select
                   value={selectedMemberId}
                   onChange={(e) => setSelectedMemberId(e.target.value)}
-                  className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-2 pr-6 py-1 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-auto max-w-[100px] truncate"
+                  className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-2 pr-6 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-full truncate"
                 >
                   <option value="all">All ({teamDealsCount})</option>
                   {teamMembers.map(m => (
                     <option key={m.id} value={m.id}>{formatShortName(m.name)}</option>
                   ))}
                 </select>
-                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
                   <ChevronDown className="w-3 h-3" />
                 </div>
               </div>
-            )}
 
-            {/* Stagnation Filter - Team View (Dropdown) */}
-            {hierarchyView === 'team' && (
-              <div className="relative flex-shrink-0">
+              {/* Stagnation Filter - Team View (Dropdown) */}
+              <div className="relative flex-1 min-w-0">
                 <select
                   value={stagnationFilter}
                   onChange={(e) => setStagnationFilter(e.target.value as 'all' | '30' | '60' | '90')}
-                  className={`appearance-none text-xs font-bold pl-7 pr-3 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none transition-colors ${
+                  className={`appearance-none text-xs font-bold pl-7 pr-2 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-full transition-colors ${
                     stagnationFilter === 'all' ? 'bg-slate-100 text-slate-500' :
                     stagnationFilter === '30' ? 'bg-yellow-100 text-yellow-700 ring-1 ring-yellow-300' :
                     stagnationFilter === '60' ? 'bg-orange-100 text-orange-700 ring-1 ring-orange-300' :
@@ -494,11 +493,12 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                   <Clock className="w-3.5 h-3.5" />
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Stagnation Counters - Mine View (Rot Badges) */}
-            {hierarchyView === 'mine' && (
-              <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
+          {/* Stagnation Counters - Mine View (Rot Badges) */}
+          {hierarchyView === 'mine' && (
+            <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setStagnationFilter(stagnationFilter === '30' ? 'all' : '30')}
                   className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${
@@ -534,9 +534,8 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                   <Flag className="w-4 h-4 animate-pulse" />
                   {stagnationStats.critical}
                 </button>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
       {/* Color-Coded Stage Filters - 2 Rows */}
