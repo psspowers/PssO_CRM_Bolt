@@ -519,23 +519,6 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                 </button>
               </div>
             )}
-
-            {/* Info Tooltip */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0">
-                    <Info className="w-4 h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs">
-                  <p className="text-xs">
-                    <strong>Mine:</strong> Your opportunities<br />
-                    <strong>Team:</strong> Your deals + subordinates' deals
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
           </div>
         </div>
       )}
