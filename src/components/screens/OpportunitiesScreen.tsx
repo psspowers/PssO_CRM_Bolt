@@ -474,59 +474,52 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           </div>
         </div>
       )}
-      {/* Color-Coded Stage Filters - 2 Rows */}
-      <div className="w-full flex flex-col gap-1.5">
-        {/* Row 1 */}
-        <div className="flex gap-1.5 flex-wrap">
-          {['all', 'Prospect', 'Qualified', 'Proposal'].map(stage => {
-            const getStageColor = (s: string) => {
-              if (s === 'all') return 'bg-slate-800 text-white';
-              if (['Prospect', 'Qualified'].includes(s)) return 'bg-blue-100 text-blue-700';
-              if (['Proposal', 'Negotiation'].includes(s)) return 'bg-amber-100 text-amber-700';
-              if (['Term Sheet', 'Won'].includes(s)) return 'bg-emerald-100 text-emerald-700';
-              return 'bg-slate-100 text-slate-600';
-            };
+      {/* Stage Filter Grid - 3x2 Layout */}
+      <div className="flex gap-2 w-full mb-3">
+        {/* LEFT: 'ALL' BUTTON (Square, spans height) */}
+        <button
+          onClick={() => setStageFilter('all')}
+          className={`w-14 flex flex-col items-center justify-center rounded-lg text-[10px] font-bold border transition-all ${
+            stageFilter === 'all'
+              ? 'bg-slate-800 text-white border-slate-900 shadow-md'
+              : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          <LayoutGrid className="w-5 h-5 mb-1" />
+          All
+        </button>
 
-            return (
-              <button
-                key={stage}
-                onClick={() => setStageFilter(stage)}
-                className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all flex-shrink-0 ${
-                  stageFilter === stage
-                    ? `ring-2 ring-slate-900 ${getStageColor(stage)}`
-                    : `${getStageColor(stage)} opacity-60`
-                }`}
-              >
-                {stage === 'all' ? 'All' : stage}
-              </button>
-            );
-          })}
-        </div>
-        {/* Row 2 */}
-        <div className="flex gap-1.5 flex-wrap">
-          {['Negotiation', 'Term Sheet', 'Won'].map(stage => {
-            const getStageColor = (s: string) => {
-              if (s === 'all') return 'bg-slate-800 text-white';
-              if (['Prospect', 'Qualified'].includes(s)) return 'bg-blue-100 text-blue-700';
-              if (['Proposal', 'Negotiation'].includes(s)) return 'bg-amber-100 text-amber-700';
-              if (['Term Sheet', 'Won'].includes(s)) return 'bg-emerald-100 text-emerald-700';
-              return 'bg-slate-100 text-slate-600';
-            };
+        {/* RIGHT: 6 STAGES (3x2 Grid) */}
+        <div className="grid grid-cols-3 grid-rows-2 gap-1.5 flex-1">
+          {/* Top Row */}
+          {['Prospect', 'Qualified', 'Proposal'].map(stage => (
+            <button
+              key={stage}
+              onClick={() => setStageFilter(stage)}
+              className={`h-8 flex items-center justify-center rounded-md text-[10px] font-bold border truncate transition-all ${
+                stageFilter === stage
+                  ? 'bg-orange-100 text-orange-800 border-orange-200 ring-1 ring-orange-300'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              {stage}
+            </button>
+          ))}
 
-            return (
-              <button
-                key={stage}
-                onClick={() => setStageFilter(stage)}
-                className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all flex-shrink-0 ${
-                  stageFilter === stage
-                    ? `ring-2 ring-slate-900 ${getStageColor(stage)}`
-                    : `${getStageColor(stage)} opacity-60`
-                }`}
-              >
-                {stage}
-              </button>
-            );
-          })}
+          {/* Bottom Row */}
+          {['Negotiation', 'Term Sheet', 'Won'].map(stage => (
+            <button
+              key={stage}
+              onClick={() => setStageFilter(stage)}
+              className={`h-8 flex items-center justify-center rounded-md text-[10px] font-bold border truncate transition-all ${
+                stageFilter === stage
+                  ? 'bg-orange-100 text-orange-800 border-orange-200 ring-1 ring-orange-300'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              {stage}
+            </button>
+          ))}
         </div>
       </div>
 
