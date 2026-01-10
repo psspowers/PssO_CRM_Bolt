@@ -461,7 +461,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                   onChange={(e) => setSelectedMemberId(e.target.value)}
                   className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-2 pr-6 py-1 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-auto max-w-[100px] truncate"
                 >
-                  <option value="all">All ({teamDealsCount})</option>
+                  <option value="all">All Team</option>
                   {teamMembers.map(m => (
                     <option key={m.id} value={m.id}>{formatShortName(m.name)}</option>
                   ))}
