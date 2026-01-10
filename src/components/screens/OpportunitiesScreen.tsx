@@ -31,7 +31,8 @@ import {
   Info,
   Search,
   ChevronDown,
-  Clock
+  Clock,
+  Flag
 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -468,9 +469,9 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                   }`}
                 >
                   <option value="all">Any Time</option>
-                  <option value="30">&gt; 30 Days Old</option>
-                  <option value="60">&gt; 60 Days Old</option>
-                  <option value="90">&gt; 90 Days Old</option>
+                  <option value="30">&gt; 30 Old</option>
+                  <option value="60">&gt; 60 Old</option>
+                  <option value="90">&gt; 90 Old</option>
                 </select>
                 <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${stagnationFilter === 'all' ? 'text-orange-500' : 'text-current'}`}>
                   <Clock className="w-4 h-4" />
@@ -489,7 +490,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                       : 'bg-white border-slate-200 text-slate-400 hover:border-yellow-300 hover:text-yellow-600'
                   }`}
                 >
-                  <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                  <Flag className="w-4 h-4" />
                   {stagnationStats.warning}
                 </button>
 
@@ -501,7 +502,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                       : 'bg-white border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-600'
                   }`}
                 >
-                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                  <Flag className="w-4 h-4" />
                   {stagnationStats.danger}
                 </button>
 
@@ -513,7 +514,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                       : 'bg-white border-slate-200 text-slate-400 hover:border-red-300 hover:text-red-600'
                   }`}
                 >
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+                  <Flag className="w-4 h-4 animate-pulse" />
                   {stagnationStats.critical}
                 </button>
               </div>
@@ -538,31 +539,60 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           </div>
         </div>
       )}
-      {/* Color-Coded Stage Filters */}
-      <div className="w-full flex flex-wrap gap-1.5">
-        {['all', 'Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Won'].map(stage => {
-          const getStageColor = (s: string) => {
-            if (s === 'all') return 'bg-slate-800 text-white';
-            if (['Prospect', 'Qualified'].includes(s)) return 'bg-blue-100 text-blue-700';
-            if (['Proposal', 'Negotiation'].includes(s)) return 'bg-amber-100 text-amber-700';
-            if (['Term Sheet', 'Won'].includes(s)) return 'bg-emerald-100 text-emerald-700';
-            return 'bg-slate-100 text-slate-600';
-          };
+      {/* Color-Coded Stage Filters - 2 Rows */}
+      <div className="w-full flex flex-col gap-1.5">
+        {/* Row 1 */}
+        <div className="flex gap-1.5 flex-wrap">
+          {['all', 'Prospect', 'Qualified', 'Proposal'].map(stage => {
+            const getStageColor = (s: string) => {
+              if (s === 'all') return 'bg-slate-800 text-white';
+              if (['Prospect', 'Qualified'].includes(s)) return 'bg-blue-100 text-blue-700';
+              if (['Proposal', 'Negotiation'].includes(s)) return 'bg-amber-100 text-amber-700';
+              if (['Term Sheet', 'Won'].includes(s)) return 'bg-emerald-100 text-emerald-700';
+              return 'bg-slate-100 text-slate-600';
+            };
 
-          return (
-            <button
-              key={stage}
-              onClick={() => setStageFilter(stage)}
-              className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all flex-shrink-0 ${
-                stageFilter === stage
-                  ? `ring-2 ring-slate-900 ${getStageColor(stage)}`
-                  : `${getStageColor(stage)} opacity-60`
-              }`}
-            >
-              {stage === 'all' ? 'All' : stage}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={stage}
+                onClick={() => setStageFilter(stage)}
+                className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all flex-shrink-0 ${
+                  stageFilter === stage
+                    ? `ring-2 ring-slate-900 ${getStageColor(stage)}`
+                    : `${getStageColor(stage)} opacity-60`
+                }`}
+              >
+                {stage === 'all' ? 'All' : stage}
+              </button>
+            );
+          })}
+        </div>
+        {/* Row 2 */}
+        <div className="flex gap-1.5 flex-wrap">
+          {['Negotiation', 'Term Sheet', 'Won'].map(stage => {
+            const getStageColor = (s: string) => {
+              if (s === 'all') return 'bg-slate-800 text-white';
+              if (['Prospect', 'Qualified'].includes(s)) return 'bg-blue-100 text-blue-700';
+              if (['Proposal', 'Negotiation'].includes(s)) return 'bg-amber-100 text-amber-700';
+              if (['Term Sheet', 'Won'].includes(s)) return 'bg-emerald-100 text-emerald-700';
+              return 'bg-slate-100 text-slate-600';
+            };
+
+            return (
+              <button
+                key={stage}
+                onClick={() => setStageFilter(stage)}
+                className={`px-3 py-1.5 rounded-full text-[10px] font-bold transition-all flex-shrink-0 ${
+                  stageFilter === stage
+                    ? `ring-2 ring-slate-900 ${getStageColor(stage)}`
+                    : `${getStageColor(stage)} opacity-60`
+                }`}
+              >
+                {stage}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Results Count */}
