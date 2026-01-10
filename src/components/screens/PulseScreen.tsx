@@ -598,8 +598,8 @@ export default function PulseScreen() {
         crm_users!market_news_created_by_fkey(name)
       `)
       .gte('news_date', thirtyDaysAgo.toISOString().split('T')[0])
-      .lte('published_at', new Date().toISOString())
-      .order('published_at', { ascending: false });
+      .or(`published_at.is.null,published_at.lte.${new Date().toISOString()}`)
+      .order('published_at', { ascending: false, nullsFirst: false });
 
     if (data && user) {
       const { data: favorites } = await supabase
