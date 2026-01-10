@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CircleCheck as CheckCircle2, TrendingUp, TrendingDown, Minus, Phone, Users, FileText, Mail, ArrowRight, ArrowLeft, Settings, Zap, MapPin, Star, BrainCircuit } from 'lucide-react';
+import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CircleCheck as CheckCircle2, TrendingUp, TrendingDown, Minus, Phone, Users, FileText, Mail, ArrowRight, ArrowLeft, Settings, Zap, MapPin, Star, BrainCircuit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -1113,6 +1114,52 @@ export default function PulseScreen() {
                               Map Nexus
                             </button>
                           )}
+                        </div>
+
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                          <div className="flex gap-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button className="p-2 text-slate-400 hover:text-yellow-500 hover:bg-yellow-50 rounded-full transition-colors">
+                                    <Star className="w-4 h-4" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent>Favorite</TooltipContent>
+                              </Tooltip>
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button className="p-2 text-slate-400 hover:text-green-500 hover:bg-green-50 rounded-full transition-colors">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent>Create Task</TooltipContent>
+                              </Tooltip>
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent>Hide</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              const prompt = "Analyze investment impact of: " + news.title;
+                              navigator.clipboard.writeText(prompt);
+                              window.open("https://chat.openai.com");
+                              toast.success("AI Prompt Copied!");
+                            }}
+                            className="flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 px-3 py-1.5 rounded-full transition-colors"
+                          >
+                            <BrainCircuit className="w-3.5 h-3.5" />
+                            Dig Deeper
+                          </button>
                         </div>
                       </div>
                     </div>
