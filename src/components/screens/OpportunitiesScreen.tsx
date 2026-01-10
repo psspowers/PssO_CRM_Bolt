@@ -479,14 +479,14 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         {/* LEFT: 'ALL' BUTTON (Square, spans height) */}
         <button
           onClick={() => setStageFilter('all')}
-          className={`w-14 flex flex-col items-center justify-center rounded-lg text-[10px] font-bold border transition-all leading-tight ${
+          className={`w-14 flex flex-col items-center justify-center rounded-lg text-[10px] font-bold border transition-all ${
             stageFilter === 'all'
               ? 'bg-slate-800 text-white border-slate-900 shadow-md'
               : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
           }`}
         >
-          <LayoutGrid className="w-5 h-5 mb-0.5" />
-          <span className="text-center">All<br/>Team</span>
+          <LayoutGrid className="w-5 h-5 mb-1" />
+          All
         </button>
 
         {/* RIGHT: 6 STAGES (3x2 Grid) */}
