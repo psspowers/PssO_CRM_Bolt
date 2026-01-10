@@ -226,6 +226,17 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     [opportunities, user?.id, subordinateIds]
   );
 
+  // Calculate stagnation stats for "My Deals" only
+  const stagnationStats = useMemo(() => {
+    const myDeals = opportunities.filter(o => o.ownerId === user?.id && !['Won', 'Lost'].includes(o.stage));
+    const now = new Date().getTime();
+    return {
+      warning: myDeals.filter(o => (now - new Date(o.updatedAt).getTime()) / 86400000 > 30).length,
+      danger: myDeals.filter(o => (now - new Date(o.updatedAt).getTime()) / 86400000 > 60).length,
+      critical: myDeals.filter(o => (now - new Date(o.updatedAt).getTime()) / 86400000 > 90).length
+    };
+  }, [opportunities, user?.id]);
+
   const deletableOpps = filtered.filter(o => canDelete(o.ownerId));
   const allSelected = deletableOpps.length > 0 && deletableOpps.every(o => selectedIds.has(o.id));
 
@@ -443,27 +454,70 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
               </div>
             )}
 
-            {/* Stagnation Filter */}
-            <div className="relative flex-shrink-0">
-              <select
-                value={stagnationFilter}
-                onChange={(e) => setStagnationFilter(e.target.value as 'all' | '30' | '60' | '90')}
-                className={`appearance-none text-xs font-bold pl-8 pr-4 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none transition-colors ${
-                  stagnationFilter === 'all' ? 'bg-slate-100 text-slate-500' :
-                  stagnationFilter === '30' ? 'bg-yellow-100 text-yellow-700 ring-1 ring-yellow-300' :
-                  stagnationFilter === '60' ? 'bg-orange-100 text-orange-700 ring-1 ring-orange-300' :
-                  'bg-red-100 text-red-700 ring-1 ring-red-300'
-                }`}
-              >
-                <option value="all">Any Time</option>
-                <option value="30">&gt; 30 Days Old</option>
-                <option value="60">&gt; 60 Days Old</option>
-                <option value="90">&gt; 90 Days Old</option>
-              </select>
-              <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${stagnationFilter === 'all' ? 'text-orange-500' : 'text-current'}`}>
-                <Clock className="w-4 h-4" />
+            {/* Stagnation Filter - Team View (Dropdown) */}
+            {hierarchyView === 'team' && (
+              <div className="relative flex-shrink-0">
+                <select
+                  value={stagnationFilter}
+                  onChange={(e) => setStagnationFilter(e.target.value as 'all' | '30' | '60' | '90')}
+                  className={`appearance-none text-xs font-bold pl-8 pr-4 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none transition-colors ${
+                    stagnationFilter === 'all' ? 'bg-slate-100 text-slate-500' :
+                    stagnationFilter === '30' ? 'bg-yellow-100 text-yellow-700 ring-1 ring-yellow-300' :
+                    stagnationFilter === '60' ? 'bg-orange-100 text-orange-700 ring-1 ring-orange-300' :
+                    'bg-red-100 text-red-700 ring-1 ring-red-300'
+                  }`}
+                >
+                  <option value="all">Any Time</option>
+                  <option value="30">&gt; 30 Days Old</option>
+                  <option value="60">&gt; 60 Days Old</option>
+                  <option value="90">&gt; 90 Days Old</option>
+                </select>
+                <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${stagnationFilter === 'all' ? 'text-orange-500' : 'text-current'}`}>
+                  <Clock className="w-4 h-4" />
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Stagnation Counters - Mine View (Rot Badges) */}
+            {hierarchyView === 'mine' && (
+              <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
+                <button
+                  onClick={() => setStagnationFilter(stagnationFilter === '30' ? 'all' : '30')}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${
+                    stagnationFilter === '30'
+                      ? 'bg-yellow-100 border-yellow-300 text-yellow-700 ring-1 ring-yellow-400'
+                      : 'bg-white border-slate-200 text-slate-400 hover:border-yellow-300 hover:text-yellow-600'
+                  }`}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                  {stagnationStats.warning}
+                </button>
+
+                <button
+                  onClick={() => setStagnationFilter(stagnationFilter === '60' ? 'all' : '60')}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${
+                    stagnationFilter === '60'
+                      ? 'bg-orange-100 border-orange-300 text-orange-700 ring-1 ring-orange-400'
+                      : 'bg-white border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-600'
+                  }`}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                  {stagnationStats.danger}
+                </button>
+
+                <button
+                  onClick={() => setStagnationFilter(stagnationFilter === '90' ? 'all' : '90')}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${
+                    stagnationFilter === '90'
+                      ? 'bg-red-100 border-red-300 text-red-700 ring-1 ring-red-400'
+                      : 'bg-white border-slate-200 text-slate-400 hover:border-red-300 hover:text-red-600'
+                  }`}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
+                  {stagnationStats.critical}
+                </button>
+              </div>
+            )}
 
             {/* Info Tooltip */}
             <TooltipProvider>
