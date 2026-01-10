@@ -435,6 +435,8 @@ export default function PulseScreen() {
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [hiddenNews, setHiddenNews] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isSuperAdmin = profile?.role === 'super_admin';
@@ -492,49 +494,29 @@ export default function PulseScreen() {
       .limit(50);
 
     if (activities) {
-      for (const activity of activities) {
-        let dealName = null;
+      const opportunityIds = activities.filter(a => a.related_to_type?.toLowerCase() === 'opportunity').map(a => a.related_to_id).filter(Boolean);
+      const projectIds = activities.filter(a => a.related_to_type?.toLowerCase() === 'project').map(a => a.related_to_id).filter(Boolean);
+      const accountIds = activities.filter(a => a.related_to_type?.toLowerCase() === 'account').map(a => a.related_to_id).filter(Boolean);
+      const contactIds = activities.filter(a => a.related_to_type?.toLowerCase() === 'contact').map(a => a.related_to_id).filter(Boolean);
+      const partnerIds = activities.filter(a => a.related_to_type?.toLowerCase() === 'partner').map(a => a.related_to_id).filter(Boolean);
 
-        if (activity.related_to_id && activity.related_to_type) {
-          const relatedType = activity.related_to_type.toLowerCase();
+      const [opportunitiesRes, projectsRes, accountsRes, contactsRes, partnersRes] = await Promise.all([
+        opportunityIds.length > 0 ? supabase.from('opportunities').select('id, name').in('id', opportunityIds) : Promise.resolve({ data: [] }),
+        projectIds.length > 0 ? supabase.from('projects').select('id, name').in('id', projectIds) : Promise.resolve({ data: [] }),
+        accountIds.length > 0 ? supabase.from('accounts').select('id, name').in('id', accountIds) : Promise.resolve({ data: [] }),
+        contactIds.length > 0 ? supabase.from('contacts').select('id, full_name').in('id', contactIds) : Promise.resolve({ data: [] }),
+        partnerIds.length > 0 ? supabase.from('partners').select('id, name').in('id', partnerIds) : Promise.resolve({ data: [] })
+      ]);
 
-          if (relatedType === 'opportunity') {
-            const { data } = await supabase
-              .from('opportunities')
-              .select('name')
-              .eq('id', activity.related_to_id)
-              .single();
-            dealName = data?.name;
-          } else if (relatedType === 'project') {
-            const { data } = await supabase
-              .from('projects')
-              .select('name')
-              .eq('id', activity.related_to_id)
-              .single();
-            dealName = data?.name;
-          } else if (relatedType === 'account') {
-            const { data } = await supabase
-              .from('accounts')
-              .select('name')
-              .eq('id', activity.related_to_id)
-              .single();
-            dealName = data?.name;
-          } else if (relatedType === 'contact') {
-            const { data } = await supabase
-              .from('contacts')
-              .select('full_name')
-              .eq('id', activity.related_to_id)
-              .single();
-            dealName = data?.full_name;
-          } else if (relatedType === 'partner') {
-            const { data } = await supabase
-              .from('partners')
-              .select('name')
-              .eq('id', activity.related_to_id)
-              .single();
-            dealName = data?.name;
-          }
-        }
+      const nameMap = new Map();
+      opportunitiesRes.data?.forEach((o: any) => nameMap.set(o.id, o.name));
+      projectsRes.data?.forEach((p: any) => nameMap.set(p.id, p.name));
+      accountsRes.data?.forEach((a: any) => nameMap.set(a.id, a.name));
+      contactsRes.data?.forEach((c: any) => nameMap.set(c.id, c.full_name));
+      partnersRes.data?.forEach((p: any) => nameMap.set(p.id, p.name));
+
+      activities.forEach((activity) => {
+        const dealName = activity.related_to_id ? nameMap.get(activity.related_to_id) : null;
 
         rawFeed.push({
           id: activity.id,
@@ -548,7 +530,7 @@ export default function PulseScreen() {
           related_to_type: activity.related_to_type,
           deal_name: dealName
         });
-      }
+      });
     }
 
     const { data: logs } = await supabase
@@ -609,6 +591,88 @@ export default function PulseScreen() {
       }));
       setMarketNews(formattedNews);
     }
+
+    await loadFavorites();
+  };
+
+  const loadFavorites = async () => {
+    if (!user?.id) return;
+
+    const { data } = await supabase
+      .from('user_favorites')
+      .select('entity_id')
+      .eq('user_id', user.id)
+      .eq('entity_type', 'market_news');
+
+    if (data) {
+      setFavorites(new Set(data.map(f => f.entity_id)));
+    }
+  };
+
+  const handleToggleFavorite = async (newsId: string) => {
+    if (!user?.id) return;
+
+    const isFavorited = favorites.has(newsId);
+
+    if (isFavorited) {
+      const { error } = await supabase
+        .from('user_favorites')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('entity_id', newsId)
+        .eq('entity_type', 'market_news');
+
+      if (!error) {
+        setFavorites(prev => {
+          const next = new Set(prev);
+          next.delete(newsId);
+          return next;
+        });
+        toast.success('Removed from favorites');
+      }
+    } else {
+      const { error } = await supabase
+        .from('user_favorites')
+        .insert({
+          user_id: user.id,
+          entity_id: newsId,
+          entity_type: 'market_news'
+        });
+
+      if (!error) {
+        setFavorites(prev => new Set(prev).add(newsId));
+        toast.success('Added to favorites');
+      }
+    }
+  };
+
+  const handleCreateTask = async (news: MarketNews) => {
+    if (!user?.id) return;
+
+    const taskSummary = `Follow up on: ${news.title}`;
+
+    const { error } = await supabase
+      .from('activities')
+      .insert({
+        type: 'Task',
+        summary: taskSummary,
+        notes: news.summary || '',
+        created_by: user.id,
+        related_to_type: news.related_account_id ? 'Account' : null,
+        related_to_id: news.related_account_id,
+        due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+      });
+
+    if (error) {
+      toast.error('Failed to create task');
+    } else {
+      toast.success('Task created');
+    }
+  };
+
+  const handleHideNews = async (newsId: string) => {
+    setHiddenNews(prev => new Set(prev).add(newsId));
+    toast.success('News hidden');
   };
 
   const handleDownloadTemplate = () => {
@@ -1020,6 +1084,44 @@ export default function PulseScreen() {
         </>
       ) : (
         <>
+          {favorites.size > 0 && (
+            <div className="px-4 py-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10 border-b border-yellow-200 dark:border-yellow-800">
+              <div className="flex items-center gap-2 mb-2">
+                <Star className="w-4 h-4 text-yellow-600 dark:text-yellow-400 fill-current" />
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white">Pinned Intel</h2>
+                <Badge variant="outline" className="text-xs border-yellow-600 text-yellow-700 dark:text-yellow-400">
+                  {favorites.size}
+                </Badge>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {marketNews
+                  .filter(news => favorites.has(news.id) && !hiddenNews.has(news.id))
+                  .slice(0, 5)
+                  .map(news => (
+                    <button
+                      key={news.id}
+                      onClick={() => {
+                        document.getElementById(`news-${news.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }}
+                      className="flex-shrink-0 px-3 py-2 bg-white dark:bg-slate-800 rounded-lg border border-yellow-300 dark:border-yellow-700 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        {getImpactIcon(news.impact_type)}
+                        <span className="text-xs font-semibold text-slate-900 dark:text-white max-w-[200px] truncate">
+                          {news.title}
+                        </span>
+                      </div>
+                      {news.account_name && (
+                        <span className="text-xs text-slate-600 dark:text-slate-400">
+                          {news.account_name}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
+
           {marketNews.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4">
               <Newspaper className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-3" />
@@ -1036,15 +1138,18 @@ export default function PulseScreen() {
             </div>
           ) : (
             <div className="divide-y divide-slate-200 dark:divide-slate-700">
-              {marketNews.map((news) => {
+              {marketNews.filter(news => !hiddenNews.has(news.id)).map((news) => {
                 const impactColor = news.impact_type === 'opportunity'
                   ? 'bg-green-50 dark:bg-green-950/20'
                   : news.impact_type === 'threat'
                   ? 'bg-red-50 dark:bg-red-950/20'
                   : 'bg-white dark:bg-slate-800';
 
+                const isFavorited = favorites.has(news.id);
+
                 return (
                   <div
+                    id={`news-${news.id}`}
                     key={news.id}
                     className={`px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${impactColor}`}
                   >
@@ -1121,16 +1226,26 @@ export default function PulseScreen() {
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <button className="p-2 text-slate-400 hover:text-yellow-500 hover:bg-yellow-50 rounded-full transition-colors">
-                                    <Star className="w-4 h-4" />
+                                  <button
+                                    onClick={() => handleToggleFavorite(news.id)}
+                                    className={`p-2 rounded-full transition-colors ${
+                                      isFavorited
+                                        ? 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+                                        : 'text-slate-400 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
+                                    }`}
+                                  >
+                                    <Star className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
                                   </button>
                                 </TooltipTrigger>
-                                <TooltipContent>Favorite</TooltipContent>
+                                <TooltipContent>{isFavorited ? 'Unfavorite' : 'Favorite'}</TooltipContent>
                               </Tooltip>
 
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <button className="p-2 text-slate-400 hover:text-green-500 hover:bg-green-50 rounded-full transition-colors">
+                                  <button
+                                    onClick={() => handleCreateTask(news)}
+                                    className="p-2 text-slate-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full transition-colors"
+                                  >
                                     <CheckCircle2 className="w-4 h-4" />
                                   </button>
                                 </TooltipTrigger>
@@ -1139,7 +1254,10 @@ export default function PulseScreen() {
 
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
+                                  <button
+                                    onClick={() => handleHideNews(news.id)}
+                                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                                  >
                                     <Trash2 className="w-4 h-4" />
                                   </button>
                                 </TooltipTrigger>
