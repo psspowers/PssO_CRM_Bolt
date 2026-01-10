@@ -459,7 +459,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                 <select
                   value={selectedMemberId}
                   onChange={(e) => setSelectedMemberId(e.target.value)}
-                  className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-2 pr-6 py-1 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-auto max-w-[100px] truncate"
+                  className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-2 pr-6 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-28 truncate"
                 >
                   <option value="all">All Team</option>
                   {teamMembers.map(m => (
@@ -496,7 +496,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
             <button
               key={stage}
               onClick={() => setStageFilter(stage)}
-              className={`h-8 flex items-center justify-center rounded-md text-[10px] font-bold border truncate transition-all ${
+              className={`h-8 flex items-center justify-center rounded-md text-[10px] sm:text-xs font-bold border truncate px-0.5 transition-all ${
                 stageFilter === stage
                   ? 'bg-orange-100 text-orange-800 border-orange-200 ring-1 ring-orange-300'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -511,7 +511,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
             <button
               key={stage}
               onClick={() => setStageFilter(stage)}
-              className={`h-8 flex items-center justify-center rounded-md text-[10px] font-bold border truncate transition-all ${
+              className={`h-8 flex items-center justify-center rounded-md text-[10px] sm:text-xs font-bold border truncate px-0.5 transition-all ${
                 stageFilter === stage
                   ? 'bg-orange-100 text-orange-800 border-orange-200 ring-1 ring-orange-300'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -538,7 +538,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
               <select
                 value={stagnationFilter}
                 onChange={(e) => setStagnationFilter(e.target.value as 'all' | '30' | '60' | '90')}
-                className="appearance-none bg-white border border-slate-200 text-xs font-bold pl-2 pr-6 py-1 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                className="appearance-none bg-white border border-slate-200 text-xs font-bold pl-2 pr-6 py-1 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none w-24 truncate"
               >
                 <option value="all">Any Time</option>
                 <option value="30">&gt; 30 Days</option>
