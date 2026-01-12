@@ -483,6 +483,8 @@ export default function PulseScreen() {
   const [opportunities, setOpportunities] = useState<any[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [hiddenNews, setHiddenNews] = useState<Set<string>>(new Set());
+  const [starredFeed, setStarredFeed] = useState<Set<string>>(new Set());
+  const [hiddenFeed, setHiddenFeed] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [taskInitialData, setTaskInitialData] = useState<any>(null);
@@ -547,6 +549,8 @@ export default function PulseScreen() {
   };
 
   const loadInternalFeed = async () => {
+    if (!user?.id) return;
+
     const rawFeed: any[] = [];
 
     const { data: activities } = await supabase
@@ -629,6 +633,45 @@ export default function PulseScreen() {
           user_avatar: log.crm_users?.avatar
         });
       });
+    }
+
+    const allEntityIds = rawFeed.map(item => item.id);
+
+    if (allEntityIds.length > 0) {
+      const { data: interactions } = await supabase
+        .from('feed_interactions')
+        .select('entity_id, entity_type, is_starred, is_hidden')
+        .eq('user_id', user.id)
+        .in('entity_id', allEntityIds);
+
+      const interactionsMap = new Map<string, { is_starred: boolean; is_hidden: boolean }>();
+      if (interactions) {
+        interactions.forEach((interaction: any) => {
+          const key = `${interaction.entity_id}-${interaction.entity_type}`;
+          interactionsMap.set(key, {
+            is_starred: interaction.is_starred,
+            is_hidden: interaction.is_hidden
+          });
+        });
+      }
+
+      const newStarred = new Set<string>();
+      const newHidden = new Set<string>();
+
+      rawFeed.forEach(item => {
+        const key = `${item.id}-${item.source}`;
+        const interaction = interactionsMap.get(key);
+
+        if (interaction?.is_starred) {
+          newStarred.add(item.id);
+        }
+        if (interaction?.is_hidden) {
+          newHidden.add(item.id);
+        }
+      });
+
+      setStarredFeed(newStarred);
+      setHiddenFeed(newHidden);
     }
 
     const formattedFeed = rawFeed
@@ -816,6 +859,88 @@ export default function PulseScreen() {
       });
       toast.error('Failed to hide news');
     }
+  };
+
+  const handleToggleFeedStar = async (itemId: string, entityType: 'activity' | 'log') => {
+    if (!user?.id) return;
+
+    const isStarred = starredFeed.has(itemId);
+
+    setStarredFeed(prev => {
+      const next = new Set(prev);
+      if (isStarred) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+
+    const { error } = await supabase
+      .from('feed_interactions')
+      .upsert({
+        user_id: user.id,
+        entity_id: itemId,
+        entity_type: entityType,
+        is_starred: !isStarred
+      }, {
+        onConflict: 'user_id,entity_id,entity_type'
+      });
+
+    if (!error) {
+      toast.success(isStarred ? 'Removed from starred' : 'Starred');
+    } else {
+      setStarredFeed(prev => {
+        const next = new Set(prev);
+        if (isStarred) {
+          next.add(itemId);
+        } else {
+          next.delete(itemId);
+        }
+        return next;
+      });
+      toast.error('Failed to update starred status');
+    }
+  };
+
+  const handleHideFeedItem = async (itemId: string, entityType: 'activity' | 'log') => {
+    if (!user?.id) return;
+
+    setHiddenFeed(prev => new Set(prev).add(itemId));
+
+    const { error } = await supabase
+      .from('feed_interactions')
+      .upsert({
+        user_id: user.id,
+        entity_id: itemId,
+        entity_type: entityType,
+        is_hidden: true
+      }, {
+        onConflict: 'user_id,entity_id,entity_type'
+      });
+
+    if (!error) {
+      toast.success('Item hidden from your feed');
+    } else {
+      setHiddenFeed(prev => {
+        const next = new Set(prev);
+        next.delete(itemId);
+        return next;
+      });
+      toast.error('Failed to hide item');
+    }
+  };
+
+  const handleOpenFeedTaskModal = (item: FeedItem) => {
+    setTaskInitialData({
+      mode: 'activity',
+      isTask: true,
+      summary: `Follow up: ${item.content.substring(0, 50)}`,
+      details: item.content,
+      relateToType: item.relatedToType,
+      relateToId: item.relatedToId
+    });
+    setShowQuickAdd(true);
   };
 
   const handleDownloadTemplate = () => {
@@ -1136,7 +1261,7 @@ export default function PulseScreen() {
             </div>
           ) : (
             <div className="divide-y divide-slate-200 dark:divide-slate-700">
-              {feedItems.map((item) => {
+              {feedItems.filter(item => !hiddenFeed.has(item.id)).map((item) => {
                 const timeAgo = formatDistanceToNow(new Date(item.timestamp), { addSuffix: false })
                   .replace('about ', '')
                   .replace('less than a minute', '1m')
@@ -1150,6 +1275,9 @@ export default function PulseScreen() {
                   .replace(' month', 'mo')
                   .replace(' years', 'y')
                   .replace(' year', 'y');
+
+                const isStarred = starredFeed.has(item.id);
+                const entityType = item.type === 'admin_log' ? 'log' : 'activity';
 
                 return (
                   <div key={item.id} className="px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
@@ -1214,9 +1342,53 @@ export default function PulseScreen() {
                           </div>
                         )}
 
-                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-3">
                           {item.content}
                         </p>
+
+                        <div className="flex items-center gap-1 pt-2 border-t border-slate-100 dark:border-slate-800/50">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() => handleToggleFeedStar(item.id, entityType)}
+                                  className={`p-2 rounded-full transition-colors ${
+                                    isStarred
+                                      ? 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
+                                      : 'text-slate-400 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
+                                  }`}
+                                >
+                                  <Star className={`w-4 h-4 ${isStarred ? 'fill-current' : ''}`} />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>Star</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() => handleOpenFeedTaskModal(item)}
+                                  className="p-2 text-slate-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full transition-colors"
+                                >
+                                  <CheckCircle2 className="w-4 h-4" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>Create Task</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={() => handleHideFeedItem(item.id, entityType)}
+                                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>Hide</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
                       </div>
                     </div>
                   </div>
