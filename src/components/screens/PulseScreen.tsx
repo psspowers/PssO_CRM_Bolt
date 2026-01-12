@@ -385,11 +385,45 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
       return null;
     }
 
-    if (action.toLowerCase().includes('create')) {
+    if (action === 'create' || action === 'CREATE' || action === 'INSERT' || action.toLowerCase().includes('create')) {
+      let parsedDetails = {};
+      try {
+        parsedDetails = typeof rawItem.details === 'string' ? JSON.parse(rawItem.details) : (rawItem.details || {});
+      } catch (e) {
+        console.error('JSON parse error', e);
+        parsedDetails = details;
+      }
+
+      const entityName = parsedDetails?.name || parsedDetails?.title || parsedDetails?.full_name || parsedDetails?.summary || details.entity_name || 'Unknown Item';
+      const entityType = rawItem.entity_type || details.entity_type || 'Item';
+
+      const hasExtraContext = parsedDetails?.value || parsedDetails?.target_capacity;
+      let extraContext = null;
+
+      if (hasExtraContext) {
+        const parts = [];
+        if (parsedDetails.target_capacity) {
+          parts.push(`${parsedDetails.target_capacity} MW`);
+        }
+        if (parsedDetails.value) {
+          parts.push(`฿${parseInt(parsedDetails.value).toLocaleString()}`);
+        }
+        extraContext = parts.join(' • ');
+      }
+
       return {
         id: rawItem.id,
         type: 'log',
-        content: `Created ${details.entity_name || details.entity_type || 'item'}`,
+        content: (
+          <span>
+            Created new {entityType}: <span className="font-bold text-slate-900 dark:text-slate-100">{entityName}</span>
+            {extraContext && (
+              <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700">
+                {extraContext}
+              </div>
+            )}
+          </span>
+        ),
         timestamp: rawItem.created_at,
         user_name: rawItem.user_name,
         user_avatar: rawItem.user_avatar,
@@ -397,8 +431,8 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         iconColor: 'text-green-600',
         iconBgColor: 'bg-green-100 dark:bg-green-900/50',
         dealName: dealName,
-        relatedToId: details.entity_id,
-        relatedToType: details.entity_type,
+        relatedToId: details.entity_id || parsedDetails?.id,
+        relatedToType: details.entity_type || entityType,
         activityType: 'Create'
       };
     }
