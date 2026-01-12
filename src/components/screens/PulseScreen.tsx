@@ -640,30 +640,63 @@ export default function PulseScreen() {
   };
 
   const loadMarketNews = async () => {
+    if (!user?.id) return;
+
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const { data, error } = await supabase
-      .from('market_news')
-      .select(`
-        *,
-        accounts(name),
-        crm_users!market_news_created_by_fkey(name)
-      `)
-      .lte('published_at', new Date().toISOString())
-      .gte('news_date', thirtyDaysAgo.toISOString().split('T')[0])
-      .order('published_at', { ascending: false });
+    const [newsResult, interactionsResult] = await Promise.all([
+      supabase
+        .from('market_news')
+        .select(`
+          *,
+          accounts(name),
+          crm_users!market_news_created_by_fkey(name)
+        `)
+        .lte('published_at', new Date().toISOString())
+        .gte('news_date', thirtyDaysAgo.toISOString().split('T')[0])
+        .order('published_at', { ascending: false }),
+      supabase
+        .from('market_news_interactions')
+        .select('news_id, is_favorite, is_hidden')
+        .eq('user_id', user.id)
+    ]);
 
-    if (data) {
-      const formattedNews = data.map((item: any) => ({
-        ...item,
-        account_name: item.accounts?.name,
-        creator_name: item.crm_users?.name
-      }));
+    if (newsResult.data) {
+      const interactionsMap = new Map<string, { is_favorite: boolean; is_hidden: boolean }>();
+      if (interactionsResult.data) {
+        interactionsResult.data.forEach((interaction: any) => {
+          interactionsMap.set(interaction.news_id, {
+            is_favorite: interaction.is_favorite,
+            is_hidden: interaction.is_hidden
+          });
+        });
+      }
+
+      const newFavorites = new Set<string>();
+      const newHidden = new Set<string>();
+
+      const formattedNews = newsResult.data.map((item: any) => {
+        const interaction = interactionsMap.get(item.id);
+
+        if (interaction?.is_favorite) {
+          newFavorites.add(item.id);
+        }
+        if (interaction?.is_hidden) {
+          newHidden.add(item.id);
+        }
+
+        return {
+          ...item,
+          account_name: item.accounts?.name,
+          creator_name: item.crm_users?.name
+        };
+      });
+
       setMarketNews(formattedNews);
+      setFavorites(newFavorites);
+      setHiddenNews(newHidden);
     }
-
-    await loadFavorites();
   };
 
   const loadFavorites = async () => {
@@ -685,35 +718,39 @@ export default function PulseScreen() {
 
     const isFavorited = favorites.has(newsId);
 
-    if (isFavorited) {
-      const { error } = await supabase
-        .from('user_favorites')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('entity_id', newsId)
-        .eq('entity_type', 'market_news');
-
-      if (!error) {
-        setFavorites(prev => {
-          const next = new Set(prev);
-          next.delete(newsId);
-          return next;
-        });
-        toast.success('Removed from favorites');
+    setFavorites(prev => {
+      const next = new Set(prev);
+      if (isFavorited) {
+        next.delete(newsId);
+      } else {
+        next.add(newsId);
       }
+      return next;
+    });
+
+    const { error } = await supabase
+      .from('market_news_interactions')
+      .upsert({
+        user_id: user.id,
+        news_id: newsId,
+        is_favorite: !isFavorited
+      }, {
+        onConflict: 'user_id,news_id'
+      });
+
+    if (!error) {
+      toast.success(isFavorited ? 'Removed from favorites' : 'Added to favorites');
     } else {
-      const { error } = await supabase
-        .from('user_favorites')
-        .insert({
-          user_id: user.id,
-          entity_id: newsId,
-          entity_type: 'market_news'
-        });
-
-      if (!error) {
-        setFavorites(prev => new Set(prev).add(newsId));
-        toast.success('Added to favorites');
-      }
+      setFavorites(prev => {
+        const next = new Set(prev);
+        if (isFavorited) {
+          next.add(newsId);
+        } else {
+          next.delete(newsId);
+        }
+        return next;
+      });
+      toast.error('Failed to update favorite status');
     }
   };
 
@@ -755,8 +792,30 @@ export default function PulseScreen() {
   };
 
   const handleHideNews = async (newsId: string) => {
+    if (!user?.id) return;
+
     setHiddenNews(prev => new Set(prev).add(newsId));
-    toast.success('News hidden');
+
+    const { error } = await supabase
+      .from('market_news_interactions')
+      .upsert({
+        user_id: user.id,
+        news_id: newsId,
+        is_hidden: true
+      }, {
+        onConflict: 'user_id,news_id'
+      });
+
+    if (!error) {
+      toast.success('News hidden from your feed');
+    } else {
+      setHiddenNews(prev => {
+        const next = new Set(prev);
+        next.delete(newsId);
+        return next;
+      });
+      toast.error('Failed to hide news');
+    }
   };
 
   const handleDownloadTemplate = () => {
