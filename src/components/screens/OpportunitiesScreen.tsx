@@ -370,50 +370,48 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
       ) : (
         <div className="flex flex-col gap-2">
           {/* Title with Search Icon */}
-          <div className="flex items-center justify-between mb-1">
-            {isSearchOpen ? (
-              <div className="flex-1 flex items-center gap-2 animate-in fade-in slide-in-from-right-10 duration-200">
-                <SearchBar value={search} onChange={setSearch} placeholder="Search deals..." showFilter={false} />
-                <button
-                  onClick={() => {
-                    setIsSearchOpen(false);
-                    setSearch('');
-                  }}
-                  className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors flex-shrink-0"
-                >
-                  <X className="w-5 h-5 text-slate-600" />
-                </button>
+          {isSearchOpen ? (
+            <div className="flex items-center gap-2 mb-1 animate-in fade-in slide-in-from-right-10 duration-200">
+              <SearchBar value={search} onChange={setSearch} placeholder="Search deals..." showFilter={false} />
+              <button
+                onClick={() => {
+                  setIsSearchOpen(false);
+                  setSearch('');
+                }}
+                className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors flex-shrink-0"
+              >
+                <X className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 mb-1">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
+                        <Info className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs">
+                      <p className="text-xs">
+                        <strong>Mine:</strong> Your opportunities<br />
+                        <strong>Team:</strong> Your deals + subordinates' deals
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <h1 className="text-2xl font-bold text-slate-900">Deals</h1>
               </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
-                          <Info className="w-4 h-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="max-w-xs">
-                        <p className="text-xs">
-                          <strong>Mine:</strong> Your opportunities<br />
-                          <strong>Team:</strong> Your deals + subordinates' deals
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <h1 className="text-2xl font-bold text-slate-900">Deals</h1>
-                </div>
-                <button
-                  onClick={() => setIsSearchOpen(true)}
-                  className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-colors"
-                  aria-label="Search deals"
-                >
-                  <Search className="w-5 h-5 text-slate-600" />
-                </button>
-              </>
-            )}
-          </div>
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-colors w-fit"
+                aria-label="Search deals"
+              >
+                <Search className="w-5 h-5 text-slate-600" />
+              </button>
+            </>
+          )}
 
           {/* Hierarchy View Toggle - My Deals vs Team Deals */}
           <div className="flex items-center gap-1.5 flex-wrap">
