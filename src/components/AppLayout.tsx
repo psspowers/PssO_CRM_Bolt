@@ -479,32 +479,32 @@ export default function AppLayout() {
         className="sr-only"
       />
 
-      <div className="min-h-screen bg-slate-100 flex">
+      <div className="min-h-screen bg-slate-100 flex overflow-x-hidden max-w-full">
       {/* Desktop Sidebar */}
-      <Sidebar 
-        activeTab={activeTab} 
-        onTabChange={setActiveTab} 
+      <Sidebar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
         onQuickAdd={() => setShowQuickAdd(true)}
         onBulkImport={() => setShowBulkImport(true)}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
-      
+
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden max-w-full min-w-0">
         {/* Header - visible on mobile, simplified on desktop */}
         <Header onQuickAdd={() => setShowQuickAdd(true)} onNavigate={handleDeepLink} />
-        
+
         {/* Main Content */}
         <main
           id="main-content"
-          className={`flex-1 overflow-auto ${
+          className={`flex-1 overflow-y-auto overflow-x-hidden ${
             activeTab === 'pulse'
               ? 'p-0 pb-20'
-              : 'p-4 lg:p-8 pb-24 lg:pb-8'
+              : 'p-3 sm:p-4 lg:p-8 pb-24 lg:pb-8'
           }`}
         >
-          <div className={activeTab === 'pulse' ? '' : 'max-w-7xl mx-auto'}>
+          <div className={activeTab === 'pulse' ? '' : 'max-w-7xl mx-auto w-full'}>
             {/* Page Title - Desktop */}
             {activeTab !== 'home' && activeTab !== 'search' && activeTab !== 'opportunities' && activeTab !== 'pulse' && (
               <div className="mb-6">

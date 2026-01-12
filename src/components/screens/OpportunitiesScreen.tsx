@@ -340,7 +340,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   );
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden space-y-2 pb-24 lg:pb-32">
+    <div className="w-full max-w-full overflow-x-hidden space-y-2 pb-24 lg:pb-32 min-w-0">
       {/* Header & Selection Toolbar */}
       {selectionMode ? (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-orange-50 rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-orange-200 gap-3">
