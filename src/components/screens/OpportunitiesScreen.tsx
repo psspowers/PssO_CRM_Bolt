@@ -524,14 +524,14 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
       </div>
 
       {/* Results Count with Stagnation Filter */}
-      <div className="flex items-center justify-between mb-2 px-1">
+      <div className="flex items-center mb-2 px-1">
         {/* LEFT: Result Count */}
         <p className="text-xs lg:text-sm text-slate-500 font-medium">
           Showing <span className="text-slate-900 font-bold">{filtered.length}</span> {hierarchyView === 'mine' ? 'deals' : 'team deals'}
         </p>
 
         {/* RIGHT: Stagnation Controls (Moved Here) */}
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex items-center gap-2 ml-3">
           {/* TEAM VIEW: Dropdown */}
           {hierarchyView === 'team' && (
             <div className="relative">
