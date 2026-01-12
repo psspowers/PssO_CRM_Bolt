@@ -62,7 +62,7 @@ export const SearchScreen: React.FC = () => {
       .forEach(c => res.push({ id: c.id, type: 'contact', title: c.fullName, subtitle: c.role, icon: IdCard, color: 'text-cyan-600 bg-cyan-100' }));
 
     projects.filter(p => p.name.toLowerCase().includes(q) || p.country.toLowerCase().includes(q))
-      .forEach(p => res.push({ id: p.id, type: 'project', title: p.name, subtitle: `${p.status} • ${p.capacity} MW`, icon: FolderKanban, color: 'text-orange-600 bg-orange-100' }));
+      .forEach(p => res.push({ id: p.id, type: 'project', title: p.name, subtitle: `${p.status} • ${(p.capacity || 0).toFixed(3)} MW`, icon: FolderKanban, color: 'text-orange-600 bg-orange-100' }));
 
     return res.slice(0, 20);
   }, [query, accounts, opportunities, partners, contacts, projects]);

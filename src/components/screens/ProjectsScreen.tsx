@@ -426,7 +426,7 @@ export const ProjectsScreen: React.FC<ProjectsScreenProps> = ({ forcedOpenId }) 
                   <Zap className="w-4 h-4 text-orange-500" />
                   <span className="text-xs text-slate-500 uppercase font-bold">Capacity</span>
                 </div>
-                <p className="text-2xl font-bold text-slate-900">{selectedProject.capacity} MW</p>
+                <p className="text-2xl font-bold text-slate-900">{(selectedProject.capacity || 0).toFixed(3)} MW</p>
               </div>
               <div className="bg-slate-50 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">

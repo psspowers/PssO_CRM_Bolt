@@ -672,7 +672,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                     </div>
                     <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
                       <p className="text-[10px] font-bold text-blue-600 uppercase">Capacity</p>
-                      <p className="text-xl font-black text-gray-900">{selectedOpp.targetCapacity || 0} MW</p>
+                      <p className="text-xl font-black text-gray-900">{(selectedOpp.targetCapacity || 0).toFixed(3)} MW</p>
                     </div>
                   </div>
                   <InvestmentModeler
@@ -708,14 +708,14 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Target Capacity</p>
-                  <p className="text-sm font-semibold text-slate-900">{selectedOpp.targetCapacity || 0} MW</p>
+                  <p className="text-sm font-semibold text-slate-900">{(selectedOpp.targetCapacity || 0).toFixed(3)} MW</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Max Capacity</p>
-                  <p className="text-sm font-semibold text-slate-900">{selectedOpp.maxCapacity || 0} MW</p>
+                  <p className="text-sm font-semibold text-slate-900">{(selectedOpp.maxCapacity || 0).toFixed(3)} MW</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Probability</p>

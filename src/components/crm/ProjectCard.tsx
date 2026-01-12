@@ -44,7 +44,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, accountName, 
           <Zap className="w-4 h-4 text-orange-500" />
           <div>
             <p className="text-[10px] text-slate-400 uppercase font-bold">Capacity</p>
-            <p className="text-sm font-bold text-slate-900">{project.capacity} MW</p>
+            <p className="text-sm font-bold text-slate-900">{(project.capacity || 0).toFixed(3)} MW</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

@@ -93,7 +93,7 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, a
           <div className="flex items-center gap-1">
             <Zap className="w-3 h-3 text-amber-500" />
             <span className="text-sm font-black text-slate-900 leading-none">
-              {(opportunity.targetCapacity || 0).toFixed(2)} <span className="text-xs font-normal text-slate-500">MW</span>
+              {(opportunity.targetCapacity || 0).toFixed(3)} <span className="text-xs font-normal text-slate-500">MW</span>
             </span>
           </div>
         </div>

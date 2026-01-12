@@ -85,7 +85,7 @@ export const ProfileEntities: React.FC<Props> = ({ opportunities, projects, acco
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-gray-900 truncate">{proj.name}</p>
-                    <p className="text-sm text-gray-500">{proj.country} • {proj.capacity} MWp</p>
+                    <p className="text-sm text-gray-500">{proj.country} • {(proj.capacity || 0).toFixed(3)} MWp</p>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full ${statusColors[proj.status] || 'bg-gray-100 text-gray-700'}`}>
                     {proj.status}

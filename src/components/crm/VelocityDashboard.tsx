@@ -895,7 +895,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-900 truncate">{opp.name}</p>
-                    <p className="text-xs text-slate-500">{opp.stage} • {opp.targetCapacity} MW</p>
+                    <p className="text-xs text-slate-500">{opp.stage} • {(opp.targetCapacity || 0).toFixed(3)} MW</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-slate-900">{formatMetric(opp.value, 'currency')}</p>
