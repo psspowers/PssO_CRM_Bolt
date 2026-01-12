@@ -272,11 +272,13 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
             className={selectClass}
           >
             <option value="">-- Select Owner --</option>
-            {users.map(u => (
-              <option key={u.id} value={u.id}>
-                {u.name} ({u.email})
-              </option>
-            ))}
+            {users
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.name} ({u.email})
+                </option>
+              ))}
           </select>
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         </div>

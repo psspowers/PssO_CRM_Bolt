@@ -162,11 +162,13 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
           aria-describedby={errors.linkedAccountId ? 'account-error' : undefined}
         >
           <option value="">Select an account...</option>
-          {accounts.map(account => (
-            <option key={account.id} value={account.id}>
-              {account.name} ({account.country})
-            </option>
-          ))}
+          {accounts
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(account => (
+              <option key={account.id} value={account.id}>
+                {account.name} ({account.country})
+              </option>
+            ))}
         </select>
         {errors.linkedAccountId && (
           <p id="account-error" className="mt-1 text-sm text-red-600 flex items-center gap-1" role="alert">
@@ -261,7 +263,9 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
           {partners.length === 0 ? (
             <p className="text-sm text-slate-400 text-center py-4">No partners available</p>
           ) : (
-            partners.map(partner => (
+            partners
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map(partner => (
               <button
                 key={partner.id}
                 type="button"

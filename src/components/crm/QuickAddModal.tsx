@@ -336,9 +336,12 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
                       >
                         <option value="">Select Member...</option>
                         {profile && <option value={profile.id}>Me, Myself & I</option>}
-                        {users.filter(u => u.id !== profile?.id).map(u => (
-                          <option key={u.id} value={u.id}>{u.name}</option>
-                        ))}
+                        {users
+                          .filter(u => u.id !== profile?.id)
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map(u => (
+                            <option key={u.id} value={u.id}>{u.name}</option>
+                          ))}
                       </select>
                     </div>
                     <div>
@@ -407,9 +410,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
                         required
                       >
                         <option value="">-- Select Opportunity --</option>
-                        {entities?.opportunities.map(opp => (
-                          <option key={opp.id} value={opp.id}>{opp.name}</option>
-                        ))}
+                        {entities?.opportunities
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map(opp => (
+                            <option key={opp.id} value={opp.id}>{opp.name}</option>
+                          ))}
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     </div>
@@ -633,16 +638,18 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Customer *</label>
                     <div className="relative">
-                      <select 
-                        value={oppForm.accountId} 
-                        onChange={e => setOppForm({ ...oppForm, accountId: e.target.value })} 
+                      <select
+                        value={oppForm.accountId}
+                        onChange={e => setOppForm({ ...oppForm, accountId: e.target.value })}
                         className={selectClass}
                         required
                       >
                         <option value="">-- Select Customer --</option>
-                        {entities?.accounts.map(a => (
-                          <option key={a.id} value={a.id}>{a.name}</option>
-                        ))}
+                        {entities?.accounts
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map(a => (
+                            <option key={a.id} value={a.id}>{a.name}</option>
+                          ))}
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                     </div>

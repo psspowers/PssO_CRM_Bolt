@@ -31,8 +31,9 @@ export const ContactForm: React.FC<ContactFormProps> = ({ contact, onSave, onCan
   const [saving, setSaving] = useState(false);
 
   const filteredAccounts = useMemo(() => {
-    if (!orgSearch) return accounts.slice(0, 5);
-    return accounts.filter(a => a.name.toLowerCase().includes(orgSearch.toLowerCase()));
+    const sorted = accounts.sort((a, b) => a.name.localeCompare(b.name));
+    if (!orgSearch) return sorted.slice(0, 5);
+    return sorted.filter(a => a.name.toLowerCase().includes(orgSearch.toLowerCase()));
   }, [accounts, orgSearch]);
 
   const handleOrgSelect = (accountId: string, name: string) => {
