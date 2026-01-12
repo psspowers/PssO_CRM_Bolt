@@ -397,6 +397,15 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
       const entityName = parsedDetails?.name || parsedDetails?.title || parsedDetails?.full_name || parsedDetails?.summary || details.entity_name || 'Unknown Item';
       const entityType = rawItem.entity_type || details.entity_type || 'Item';
 
+      let humanType = 'Item';
+      if (entityType === 'Opportunity') humanType = 'Deal';
+      else if (entityType === 'Account') humanType = 'Account';
+      else if (entityType === 'Contact') humanType = 'Contact';
+      else if (entityType === 'Partner') humanType = 'Partner';
+      else if (entityType === 'Relationship') humanType = 'Nexus Link';
+      else if (entityType === 'Project') humanType = 'Project';
+      else humanType = entityType || 'Item';
+
       const hasExtraContext = parsedDetails?.value || parsedDetails?.target_capacity;
       let extraContext = null;
 
@@ -416,7 +425,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         type: 'log',
         content: (
           <span>
-            Created new {entityType}: <span className="font-bold text-slate-900 dark:text-slate-100">{entityName}</span>
+            Created new {humanType}: <span className="font-bold text-slate-900 dark:text-slate-100">{entityName}</span>
             {extraContext && (
               <div className="mt-1 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 p-2 rounded border border-slate-100 dark:border-slate-700">
                 {extraContext}
