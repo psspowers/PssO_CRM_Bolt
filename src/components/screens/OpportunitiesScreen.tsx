@@ -474,35 +474,35 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           </div>
         </div>
       )}
-      {/* Stage Filter Grid - 3x2 Layout */}
-      <div className="flex gap-2 w-full mb-3">
+      {/* Stage Filter Grid - Responsive Layout */}
+      <div className="flex gap-1.5 sm:gap-2 w-full mb-3">
         {/* LEFT: 'ALL' BUTTON (Square, spans height) */}
         <button
           onClick={() => setStageFilter('all')}
-          className={`w-14 flex flex-col items-center justify-center rounded-lg text-[10px] font-bold border transition-all ${
+          className={`w-12 sm:w-14 flex flex-col items-center justify-center rounded-lg text-[9px] sm:text-[10px] font-bold border transition-all flex-shrink-0 ${
             stageFilter === 'all'
               ? 'bg-slate-800 text-white border-slate-900 shadow-md'
               : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
           }`}
         >
-          <LayoutGrid className="w-5 h-5 mb-1" />
-          All
+          <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5 sm:mb-1" />
+          <span className="leading-none">All</span>
         </button>
 
         {/* RIGHT: 6 STAGES (3x2 Grid) */}
-        <div className="grid grid-cols-3 grid-rows-2 gap-1.5 flex-1">
+        <div className="grid grid-cols-3 grid-rows-2 gap-1 sm:gap-1.5 flex-1 min-w-0">
           {/* Top Row */}
           {['Prospect', 'Qualified', 'Proposal'].map(stage => (
             <button
               key={stage}
               onClick={() => setStageFilter(stage)}
-              className={`h-8 flex items-center justify-center rounded-md text-[10px] sm:text-xs font-bold border truncate px-0.5 transition-all ${
+              className={`h-7 sm:h-8 flex items-center justify-center rounded-md text-[9px] sm:text-xs font-bold border px-1 min-w-0 transition-all ${
                 stageFilter === stage
                   ? 'bg-orange-100 text-orange-800 border-orange-200 ring-1 ring-orange-300'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}
             >
-              {stage}
+              <span className="truncate leading-none">{stage}</span>
             </button>
           ))}
 
@@ -511,13 +511,13 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
             <button
               key={stage}
               onClick={() => setStageFilter(stage)}
-              className={`h-8 flex items-center justify-center rounded-md text-[10px] sm:text-xs font-bold border truncate px-0.5 transition-all ${
+              className={`h-7 sm:h-8 flex items-center justify-center rounded-md text-[9px] sm:text-xs font-bold border px-1 min-w-0 transition-all ${
                 stageFilter === stage
                   ? 'bg-orange-100 text-orange-800 border-orange-200 ring-1 ring-orange-300'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
               }`}
             >
-              {stage}
+              <span className="truncate leading-none">{stage === 'Negotiation' ? 'Negotiat...' : stage === 'Term Sheet' ? 'Term Sheet' : stage}</span>
             </button>
           ))}
         </div>
