@@ -31,6 +31,7 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate }) => {
   const [tableExists, setTableExists] = useState(true);
   const [notificationPopoverOpen, setNotificationPopoverOpen] = useState(false);
   const channelRef = useRef<any>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch notifications from database
   useEffect(() => {
@@ -225,6 +226,30 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate }) => {
     }
   };
 
+  // Handle mouse enter - cancel any pending close
+  const handleMouseEnter = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+  };
+
+  // Handle mouse leave - close after a short delay
+  const handleMouseLeave = () => {
+    closeTimeoutRef.current = setTimeout(() => {
+      setNotificationPopoverOpen(false);
+    }, 300); // 300ms delay before closing
+  };
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Format time ago
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -293,6 +318,8 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate }) => {
                   <button
                     className="relative w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors"
                     aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
                   >
                     <Bell className="w-5 h-5" />
                     {unreadCount > 0 && (
@@ -302,7 +329,12 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate }) => {
                     )}
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[calc(100vw-2rem)] sm:w-96 p-0 shadow-2xl border-slate-200 rounded-2xl overflow-hidden" align="end">
+                <PopoverContent
+                  className="w-[calc(100vw-2rem)] sm:w-96 p-0 shadow-2xl border-slate-200 rounded-2xl overflow-hidden"
+                  align="end"
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
+                >
                   <div className="p-4 bg-slate-900 text-white flex justify-between items-center">
                     <span className="font-bold">Notifications</span>
                     {tableExists && (
