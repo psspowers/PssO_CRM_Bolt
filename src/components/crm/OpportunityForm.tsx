@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, X, Loader2, ChevronDown, TrendingUp, Info } from 'lucide-react';
+import { Save, X, Loader2, ChevronDown, TrendingUp, Info, Building2, Plus } from 'lucide-react';
 import { Opportunity, OpportunityStage, Priority, REType } from '../../types/crm';
 import { useAppContext } from '../../contexts/AppContext';
 import {
@@ -31,9 +31,10 @@ const priorities: Priority[] = ['Low', 'Medium', 'High'];
 const reTypes: REType[] = ['Solar - Rooftop', 'Solar - Ground', 'Solar - Floating'];
 
 export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, onSave, onCancel }) => {
-  const { users } = useAppContext();
+  const { users, accounts, createAccount } = useAppContext();
   const [form, setForm] = useState({
     name: opportunity.name,
+    accountId: opportunity.accountId || '',
     value: opportunity.value,
     stage: opportunity.stage,
     priority: opportunity.priority,
@@ -56,6 +57,29 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
   });
   const [saving, setSaving] = useState(false);
   const [taxonomyInfo, setTaxonomyInfo] = useState<{ score: number; points: number } | null>(null);
+
+  const [accountSearch, setAccountSearch] = useState('');
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [newAccountData, setNewAccountData] = useState({ name: '', sector: '' });
+
+  // Pre-fill account search with selected account name
+  useEffect(() => {
+    if (form.accountId) {
+      const acc = accounts.find(a => a.id === form.accountId);
+      if (acc) setAccountSearch(acc.name);
+    }
+  }, [form.accountId, accounts]);
+
+  // Filter accounts based on search
+  const filteredAccounts = accounts
+    .filter(a => a.name.toLowerCase().includes(accountSearch.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, 5);
+
+  const handleAccountSelect = (accountId: string, name: string) => {
+    setForm(prev => ({ ...prev, accountId }));
+    setAccountSearch(name);
+  };
 
   // --- CASCADING LOGIC ---
   const sectors = getSectors();
@@ -109,8 +133,26 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
     e.preventDefault();
     setSaving(true);
     try {
+      let finalAccountId = form.accountId;
+
+      // Create new account if needed
+      if (isCreatingAccount && newAccountData.name) {
+        const newAcc = await createAccount({
+          name: newAccountData.name,
+          country: 'Thailand',
+          sector: newAccountData.sector || 'Other',
+          industry: 'Other',
+          subIndustry: 'Other',
+          strategicImportance: 'Medium',
+          notes: 'Created via Opportunity Form',
+          linkedPartnerIds: [],
+        });
+        finalAccountId = newAcc.id;
+      }
+
       await onSave({
         name: form.name,
+        accountId: finalAccountId,
         value: form.value,
         stage: form.stage,
         priority: form.priority,
@@ -131,6 +173,9 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
         industry: form.industry,
         subIndustry: form.subIndustry,
       });
+    } catch (err) {
+      console.error('Failed to save opportunity:', err);
+      alert('Failed to save opportunity');
     } finally {
       setSaving(false);
     }
@@ -144,14 +189,117 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
       {/* Basic Info */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">Opportunity Name</label>
-        <input 
-          type="text" 
-          value={form.name} 
-          onChange={e => setForm({ ...form, name: e.target.value })} 
-          className={inputClass} 
+        <input
+          type="text"
+          value={form.name}
+          onChange={e => setForm({ ...form, name: e.target.value })}
+          className={inputClass}
           placeholder="Enter opportunity name"
-          required 
+          required
         />
+      </div>
+
+      {/* Account Selector with Inline Create */}
+      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+          <Building2 className="w-4 h-4" />
+          Account / Company
+        </label>
+
+        {!isCreatingAccount ? (
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search or create account..."
+              className={inputClass}
+              value={accountSearch || (accounts.find(a => a.id === form.accountId)?.name || '')}
+              onChange={e => {
+                setAccountSearch(e.target.value);
+                setForm(prev => ({ ...prev, accountId: '' }));
+              }}
+            />
+            {accountSearch && !form.accountId && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-xl shadow-xl max-h-64 overflow-y-auto">
+                {filteredAccounts.length > 0 ? (
+                  filteredAccounts.map(acc => (
+                    <button
+                      key={acc.id}
+                      type="button"
+                      onClick={() => handleAccountSelect(acc.id, acc.name)}
+                      className="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0"
+                    >
+                      <div className="font-semibold text-gray-900">{acc.name}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {acc.sector} • {acc.country}
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-3 text-sm text-gray-500">
+                    No accounts found
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCreatingAccount(true);
+                    setNewAccountData({ ...newAccountData, name: accountSearch });
+                  }}
+                  className="w-full text-left px-4 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold flex items-center gap-2 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create new account: "{accountSearch}"
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-semibold text-emerald-600">Creating New Account</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCreatingAccount(false);
+                  setAccountSearch('');
+                }}
+                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Account Name</label>
+              <input
+                type="text"
+                value={newAccountData.name}
+                onChange={e => setNewAccountData({ ...newAccountData, name: e.target.value })}
+                className={inputClass}
+                placeholder="Company name"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Sector</label>
+              <div className="relative">
+                <select
+                  value={newAccountData.sector}
+                  onChange={e => setNewAccountData({ ...newAccountData, sector: e.target.value })}
+                  className={selectClass}
+                  required
+                >
+                  <option value="">-- Select Sector --</option>
+                  {getSectors().map(sector => (
+                    <option key={sector} value={sector}>
+                      {SECTOR_ICONS[sector] || '📁'} {sector}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
