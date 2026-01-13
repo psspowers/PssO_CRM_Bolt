@@ -12,9 +12,8 @@ interface ContactsScreenProps {
 }
 
 export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) => {
-  const { contacts, accounts, partners, activities, relationships, users, loading, deleteContact, updateContact, canDelete, canEdit } = useAppContext();
+  const { contacts, accounts, partners, activities, relationships, users, loading, deleteContact, updateContact, canDelete, canEdit, searchQuery } = useAppContext();
   const { profile } = useAuth();
-  const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [showSearch, setShowSearch] = useState(false);
   const [showFilterPills, setShowFilterPills] = useState(false);
@@ -46,12 +45,12 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
   }, [contacts]);
 
   const filtered = useMemo(() => contacts.filter(c => {
-    const matchesSearch = c.fullName.toLowerCase().includes(search.toLowerCase()) ||
-                          c.role.toLowerCase().includes(search.toLowerCase()) ||
-                          c.email.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = c.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          c.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          c.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = roleFilter === 'all' || c.role === roleFilter;
     return matchesSearch && matchesRole;
-  }), [contacts, search, roleFilter]);
+  }), [contacts, searchQuery, roleFilter]);
 
   const deletableContacts = filtered.filter(c => canDelete());
   const allSelected = deletableContacts.length > 0 && deletableContacts.every(c => selectedIds.has(c.id));

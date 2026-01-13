@@ -1,15 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  SearchBar, 
-  OpportunityCard, 
-  FilterModal, 
-  DetailModal, 
-  OpportunityForm, 
-  LoadAnalyzer, 
-  MediaVault, 
-  QualityGate, 
+import {
+  OpportunityCard,
+  FilterModal,
+  DetailModal,
+  OpportunityForm,
+  LoadAnalyzer,
+  MediaVault,
+  QualityGate,
   InvestmentModeler,
-  CreditRiskHub 
+  CreditRiskHub
 } from '../crm';
 import { useAppContext } from '../../contexts/AppContext';
 import { Opportunity } from '../../types/crm';
@@ -58,13 +57,12 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     deleteOpportunity,
     updateOpportunity,
     canDelete,
-    canEdit
+    canEdit,
+    searchQuery
   } = useAppContext();
 
   // Get current logged-in user from AuthContext
   const { user, profile } = useAuth();
-
-  const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [showFilter, setShowFilter] = useState(false);
@@ -75,7 +73,6 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [stagnationFilter, setStagnationFilter] = useState<'all' | '30' | '60' | '90'>('all');
   
   // NEW: Hierarchy View Filter State
@@ -194,8 +191,8 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     if (selectedMemberId !== 'all' && o.ownerId !== selectedMemberId) return false;
 
     // 2. SEARCH FILTER - Match against deal name or account name
-    const matchesSearch = o.name.toLowerCase().includes(search.toLowerCase()) ||
-                          accounts.find(a => a.id === o.accountId)?.name.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = o.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          accounts.find(a => a.id === o.accountId)?.name.toLowerCase().includes(searchQuery.toLowerCase());
 
     // 3. STAGE FILTER
     const matchesStage = stageFilter === 'all' || o.stage === stageFilter;
@@ -213,7 +210,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
 
     return matchesSearch && matchesStage && matchesPriority;
   });
-  }, [opportunities, accounts, search, stageFilter, priorityFilter, hierarchyView, user?.id, subordinateIds, selectedMemberId, profile, stagnationFilter]);
+  }, [opportunities, accounts, searchQuery, stageFilter, priorityFilter, hierarchyView, user?.id, subordinateIds, selectedMemberId, profile, stagnationFilter]);
 
   // Calculate stats for the header (only count pre-win opportunities)
   const preWinStages = ['Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Lost'];
@@ -369,50 +366,24 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {/* Title with Search Icon */}
-          <div className="flex items-center justify-between mb-1">
-            {isSearchOpen ? (
-              <div className="flex-1 flex items-center gap-2 animate-in fade-in slide-in-from-right-10 duration-200">
-                <SearchBar value={search} onChange={setSearch} placeholder="Search deals..." showFilter={false} />
-                <button
-                  onClick={() => {
-                    setIsSearchOpen(false);
-                    setSearch('');
-                  }}
-                  className="p-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors flex-shrink-0"
-                >
-                  <X className="w-5 h-5 text-slate-600" />
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
-                          <Info className="w-4 h-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="max-w-xs">
-                        <p className="text-xs">
-                          <strong>Mine:</strong> Your opportunities<br />
-                          <strong>Team:</strong> Your deals + subordinates' deals
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <h1 className="text-2xl font-bold text-slate-900">Deals</h1>
-                </div>
-                <button
-                  onClick={() => setIsSearchOpen(true)}
-                  className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition-colors"
-                  aria-label="Search deals"
-                >
-                  <Search className="w-5 h-5 text-slate-600" />
-                </button>
-              </>
-            )}
+          {/* Title */}
+          <div className="flex items-center gap-2 mb-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
+                    <Info className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p className="text-xs">
+                    <strong>Mine:</strong> Your opportunities<br />
+                    <strong>Team:</strong> Your deals + subordinates' deals
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <h1 className="text-2xl font-bold text-slate-900">Deals</h1>
           </div>
 
           {/* Hierarchy View Toggle - My Deals vs Team Deals */}

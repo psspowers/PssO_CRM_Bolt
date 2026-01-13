@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Plus, Loader2, Check, Clock, ExternalLink, Trash2, AlertCircle } from 'lucide-react';
+import { Bell, Plus, Loader2, Check, Clock, ExternalLink, Trash2, AlertCircle, Search, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
 import { OnlineUsersStack } from './OnlineUsersStack';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppContext } from '@/contexts/AppContext';
 import { supabase } from '@/lib/supabase';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -25,13 +26,16 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate }) => {
   const { user, loading: authLoading } = useAuth();
+  const { searchQuery, setSearchQuery } = useAppContext();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [tableExists, setTableExists] = useState(true);
   const [notificationPopoverOpen, setNotificationPopoverOpen] = useState(false);
+  const [searchExpanded, setSearchExpanded] = useState(false);
   const channelRef = useRef<any>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch notifications from database
   useEffect(() => {
@@ -250,6 +254,25 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate }) => {
     };
   }, []);
 
+  // Handle search expand
+  const handleSearchExpand = () => {
+    setSearchExpanded(true);
+    setTimeout(() => searchInputRef.current?.focus(), 100);
+  };
+
+  // Handle search collapse
+  const handleSearchCollapse = () => {
+    if (!searchQuery) {
+      setSearchExpanded(false);
+    }
+  };
+
+  // Handle search clear
+  const handleSearchClear = () => {
+    setSearchQuery('');
+    setSearchExpanded(false);
+  };
+
   // Format time ago
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -288,14 +311,26 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate }) => {
           </div>
         </button>
 
-        {/* Desktop: Search Bar Placeholder */}
+        {/* Desktop: Functional Search Bar */}
         <div className="hidden lg:flex items-center flex-1">
           <div className="relative max-w-md w-full">
-            <input 
-              type="text" 
-              placeholder="Search deals, accounts, contacts..." 
-              className="w-full pl-4 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search deals, accounts, contacts..."
+              className="w-full pl-10 pr-10 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-slate-200 rounded-lg transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+            )}
           </div>
         </div>
         
@@ -303,6 +338,52 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate }) => {
           {/* ONLY SHOW CRM TOOLS IF LOGGED IN */}
           {user ? (
             <>
+              {/* Mobile Search - Expandable */}
+              {!searchExpanded ? (
+                <button
+                  onClick={handleSearchExpand}
+                  className="lg:hidden w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors"
+                  aria-label="Open search"
+                >
+                  <Search className="w-5 h-5" />
+                </button>
+              ) : (
+                <div className="lg:hidden fixed inset-x-0 top-16 z-50 px-4 py-3 bg-white border-b border-slate-200 shadow-lg">
+                  <div className="relative flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onBlur={handleSearchCollapse}
+                        placeholder="Search deals, accounts, contacts..."
+                        className="w-full pl-10 pr-10 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                      />
+                      {searchQuery && (
+                        <button
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => setSearchQuery('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-slate-200 rounded-lg transition-colors"
+                          aria-label="Clear search"
+                        >
+                          <X className="w-3.5 h-3.5 text-slate-400" />
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={handleSearchClear}
+                      className="p-2.5 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors flex-shrink-0"
+                      aria-label="Close search"
+                    >
+                      <X className="w-5 h-5 text-slate-600" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Quick Add - Mobile only (desktop has sidebar button) */}
               <button
                 onClick={onQuickAdd}

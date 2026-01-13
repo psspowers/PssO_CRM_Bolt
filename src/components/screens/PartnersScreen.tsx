@@ -11,9 +11,8 @@ interface PartnersScreenProps {
 }
 
 export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) => {
-  const { partners, accounts, contacts, activities, opportunities, relationships, users, loading, deletePartner, updatePartner, canDelete, canEdit } = useAppContext();
+  const { partners, accounts, contacts, activities, opportunities, relationships, users, loading, deletePartner, updatePartner, canDelete, canEdit, searchQuery } = useAppContext();
   const { profile } = useAuth();
-  const [search, setSearch] = useState('');
   const [regionFilter, setRegionFilter] = useState('S.E.A.');
   const [showFilter, setShowFilter] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
@@ -59,12 +58,12 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
   };
 
   const filtered = useMemo(() => partners.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
-                          p.country.toLowerCase().includes(search.toLowerCase()) ||
-                          p.region.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          p.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          p.region.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRegion = p.region === regionFilter;
     return matchesSearch && matchesRegion;
-  }), [partners, search, regionFilter]);
+  }), [partners, searchQuery, regionFilter]);
 
   const deletablePartners = filtered.filter(p => canDelete(p.ownerId));
   const allSelected = deletablePartners.length > 0 && deletablePartners.every(p => selectedIds.has(p.id));

@@ -13,9 +13,8 @@ interface AccountsScreenProps {
 }
 
 export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) => {
-  const { accounts, opportunities, partners, contacts, activities, relationships, users, loading, deleteAccount, updateAccount, canDelete, canEdit } = useAppContext();
+  const { accounts, opportunities, partners, contacts, activities, relationships, users, loading, deleteAccount, updateAccount, canDelete, canEdit, searchQuery } = useAppContext();
   const { profile } = useAuth();
-  const [search, setSearch] = useState('');
   const [sectorFilter, setSectorFilter] = useState('all');
   const [importanceFilter, setImportanceFilter] = useState('all');
   const [showSearch, setShowSearch] = useState(false);
@@ -49,14 +48,14 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
   }, [accounts]);
 
   const filtered = useMemo(() => accounts.filter(a => {
-    const matchesSearch = a.name.toLowerCase().includes(search.toLowerCase()) ||
-                          a.country.toLowerCase().includes(search.toLowerCase()) ||
-                          (a.industry || '').toLowerCase().includes(search.toLowerCase()) ||
-                          (a.subIndustry || '').toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          a.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (a.industry || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (a.subIndustry || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSector = sectorFilter === 'all' || a.sector === sectorFilter;
     const matchesImportance = importanceFilter === 'all' || a.strategicImportance === importanceFilter;
     return matchesSearch && matchesSector && matchesImportance;
-  }), [accounts, search, sectorFilter, importanceFilter]);
+  }), [accounts, searchQuery, sectorFilter, importanceFilter]);
 
   const deletableAccounts = filtered.filter(a => canDelete(a.ownerId));
   const allSelected = deletableAccounts.length > 0 && deletableAccounts.every(a => selectedIds.has(a.id));

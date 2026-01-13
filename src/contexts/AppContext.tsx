@@ -9,11 +9,13 @@ interface CRMState {
   partners: Partner[]; accounts: Account[]; contacts: Contact[]; opportunities: Opportunity[];
   projects: Project[]; activities: Activity[]; relationships: Relationship[]; users: User[];
   loading: boolean; error: string | null;
+  searchQuery: string;
 }
 
 interface AppContextType extends CRMState {
   currentUser: UserProfile | null;
   refreshData: () => Promise<void>;
+  setSearchQuery: (query: string) => void;
   createPartner: (p: Omit<Partner, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Partner>;
   updatePartner: (id: string, u: Partial<Partner>) => Promise<Partner>;
   deletePartner: (id: string) => Promise<void>;
@@ -43,7 +45,7 @@ interface AppContextType extends CRMState {
 const AppContext = createContext<AppContextType | null>(null);
 export const useAppContext = () => { const ctx = useContext(AppContext); if (!ctx) throw new Error('useAppContext must be used within AppProvider'); return ctx; };
 
-const emptyState: CRMState = { partners: [], accounts: [], contacts: [], opportunities: [], projects: [], activities: [], relationships: [], users: [], loading: false, error: null };
+const emptyState: CRMState = { partners: [], accounts: [], contacts: [], opportunities: [], projects: [], activities: [], relationships: [], users: [], loading: false, error: null, searchQuery: '' };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { profile, user, loading: authLoading } = useAuth();
@@ -97,8 +99,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const canDelete = (ownerId?: string) => !profile ? false : profile.role === 'super_admin' || profile.role === 'admin' || ownerId === profile.id;
   const canCreate = () => profile?.role === 'super_admin' || profile?.role === 'admin' || profile?.role === 'internal';
 
+  const setSearchQuery = (query: string) => {
+    setState(s => ({ ...s, searchQuery: query }));
+  };
+
   const value: AppContextType = {
-    ...state, currentUser: profile, refreshData, canEdit, canDelete, canCreate,
+    ...state, currentUser: profile, refreshData, setSearchQuery, canEdit, canDelete, canCreate,
     createPartner: async (p) => { const r = await api.createPartner(p); setState(s => ({ ...s, partners: [...s.partners, r] })); announce(`Partner ${r.name} created`); return r; },
     updatePartner: async (id, u) => { const r = await api.updatePartner(id, u); setState(s => ({ ...s, partners: s.partners.map(p => p.id === id ? r : p) })); announce(`Partner ${r.name} updated`); return r; },
     deletePartner: async (id) => { const partner = state.partners.find(p => p.id === id); await api.deletePartner(id); setState(s => ({ ...s, partners: s.partners.filter(p => p.id !== id) })); announce(`Partner ${partner?.name || ''} deleted`); },
