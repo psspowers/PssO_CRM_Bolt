@@ -29,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [tableExists, setTableExists] = useState(true);
+  const [notificationPopoverOpen, setNotificationPopoverOpen] = useState(false);
   const channelRef = useRef<any>(null);
 
   // Fetch notifications from database
@@ -207,6 +208,9 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate }) => {
       await markAsRead(n.id);
     }
 
+    // Close the popover
+    setNotificationPopoverOpen(false);
+
     // Navigate to related entity
     if (onNavigate && n.entity_type && n.entity_id) {
       const tabMap: Record<string, string> = {
@@ -284,7 +288,7 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate }) => {
               </button>
 
               {/* Notifications */}
-              <Popover>
+              <Popover open={notificationPopoverOpen} onOpenChange={setNotificationPopoverOpen}>
                 <PopoverTrigger asChild>
                   <button
                     className="relative w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors"
