@@ -11,8 +11,9 @@ interface PartnersScreenProps {
 }
 
 export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) => {
-  const { partners, accounts, contacts, activities, opportunities, relationships, users, loading, deletePartner, updatePartner, canDelete, canEdit, searchQuery } = useAppContext();
+  const { partners, accounts, contacts, activities, opportunities, relationships, users, loading, deletePartner, updatePartner, canDelete, canEdit } = useAppContext();
   const { profile } = useAuth();
+  const [search, setSearch] = useState('');
   const [regionFilter, setRegionFilter] = useState('S.E.A.');
   const [showFilter, setShowFilter] = useState(false);
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
@@ -58,13 +59,13 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
   };
 
   const filtered = useMemo(() => partners.filter(p => {
-    const query = (searchQuery || '').toLowerCase();
+    const query = (search || '').toLowerCase();
     const matchesSearch = p.name.toLowerCase().includes(query) ||
                           p.country.toLowerCase().includes(query) ||
                           p.region.toLowerCase().includes(query);
     const matchesRegion = p.region === regionFilter;
     return matchesSearch && matchesRegion;
-  }), [partners, searchQuery, regionFilter]);
+  }), [partners, search, regionFilter]);
 
   const deletablePartners = filtered.filter(p => canDelete(p.ownerId));
   const allSelected = deletablePartners.length > 0 && deletablePartners.every(p => selectedIds.has(p.id));
