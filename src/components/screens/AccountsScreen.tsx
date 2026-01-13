@@ -229,6 +229,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
         entityId={selectedAccount?.id || ''}
         entityType="Account"
         clickupLink={selectedAccount?.clickupLink}
+        accountId={selectedAccount?.id}
         activities={activities}
         users={users}
         contacts={contacts}

@@ -590,6 +590,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         entityId={selectedOpp?.id || ''}
         entityType="Opportunity"
         clickupLink={selectedOpp?.clickupLink}
+        accountId={selectedOpp?.accountId}
         activities={activities}
         users={users}
         contacts={contacts}
