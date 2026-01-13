@@ -13,8 +13,8 @@ interface Notification {
   message: string;
   type: string;
   is_read: boolean;
-  related_to_id?: string;
-  related_to_type?: string;
+  entity_id?: string;
+  entity_type?: string;
   created_at: string;
 }
 
@@ -206,9 +206,9 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate }) => {
     if (!n.is_read) {
       await markAsRead(n.id);
     }
-    
+
     // Navigate to related entity
-    if (onNavigate && n.related_to_type && n.related_to_id) {
+    if (onNavigate && n.entity_type && n.entity_id) {
       const tabMap: Record<string, string> = {
         'Opportunity': 'opportunities',
         'Account': 'accounts',
@@ -216,8 +216,8 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate }) => {
         'Contact': 'contacts',
         'Project': 'projects'
       };
-      const tab = tabMap[n.related_to_type] || 'home';
-      onNavigate(tab, n.related_to_id);
+      const tab = tabMap[n.entity_type] || 'home';
+      onNavigate(tab, n.entity_id);
     }
   };
 
