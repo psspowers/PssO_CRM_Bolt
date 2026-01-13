@@ -45,9 +45,10 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
   }, [contacts]);
 
   const filtered = useMemo(() => contacts.filter(c => {
-    const matchesSearch = c.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          c.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          c.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = (searchQuery || '').toLowerCase();
+    const matchesSearch = c.fullName.toLowerCase().includes(query) ||
+                          c.role.toLowerCase().includes(query) ||
+                          c.email.toLowerCase().includes(query);
     const matchesRole = roleFilter === 'all' || c.role === roleFilter;
     return matchesSearch && matchesRole;
   }), [contacts, searchQuery, roleFilter]);

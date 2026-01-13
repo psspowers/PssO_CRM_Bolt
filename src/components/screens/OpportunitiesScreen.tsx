@@ -191,8 +191,8 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     if (selectedMemberId !== 'all' && o.ownerId !== selectedMemberId) return false;
 
     // 2. SEARCH FILTER - Match against deal name or account name
-    const matchesSearch = o.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          accounts.find(a => a.id === o.accountId)?.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = o.name.toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+                          accounts.find(a => a.id === o.accountId)?.name.toLowerCase().includes((searchQuery || '').toLowerCase());
 
     // 3. STAGE FILTER
     const matchesStage = stageFilter === 'all' || o.stage === stageFilter;

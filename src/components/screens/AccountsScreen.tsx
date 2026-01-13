@@ -48,10 +48,11 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
   }, [accounts]);
 
   const filtered = useMemo(() => accounts.filter(a => {
-    const matchesSearch = a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          a.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (a.industry || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (a.subIndustry || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const query = (searchQuery || '').toLowerCase();
+    const matchesSearch = a.name.toLowerCase().includes(query) ||
+                          a.country.toLowerCase().includes(query) ||
+                          (a.industry || '').toLowerCase().includes(query) ||
+                          (a.subIndustry || '').toLowerCase().includes(query);
     const matchesSector = sectorFilter === 'all' || a.sector === sectorFilter;
     const matchesImportance = importanceFilter === 'all' || a.strategicImportance === importanceFilter;
     return matchesSearch && matchesSector && matchesImportance;

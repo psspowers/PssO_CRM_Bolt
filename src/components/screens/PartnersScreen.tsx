@@ -58,9 +58,10 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
   };
 
   const filtered = useMemo(() => partners.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          p.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          p.region.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = (searchQuery || '').toLowerCase();
+    const matchesSearch = p.name.toLowerCase().includes(query) ||
+                          p.country.toLowerCase().includes(query) ||
+                          p.region.toLowerCase().includes(query);
     const matchesRegion = p.region === regionFilter;
     return matchesSearch && matchesRegion;
   }), [partners, searchQuery, regionFilter]);
