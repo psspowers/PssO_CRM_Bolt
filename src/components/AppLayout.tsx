@@ -493,7 +493,7 @@ export default function AppLayout() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden max-w-full min-w-0">
         {/* Header - visible on mobile, simplified on desktop */}
-        <Header onQuickAdd={() => setShowQuickAdd(true)} onNavigate={handleDeepLink} />
+        <Header onQuickAdd={() => setShowQuickAdd(true)} onNavigate={handleDeepLink} activeTab={activeTab} />
 
         {/* Main Content */}
         <main
