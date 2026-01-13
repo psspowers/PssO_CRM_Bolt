@@ -72,8 +72,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
     setLoadingNews(true);
     try {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      console.log('Loading news for accountId:', accountId);
 
       const [newsResult, interactionsResult] = await Promise.all([
         supabase
@@ -85,13 +84,18 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           `)
           .eq('related_account_id', accountId)
           .lte('published_at', new Date().toISOString())
-          .gte('news_date', thirtyDaysAgo.toISOString().split('T')[0])
-          .order('published_at', { ascending: false }),
+          .order('published_at', { ascending: false })
+          .limit(50),
         supabase
           .from('market_news_interactions')
           .select('news_id, is_favorite, is_hidden')
           .eq('user_id', user.id)
       ]);
+
+      console.log('News result:', newsResult.data?.length || 0, 'items');
+      if (newsResult.error) {
+        console.error('Error loading news:', newsResult.error);
+      }
 
       if (newsResult.data) {
         const interactionsMap = new Map<string, { is_favorite: boolean; is_hidden: boolean }>();
