@@ -12,8 +12,9 @@ interface ContactsScreenProps {
 }
 
 export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) => {
-  const { contacts, accounts, partners, activities, relationships, users, loading, deleteContact, updateContact, canDelete, canEdit, searchQuery } = useAppContext();
+  const { contacts, accounts, partners, activities, relationships, users, loading, deleteContact, updateContact, canDelete, canEdit } = useAppContext();
   const { profile } = useAuth();
+  const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [showSearch, setShowSearch] = useState(false);
   const [showFilterPills, setShowFilterPills] = useState(false);
@@ -45,13 +46,13 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
   }, [contacts]);
 
   const filtered = useMemo(() => contacts.filter(c => {
-    const query = (searchQuery || '').toLowerCase();
+    const query = (search || '').toLowerCase();
     const matchesSearch = c.fullName.toLowerCase().includes(query) ||
                           c.role.toLowerCase().includes(query) ||
                           c.email.toLowerCase().includes(query);
     const matchesRole = roleFilter === 'all' || c.role === roleFilter;
     return matchesSearch && matchesRole;
-  }), [contacts, searchQuery, roleFilter]);
+  }), [contacts, search, roleFilter]);
 
   const deletableContacts = filtered.filter(c => canDelete());
   const allSelected = deletableContacts.length > 0 && deletableContacts.every(c => selectedIds.has(c.id));

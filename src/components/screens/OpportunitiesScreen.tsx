@@ -8,7 +8,8 @@ import {
   MediaVault,
   QualityGate,
   InvestmentModeler,
-  CreditRiskHub
+  CreditRiskHub,
+  SearchBar
 } from '../crm';
 import { useAppContext } from '../../contexts/AppContext';
 import { Opportunity } from '../../types/crm';
@@ -57,12 +58,12 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     deleteOpportunity,
     updateOpportunity,
     canDelete,
-    canEdit,
-    searchQuery
+    canEdit
   } = useAppContext();
 
   // Get current logged-in user from AuthContext
   const { user, profile } = useAuth();
+  const [search, setSearch] = useState('');
   const [stageFilter, setStageFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [showFilter, setShowFilter] = useState(false);
@@ -191,8 +192,8 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     if (selectedMemberId !== 'all' && o.ownerId !== selectedMemberId) return false;
 
     // 2. SEARCH FILTER - Match against deal name or account name
-    const matchesSearch = o.name.toLowerCase().includes((searchQuery || '').toLowerCase()) ||
-                          accounts.find(a => a.id === o.accountId)?.name.toLowerCase().includes((searchQuery || '').toLowerCase());
+    const matchesSearch = o.name.toLowerCase().includes((search || '').toLowerCase()) ||
+                          accounts.find(a => a.id === o.accountId)?.name.toLowerCase().includes((search || '').toLowerCase());
 
     // 3. STAGE FILTER
     const matchesStage = stageFilter === 'all' || o.stage === stageFilter;
@@ -210,7 +211,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
 
     return matchesSearch && matchesStage && matchesPriority;
   });
-  }, [opportunities, accounts, searchQuery, stageFilter, priorityFilter, hierarchyView, user?.id, subordinateIds, selectedMemberId, profile, stagnationFilter]);
+  }, [opportunities, accounts, search, stageFilter, priorityFilter, hierarchyView, user?.id, subordinateIds, selectedMemberId, profile, stagnationFilter]);
 
   // Calculate stats for the header (only count pre-win opportunities)
   const preWinStages = ['Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Lost'];
@@ -445,6 +446,14 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           </div>
         </div>
       )}
+
+      {/* Search Bar */}
+      {!selectionMode && (
+        <div className="mb-3">
+          <SearchBar value={search} onChange={setSearch} placeholder="Search deals, accounts..." onFilterClick={() => setShowFilter(true)} />
+        </div>
+      )}
+
       {/* Stage Filter Grid - Responsive Layout */}
       <div className="flex gap-1.5 sm:gap-2 w-full mb-3">
         {/* LEFT: 'ALL' BUTTON (Square, spans height) */}
