@@ -21,6 +21,11 @@ function getSupabaseClient(): SupabaseClient {
         autoRefreshToken: true,
         detectSessionInUrl: true,
         persistSession: true
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
       }
     });
   }
