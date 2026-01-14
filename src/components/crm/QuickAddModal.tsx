@@ -83,7 +83,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
     stage: 'Prospect' as OpportunityStage,
     priority: 'Medium' as Priority,
     targetCapacity: 0,
-    reType: 'Solar - Rooftop' as REType,
+    reType: [] as REType[],
     sector: '',
     industry: '',
     subIndustry: '',
@@ -156,7 +156,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
         stage: 'Prospect',
         priority: 'Medium',
         targetCapacity: 0,
-        reType: 'Solar - Rooftop',
+        reType: [],
         sector: '',
         industry: '',
         subIndustry: '',
@@ -712,16 +712,25 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
 
                   {/* RE Type */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">RE Type</label>
-                    <div className="relative">
-                      <select 
-                        value={oppForm.reType} 
-                        onChange={e => setOppForm({ ...oppForm, reType: e.target.value as REType })} 
-                        className={selectClass}
-                      >
-                        {reTypes.map(r => <option key={r} value={r}>{r}</option>)}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">RE Type (Multi-Select)</label>
+                    <div className="space-y-2">
+                      {reTypes.map(type => (
+                        <label key={type} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={oppForm.reType.includes(type)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setOppForm({ ...oppForm, reType: [...oppForm.reType, type] });
+                              } else {
+                                setOppForm({ ...oppForm, reType: oppForm.reType.filter(t => t !== type) });
+                              }
+                            }}
+                            className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
+                          />
+                          <span className="text-sm text-gray-700">{type}</span>
+                        </label>
+                      ))}
                     </div>
                   </div>
 

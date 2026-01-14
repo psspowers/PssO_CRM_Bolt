@@ -102,7 +102,7 @@ export interface Opportunity {
   ppaTermYears?: number;
   epcCost?: number;
   manualProbability?: number;
-  reType: REType;
+  reType: REType[];
   targetDecisionDate?: Date;
   operatingDays?: string[];
   daytimeLoadKW?: number;

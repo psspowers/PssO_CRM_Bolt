@@ -317,7 +317,7 @@ export default function AppLayout() {
               stage: item.stage || 'Prospect',
               priority: item.priority || 'Medium',
               targetCapacity: item.targetCapacity || 0,
-              reType: item.reType || 'Solar - Rooftop',
+              reType: item.reType || [],
               sector: item.sector || '',
               industry: item.industry || '',
               subIndustry: item.subIndustry || '',

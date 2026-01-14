@@ -376,9 +376,9 @@ const ENTITY_CONFIGS: Record<EntityType, EntityConfig> = {
       ownerName: ['Leader', 'Leader*', 'leader', 'owner', 'owner name', 'assigned to', 'sales rep'],
     },
     templateData: [
-      ['Opportunity Name', 'Account Name', 'Location', 'Partner Name', 'Leader', 'Stage', 'Priority', 'Value (THB)', 'Target Capacity (MW)', 'Max Capacity (MWp)', 'PPA Term (Years)', 'EPC Cost (THB)', 'RE Type', 'Probability (%)', 'ClickUp Link'],
+      ['Opportunity Name', 'Account Name', 'Location', 'Partner Name', 'Leader', 'Stage', 'Priority', 'Value (THB)', 'Target Capacity (MW)', 'Max Capacity (MWp)', 'PPA Term (Years)', 'EPC Cost (THB)', 'RE Type (comma-separated)', 'Probability (%)', 'ClickUp Link'],
       ['Renaissance Phuket Resort & Spa', 'Seacon Hotels & Resorts', 'Phuket', 'K Nuu (Tanapatanagul)', 'Chaweng Suesut', 'Won', 'High', '50000000', '0.4554', '0.4554', '15', '20000000', 'Solar - Rooftop', '100', '1me2gwt'],
-      ['Naresuan University Solar', 'Naresuan University', 'Phitsanulok', 'Rohit Powel', 'Nakkarin Saingarmsatit', 'Term Sheet', 'High', '278070000', '12.09', '12.09', '12', '23000000', 'Solar - Rooftop', '100', '860py2mgf'],
+      ['Naresuan University Solar', 'Naresuan University', 'Phitsanulok', 'Rohit Powel', 'Nakkarin Saingarmsatit', 'Term Sheet', 'High', '278070000', '12.09', '12.09', '12', '23000000', 'Solar - Rooftop, Solar - Ground', '100', '860py2mgf'],
     ],
     linkableFields: [
       { key: 'accountId', label: 'Link to Account', targetEntity: 'Account', matchField: 'accountName' },
@@ -916,18 +916,42 @@ export const BulkImportWizard: React.FC<BulkImportWizardProps> = ({
       
       // Check select options
       if (field.type === 'select' && field.options && parsedValue) {
-        const normalizedValue = String(parsedValue).trim();
-        const matchedOption = field.options.find(
-          opt => opt.toLowerCase() === normalizedValue.toLowerCase()
-        );
-        if (!matchedOption) {
-          errors[field.key] = `Invalid option. Expected: ${field.options.join(', ')}`;
+        if (field.key === 'reType') {
+          const values = String(parsedValue).split(',').map(v => v.trim()).filter(Boolean);
+          const matchedValues: string[] = [];
+          const invalidValues: string[] = [];
+
+          values.forEach(val => {
+            const matchedOption = field.options!.find(
+              opt => opt.toLowerCase() === val.toLowerCase()
+            );
+            if (matchedOption) {
+              matchedValues.push(matchedOption);
+            } else {
+              invalidValues.push(val);
+            }
+          });
+
+          if (invalidValues.length > 0) {
+            errors[field.key] = `Invalid RE Type(s): ${invalidValues.join(', ')}. Expected: ${field.options.join(', ')}`;
+          } else {
+            data[field.key] = matchedValues;
+            return;
+          }
         } else {
-          data[field.key] = matchedOption;
-          return;
+          const normalizedValue = String(parsedValue).trim();
+          const matchedOption = field.options.find(
+            opt => opt.toLowerCase() === normalizedValue.toLowerCase()
+          );
+          if (!matchedOption) {
+            errors[field.key] = `Invalid option. Expected: ${field.options.join(', ')}`;
+          } else {
+            data[field.key] = matchedOption;
+            return;
+          }
         }
       }
-      
+
       data[field.key] = parsedValue;
     });
     

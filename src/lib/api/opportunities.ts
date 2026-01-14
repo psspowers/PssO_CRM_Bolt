@@ -32,7 +32,7 @@ const toOpp = (db: DbOpportunity, partnerIds: string[] = []): Opportunity => ({
   ppaTermYears: db.ppa_term,
   epcCost: db.epc_cost,
   manualProbability: db.manual_probability,
-  reType: db.re_type as REType,
+  reType: (db.re_type || []) as REType[],
   targetDecisionDate: db.target_decision_date ? new Date(db.target_decision_date) : undefined,
   companyName: db.company_name,
 
