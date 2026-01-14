@@ -48,13 +48,19 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
         setOnlineUsers(users);
       })
-      .subscribe(async (status) => {
+      .subscribe(async (status, err) => {
         if (status === 'SUBSCRIBED') {
           await channel.track({
             name: profile.name,
             avatar: profile.avatar,
             onlineAt: new Date().toISOString(),
           });
+        }
+        if (status === 'CHANNEL_ERROR') {
+          console.warn('Presence subscription error (online users may not be visible):', err);
+        }
+        if (status === 'TIMED_OUT') {
+          console.warn('Presence subscription timed out (online users may not be visible)');
         }
       });
 

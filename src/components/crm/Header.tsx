@@ -107,7 +107,7 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          setNotifications(prev => 
+          setNotifications(prev =>
             prev.map(n => n.id === payload.new.id ? payload.new as Notification : n)
           );
         }
@@ -124,7 +124,14 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
           setNotifications(prev => prev.filter(n => n.id !== payload.old.id));
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.warn('Realtime subscription error (notifications will still work via polling):', err);
+        }
+        if (status === 'TIMED_OUT') {
+          console.warn('Realtime subscription timed out (notifications will still work via polling)');
+        }
+      });
 
     channelRef.current = channel;
 
