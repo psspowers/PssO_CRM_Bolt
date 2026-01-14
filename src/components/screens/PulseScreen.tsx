@@ -545,28 +545,48 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
   useEffect(() => {
     if (!forcedOpenId) return;
 
-    if (activeTab !== 'market') setActiveTab('market');
+    console.log("🎯 Deep Link Activated:", forcedOpenId);
+
+    if (activeTab !== 'market') {
+      console.log("📋 Switching to Market Intel tab...");
+      setActiveTab('market');
+      return;
+    }
+
+    console.log("✅ Market tab active, starting scroll search...");
 
     const attemptScroll = (attempts = 0) => {
       const element = document.getElementById(`news-${forcedOpenId}`);
 
       if (element) {
-        console.log("Target found, scrolling...", forcedOpenId);
+        console.log(`✨ Target found on attempt ${attempts + 1}! Scrolling to:`, forcedOpenId);
+
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
         setHighlightedId(forcedOpenId);
-        setTimeout(() => setHighlightedId(null), 3000);
+        setTimeout(() => {
+          console.log("💫 Flash effect completed");
+          setHighlightedId(null);
+        }, 3000);
         return;
       }
 
       if (attempts < 10) {
-        setTimeout(() => attemptScroll(attempts + 1), 200 * (attempts + 1));
+        const nextDelay = 200 * (attempts + 1);
+        console.log(`🔍 Attempt ${attempts + 1} failed. Retrying in ${nextDelay}ms...`);
+        setTimeout(() => attemptScroll(attempts + 1), nextDelay);
       } else {
-        console.warn("Could not find target news item after multiple attempts:", forcedOpenId);
+        console.error("❌ Could not find target news item after 10 attempts:", forcedOpenId);
+        console.log("Available news items:", marketNews.map(n => n.id));
       }
     };
 
-    attemptScroll();
+    const initialDelay = setTimeout(() => {
+      console.log("🚀 Starting scroll attempt...");
+      attemptScroll();
+    }, 300);
+
+    return () => clearTimeout(initialDelay);
 
   }, [forcedOpenId, marketNews, activeTab]);
 
