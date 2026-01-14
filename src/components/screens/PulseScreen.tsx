@@ -542,8 +542,11 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
     if (oppData) setOpportunities(oppData);
   };
 
+  const scrollAttemptRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!forcedOpenId) return;
+    if (scrollAttemptRef.current === forcedOpenId) return;
 
     console.log("🎯 Deep Link Activated:", forcedOpenId);
 
@@ -553,6 +556,7 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
       return;
     }
 
+    scrollAttemptRef.current = forcedOpenId;
     console.log("✅ Market tab active, starting scroll search...");
 
     const attemptScroll = (attempts = 0) => {
@@ -577,18 +581,20 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
         setTimeout(() => attemptScroll(attempts + 1), nextDelay);
       } else {
         console.error("❌ Could not find target news item after 10 attempts:", forcedOpenId);
-        console.log("Available news items:", marketNews.map(n => n.id));
+        const currentNews = document.querySelectorAll('[id^="news-"]');
+        console.log(`Available news items: ${currentNews.length} found`,
+          Array.from(currentNews).map(el => el.id));
       }
     };
 
     const initialDelay = setTimeout(() => {
       console.log("🚀 Starting scroll attempt...");
       attemptScroll();
-    }, 300);
+    }, 500);
 
     return () => clearTimeout(initialDelay);
 
-  }, [forcedOpenId, marketNews, activeTab]);
+  }, [forcedOpenId, activeTab]);
 
   const loadData = async () => {
     setLoading(true);
@@ -740,7 +746,7 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const [newsResult, interactionsResult] = await Promise.all([
+    const newsQueries = [
       supabase
         .from('market_news')
         .select(`
@@ -750,7 +756,26 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
         `)
         .lte('published_at', new Date().toISOString())
         .gte('news_date', thirtyDaysAgo.toISOString().split('T')[0])
-        .order('published_at', { ascending: false }),
+        .order('published_at', { ascending: false })
+    ];
+
+    if (forcedOpenId) {
+      console.log("📰 Loading specific news item for deep link:", forcedOpenId);
+      newsQueries.push(
+        supabase
+          .from('market_news')
+          .select(`
+            *,
+            accounts(name),
+            crm_users!market_news_created_by_fkey(name)
+          `)
+          .eq('id', forcedOpenId)
+          .single()
+      );
+    }
+
+    const [newsResult, interactionsResult, ...specificNewsResults] = await Promise.all([
+      ...newsQueries,
       supabase
         .from('market_news_interactions')
         .select('news_id, is_favorite, is_hidden')
@@ -771,7 +796,21 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
       const newFavorites = new Set<string>();
       const newHidden = new Set<string>();
 
-      const formattedNews = newsResult.data.map((item: any) => {
+      let allNewsData = [...newsResult.data];
+
+      if (forcedOpenId && specificNewsResults.length > 0 && specificNewsResults[0].data) {
+        const specificItem = specificNewsResults[0].data;
+        const existsInMainResults = allNewsData.some((item: any) => item.id === specificItem.id);
+
+        if (!existsInMainResults) {
+          console.log("✅ Adding specific news item to results:", specificItem.id);
+          allNewsData = [specificItem, ...allNewsData];
+        } else {
+          console.log("ℹ️ Specific news item already in results");
+        }
+      }
+
+      const formattedNews = allNewsData.map((item: any) => {
         const interaction = interactionsMap.get(item.id);
 
         if (interaction?.is_favorite) {
