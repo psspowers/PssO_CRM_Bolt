@@ -553,6 +553,7 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
   };
 
   const scrollAttemptRef = useRef<string | null>(null);
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
     if (!forcedOpenId) return;
@@ -571,7 +572,7 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
 
     let attempts = 0;
     const interval = setInterval(() => {
-      const element = document.getElementById(`news-${forcedOpenId}`);
+      const element = itemRefs.current.get(forcedOpenId);
 
       if (element) {
         console.log(`✨ Target found on attempt ${attempts + 1}! Scrolling to:`, forcedOpenId);
@@ -590,9 +591,8 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
       attempts++;
       if (attempts > 10) {
         console.error("❌ Could not find target news item after 10 attempts:", forcedOpenId);
-        const currentNews = document.querySelectorAll('[id^="news-"]');
-        console.log(`Available news items: ${currentNews.length} found`,
-          Array.from(currentNews).map(el => el.id));
+        console.log(`Available news items in refs: ${itemRefs.current.size} found`,
+          Array.from(itemRefs.current.keys()));
         clearInterval(interval);
       } else {
         console.log(`🔍 Attempt ${attempts} failed. Retrying...`);
@@ -913,7 +913,7 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
       const { error } = await supabase.from('activities').insert({
         type: data.type,
         summary: data.summary,
-        notes: data.details,
+        details: data.details,
         is_task: data.isTask,
         status: data.isTask ? data.taskStatus : undefined,
         due_date: data.dueDate,
@@ -1603,6 +1603,10 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
                   <div
                     id={`news-${news.id}`}
                     key={news.id}
+                    ref={(el) => {
+                      if (el) itemRefs.current.set(news.id, el);
+                      else itemRefs.current.delete(news.id);
+                    }}
                     className={`p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-500 ${
                       highlightedId === news.id
                         ? 'ring-4 ring-orange-500 bg-orange-50 dark:bg-orange-900/30 shadow-2xl shadow-orange-500/50 scale-[1.03] animate-pulse'
