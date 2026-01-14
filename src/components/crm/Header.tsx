@@ -231,7 +231,9 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
         'Account': 'accounts',
         'Partner': 'partners',
         'Contact': 'contacts',
-        'Project': 'projects'
+        'Project': 'projects',
+        'MarketNews': 'pulse',
+        'Activity': 'pulse'
       };
       const tab = tabMap[n.entity_type] || 'home';
       onNavigate(tab, n.entity_id);

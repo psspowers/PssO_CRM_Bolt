@@ -470,7 +470,11 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
   return null;
 };
 
-export default function PulseScreen() {
+interface PulseScreenProps {
+  forcedOpenId?: string | null;
+}
+
+export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
   const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState<'internal' | 'market'>('internal');
   const [showPostModal, setShowPostModal] = useState(false);
@@ -536,6 +540,19 @@ export default function PulseScreen() {
       .order('name');
     if (oppData) setOpportunities(oppData);
   };
+
+  useEffect(() => {
+    if (forcedOpenId && marketNews.length > 0) {
+      setActiveTab('market');
+
+      setTimeout(() => {
+        const element = document.getElementById(`news-${forcedOpenId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
+  }, [forcedOpenId, marketNews]);
 
   const loadData = async () => {
     setLoading(true);

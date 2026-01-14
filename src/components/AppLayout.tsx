@@ -429,7 +429,7 @@ export default function AppLayout() {
       case 'contacts': return <ContactsScreen forcedOpenId={autoOpenId} />;
       case 'projects': return <ProjectsScreen forcedOpenId={autoOpenId} />;
       case 'tasks': return <TasksScreen />;
-      case 'pulse': return <PulseScreen />;
+      case 'pulse': return <PulseScreen forcedOpenId={autoOpenId} />;
       case 'timeline': return <ActivityTimelineScreen />;
       case 'search': return <SearchScreen />;
       default:
