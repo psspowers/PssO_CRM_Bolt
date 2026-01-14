@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, StickyNote, Phone, Users, MessageSquare, MapPin, Building2, Briefcase, UserPlus, Target, CheckSquare, Clock, AlertCircle, ChevronDown, TrendingUp, Info, Loader2 } from 'lucide-react';
+import { X, StickyNote, Phone, Users, MessageSquare, MapPin, Building2, Briefcase, UserPlus, Target, CheckSquare, Clock, AlertCircle, ChevronDown, TrendingUp, Info, Loader2, Plus, Search } from 'lucide-react';
 import { ActivityType, OpportunityStage, Priority, REType, User } from '../../types/crm';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppContext } from '../../contexts/AppContext';
 import { supabase } from '@/lib/supabase';
 import {
   getSectors,
@@ -48,6 +49,7 @@ const RE_OPTIONS: REType[] = ['PV - Roof', 'PV - Ground', 'PV - Floating', 'BESS
 
 export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, onAdd, onAddEntity, entities, users = [], initialData }) => {
   const { profile } = useAuth();
+  const { createAccount } = useAppContext();
   const [mode, setMode] = useState<AddMode>('activity');
   const [entityType, setEntityType] = useState<EntityType>('Account');
   const [isTask, setIsTask] = useState(false);
@@ -63,6 +65,16 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
   const [priority, setPriority] = useState<'Low' | 'Medium' | 'High'>('Medium');
 
   const [filteredOpportunities, setFilteredOpportunities] = useState<{id: string; name: string; ownerId: string}[]>([]);
+
+  // Smart Account Picker State
+  const [accountSearch, setAccountSearch] = useState('');
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [newAccountData, setNewAccountData] = useState({ name: '', sector: '' });
+
+  // Filter accounts based on search
+  const filteredAccounts = entities?.accounts
+    ?.filter(a => a.name.toLowerCase().includes(accountSearch.toLowerCase()))
+    .slice(0, 5) || [];
 
   // Account form state
   const [accountForm, setAccountForm] = useState({
@@ -176,6 +188,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
       setSelectedType('Note');
       setDueDate('');
       setPriority('Medium');
+      setAccountSearch('');
+      setIsCreatingAccount(false);
+      setNewAccountData({ name: '', sector: '' });
     }
   }, [isOpen, initialData]);
 
@@ -250,9 +265,26 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
             linkedPartnerIds: [],
           });
         } else {
+          // Handle inline account creation for Opportunity
+          let finalAccountId = oppForm.accountId;
+
+          if (isCreatingAccount && newAccountData.name) {
+            const newAcc = await createAccount({
+              name: newAccountData.name,
+              country: 'Thailand',
+              sector: newAccountData.sector || 'Other',
+              industry: 'Other',
+              subIndustry: 'Other',
+              strategicImportance: 'Medium',
+              notes: 'Created via Quick Add',
+              linkedPartnerIds: [],
+            });
+            finalAccountId = newAcc.id;
+          }
+
           await onAddEntity('Opportunity', {
             name: oppForm.name,
-            accountId: oppForm.accountId,
+            accountId: finalAccountId,
             value: oppForm.value,
             stage: oppForm.stage,
             priority: oppForm.priority,
@@ -634,25 +666,80 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
                     />
                   </div>
 
-                  {/* Link to Customer */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Customer *</label>
-                    <div className="relative">
-                      <select
-                        value={oppForm.accountId}
-                        onChange={e => setOppForm({ ...oppForm, accountId: e.target.value })}
-                        className={selectClass}
-                        required
-                      >
-                        <option value="">-- Select Customer --</option>
-                        {entities?.accounts
-                          .sort((a, b) => a.name.localeCompare(b.name))
-                          .map(a => (
-                            <option key={a.id} value={a.id}>{a.name}</option>
-                          ))}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    </div>
+                  {/* Link to Customer - Smart Account Picker */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase">Customer *</label>
+
+                    {!isCreatingAccount ? (
+                      <div className="relative">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                          <Search className="w-4 h-4" />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Search or create customer..."
+                          className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-orange-500 outline-none"
+                          value={accountSearch || (entities?.accounts.find(a => a.id === oppForm.accountId)?.name || '')}
+                          onChange={e => {
+                            setAccountSearch(e.target.value);
+                            setOppForm(prev => ({ ...prev, accountId: '' }));
+                          }}
+                        />
+                        {accountSearch && !oppForm.accountId && (
+                          <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                            {filteredAccounts.map(acc => (
+                              <button
+                                key={acc.id}
+                                type="button"
+                                onClick={() => {
+                                  setOppForm(prev => ({ ...prev, accountId: acc.id }));
+                                  setAccountSearch(acc.name);
+                                }}
+                                className="w-full text-left px-4 py-3 hover:bg-slate-50 text-sm border-b border-slate-50 last:border-0"
+                              >
+                                <span className="font-bold text-slate-700">{acc.name}</span>
+                              </button>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsCreatingAccount(true);
+                                setNewAccountData({ ...newAccountData, name: accountSearch });
+                              }}
+                              className="w-full text-left px-4 py-3 bg-orange-50 hover:bg-orange-100 text-orange-700 text-sm font-bold flex items-center gap-2"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Create new customer: "{accountSearch}"
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-3 animate-in fade-in slide-in-from-top-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-orange-600">New Customer</span>
+                          <button type="button" onClick={() => setIsCreatingAccount(false)}><X className="w-4 h-4 text-slate-400" /></button>
+                        </div>
+                        <input
+                          type="text"
+                          value={newAccountData.name}
+                          onChange={e => setNewAccountData({ ...newAccountData, name: e.target.value })}
+                          className="w-full p-2 border rounded-lg text-sm"
+                          placeholder="Company Name"
+                        />
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Sector</label>
+                          <select
+                            value={newAccountData.sector}
+                            onChange={e => setNewAccountData({ ...newAccountData, sector: e.target.value })}
+                            className="w-full p-2 border rounded-lg text-sm bg-white"
+                          >
+                            <option value="">-- Select Sector --</option>
+                            {getSectors().map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Value & Capacity */}
