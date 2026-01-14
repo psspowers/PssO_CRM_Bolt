@@ -37,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
   const channelRef = useRef<any>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const prevTabRef = useRef(activeTab);
 
   // Fetch notifications from database
   useEffect(() => {
@@ -264,11 +265,17 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
     };
   }, []);
 
-  // Clear search when leaving home tab
+  // Clear search when leaving home tab - Ref-guarded to prevent infinite loops
   useEffect(() => {
-    if (activeTab !== 'home') {
-      setSearchQuery('');
-      setSearchExpanded(false);
+    // Only run if the tab actually CHANGED
+    if (prevTabRef.current !== activeTab) {
+      prevTabRef.current = activeTab;
+
+      // Logic: Clear search when leaving home
+      if (activeTab !== 'home') {
+        setSearchQuery('');
+        setSearchExpanded(false);
+      }
     }
   }, [activeTab, setSearchQuery]);
 
