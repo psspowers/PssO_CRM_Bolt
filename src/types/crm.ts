@@ -1,5 +1,5 @@
 export type UserRole = 'super_admin' | 'admin' | 'internal' | 'external';
-export type REType = 'Solar - Rooftop' | 'Solar - Ground' | 'Solar - Floating';
+export type REType = 'PV - Roof' | 'PV - Ground' | 'PV - Floating' | 'BESS' | 'Wind';
 export type ContactTag = 'Decision Maker' | 'Influencer' | 'Regulator' | 'Advisor' | 'Banker' | 'Pricing' | 'Legal' | 'Policy' | 'Land' | 'Bank';
 export type OpportunityStage = 'Prospect' | 'Qualified' | 'Proposal' | 'Negotiation' | 'Term Sheet' | 'Won' | 'Lost';
 export type Priority = 'Low' | 'Medium' | 'High';

@@ -28,7 +28,7 @@ const stages: OpportunityStage[] = [
   'Lost'
 ];
 const priorities: Priority[] = ['Low', 'Medium', 'High'];
-const RE_OPTIONS: REType[] = ['Solar - Rooftop', 'Solar - Ground', 'Solar - Floating'];
+const RE_OPTIONS: REType[] = ['PV - Roof', 'PV - Ground', 'PV - Floating', 'BESS', 'Wind'];
 
 export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, onSave, onCancel }) => {
   const { users, accounts, createAccount } = useAppContext();

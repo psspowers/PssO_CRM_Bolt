@@ -44,7 +44,7 @@ const activityTypes: { type: ActivityType; icon: React.ElementType; label: strin
 
 const stages: OpportunityStage[] = ['Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Won', 'Lost'];
 const priorities: Priority[] = ['Low', 'Medium', 'High'];
-const RE_OPTIONS: REType[] = ['Solar - Rooftop', 'Solar - Ground', 'Solar - Floating'];
+const RE_OPTIONS: REType[] = ['PV - Roof', 'PV - Ground', 'PV - Floating', 'BESS', 'Wind'];
 
 export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, onAdd, onAddEntity, entities, users = [], initialData }) => {
   const { profile } = useAuth();
