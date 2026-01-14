@@ -746,27 +746,30 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const queries = [
-      supabase
-        .from('market_news')
-        .select(`
-          *,
-          accounts(name),
-          crm_users!market_news_created_by_fkey(name)
-        `)
-        .lte('published_at', new Date().toISOString())
-        .gte('news_date', thirtyDaysAgo.toISOString().split('T')[0])
-        .order('published_at', { ascending: false }),
-      supabase
-        .from('market_news_interactions')
-        .select('news_id, is_favorite, is_hidden')
-        .eq('user_id', user.id)
-    ];
+    const { data: newsData, error: newsError } = await supabase
+      .from('market_news')
+      .select(`
+        *,
+        accounts(name),
+        crm_users!market_news_created_by_fkey(name)
+      `)
+      .lte('published_at', new Date().toISOString())
+      .gte('news_date', thirtyDaysAgo.toISOString().split('T')[0])
+      .order('published_at', { ascending: false });
+
+    if (newsError) {
+      console.error("News fetch error:", newsError);
+      return;
+    }
+
+    let allNewsData = [...(newsData || [])];
 
     if (forcedOpenId) {
-      console.log("📰 Loading specific news item for deep link:", forcedOpenId);
-      queries.push(
-        supabase
+      const existsInResults = allNewsData.some((item: any) => item.id === forcedOpenId);
+
+      if (!existsInResults) {
+        console.log("📰 Loading specific news item for deep link:", forcedOpenId);
+        const { data: specificNews } = await supabase
           .from('market_news')
           .select(`
             *,
@@ -774,64 +777,56 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
             crm_users!market_news_created_by_fkey(name)
           `)
           .eq('id', forcedOpenId)
-          .maybeSingle()
-      );
+          .maybeSingle();
+
+        if (specificNews) {
+          console.log("✅ Adding specific news item to results:", specificNews.id);
+          allNewsData = [specificNews, ...allNewsData];
+        }
+      } else {
+        console.log("ℹ️ Specific news item already in results");
+      }
     }
 
-    const results = await Promise.all(queries);
-    const newsResult = results[0];
-    const interactionsResult = results[1];
-    const specificNewsResult = forcedOpenId && results[2] ? results[2] : null;
+    let interactionsMap = new Map<string, { is_favorite: boolean; is_hidden: boolean }>();
 
-    if (newsResult.data) {
-      const interactionsMap = new Map<string, { is_favorite: boolean; is_hidden: boolean }>();
-      if (interactionsResult.data) {
-        interactionsResult.data.forEach((interaction: any) => {
-          interactionsMap.set(interaction.news_id, {
-            is_favorite: interaction.is_favorite,
-            is_hidden: interaction.is_hidden
+    if (allNewsData.length > 0) {
+      const newsIds = allNewsData.map((n: any) => n.id);
+
+      const { data: interactionsData } = await supabase
+        .from('market_news_interactions')
+        .select('news_id, is_favorite, is_hidden')
+        .eq('user_id', user.id)
+        .in('news_id', newsIds);
+
+      if (interactionsData) {
+        interactionsData.forEach((i: any) => {
+          interactionsMap.set(i.news_id, {
+            is_favorite: i.is_favorite,
+            is_hidden: i.is_hidden
           });
         });
       }
-
-      const newFavorites = new Set<string>();
-      const newHidden = new Set<string>();
-
-      let allNewsData = [...newsResult.data];
-
-      if (forcedOpenId && specificNewsResult && specificNewsResult.data) {
-        const specificItem = specificNewsResult.data;
-        const existsInMainResults = allNewsData.some((item: any) => item.id === specificItem.id);
-
-        if (!existsInMainResults) {
-          console.log("✅ Adding specific news item to results:", specificItem.id);
-          allNewsData = [specificItem, ...allNewsData];
-        } else {
-          console.log("ℹ️ Specific news item already in results");
-        }
-      }
-
-      const formattedNews = allNewsData.map((item: any) => {
-        const interaction = interactionsMap.get(item.id);
-
-        if (interaction?.is_favorite) {
-          newFavorites.add(item.id);
-        }
-        if (interaction?.is_hidden) {
-          newHidden.add(item.id);
-        }
-
-        return {
-          ...item,
-          account_name: item.accounts?.name,
-          creator_name: item.crm_users?.name
-        };
-      });
-
-      setMarketNews(formattedNews);
-      setFavorites(newFavorites);
-      setHiddenNews(newHidden);
     }
+
+    const newFavorites = new Set<string>();
+    const newHidden = new Set<string>();
+
+    const formattedNews = allNewsData.map((item: any) => {
+      const interaction = interactionsMap.get(item.id);
+      if (interaction?.is_favorite) newFavorites.add(item.id);
+      if (interaction?.is_hidden) newHidden.add(item.id);
+
+      return {
+        ...item,
+        account_name: item.accounts?.name,
+        creator_name: item.crm_users?.name
+      };
+    });
+
+    setMarketNews(formattedNews);
+    setFavorites(newFavorites);
+    setHiddenNews(newHidden);
   };
 
   const loadFavorites = async () => {
