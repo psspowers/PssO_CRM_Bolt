@@ -493,6 +493,7 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [taskInitialData, setTaskInitialData] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
   const isSuperAdmin = profile?.role === 'super_admin';
   const isAnalyst = profile?.badges?.includes('Analyst');
@@ -542,25 +543,31 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
   };
 
   useEffect(() => {
-    if (forcedOpenId) {
-      console.log("Deep Link triggered:", forcedOpenId);
-      setActiveTab('market');
-    }
-  }, [forcedOpenId]);
+    if (!forcedOpenId) return;
 
-  useEffect(() => {
-    if (forcedOpenId && marketNews.length > 0 && activeTab === 'market') {
-      setTimeout(() => {
-        const element = document.getElementById(`news-${forcedOpenId}`);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          element.classList.add('bg-orange-100');
-          setTimeout(() => element.classList.remove('bg-orange-100'), 2000);
-        } else {
-          console.warn("Target element not found:", forcedOpenId);
-        }
-      }, 500);
-    }
+    if (activeTab !== 'market') setActiveTab('market');
+
+    const attemptScroll = (attempts = 0) => {
+      const element = document.getElementById(`news-${forcedOpenId}`);
+
+      if (element) {
+        console.log("Target found, scrolling...", forcedOpenId);
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        setHighlightedId(forcedOpenId);
+        setTimeout(() => setHighlightedId(null), 3000);
+        return;
+      }
+
+      if (attempts < 10) {
+        setTimeout(() => attemptScroll(attempts + 1), 200 * (attempts + 1));
+      } else {
+        console.warn("Could not find target news item after multiple attempts:", forcedOpenId);
+      }
+    };
+
+    attemptScroll();
+
   }, [forcedOpenId, marketNews, activeTab]);
 
   const loadData = async () => {
@@ -1529,7 +1536,11 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
                   <div
                     id={`news-${news.id}`}
                     key={news.id}
-                    className="p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                    className={`p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-1000 ${
+                      highlightedId === news.id
+                        ? 'ring-2 ring-orange-500 bg-orange-50 shadow-lg scale-[1.02]'
+                        : ''
+                    }`}
                   >
                     <div className="flex items-start gap-2 mb-2">
                       <div className="flex-shrink-0 mt-1">
