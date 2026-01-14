@@ -50,11 +50,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 const REMEMBER_ME_KEY = 'pss_remember_me';
 const SESSION_START_KEY = 'pss_session_start';
-const SESSION_WARNING_TIME = 5 * 60; // 5 minutes before expiry (rarely shown)
+const SESSION_WARNING_TIME = 2 * 60; // 2 minutes before expiry (rarely shown)
 const SHORT_SESSION = 30 * 24 * 60 * 60; // 30 days (ClickUp-style)
 const LONG_SESSION = 90 * 24 * 60 * 60; // 90 days
 const ACTIVITY_REFRESH_INTERVAL = 60 * 60; // Refresh every hour if active
-const ACTIVITY_CHECK_INTERVAL = 5 * 60; // Check activity every 5 minutes
+const ACTIVITY_CHECK_INTERVAL = 60; // Check activity every minute
 
 // Helper to determine DEFAULT role for NEW users based on email
 // NOTE: This is ONLY used when creating a new user for the first time
@@ -302,14 +302,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const now = Date.now();
     const timeSinceLastActivity = (now - activityRef.current) / 1000; // seconds
-    const timeSinceLastRefresh = (now - lastRefreshRef.current) / 1000; // seconds
 
-    // If user was active in last 5 minutes AND we haven't refreshed in the last hour, refresh silently
-    if (timeSinceLastActivity < ACTIVITY_CHECK_INTERVAL && timeSinceLastRefresh >= ACTIVITY_REFRESH_INTERVAL) {
+    const expiresAt = session?.expires_at;
+    if (!expiresAt) return;
+
+    const timeUntilExpiry = expiresAt - (now / 1000);
+
+    // If we are within 1 hour of expiry AND user was active recently, refresh immediately
+    if (timeUntilExpiry < 3600 && timeSinceLastActivity < 300) {
       try {
         await supabase.auth.refreshSession();
         lastRefreshRef.current = now;
-        console.log('Session auto-refreshed (ClickUp-style)');
+        console.log('Session auto-refreshed (proactive approach, expires in', Math.floor(timeUntilExpiry / 60), 'minutes)');
       } catch (error) {
         console.warn('Silent refresh failed:', error);
       }
@@ -324,7 +328,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const now = Date.now();
     const remaining = Math.floor((expiresAt - now) / 1000);
 
-    // Only show warning in last 5 minutes (ClickUp-style: minimal interruption)
+    // Only show warning in last 2 minutes (ClickUp-style: minimal interruption)
     if (remaining <= SESSION_WARNING_TIME && remaining > 0) {
       setTimeRemaining(remaining);
       setShowTimeoutModal(true);
@@ -349,7 +353,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!user) return;
 
-    // Check every 5 minutes if we should refresh the session
+    // Check every minute if we should refresh the session
     activityCheckTimerRef.current = setInterval(checkAndRefreshSession, ACTIVITY_CHECK_INTERVAL * 1000);
 
     return () => {
