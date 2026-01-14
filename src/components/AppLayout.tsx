@@ -139,7 +139,7 @@ export default function AppLayout() {
     setActiveTab(tab);
     if (id) {
         setAutoOpenId(id);
-        setTimeout(() => setAutoOpenId(null), 300);
+        setTimeout(() => setAutoOpenId(null), 2000);
     }
   };
 

@@ -559,11 +559,13 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
     scrollAttemptRef.current = forcedOpenId;
     console.log("✅ Market tab active, starting scroll search...");
 
-    const attemptScroll = (attempts = 0) => {
+    let attempts = 0;
+    const interval = setInterval(() => {
       const element = document.getElementById(`news-${forcedOpenId}`);
 
       if (element) {
         console.log(`✨ Target found on attempt ${attempts + 1}! Scrolling to:`, forcedOpenId);
+        clearInterval(interval);
 
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
@@ -571,30 +573,25 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
         setTimeout(() => {
           console.log("💫 Flash effect completed");
           setHighlightedId(null);
-        }, 3000);
+        }, 2500);
         return;
       }
 
-      if (attempts < 10) {
-        const nextDelay = 200 * (attempts + 1);
-        console.log(`🔍 Attempt ${attempts + 1} failed. Retrying in ${nextDelay}ms...`);
-        setTimeout(() => attemptScroll(attempts + 1), nextDelay);
-      } else {
+      attempts++;
+      if (attempts > 10) {
         console.error("❌ Could not find target news item after 10 attempts:", forcedOpenId);
         const currentNews = document.querySelectorAll('[id^="news-"]');
         console.log(`Available news items: ${currentNews.length} found`,
           Array.from(currentNews).map(el => el.id));
+        clearInterval(interval);
+      } else {
+        console.log(`🔍 Attempt ${attempts} failed. Retrying...`);
       }
-    };
+    }, 200);
 
-    const initialDelay = setTimeout(() => {
-      console.log("🚀 Starting scroll attempt...");
-      attemptScroll();
-    }, 500);
+    return () => clearInterval(interval);
 
-    return () => clearTimeout(initialDelay);
-
-  }, [forcedOpenId, activeTab]);
+  }, [forcedOpenId, activeTab, marketNews]);
 
   const loadData = async () => {
     setLoading(true);
@@ -823,6 +820,11 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
         creator_name: item.crm_users?.name
       };
     });
+
+    if (forcedOpenId && newHidden.has(forcedOpenId)) {
+      console.log("🔓 Temporarily unhiding news item for deep link:", forcedOpenId);
+      newHidden.delete(forcedOpenId);
+    }
 
     setMarketNews(formattedNews);
     setFavorites(newFavorites);
@@ -1578,7 +1580,7 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
             </div>
           ) : (
             <div className="divide-y divide-slate-200 dark:divide-slate-700">
-              {marketNews.filter(news => !hiddenNews.has(news.id)).map((news) => {
+              {marketNews.filter(news => news.id === forcedOpenId || !hiddenNews.has(news.id)).map((news) => {
                 const impactColor = news.impact_type === 'opportunity'
                   ? 'bg-green-50 dark:bg-green-950/20'
                   : news.impact_type === 'threat'
@@ -1593,7 +1595,7 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
                     key={news.id}
                     className={`p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-1000 ${
                       highlightedId === news.id
-                        ? 'ring-2 ring-orange-500 bg-orange-50 shadow-lg scale-[1.02]'
+                        ? 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-lg scale-[1.02]'
                         : ''
                     }`}
                   >
