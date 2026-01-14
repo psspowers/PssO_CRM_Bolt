@@ -542,17 +542,26 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
   };
 
   useEffect(() => {
-    if (forcedOpenId && marketNews.length > 0) {
+    if (forcedOpenId) {
+      console.log("Deep Link triggered:", forcedOpenId);
       setActiveTab('market');
+    }
+  }, [forcedOpenId]);
 
+  useEffect(() => {
+    if (forcedOpenId && marketNews.length > 0 && activeTab === 'market') {
       setTimeout(() => {
         const element = document.getElementById(`news-${forcedOpenId}`);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.classList.add('bg-orange-100');
+          setTimeout(() => element.classList.remove('bg-orange-100'), 2000);
+        } else {
+          console.warn("Target element not found:", forcedOpenId);
         }
-      }, 100);
+      }, 500);
     }
-  }, [forcedOpenId, marketNews]);
+  }, [forcedOpenId, marketNews, activeTab]);
 
   const loadData = async () => {
     setLoading(true);
