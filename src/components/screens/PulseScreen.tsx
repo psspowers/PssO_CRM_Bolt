@@ -521,6 +521,16 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
     loadEntityData();
   }, [activeTab]);
 
+  useEffect(() => {
+    if (activeTab !== 'market') return;
+
+    const interval = setInterval(() => {
+      loadMarketNews();
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [activeTab]);
+
   const loadEntityData = async () => {
     const { data: accData } = await supabase
       .from('accounts')
