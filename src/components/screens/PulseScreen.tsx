@@ -591,7 +591,7 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
 
     return () => clearInterval(interval);
 
-  }, [forcedOpenId, activeTab, marketNews]);
+  }, [forcedOpenId, activeTab]);
 
   const loadData = async () => {
     setLoading(true);
@@ -1593,11 +1593,14 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
                   <div
                     id={`news-${news.id}`}
                     key={news.id}
-                    className={`p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-1000 ${
+                    className={`p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-500 ${
                       highlightedId === news.id
-                        ? 'ring-2 ring-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-lg scale-[1.02]'
+                        ? 'ring-4 ring-orange-500 bg-orange-50 dark:bg-orange-900/30 shadow-2xl shadow-orange-500/50 scale-[1.03] animate-pulse'
                         : ''
                     }`}
+                    style={highlightedId === news.id ? {
+                      animation: 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) 3'
+                    } : undefined}
                   >
                     <div className="flex items-start gap-2 mb-2">
                       <div className="flex-shrink-0 mt-1">
