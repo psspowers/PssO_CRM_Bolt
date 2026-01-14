@@ -918,7 +918,7 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
         status: data.isTask ? data.taskStatus : undefined,
         due_date: data.dueDate,
         priority: data.priority,
-        assigned_to: data.assignedToId || user?.id,
+        assigned_to_id: data.assignedToId || user?.id,
         related_to_type: data.relatedToType,
         related_to_id: data.relatedToId,
         created_by: user?.id
