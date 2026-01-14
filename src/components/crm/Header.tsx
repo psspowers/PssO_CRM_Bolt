@@ -327,7 +327,7 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                value={searchQuery}
+                value={searchQuery || ''}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search deals, accounts, contacts..."
                 className="w-full pl-10 pr-10 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
@@ -368,7 +368,7 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
                           <input
                             ref={searchInputRef}
                             type="text"
-                            value={searchQuery}
+                            value={searchQuery || ''}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onBlur={handleSearchCollapse}
                             placeholder="Search deals, accounts, contacts..."

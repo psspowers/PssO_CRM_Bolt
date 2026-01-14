@@ -70,7 +70,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         api.fetchActivities().catch(() => []), api.fetchRelationships().catch(() => []), fetchUsers().catch(() => [])
       ]);
       clearTimeout(timeoutId);
-      if (mountedRef.current && !timedOut) setState({ partners, accounts, contacts, opportunities, projects, activities, relationships, users, loading: false, error: null });
+      if (mountedRef.current && !timedOut) setState(s => ({ ...s, partners, accounts, contacts, opportunities, projects, activities, relationships, users, loading: false, error: null }));
     } catch (e: any) {
       clearTimeout(timeoutId);
       if (mountedRef.current && !timedOut) setState(s => ({ ...s, loading: false, error: e.message }));
