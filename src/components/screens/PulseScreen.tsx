@@ -746,7 +746,7 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const newsQueries = [
+    const queries = [
       supabase
         .from('market_news')
         .select(`
@@ -756,12 +756,16 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
         `)
         .lte('published_at', new Date().toISOString())
         .gte('news_date', thirtyDaysAgo.toISOString().split('T')[0])
-        .order('published_at', { ascending: false })
+        .order('published_at', { ascending: false }),
+      supabase
+        .from('market_news_interactions')
+        .select('news_id, is_favorite, is_hidden')
+        .eq('user_id', user.id)
     ];
 
     if (forcedOpenId) {
       console.log("📰 Loading specific news item for deep link:", forcedOpenId);
-      newsQueries.push(
+      queries.push(
         supabase
           .from('market_news')
           .select(`
@@ -770,17 +774,14 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
             crm_users!market_news_created_by_fkey(name)
           `)
           .eq('id', forcedOpenId)
-          .single()
+          .maybeSingle()
       );
     }
 
-    const [newsResult, interactionsResult, ...specificNewsResults] = await Promise.all([
-      ...newsQueries,
-      supabase
-        .from('market_news_interactions')
-        .select('news_id, is_favorite, is_hidden')
-        .eq('user_id', user.id)
-    ]);
+    const results = await Promise.all(queries);
+    const newsResult = results[0];
+    const interactionsResult = results[1];
+    const specificNewsResult = forcedOpenId && results[2] ? results[2] : null;
 
     if (newsResult.data) {
       const interactionsMap = new Map<string, { is_favorite: boolean; is_hidden: boolean }>();
@@ -798,8 +799,8 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
 
       let allNewsData = [...newsResult.data];
 
-      if (forcedOpenId && specificNewsResults.length > 0 && specificNewsResults[0].data) {
-        const specificItem = specificNewsResults[0].data;
+      if (forcedOpenId && specificNewsResult && specificNewsResult.data) {
+        const specificItem = specificNewsResult.data;
         const existsInMainResults = allNewsData.some((item: any) => item.id === specificItem.id);
 
         if (!existsInMainResults) {
