@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Clock, AlertTriangle } from 'lucide-react';
+import { Clock } from 'lucide-react';
 
 interface SessionTimeoutModalProps {
   isOpen: boolean;
@@ -48,13 +48,13 @@ const SessionTimeoutModal: React.FC<SessionTimeoutModalProps> = ({
       <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-amber-100 rounded-full">
-              <AlertTriangle className="w-6 h-6 text-amber-600" />
+            <div className="p-2 bg-blue-100 rounded-full">
+              <Clock className="w-6 h-6 text-blue-600" />
             </div>
-            <DialogTitle className="text-xl">Session Expiring Soon</DialogTitle>
+            <DialogTitle className="text-xl">Still there?</DialogTitle>
           </div>
           <DialogDescription className="text-base">
-            Your session will expire due to inactivity. Any unsaved work may be lost.
+            Your session will expire soon. Click below to stay signed in.
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center justify-center py-6">

@@ -50,9 +50,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 const REMEMBER_ME_KEY = 'pss_remember_me';
 const SESSION_START_KEY = 'pss_session_start';
-const SESSION_WARNING_TIME = 10 * 60; // 10 minutes before expiry
-const SHORT_SESSION = 3 * 60 * 60; // 3 hours
-const LONG_SESSION = 30 * 24 * 60 * 60; // 30 days
+const SESSION_WARNING_TIME = 5 * 60; // 5 minutes before expiry (rarely shown)
+const SHORT_SESSION = 30 * 24 * 60 * 60; // 30 days (ClickUp-style)
+const LONG_SESSION = 90 * 24 * 60 * 60; // 90 days
+const ACTIVITY_REFRESH_INTERVAL = 60 * 60; // Refresh every hour if active
+const ACTIVITY_CHECK_INTERVAL = 5 * 60; // Check activity every 5 minutes
 
 // Helper to determine DEFAULT role for NEW users based on email
 // NOTE: This is ONLY used when creating a new user for the first time
@@ -101,6 +103,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [timeRemaining, setTimeRemaining] = useState(SESSION_WARNING_TIME);
   const mountedRef = useRef(true);
   const activityRef = useRef<number>(Date.now());
+  const lastRefreshRef = useRef<number>(Date.now());
+  const activityCheckTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchProfile = async (userId: string, userEmail?: string): Promise<UserProfile | null> => {
     try {
@@ -284,12 +288,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const extendSession = useCallback(async () => {
     setShowTimeoutModal(false);
     activityRef.current = Date.now();
+    lastRefreshRef.current = Date.now();
 
     // Log session extension
     await logSessionEvent('extend_session', 'user_extended_session', user?.id, user?.email);
 
     await supabase.auth.refreshSession();
   }, [user]);
+
+  // ClickUp-style: Silent auto-refresh on activity
+  const checkAndRefreshSession = useCallback(async () => {
+    if (!session || !user) return;
+
+    const now = Date.now();
+    const timeSinceLastActivity = (now - activityRef.current) / 1000; // seconds
+    const timeSinceLastRefresh = (now - lastRefreshRef.current) / 1000; // seconds
+
+    // If user was active in last 5 minutes AND we haven't refreshed in the last hour, refresh silently
+    if (timeSinceLastActivity < ACTIVITY_CHECK_INTERVAL && timeSinceLastRefresh >= ACTIVITY_REFRESH_INTERVAL) {
+      try {
+        await supabase.auth.refreshSession();
+        lastRefreshRef.current = now;
+        console.log('Session auto-refreshed (ClickUp-style)');
+      } catch (error) {
+        console.warn('Silent refresh failed:', error);
+      }
+    }
+  }, [session, user]);
 
   const checkSessionTimeout = useCallback(() => {
     if (!session || !user) return;
@@ -299,6 +324,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const now = Date.now();
     const remaining = Math.floor((expiresAt - now) / 1000);
 
+    // Only show warning in last 5 minutes (ClickUp-style: minimal interruption)
     if (remaining <= SESSION_WARNING_TIME && remaining > 0) {
       setTimeRemaining(remaining);
       setShowTimeoutModal(true);
@@ -307,11 +333,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [session, user, handleSignOut]);
 
+  // Record user activity
+  const recordActivity = useCallback(() => {
+    activityRef.current = Date.now();
+  }, []);
+
+  // Check for session timeout every 30 seconds
   useEffect(() => {
     if (!user) return;
     const interval = setInterval(checkSessionTimeout, 30000);
     return () => clearInterval(interval);
   }, [user, checkSessionTimeout]);
+
+  // ClickUp-style: Auto-refresh session based on activity
+  useEffect(() => {
+    if (!user) return;
+
+    // Check every 5 minutes if we should refresh the session
+    activityCheckTimerRef.current = setInterval(checkAndRefreshSession, ACTIVITY_CHECK_INTERVAL * 1000);
+
+    return () => {
+      if (activityCheckTimerRef.current) {
+        clearInterval(activityCheckTimerRef.current);
+      }
+    };
+  }, [user, checkAndRefreshSession]);
+
+  // ClickUp-style: Track user activity (mouse, keyboard, clicks)
+  useEffect(() => {
+    if (!user) return;
+
+    // Throttle activity recording to avoid excessive updates
+    let activityTimeout: NodeJS.Timeout | null = null;
+    const throttledRecordActivity = () => {
+      if (activityTimeout) return;
+      activityTimeout = setTimeout(() => {
+        recordActivity();
+        activityTimeout = null;
+      }, 10000); // Record activity at most once every 10 seconds
+    };
+
+    window.addEventListener('mousemove', throttledRecordActivity);
+    window.addEventListener('keydown', throttledRecordActivity);
+    window.addEventListener('click', throttledRecordActivity);
+    window.addEventListener('scroll', throttledRecordActivity);
+    window.addEventListener('touchstart', throttledRecordActivity);
+
+    return () => {
+      if (activityTimeout) clearTimeout(activityTimeout);
+      window.removeEventListener('mousemove', throttledRecordActivity);
+      window.removeEventListener('keydown', throttledRecordActivity);
+      window.removeEventListener('click', throttledRecordActivity);
+      window.removeEventListener('scroll', throttledRecordActivity);
+      window.removeEventListener('touchstart', throttledRecordActivity);
+    };
+  }, [user, recordActivity]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -419,10 +495,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Success
       userId = result.data?.user?.id || null;
-      activityRef.current = Date.now();
+      const now = Date.now();
+      activityRef.current = now;
+      lastRefreshRef.current = now; // Initialize refresh tracking
 
       // Store session start time
-      localStorage.setItem(SESSION_START_KEY, Date.now().toString());
+      localStorage.setItem(SESSION_START_KEY, now.toString());
 
       // Log successful login attempt
       try {
