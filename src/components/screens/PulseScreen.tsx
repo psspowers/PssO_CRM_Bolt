@@ -525,7 +525,7 @@ export default function PulseScreen() {
 
     const { data: userData } = await supabase
       .from('crm_users')
-      .select('id, name, avatar_url, role')
+      .select('id, name, avatar, role')
       .neq('status', 'suspended');
     if (userData) setUsers(userData);
 
