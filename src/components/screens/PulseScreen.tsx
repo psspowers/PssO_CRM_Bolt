@@ -525,8 +525,7 @@ export default function PulseScreen() {
 
     const { data: userData } = await supabase
       .from('crm_users')
-      .select('id, name, avatar, role')
-      .neq('status', 'suspended');
+      .select('id, name, avatar, role');
     if (userData) setUsers(userData);
 
     const { data: oppData } = await supabase
@@ -1342,9 +1341,9 @@ export default function PulseScreen() {
                           </div>
                         )}
 
-                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-3">
+                        <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-3">
                           {item.content}
-                        </p>
+                        </div>
 
                         <div className="flex items-center gap-1 pt-2 border-t border-slate-100 dark:border-slate-800/50">
                           <TooltipProvider>
