@@ -44,7 +44,7 @@ const activityTypes: { type: ActivityType; icon: React.ElementType; label: strin
 
 const stages: OpportunityStage[] = ['Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Won', 'Lost'];
 const priorities: Priority[] = ['Low', 'Medium', 'High'];
-const reTypes: REType[] = ['Solar - Rooftop', 'Solar - Ground', 'Solar - Floating'];
+const RE_OPTIONS: REType[] = ['Solar - Rooftop', 'Solar - Ground', 'Solar - Floating'];
 
 export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, onAdd, onAddEntity, entities, users = [], initialData }) => {
   const { profile } = useAuth();
@@ -712,25 +712,31 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
 
                   {/* RE Type */}
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">RE Type (Multi-Select)</label>
-                    <div className="space-y-2">
-                      {reTypes.map(type => (
-                        <label key={type} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={oppForm.reType.includes(type)}
-                            onChange={e => {
-                              if (e.target.checked) {
-                                setOppForm({ ...oppForm, reType: [...oppForm.reType, type] });
-                              } else {
-                                setOppForm({ ...oppForm, reType: oppForm.reType.filter(t => t !== type) });
-                              }
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Project Technologies</label>
+                    <div className="flex flex-wrap gap-2">
+                      {RE_OPTIONS.map(type => {
+                        const isSelected = (oppForm.reType || []).includes(type);
+                        return (
+                          <button
+                            type="button"
+                            key={type}
+                            onClick={() => {
+                              const current = oppForm.reType || [];
+                              const newTypes = isSelected
+                                ? current.filter(t => t !== type)
+                                : [...current, type];
+                              setOppForm({ ...oppForm, reType: newTypes });
                             }}
-                            className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
-                          />
-                          <span className="text-sm text-gray-700">{type}</span>
-                        </label>
-                      ))}
+                            className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
+                              isSelected
+                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'
+                            }`}
+                          >
+                            {type}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 

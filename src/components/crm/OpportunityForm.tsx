@@ -28,7 +28,7 @@ const stages: OpportunityStage[] = [
   'Lost'
 ];
 const priorities: Priority[] = ['Low', 'Medium', 'High'];
-const reTypes: REType[] = ['Solar - Rooftop', 'Solar - Ground', 'Solar - Floating'];
+const RE_OPTIONS: REType[] = ['Solar - Rooftop', 'Solar - Ground', 'Solar - Floating'];
 
 export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, onSave, onCancel }) => {
   const { users, accounts, createAccount } = useAppContext();
@@ -44,7 +44,7 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
     ppaTermYears: opportunity.ppaTermYears || 0,
     epcCost: opportunity.epcCost || 0,
     manualProbability: opportunity.manualProbability || 0,
-    reType: opportunity.reType,
+    reType: Array.isArray(opportunity.reType) ? opportunity.reType : (opportunity.reType ? [opportunity.reType as any] : []),
     nextAction: opportunity.nextAction || '',
     nextActionDate: opportunity.nextActionDate ? new Date(opportunity.nextActionDate).toISOString().split('T')[0] : '',
     targetDecisionDate: opportunity.targetDecisionDate ? new Date(opportunity.targetDecisionDate).toISOString().split('T')[0] : '',
@@ -433,25 +433,31 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">RE Type (Multi-Select)</label>
-        <div className="space-y-2">
-          {reTypes.map(type => (
-            <label key={type} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.reType.includes(type)}
-                onChange={e => {
-                  if (e.target.checked) {
-                    setForm({ ...form, reType: [...form.reType, type] });
-                  } else {
-                    setForm({ ...form, reType: form.reType.filter(t => t !== type) });
-                  }
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Project Technologies (Select all that apply)</label>
+        <div className="flex flex-wrap gap-2">
+          {RE_OPTIONS.map(type => {
+            const isSelected = (form.reType || []).includes(type);
+            return (
+              <button
+                type="button"
+                key={type}
+                onClick={() => {
+                  const current = form.reType || [];
+                  const newTypes = isSelected
+                    ? current.filter(t => t !== type)
+                    : [...current, type];
+                  setForm({ ...form, reType: newTypes });
                 }}
-                className="w-4 h-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
-              />
-              <span className="text-sm text-gray-700">{type}</span>
-            </label>
-          ))}
+                className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
+                  isSelected
+                    ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300'
+                }`}
+              >
+                {type}
+              </button>
+            );
+          })}
         </div>
       </div>
 
