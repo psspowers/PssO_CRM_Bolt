@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, ExternalLink, Network, Activity as ActivityIcon, Building2, TrendingUp, Zap } from 'lucide-react';
+import { X, ExternalLink, Network, Activity as ActivityIcon, Building2, TrendingUp, Zap, FileText, MessageSquare } from 'lucide-react';
 import { NetworkGraph } from './NetworkGraph';
 import { NexusTab } from './NexusTab';
 import { ActivityItem } from './ActivityItem';
 import { ActivityForm } from './ActivityForm';
 import { NewsItemCard } from './NewsItemCard';
+import { DealNotes } from './DealNotes';
+import { DealDocuments } from './DealDocuments';
 import { Activity, Contact, Account, Partner, Relationship, ActivityType } from '../../types/crm';
 import { useAppContext } from '../../contexts/AppContext';
 import { supabase } from '../../lib/supabase';
@@ -52,6 +54,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   accountId
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [activitySubTab, setActivitySubTab] = useState<'notes' | 'dox'>('notes');
   const [marketNews, setMarketNews] = useState<MarketNews[]>([]);
   const [loadingNews, setLoadingNews] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -290,15 +293,47 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             </div>
           )}
           {activeTab === 'activity' && (
-            <div className="space-y-3 p-4">
-              {canCreate() && <ActivityForm entityId={entityId} entityType={entityType} onSubmit={handleCreateActivity} />}
-              {entityActivities.length === 0 ? (
-                <p className="text-center text-gray-500 py-8 text-sm">No activities yet</p>
-              ) : entityActivities.map(activity => (
-                <ActivityItem key={activity.id} activity={activity} user={users.find(u => u.id === activity.createdById)}
-                  canEdit={canEdit(activity.createdById)} canDelete={canDelete(activity.createdById)}
-                  onEdit={handleEditActivity} onDelete={handleDeleteActivity} />
-              ))}
+            <div className="flex flex-col h-full">
+              {/* Sub-Tabs for Notes and Dox */}
+              <div className="flex gap-2 px-4 pt-4 border-b border-gray-200 bg-gray-50">
+                <button
+                  onClick={() => setActivitySubTab('notes')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium text-sm transition-colors ${
+                    activitySubTab === 'notes'
+                      ? 'bg-white text-emerald-600 border-t border-l border-r border-gray-200'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Notes
+                </button>
+                <button
+                  onClick={() => setActivitySubTab('dox')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium text-sm transition-colors ${
+                    activitySubTab === 'dox'
+                      ? 'bg-white text-emerald-600 border-t border-l border-r border-gray-200'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  Dox
+                </button>
+              </div>
+
+              {/* Sub-Tab Content */}
+              <div className="flex-1 overflow-hidden">
+                {activitySubTab === 'notes' ? (
+                  <DealNotes
+                    entityId={entityId}
+                    entityType={entityType as 'Partner' | 'Account' | 'Contact' | 'Opportunity' | 'Project'}
+                  />
+                ) : (
+                  <DealDocuments
+                    entityId={entityId}
+                    entityType={entityType as 'Partner' | 'Account' | 'Contact' | 'Opportunity' | 'Project'}
+                  />
+                )}
+              </div>
             </div>
           )}
         </div>

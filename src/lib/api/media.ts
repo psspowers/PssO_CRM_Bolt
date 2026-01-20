@@ -138,7 +138,9 @@ export const uploadMedia = async (
     createdAt: new Date(data.created_at),
     lat: data.gps_lat,
     lng: data.gps_lng,
-    isVerified: data.is_verified
+    isVerified: data.is_verified,
+    isStarred: data.is_starred || false,
+    description: data.description
   };
 };
 
@@ -172,7 +174,9 @@ export const fetchMedia = async (relatedToId: string): Promise<MediaFile[]> => {
         createdAt: new Date(f.created_at),
         lat: f.gps_lat,
         lng: f.gps_lng,
-        isVerified: f.is_verified
+        isVerified: f.is_verified,
+        isStarred: f.is_starred || false,
+        description: f.description
       };
     })
   );
@@ -212,7 +216,9 @@ export const fetchMediaByType = async (
         createdAt: new Date(f.created_at),
         lat: f.gps_lat,
         lng: f.gps_lng,
-        isVerified: f.is_verified
+        isVerified: f.is_verified,
+        isStarred: f.is_starred || false,
+        description: f.description
       };
     })
   );
@@ -265,15 +271,17 @@ export const deleteMedia = async (id: string, fileUrlOrPath: string): Promise<vo
 };
 
 /**
- * Update media file metadata (e.g., category, verification status)
+ * Update media file metadata (e.g., category, verification status, starred, description)
  */
 export const updateMedia = async (
-  id: string, 
+  id: string,
   updates: Partial<{
     category: string;
     is_verified: boolean;
     gps_lat: number;
     gps_lng: number;
+    is_starred: boolean;
+    description: string;
   }>
 ): Promise<MediaFile> => {
   const { data, error } = await supabase
@@ -298,7 +306,9 @@ export const updateMedia = async (
     createdAt: new Date(data.created_at),
     lat: data.gps_lat,
     lng: data.gps_lng,
-    isVerified: data.is_verified
+    isVerified: data.is_verified,
+    isStarred: data.is_starred || false,
+    description: data.description
   };
 };
 
@@ -364,7 +374,9 @@ export const getMediaById = async (id: string): Promise<MediaFile | null> => {
     createdAt: new Date(data.created_at),
     lat: data.gps_lat,
     lng: data.gps_lng,
-    isVerified: data.is_verified
+    isVerified: data.is_verified,
+    isStarred: data.is_starred || false,
+    description: data.description
   };
 };
 

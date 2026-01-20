@@ -171,5 +171,8 @@ export interface MediaFile {
   // Investor Security:
   lat?: number;
   lng?: number;
-  isVerified?: boolean; 
+  isVerified?: boolean;
+  // Document Management:
+  isStarred?: boolean;
+  description?: string;
 }
