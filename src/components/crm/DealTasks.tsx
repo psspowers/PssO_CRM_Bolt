@@ -14,12 +14,12 @@ interface Task {
   summary: string;
   is_completed: boolean;
   due_date: string | null;
-  assigned_to: string | null;
+  assigned_to_id: string | null;
   priority: "low" | "medium" | "high" | "urgent" | null;
   assignee?: {
     id: string;
-    full_name: string;
-    avatar_url: string | null;
+    name: string;
+    avatar: string | null;
   };
 }
 
@@ -48,9 +48,9 @@ export function DealTasks({ entityId }: DealTasksProps) {
           summary,
           is_completed,
           due_date,
-          assigned_to,
+          assigned_to_id,
           priority,
-          assignee:assigned_to(id, full_name, avatar_url)
+          assignee:crm_users!activities_assigned_to_fkey(id, name, avatar)
         `
         )
         .eq("related_to_id", entityId)
@@ -110,7 +110,7 @@ export function DealTasks({ entityId }: DealTasksProps) {
           is_completed: false,
           related_to_id: entityId,
           created_by: user.id,
-          assigned_to: user.id,
+          assigned_to_id: user.id,
           priority: "medium",
         })
         .select(
@@ -119,9 +119,9 @@ export function DealTasks({ entityId }: DealTasksProps) {
           summary,
           is_completed,
           due_date,
-          assigned_to,
+          assigned_to_id,
           priority,
-          assignee:assigned_to(id, full_name, avatar_url)
+          assignee:crm_users!activities_assigned_to_fkey(id, name, avatar)
         `
         )
         .single();
@@ -274,9 +274,9 @@ export function DealTasks({ entityId }: DealTasksProps) {
 
                 {task.assignee && (
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src={task.assignee.avatar_url || undefined} />
+                    <AvatarImage src={task.assignee.avatar || undefined} />
                     <AvatarFallback className="text-xs bg-gradient-to-br from-emerald-400 to-emerald-600 text-white">
-                      {task.assignee.full_name
+                      {task.assignee.name
                         .split(" ")
                         .map((n) => n[0])
                         .join("")
