@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, ExternalLink, Network, Activity as ActivityIcon, Building2, TrendingUp, Zap, FileText, MessageSquare } from 'lucide-react';
-import { NetworkGraph } from './NetworkGraph';
-import { NexusTab } from './NexusTab';
-import { ActivityItem } from './ActivityItem';
-import { ActivityForm } from './ActivityForm';
-import { NewsItemCard } from './NewsItemCard';
+import { X, ExternalLink, Activity as ActivityIcon, Building2, TrendingUp, Zap, FileText, MessageSquare, CheckSquare, AlertTriangle, Cpu, Calculator } from 'lucide-react';
 import { DealNotes } from './DealNotes';
 import { DealDocuments } from './DealDocuments';
-import { Activity, Contact, Account, Partner, Relationship, ActivityType } from '../../types/crm';
-import { useAppContext } from '../../contexts/AppContext';
-import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { DealTasks } from './DealTasks';
+import { DealPulse } from './DealPulse';
+import { InvestmentModeler } from './InvestmentModeler';
+import { CreditRiskHub } from './CreditRiskHub';
+import { LoadAnalyzer } from './LoadAnalyzer';
+import { MediaVault } from './MediaVault';
+import { Activity, Contact, Account, Partner, Relationship } from '../../types/crm';
 
 interface DetailModalUser { id: string; name: string; avatar: string; }
 
@@ -34,19 +31,9 @@ interface DetailModalProps {
   accountId?: string | null;
 }
 
-type Tab = 'overview' | 'velocity' | 'nexus' | 'activity' | 'pulse';
-
-interface MarketNews {
-  id: string;
-  title: string;
-  summary: string | null;
-  url: string | null;
-  impact_type: 'opportunity' | 'threat' | 'neutral';
-  news_date?: string;
-  created_at: string;
-  account_name?: string;
-  creator_name?: string;
-}
+type Tab = 'overview' | 'velocity' | 'activity' | 'pulse';
+type VelocityTab = 'risk' | 'tech' | 'math';
+type ActivityTab = 'notes' | 'tasks' | 'dox';
 
 export const DetailModal: React.FC<DetailModalProps> = ({
   isOpen, onClose, title, subtitle, entityId, entityType, clickupLink, children,
@@ -54,180 +41,38 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   accountId
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
-  const [activitySubTab, setActivitySubTab] = useState<'notes' | 'dox'>('notes');
-  const [marketNews, setMarketNews] = useState<MarketNews[]>([]);
-  const [loadingNews, setLoadingNews] = useState(false);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [hiddenNews, setHiddenNews] = useState<Set<string>>(new Set());
-  const { createActivity, updateActivity, deleteActivity, currentUser, canCreate, canEdit, canDelete } = useAppContext();
-  const { user } = useAuth();
+  const [velocityTab, setVelocityTab] = useState<VelocityTab>('risk');
+  const [activityTab, setActivityTab] = useState<ActivityTab>('notes');
 
-  const showPulse = (entityType === 'Opportunity' || entityType === 'Account') && accountId;
+  const showPulse = (entityType === 'Opportunity' || entityType === 'Account');
+  const showVelocity = entityType === 'Opportunity' && velocityContent;
 
   useEffect(() => {
     setActiveTab('overview');
-    setActivitySubTab('notes');
+    setVelocityTab('risk');
+    setActivityTab('notes');
   }, [entityId]);
-
-  useEffect(() => {
-    if (isOpen && showPulse && accountId) {
-      loadMarketNews();
-    }
-  }, [isOpen, accountId, showPulse]);
-
-  const loadMarketNews = async () => {
-    if (!accountId || !user?.id) return;
-
-    setLoadingNews(true);
-    try {
-      console.log('Loading news for accountId:', accountId);
-
-      const [newsResult, interactionsResult] = await Promise.all([
-        supabase
-          .from('market_news')
-          .select(`
-            *,
-            accounts(name),
-            crm_users!market_news_created_by_fkey(name)
-          `)
-          .eq('related_account_id', accountId)
-          .lte('published_at', new Date().toISOString())
-          .order('published_at', { ascending: false })
-          .limit(50),
-        supabase
-          .from('market_news_interactions')
-          .select('news_id, is_favorite, is_hidden')
-          .eq('user_id', user.id)
-      ]);
-
-      console.log('News result:', newsResult.data?.length || 0, 'items');
-      if (newsResult.error) {
-        console.error('Error loading news:', newsResult.error);
-      }
-
-      if (newsResult.data) {
-        const interactionsMap = new Map<string, { is_favorite: boolean; is_hidden: boolean }>();
-        if (interactionsResult.data) {
-          interactionsResult.data.forEach((interaction: any) => {
-            interactionsMap.set(interaction.news_id, {
-              is_favorite: interaction.is_favorite,
-              is_hidden: interaction.is_hidden
-            });
-          });
-        }
-
-        const newFavorites = new Set<string>();
-        const newHidden = new Set<string>();
-
-        const formattedNews = newsResult.data.map((item: any) => {
-          const interaction = interactionsMap.get(item.id);
-
-          if (interaction?.is_favorite) {
-            newFavorites.add(item.id);
-          }
-          if (interaction?.is_hidden) {
-            newHidden.add(item.id);
-          }
-
-          return {
-            ...item,
-            account_name: item.accounts?.name,
-            creator_name: item.crm_users?.name
-          };
-        });
-
-        setMarketNews(formattedNews);
-        setFavorites(newFavorites);
-        setHiddenNews(newHidden);
-      }
-    } catch (error) {
-      console.error('Error loading market news:', error);
-    } finally {
-      setLoadingNews(false);
-    }
-  };
-
-  const handleToggleFavorite = async (newsId: string) => {
-    if (!user?.id) return;
-
-    const isFavorited = favorites.has(newsId);
-
-    try {
-      if (isFavorited) {
-        await supabase
-          .from('market_news_interactions')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('news_id', newsId);
-        setFavorites(prev => {
-          const next = new Set(prev);
-          next.delete(newsId);
-          return next;
-        });
-      } else {
-        await supabase
-          .from('market_news_interactions')
-          .upsert({
-            user_id: user.id,
-            news_id: newsId,
-            is_favorite: true,
-            is_hidden: false
-          }, { onConflict: 'user_id,news_id' });
-        setFavorites(prev => new Set(prev).add(newsId));
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-    }
-  };
-
-  const handleHideNews = async (newsId: string) => {
-    if (!user?.id) return;
-
-    try {
-      await supabase
-        .from('market_news_interactions')
-        .upsert({
-          user_id: user.id,
-          news_id: newsId,
-          is_favorite: false,
-          is_hidden: true
-        }, { onConflict: 'user_id,news_id' });
-      setHiddenNews(prev => new Set(prev).add(newsId));
-    } catch (error) {
-      console.error('Error hiding news:', error);
-    }
-  };
 
   if (!isOpen) return null;
 
-  const entityActivities = activities.filter(a => a.relatedToId === entityId)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const showNetwork = ['Contact', 'Account', 'Partner'].includes(entityType);
-  const showVelocity = entityType === 'Opportunity' && velocityContent;
-
-  const tabs: { id: Tab; label: string; icon: React.ElementType; hideLabel?: boolean }[] = [
+  const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'overview', label: 'Overview', icon: Building2 },
     ...(showVelocity ? [{ id: 'velocity' as Tab, label: 'Velocity', icon: TrendingUp }] : []),
-    ...(showNetwork ? [{ id: 'nexus' as Tab, label: 'Nexus', icon: Network }] : []),
-    ...(showPulse ? [{ id: 'pulse' as Tab, label: 'Pulse', icon: Zap, hideLabel: true }] : []),
-    { id: 'activity', label: 'Activity', icon: ActivityIcon, hideLabel: true },
+    { id: 'activity', label: 'Activity', icon: ActivityIcon },
+    ...(showPulse ? [{ id: 'pulse' as Tab, label: 'Pulse', icon: Zap }] : []),
   ];
 
-  const handleCreateActivity = async (data: { type: ActivityType; summary: string; details?: string }) => {
-    if (!currentUser) throw new Error('Not authenticated');
-    await createActivity({
-      type: data.type, summary: data.summary, details: data.details,
-      relatedToId: entityId, relatedToType: entityType, createdById: currentUser.id,
-    });
-  };
+  const velocitySubTabs: { id: VelocityTab; label: string; icon: React.ElementType }[] = [
+    { id: 'risk', label: 'Risk', icon: AlertTriangle },
+    { id: 'tech', label: 'Tech', icon: Cpu },
+    { id: 'math', label: 'Math', icon: Calculator },
+  ];
 
-  const handleEditActivity = async (id: string, data: { type: ActivityType; summary: string; details?: string }) => {
-    await updateActivity(id, { type: data.type, summary: data.summary, details: data.details });
-  };
-
-  const handleDeleteActivity = async (id: string) => {
-    await deleteActivity(id);
-  };
+  const activitySubTabs: { id: ActivityTab; label: string; icon: React.ElementType }[] = [
+    { id: 'notes', label: 'Notes', icon: MessageSquare },
+    { id: 'tasks', label: 'Tasks', icon: CheckSquare },
+    { id: 'dox', label: 'Dox', icon: FileText },
+  ];
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
@@ -249,97 +94,109 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               <button onClick={onClose} className="p-3 hover:bg-gray-100 rounded-lg" aria-label="Close modal"><X className="w-5 h-5" /></button>
             </div>
           </div>
+          {/* Main Tabs - Row 1 */}
           <div className="flex gap-1 mt-3">
-            {tabs.map(({ id, label, icon: Icon, hideLabel }) => (
+            {tabs.map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => setActiveTab(id)}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${
                   activeTab === id ? 'bg-emerald-100 text-emerald-700' : 'text-gray-500 hover:bg-gray-100'
                 }`}>
                 <Icon className="w-4 h-4" />
-                {!hideLabel && <span className="hidden sm:inline">{label}</span>}
+                <span className="hidden sm:inline">{label}</span>
               </button>
             ))}
           </div>
-        </div>
-        <div className="flex-1 overflow-auto pb-32">
-          {activeTab === 'overview' && <div className="p-4">{children}</div>}
-          {activeTab === 'velocity' && showVelocity && <div className="p-4">{velocityContent}</div>}
-          {activeTab === 'nexus' && showNetwork && (
-            <div className="p-4">
-              <NexusTab entityId={entityId} entityType={entityType as 'Contact' | 'Account' | 'Partner'} />
+
+          {/* Sub-Tabs - Row 2 (Pill Style) */}
+          {activeTab === 'velocity' && showVelocity && (
+            <div className="flex gap-2 mt-2 px-1">
+              {velocitySubTabs.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => setVelocityTab(id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    velocityTab === id
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <Icon className="w-3 h-3" />
+                  {label}
+                </button>
+              ))}
             </div>
           )}
-          {activeTab === 'pulse' && showPulse && (
-            <div>
-              {loadingNews ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+
+          {activeTab === 'activity' && (
+            <div className="flex gap-2 mt-2 px-1">
+              {activitySubTabs.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => setActivityTab(id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    activityTab === id
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <Icon className="w-3 h-3" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex-1 overflow-auto pb-32">
+          {/* Overview Tab */}
+          {activeTab === 'overview' && (
+            <div className="p-4">{children}</div>
+          )}
+
+          {/* Velocity Tab with Sub-Tabs */}
+          {activeTab === 'velocity' && showVelocity && (
+            <div className="p-4">
+              {velocityTab === 'risk' && (
+                <CreditRiskHub opportunityId={entityId} />
+              )}
+              {velocityTab === 'tech' && (
+                <div className="space-y-6">
+                  <LoadAnalyzer opportunityId={entityId} />
+                  <MediaVault
+                    entityId={entityId}
+                    entityType={entityType.toLowerCase() as 'partner' | 'account' | 'contact' | 'opportunity' | 'project'}
+                  />
                 </div>
-              ) : marketNews.filter(news => !hiddenNews.has(news.id)).length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 px-4">
-                  <Zap className="w-12 h-12 text-slate-300 mb-3" />
-                  <h3 className="text-base font-semibold text-slate-700 mb-1">No market intelligence yet</h3>
-                  <p className="text-sm text-slate-500 text-center">Market news for this account will appear here</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100">
-                  {marketNews.filter(news => !hiddenNews.has(news.id)).map(news => (
-                    <NewsItemCard
-                      key={news.id}
-                      news={news}
-                      isFavorited={favorites.has(news.id)}
-                      onToggleFavorite={handleToggleFavorite}
-                      onHide={handleHideNews}
-                      compact
-                    />
-                  ))}
-                </div>
+              )}
+              {velocityTab === 'math' && (
+                <InvestmentModeler opportunityId={entityId} />
               )}
             </div>
           )}
-          {activeTab === 'activity' && (
-            <div className="flex flex-col h-full">
-              {/* Sub-Tabs for Notes and Dox */}
-              <div className="flex gap-2 px-4 pt-4 border-b border-gray-200 bg-gray-50">
-                <button
-                  onClick={() => setActivitySubTab('notes')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium text-sm transition-colors ${
-                    activitySubTab === 'notes'
-                      ? 'bg-white text-emerald-600 border-t border-l border-r border-gray-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  Notes
-                </button>
-                <button
-                  onClick={() => setActivitySubTab('dox')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium text-sm transition-colors ${
-                    activitySubTab === 'dox'
-                      ? 'bg-white text-emerald-600 border-t border-l border-r border-gray-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <FileText className="w-4 h-4" />
-                  Dox
-                </button>
-              </div>
 
-              {/* Sub-Tab Content */}
-              <div className="flex-1 overflow-hidden">
-                {activitySubTab === 'notes' ? (
-                  <DealNotes
-                    entityId={entityId}
-                    entityType={entityType as 'Partner' | 'Account' | 'Contact' | 'Opportunity' | 'Project'}
-                  />
-                ) : (
-                  <DealDocuments
-                    entityId={entityId}
-                    entityType={entityType as 'Partner' | 'Account' | 'Contact' | 'Opportunity' | 'Project'}
-                  />
-                )}
-              </div>
+          {/* Activity Tab with Sub-Tabs */}
+          {activeTab === 'activity' && (
+            <div className="p-4">
+              {activityTab === 'notes' && (
+                <DealNotes
+                  entityId={entityId}
+                  entityType={entityType as 'Partner' | 'Account' | 'Contact' | 'Opportunity' | 'Project'}
+                />
+              )}
+              {activityTab === 'tasks' && (
+                <DealTasks entityId={entityId} />
+              )}
+              {activityTab === 'dox' && (
+                <DealDocuments
+                  entityId={entityId}
+                  entityType={entityType as 'Partner' | 'Account' | 'Contact' | 'Opportunity' | 'Project'}
+                />
+              )}
             </div>
+          )}
+
+          {/* Pulse Tab */}
+          {activeTab === 'pulse' && showPulse && (
+            <DealPulse accountId={accountId} />
           )}
         </div>
       </div>
