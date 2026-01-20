@@ -65,6 +65,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   const showPulse = (entityType === 'Opportunity' || entityType === 'Account') && accountId;
 
   useEffect(() => {
+    setActiveTab('overview');
+    setActivitySubTab('notes');
+  }, [entityId]);
+
+  useEffect(() => {
     if (isOpen && showPulse && accountId) {
       loadMarketNews();
     }
