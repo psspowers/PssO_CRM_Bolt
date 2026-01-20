@@ -26,7 +26,7 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, a
 
   const toTitleCase = (str: string) => str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
 
-  const formatValue = (val: number) => val >= 1000000 ? `฿${(val / 1000000).toFixed(1)}M` : `฿${(val / 1000).toFixed(0)}K`;
+  const formatValue = (val: number) => `฿${Math.round(val).toLocaleString('en-US')}`;
   const IndustryIcon = getIndustryIcon(opportunity.sector);
 
   const getPriorityColor = (priority: Priority) => {

@@ -55,7 +55,7 @@ export const ProfileEntities: React.FC<Props> = ({ opportunities, projects, acco
                 <div className="flex items-center gap-4 mt-2 text-sm">
                   <span className="flex items-center gap-1 text-green-600">
                     <TrendingUp className="w-4 h-4" />
-                    ${(opp.value / 1000).toFixed(0)}K
+                    ฿{Math.round(opp.value).toLocaleString('en-US')}
                   </span>
                   {opp.nextActionDate && (
                     <span className="flex items-center gap-1 text-gray-500">

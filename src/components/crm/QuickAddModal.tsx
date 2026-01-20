@@ -745,12 +745,16 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
                   {/* Value & Capacity */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">PPA Value ($)</label>
-                      <input 
-                        type="number" 
-                        value={oppForm.value} 
-                        onChange={e => setOppForm({ ...oppForm, value: Number(e.target.value) })} 
-                        className={inputClass} 
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">PPA Value (฿)</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={oppForm.value ? Math.round(oppForm.value).toLocaleString('en-US') : ''}
+                        onChange={e => {
+                          const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                          setOppForm({ ...oppForm, value: numericValue ? Number(numericValue) : 0 });
+                        }}
+                        className={inputClass}
                         placeholder="0"
                       />
                     </div>

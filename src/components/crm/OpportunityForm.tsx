@@ -304,13 +304,17 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Value ($)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Value (฿)</label>
           <input
-            type="number"
-            inputMode="decimal"
-            value={form.value}
-            onChange={e => setForm({ ...form, value: Number(e.target.value) })}
+            type="text"
+            inputMode="numeric"
+            value={form.value ? Math.round(form.value).toLocaleString('en-US') : ''}
+            onChange={e => {
+              const numericValue = e.target.value.replace(/[^0-9]/g, '');
+              setForm({ ...form, value: numericValue ? Number(numericValue) : 0 });
+            }}
             className={inputClass}
+            placeholder="0"
           />
         </div>
         <div>

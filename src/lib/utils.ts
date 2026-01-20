@@ -27,16 +27,7 @@ export function formatMetric(
       return `${sign}${value.toFixed(2)} MW`;
 
     case 'currency':
-      if (value >= 1_000_000_000) {
-        return `${sign}฿${(value / 1_000_000_000).toFixed(2)}B`;
-      }
-      if (value >= 1_000_000) {
-        return `${sign}฿${(value / 1_000_000).toFixed(2)}M`;
-      }
-      if (value >= 1_000) {
-        return `${sign}฿${(value / 1000).toFixed(2)}K`;
-      }
-      return `${sign}฿${value.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return `${sign}฿${Math.round(value).toLocaleString('en-US')}`;
 
     case 'percentage':
       return `${sign}${value.toFixed(precision)}%`;
