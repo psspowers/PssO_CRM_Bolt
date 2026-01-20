@@ -14,7 +14,7 @@ interface NewsItem {
   created_at: string;
   created_by: string;
   creator?: {
-    full_name: string;
+    name: string;
   };
 }
 
@@ -53,7 +53,7 @@ export function DealPulse({ accountId }: DealPulseProps) {
           news_date,
           created_at,
           created_by,
-          creator:created_by(full_name)
+          creator:crm_users!market_news_created_by_fkey(name)
         `
         )
         .eq("related_account_id", accountId)
@@ -212,7 +212,7 @@ export function DealPulse({ accountId }: DealPulseProps) {
             impact_type: item.impact_type,
             news_date: item.news_date || undefined,
             created_at: item.created_at,
-            creator_name: item.creator?.full_name,
+            creator_name: item.creator?.name,
           }}
           isFavorited={favorites.has(item.id)}
           onToggleFavorite={handleToggleFavorite}

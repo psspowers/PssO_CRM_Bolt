@@ -1031,11 +1031,14 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
   };
 
   const handleOpenFeedTaskModal = (item: FeedItem) => {
+    const contentStr = typeof item.content === 'string' ? item.content : String(item.content || '');
+    const summary = contentStr.length > 50 ? contentStr.substring(0, 50) : contentStr;
+
     setTaskInitialData({
       mode: 'activity',
       isTask: true,
-      summary: `Follow up: ${item.content.substring(0, 50)}`,
-      details: item.content,
+      summary: `Follow up: ${summary}`,
+      details: contentStr,
       relateToType: item.relatedToType,
       relateToId: item.relatedToId
     });
