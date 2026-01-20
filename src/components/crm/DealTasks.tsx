@@ -12,7 +12,7 @@ import { toast } from "sonner";
 interface Task {
   id: string;
   summary: string;
-  is_completed: boolean;
+  task_status: string | null;
   due_date: string | null;
   assigned_to_id: string | null;
   priority: "low" | "medium" | "high" | "urgent" | null;
@@ -46,7 +46,7 @@ export function DealTasks({ entityId }: DealTasksProps) {
           `
           id,
           summary,
-          is_completed,
+          task_status,
           due_date,
           assigned_to_id,
           priority,
@@ -68,22 +68,23 @@ export function DealTasks({ entityId }: DealTasksProps) {
     }
   };
 
-  const handleToggleComplete = async (taskId: string, currentStatus: boolean) => {
+  const handleToggleComplete = async (taskId: string, currentStatus: string | null) => {
     try {
+      const newStatus = currentStatus === "Completed" ? "Pending" : "Completed";
       const { error } = await supabase
         .from("activities")
-        .update({ is_completed: !currentStatus })
+        .update({ task_status: newStatus })
         .eq("id", taskId);
 
       if (error) throw error;
 
       setTasks((prev) =>
         prev.map((task) =>
-          task.id === taskId ? { ...task, is_completed: !currentStatus } : task
+          task.id === taskId ? { ...task, task_status: newStatus } : task
         )
       );
 
-      toast.success(!currentStatus ? "Task completed" : "Task reopened");
+      toast.success(newStatus === "Completed" ? "Task completed" : "Task reopened");
     } catch (error: any) {
       console.error("Error updating task:", error);
       toast.error("Failed to update task");
@@ -104,10 +105,10 @@ export function DealTasks({ entityId }: DealTasksProps) {
       const { data: newTask, error } = await supabase
         .from("activities")
         .insert({
-          activity_type: "task",
+          type: "task",
           summary: newTaskSummary.trim(),
           is_task: true,
-          is_completed: false,
+          task_status: "Pending",
           related_to_id: entityId,
           created_by: user.id,
           assigned_to_id: user.id,
@@ -117,7 +118,7 @@ export function DealTasks({ entityId }: DealTasksProps) {
           `
           id,
           summary,
-          is_completed,
+          task_status,
           due_date,
           assigned_to_id,
           priority,
@@ -161,8 +162,8 @@ export function DealTasks({ entityId }: DealTasksProps) {
     }
   };
 
-  const getDueDateBadge = (dueDate: string | null, isCompleted: boolean) => {
-    if (!dueDate || isCompleted) return null;
+  const getDueDateBadge = (dueDate: string | null, taskStatus: string | null) => {
+    if (!dueDate || taskStatus === "Completed") return null;
 
     const date = new Date(dueDate);
     const overdue = isPast(date) && !isToday(date);
@@ -238,20 +239,20 @@ export function DealTasks({ entityId }: DealTasksProps) {
             <div
               key={task.id}
               className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                task.is_completed
+                task.task_status === "Completed"
                   ? "bg-gray-50 border-gray-200"
                   : "bg-card border-gray-200 hover:bg-accent/50"
               }`}
             >
               <Checkbox
-                checked={task.is_completed}
-                onCheckedChange={() => handleToggleComplete(task.id, task.is_completed)}
+                checked={task.task_status === "Completed"}
+                onCheckedChange={() => handleToggleComplete(task.id, task.task_status)}
               />
 
               <div className="flex-1 min-w-0">
                 <div
                   className={`text-sm font-medium ${
-                    task.is_completed
+                    task.task_status === "Completed"
                       ? "line-through text-muted-foreground"
                       : "text-foreground"
                   }`}
@@ -261,7 +262,7 @@ export function DealTasks({ entityId }: DealTasksProps) {
               </div>
 
               <div className="flex items-center gap-2">
-                {task.priority && !task.is_completed && (
+                {task.priority && task.task_status !== "Completed" && (
                   <Badge
                     variant="outline"
                     className={`text-xs border ${getPriorityColor(task.priority)}`}
@@ -270,7 +271,7 @@ export function DealTasks({ entityId }: DealTasksProps) {
                   </Badge>
                 )}
 
-                {getDueDateBadge(task.due_date, task.is_completed)}
+                {getDueDateBadge(task.due_date, task.task_status)}
 
                 {task.assignee && (
                   <Avatar className="h-6 w-6">
