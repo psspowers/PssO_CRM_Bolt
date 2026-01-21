@@ -744,6 +744,16 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
             return;
           }
 
+          const isContactCreation = (log.action === 'create' || log.action === 'CREATE') &&
+                                    (logDetails.full_name || logDetails.email || logDetails.phone) &&
+                                    typeof logDetails.role !== 'undefined';
+
+          const hasNoAccount = !logDetails.account_id || logDetails.account_id === null;
+
+          if (isContactCreation && hasNoAccount) {
+            return;
+          }
+
           if (logDetails.related_to_id && logDetails.related_to_type?.toLowerCase() === 'opportunity') {
             if (!nameMap.has(logDetails.related_to_id)) {
               logOpportunityIds.push(logDetails.related_to_id);
@@ -783,6 +793,16 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
                                       (logDetails.entity_type?.toLowerCase() === 'activity' || logDetails.type === 'task' || logDetails.type === 'call' || logDetails.type === 'meeting');
 
           if (isActivityCreation) {
+            return;
+          }
+
+          const isContactCreation = (log.action === 'create' || log.action === 'CREATE') &&
+                                    (logDetails.full_name || logDetails.email || logDetails.phone) &&
+                                    typeof logDetails.role !== 'undefined';
+
+          const hasNoAccount = !logDetails.account_id || logDetails.account_id === null;
+
+          if (isContactCreation && hasNoAccount) {
             return;
           }
 
