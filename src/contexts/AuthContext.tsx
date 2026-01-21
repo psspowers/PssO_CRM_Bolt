@@ -54,7 +54,8 @@ const SESSION_WARNING_TIME = 2 * 60; // 2 minutes before expiry (rarely shown)
 const SHORT_SESSION = 30 * 24 * 60 * 60; // 30 days (ClickUp-style)
 const LONG_SESSION = 90 * 24 * 60 * 60; // 90 days
 const ACTIVITY_REFRESH_INTERVAL = 60 * 60; // Refresh every hour if active
-const ACTIVITY_CHECK_INTERVAL = 60; // Check activity every minute
+const ACTIVITY_CHECK_INTERVAL = 5 * 60; // Check activity every 5 minutes (less aggressive)
+const REFRESH_THRESHOLD = 5 * 60; // Only refresh when <5 minutes until expiry
 
 // Helper to determine DEFAULT role for NEW users based on email
 // NOTE: This is ONLY used when creating a new user for the first time
@@ -302,18 +303,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const now = Date.now();
     const timeSinceLastActivity = (now - activityRef.current) / 1000; // seconds
+    const timeSinceLastRefresh = (now - lastRefreshRef.current) / 1000; // seconds
 
     const expiresAt = session?.expires_at;
     if (!expiresAt) return;
 
     const timeUntilExpiry = expiresAt - (now / 1000);
 
-    // If we are within 1 hour of expiry AND user was active recently, refresh immediately
-    if (timeUntilExpiry < 3600 && timeSinceLastActivity < 300) {
+    // Only refresh when:
+    // 1. Less than 5 minutes until expiry (not 1 hour!)
+    // 2. User was active in last 5 minutes
+    // 3. Haven't refreshed in the last minute (prevent spam)
+    if (timeUntilExpiry < REFRESH_THRESHOLD &&
+        timeSinceLastActivity < 300 &&
+        timeSinceLastRefresh > 60) {
       try {
         await supabase.auth.refreshSession();
         lastRefreshRef.current = now;
-        console.debug('Session auto-refreshed (proactive approach, expires in', Math.floor(timeUntilExpiry / 60), 'minutes)');
+        console.debug('Session auto-refreshed (expires in', Math.floor(timeUntilExpiry / 60), 'minutes)');
       } catch (error) {
         console.warn('Silent refresh failed:', error);
       }
@@ -353,7 +360,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!user) return;
 
-    // Check every minute if we should refresh the session
+    // Check every 5 minutes if we should refresh the session
     activityCheckTimerRef.current = setInterval(checkAndRefreshSession, ACTIVITY_CHECK_INTERVAL * 1000);
 
     return () => {
