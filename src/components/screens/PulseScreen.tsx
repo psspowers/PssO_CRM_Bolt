@@ -152,6 +152,7 @@ type FeedItem = {
   iconColor: string;
   iconBgColor: string;
   dealName?: string;
+  targetMW?: number;
   relatedToId?: string;
   relatedToType?: string;
   activityType?: string;
@@ -175,6 +176,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           iconColor: 'text-blue-600',
           iconBgColor: 'bg-blue-100 dark:bg-blue-900/50',
           dealName: rawItem.deal_name,
+          targetMW: rawItem.target_mw,
           relatedToId: rawItem.related_to_id,
           relatedToType: rawItem.related_to_type,
           activityType: 'Call'
@@ -192,6 +194,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           iconColor: 'text-blue-600',
           iconBgColor: 'bg-blue-100 dark:bg-blue-900/50',
           dealName: rawItem.deal_name,
+          targetMW: rawItem.target_mw,
           relatedToId: rawItem.related_to_id,
           relatedToType: rawItem.related_to_type,
           activityType: 'Meeting'
@@ -209,6 +212,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           iconColor: 'text-slate-600',
           iconBgColor: 'bg-slate-100 dark:bg-slate-800',
           dealName: rawItem.deal_name,
+          targetMW: rawItem.target_mw,
           relatedToId: rawItem.related_to_id,
           relatedToType: rawItem.related_to_type,
           activityType: 'Note'
@@ -227,6 +231,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           iconColor: 'text-purple-600',
           iconBgColor: 'bg-purple-100 dark:bg-purple-900/50',
           dealName: rawItem.deal_name,
+          targetMW: rawItem.target_mw,
           relatedToId: rawItem.related_to_id,
           relatedToType: rawItem.related_to_type,
           activityType: 'Email'
@@ -244,6 +249,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           iconColor: 'text-orange-600',
           iconBgColor: 'bg-orange-100 dark:bg-orange-900/50',
           dealName: rawItem.deal_name,
+          targetMW: rawItem.target_mw,
           relatedToId: rawItem.related_to_id,
           relatedToType: rawItem.related_to_type,
           activityType: 'Task'
@@ -261,6 +267,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           iconColor: 'text-green-600',
           iconBgColor: 'bg-green-100 dark:bg-green-900/50',
           dealName: rawItem.deal_name,
+          targetMW: rawItem.target_mw,
           relatedToId: rawItem.related_to_id,
           relatedToType: rawItem.related_to_type,
           activityType: 'Site Visit'
@@ -278,6 +285,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           iconColor: 'text-green-600',
           iconBgColor: 'bg-green-100 dark:bg-green-900/50',
           dealName: rawItem.deal_name,
+          targetMW: rawItem.target_mw,
           relatedToId: rawItem.related_to_id,
           relatedToType: rawItem.related_to_type,
           activityType: 'Stage Change'
@@ -295,6 +303,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           iconColor: 'text-green-600',
           iconBgColor: 'bg-green-100 dark:bg-green-900/50',
           dealName: rawItem.deal_name,
+          targetMW: rawItem.target_mw,
           relatedToId: rawItem.related_to_id,
           relatedToType: rawItem.related_to_type,
           activityType: 'WhatsApp'
@@ -312,6 +321,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           iconColor: 'text-slate-600',
           iconBgColor: 'bg-slate-100 dark:bg-slate-800',
           dealName: rawItem.deal_name,
+          targetMW: rawItem.target_mw,
           relatedToId: rawItem.related_to_id,
           relatedToType: rawItem.related_to_type,
           activityType: activityType
@@ -662,7 +672,7 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
       const partnerIds = activities.filter(a => a.related_to_type?.toLowerCase() === 'partner').map(a => a.related_to_id).filter(Boolean);
 
       const [opportunitiesRes, projectsRes, accountsRes, contactsRes, partnersRes] = await Promise.all([
-        opportunityIds.length > 0 ? supabase.from('opportunities').select('id, name').in('id', opportunityIds) : Promise.resolve({ data: [] }),
+        opportunityIds.length > 0 ? supabase.from('opportunities').select('id, name, target_capacity').in('id', opportunityIds) : Promise.resolve({ data: [] }),
         projectIds.length > 0 ? supabase.from('projects').select('id, name').in('id', projectIds) : Promise.resolve({ data: [] }),
         accountIds.length > 0 ? supabase.from('accounts').select('id, name').in('id', accountIds) : Promise.resolve({ data: [] }),
         contactIds.length > 0 ? supabase.from('contacts').select('id, full_name').in('id', contactIds) : Promise.resolve({ data: [] }),
@@ -670,7 +680,11 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
       ]);
 
       const nameMap = new Map();
-      opportunitiesRes.data?.forEach((o: any) => nameMap.set(o.id, o.name));
+      const mwMap = new Map();
+      opportunitiesRes.data?.forEach((o: any) => {
+        nameMap.set(o.id, o.name);
+        if (o.target_capacity) mwMap.set(o.id, o.target_capacity);
+      });
       projectsRes.data?.forEach((p: any) => nameMap.set(p.id, p.name));
       accountsRes.data?.forEach((a: any) => nameMap.set(a.id, a.name));
       contactsRes.data?.forEach((c: any) => nameMap.set(c.id, c.full_name));
@@ -678,6 +692,7 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
 
       activities.forEach((activity) => {
         const dealName = activity.related_to_id ? nameMap.get(activity.related_to_id) : null;
+        const targetMW = activity.related_to_id ? mwMap.get(activity.related_to_id) : null;
 
         rawFeed.push({
           id: activity.id,
@@ -689,7 +704,8 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
           user_avatar: activity.crm_users?.avatar,
           related_to_id: activity.related_to_id,
           related_to_type: activity.related_to_type,
-          deal_name: dealName
+          deal_name: dealName,
+          target_mw: targetMW
         });
       });
     }
@@ -1475,29 +1491,51 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
                 return (
                   <div key={item.id} className="px-4 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <div className="flex gap-3">
-                      <div className="flex flex-col items-center">
-                        <Avatar className="w-11 h-11 ring-2 ring-slate-100 dark:ring-slate-700">
-                          <AvatarImage src={item.user_avatar} />
-                          <AvatarFallback className="bg-gradient-to-br from-orange-400 to-orange-600 text-white text-sm font-semibold">
-                            {item.user_name?.charAt(0) || '?'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium">
-                          {timeAgo}
-                        </span>
+                      <div className="flex flex-col items-center flex-shrink-0">
+                        <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${item.iconBgColor}`}>
+                          <div className={item.iconColor}>
+                            {item.icon}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="font-bold text-slate-900 dark:text-white text-sm truncate">
-                              {item.user_name || 'System'}
-                            </span>
-                          </div>
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap text-sm leading-tight">
+                          {item.dealName && (
+                            <>
+                              <span className="font-semibold text-slate-900 dark:text-white">
+                                {item.dealName}
+                              </span>
+                              <span className="text-slate-400 dark:text-slate-500">·</span>
+                            </>
+                          )}
+
+                          {item.targetMW && (
+                            <>
+                              <span className="font-medium text-blue-600 dark:text-blue-400">
+                                {item.targetMW} MW
+                              </span>
+                              <span className="text-slate-400 dark:text-slate-500">·</span>
+                            </>
+                          )}
+
+                          <span className="text-slate-700 dark:text-slate-300">
+                            {item.user_name || 'System'}
+                          </span>
+                          <span className="text-slate-400 dark:text-slate-500">·</span>
+
+                          <span className="text-slate-600 dark:text-slate-400 text-xs">
+                            {item.activityType || (item.type === 'activity' ? 'Activity' : 'Update')}
+                          </span>
+                          <span className="text-slate-400 dark:text-slate-500">·</span>
+
+                          <span className="text-slate-400 dark:text-slate-500 text-xs">
+                            {timeAgo}
+                          </span>
 
                           {item.relatedToId && item.relatedToType && (
                             <button
-                              className="flex-shrink-0 p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors"
+                              className="ml-auto flex-shrink-0 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
                               onClick={() => {
                                 const typeMap: Record<string, string> = {
                                   'Opportunity': 'opportunities',
@@ -1511,31 +1549,12 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
                               }}
                               title={`Go to ${item.relatedToType}`}
                             >
-                              <ExternalLink className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                              <ExternalLink className="w-3 h-3 text-slate-500 dark:text-slate-400" />
                             </button>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className={`flex items-center justify-center w-6 h-6 rounded-md ${item.iconBgColor}`}>
-                            <div className={item.iconColor}>
-                              {item.icon}
-                            </div>
-                          </div>
-                          <span className="text-xs text-slate-600 dark:text-slate-400 font-semibold">
-                            {item.activityType || (item.type === 'activity' ? 'Activity' : 'Update')}
-                          </span>
-                        </div>
-
-                        {item.dealName && (
-                          <div className="mb-2">
-                            <span className="inline-block px-2 py-1 text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 rounded-md">
-                              {item.dealName}
-                            </span>
-                          </div>
-                        )}
-
-                        <div className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-3">
+                        <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
                           {item.content}
                         </div>
 
