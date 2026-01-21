@@ -15,11 +15,25 @@ export async function getDeviceInfo(): Promise<DeviceInfo> {
 
   let ip = 'Unknown';
   try {
-    const ipResponse = await fetch('https://api.ipify.org?format=json');
-    const ipData = await ipResponse.json();
-    ip = ipData.ip;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+    const ipResponse = await fetch('https://api.ipify.org?format=json', {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (ipResponse.ok) {
+      const text = await ipResponse.text();
+      if (text && text.trim().length > 0) {
+        const ipData = JSON.parse(text);
+        if (ipData && ipData.ip) {
+          ip = ipData.ip;
+        }
+      }
+    }
   } catch (error) {
-    console.error('Failed to fetch IP address:', error);
+    console.warn('Failed to fetch IP address:', error);
   }
 
   const browser = result.browser.name || 'Unknown Browser';
