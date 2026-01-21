@@ -317,14 +317,6 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
           {/* ONLY SHOW CRM TOOLS IF LOGGED IN */}
           {user ? (
             <>
-              {/* Mobile Search - Opens Global Search */}
-              <button
-                onClick={() => onSearchClick?.()}
-                className="lg:hidden w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors"
-                aria-label="Open search"
-              >
-                <Search className="w-5 h-5" />
-              </button>
 
               {/* Quick Add - Mobile only (desktop has sidebar button) */}
               <button
