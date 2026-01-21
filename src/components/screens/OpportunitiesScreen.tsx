@@ -76,7 +76,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [stagnationFilter, setStagnationFilter] = useState<'all' | '30' | '60' | '90'>('all');
+  const [stagnationFilter, setStagnationFilter] = useState<'all' | '15' | '30' | '60'>('all');
   
   // NEW: Hierarchy View Filter State
   // 'mine' = Only deals owned by the current user
@@ -208,9 +208,9 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     // 5. STAGNATION FILTER - Check days since last update
     if (stagnationFilter !== 'all') {
       const daysSinceUpdate = (new Date().getTime() - new Date(o.updatedAt).getTime()) / (1000 * 3600 * 24);
+      if (stagnationFilter === '15' && daysSinceUpdate < 15) return false;
       if (stagnationFilter === '30' && daysSinceUpdate < 30) return false;
       if (stagnationFilter === '60' && daysSinceUpdate < 60) return false;
-      if (stagnationFilter === '90' && daysSinceUpdate < 90) return false;
     }
 
     return matchesSearch && matchesStage && matchesPriority;
@@ -234,9 +234,9 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     const myDeals = opportunities.filter(o => o.ownerId === user?.id && !['Won', 'Lost'].includes(o.stage));
     const now = new Date().getTime();
     return {
-      warning: myDeals.filter(o => (now - new Date(o.updatedAt).getTime()) / 86400000 > 30).length,
-      danger: myDeals.filter(o => (now - new Date(o.updatedAt).getTime()) / 86400000 > 60).length,
-      critical: myDeals.filter(o => (now - new Date(o.updatedAt).getTime()) / 86400000 > 90).length
+      warning: myDeals.filter(o => (now - new Date(o.updatedAt).getTime()) / 86400000 > 15).length,
+      danger: myDeals.filter(o => (now - new Date(o.updatedAt).getTime()) / 86400000 > 30).length,
+      critical: myDeals.filter(o => (now - new Date(o.updatedAt).getTime()) / 86400000 > 60).length
     };
   }, [opportunities, user?.id]);
 
@@ -528,14 +528,14 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
             <div className="relative">
               <select
                 value={stagnationFilter}
-                onChange={(e) => setStagnationFilter(e.target.value as 'all' | '30' | '60' | '90')}
+                onChange={(e) => setStagnationFilter(e.target.value as 'all' | '15' | '30' | '60')}
                 className="appearance-none bg-white border border-slate-200 text-xs font-bold pl-2 pr-6 py-1 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none w-24 truncate"
                 style={{ direction: 'ltr' }}
               >
                 <option value="all">Any Time</option>
+                <option value="15">&gt; 15 Days</option>
                 <option value="30">&gt; 30 Days</option>
                 <option value="60">&gt; 60 Days</option>
-                <option value="90">&gt; 90 Days</option>
               </select>
               <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                 <ChevronDown className="w-3 h-3" />
@@ -546,13 +546,13 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           {/* MINE VIEW: Badges */}
           {hierarchyView === 'mine' && (
             <div className="flex items-center gap-1">
-              <button onClick={() => setStagnationFilter(stagnationFilter === '30' ? 'all' : '30')} className={`px-2 py-1 rounded-md text-[10px] font-bold border ${stagnationFilter === '30' ? 'bg-yellow-100 border-yellow-300 text-yellow-700' : 'bg-white border-slate-200 text-slate-400'}`}>
+              <button onClick={() => setStagnationFilter(stagnationFilter === '15' ? 'all' : '15')} className={`px-2 py-1 rounded-md text-[10px] font-bold border ${stagnationFilter === '15' ? 'bg-yellow-100 border-yellow-300 text-yellow-700' : 'bg-white border-slate-200 text-slate-400'}`}>
                 <Flag className="w-3 h-3 inline mr-1" />{stagnationStats.warning}
               </button>
-              <button onClick={() => setStagnationFilter(stagnationFilter === '60' ? 'all' : '60')} className={`px-2 py-1 rounded-md text-[10px] font-bold border ${stagnationFilter === '60' ? 'bg-orange-100 border-orange-300 text-orange-700' : 'bg-white border-slate-200 text-slate-400'}`}>
+              <button onClick={() => setStagnationFilter(stagnationFilter === '30' ? 'all' : '30')} className={`px-2 py-1 rounded-md text-[10px] font-bold border ${stagnationFilter === '30' ? 'bg-orange-100 border-orange-300 text-orange-700' : 'bg-white border-slate-200 text-slate-400'}`}>
                 <Flag className="w-3 h-3 inline mr-1" />{stagnationStats.danger}
               </button>
-              <button onClick={() => setStagnationFilter(stagnationFilter === '90' ? 'all' : '90')} className={`px-2 py-1 rounded-md text-[10px] font-bold border ${stagnationFilter === '90' ? 'bg-red-100 border-red-300 text-red-700' : 'bg-white border-slate-200 text-slate-400'}`}>
+              <button onClick={() => setStagnationFilter(stagnationFilter === '60' ? 'all' : '60')} className={`px-2 py-1 rounded-md text-[10px] font-bold border ${stagnationFilter === '60' ? 'bg-red-100 border-red-300 text-red-700' : 'bg-white border-slate-200 text-slate-400'}`}>
                 <Flag className="w-3 h-3 inline mr-1" />{stagnationStats.critical}
               </button>
             </div>

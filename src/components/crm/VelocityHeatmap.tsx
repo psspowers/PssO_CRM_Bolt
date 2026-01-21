@@ -4,8 +4,8 @@ import { Clock, AlertTriangle, Snowflake, Wind } from 'lucide-react';
 
 interface VelocityHeatmapProps {
   opportunities: Opportunity[];
-  onFilterChange: (filter: 'all' | '30' | '60' | '90') => void;
-  activeFilter: 'all' | '30' | '60' | '90';
+  onFilterChange: (filter: 'all' | '15' | '30' | '60') => void;
+  activeFilter: 'all' | '15' | '30' | '60';
 }
 
 export const VelocityHeatmap: React.FC<VelocityHeatmapProps> = ({ opportunities, onFilterChange, activeFilter }) => {
@@ -15,9 +15,9 @@ export const VelocityHeatmap: React.FC<VelocityHeatmapProps> = ({ opportunities,
   const buckets = opportunities.reduce(
     (acc, opp) => {
       const days = (now - new Date(opp.updatedAt).getTime()) / dayMs;
-      if (days > 90) acc.frozen++;
-      else if (days > 60) acc.stalled++;
-      else if (days > 30) acc.warning++;
+      if (days > 60) acc.frozen++;
+      else if (days > 30) acc.stalled++;
+      else if (days > 15) acc.warning++;
       else acc.active++;
       return acc;
     },
@@ -57,28 +57,28 @@ export const VelocityHeatmap: React.FC<VelocityHeatmapProps> = ({ opportunities,
           onClick={() => onFilterChange('all')}
         />
         <FilterButton
-          label=">30 Days"
+          label=">15 Days"
           count={buckets.warning}
           color="bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800"
           icon={<Clock className="w-3 h-3" />}
+          isActive={activeFilter === '15'}
+          onClick={() => onFilterChange('15')}
+        />
+        <FilterButton
+          label=">30 Days"
+          count={buckets.stalled}
+          color="bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800"
+          icon={<AlertTriangle className="w-3 h-3" />}
           isActive={activeFilter === '30'}
           onClick={() => onFilterChange('30')}
         />
         <FilterButton
           label=">60 Days"
-          count={buckets.stalled}
-          color="bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800"
-          icon={<AlertTriangle className="w-3 h-3" />}
-          isActive={activeFilter === '60'}
-          onClick={() => onFilterChange('60')}
-        />
-        <FilterButton
-          label=">90 Days"
           count={buckets.frozen}
           color="bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800"
           icon={<Snowflake className="w-3 h-3" />}
-          isActive={activeFilter === '90'}
-          onClick={() => onFilterChange('90')}
+          isActive={activeFilter === '60'}
+          onClick={() => onFilterChange('60')}
         />
       </div>
     </div>
