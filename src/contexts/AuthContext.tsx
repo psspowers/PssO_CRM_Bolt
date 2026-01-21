@@ -313,7 +313,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         await supabase.auth.refreshSession();
         lastRefreshRef.current = now;
-        console.log('Session auto-refreshed (proactive approach, expires in', Math.floor(timeUntilExpiry / 60), 'minutes)');
+        console.debug('Session auto-refreshed (proactive approach, expires in', Math.floor(timeUntilExpiry / 60), 'minutes)');
       } catch (error) {
         console.warn('Silent refresh failed:', error);
       }
