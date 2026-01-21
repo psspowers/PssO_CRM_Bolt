@@ -280,7 +280,7 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
-    <header className="sticky top-0 bg-white border-b border-slate-200 px-4 lg:px-8 py-3 z-40" role="banner">
+    <header className="sticky top-0 bg-white border-b border-slate-200 px-4 lg:px-8 py-3 z-50" role="banner">
       <div className="flex items-center justify-between">
         {/* Mobile Logo - Hidden on desktop since sidebar has logo - Clickable to go home */}
         <button

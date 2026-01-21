@@ -492,7 +492,7 @@ export default function AppLayout() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden max-w-full min-w-0">
-        {/* Header - visible on mobile, simplified on desktop */}
+        {/* Header - STICKY AT THIS LEVEL - visible on mobile, simplified on desktop */}
         <Header
           onQuickAdd={() => setShowQuickAdd(true)}
           onNavigate={handleDeepLink}
@@ -500,7 +500,7 @@ export default function AppLayout() {
           onSearchClick={() => setActiveTab('search')}
         />
 
-        {/* Main Content */}
+        {/* Main Content - Scrolls independently */}
         <main
           id="main-content"
           className={`flex-1 overflow-y-auto overflow-x-hidden ${
