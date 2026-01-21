@@ -36,7 +36,7 @@ export interface DbOpportunity {
   id: string; name: string; account_id?: string; linked_account_id?: string;
   value?: number; value_usd?: number; stage: string;
   priority: string; owner_id: string; next_action?: string; next_action_date?: string;
-  clickup_link?: string; notes?: string;
+  clickup_link?: string; google_drive_link?: string; notes?: string;
   max_capacity?: number;
   target_capacity?: number; target_capacity_mw?: number;
   ppa_term?: number;

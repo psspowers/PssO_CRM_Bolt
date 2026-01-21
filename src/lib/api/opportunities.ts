@@ -26,6 +26,7 @@ const toOpp = (db: DbOpportunity, partnerIds: string[] = []): Opportunity => ({
   nextAction: db.next_action,
   nextActionDate: db.next_action_date ? new Date(db.next_action_date) : undefined,
   clickupLink: db.clickup_link,
+  googleDriveLink: db.google_drive_link,
   notes: db.notes,
   maxCapacity: db.max_capacity,
   targetCapacity: db.target_capacity ?? db.target_capacity_mw ?? 0,
@@ -87,6 +88,7 @@ export const createOpportunity = async (opp: Omit<Opportunity, 'id' | 'createdAt
     next_action: rest.nextAction,
     next_action_date: rest.nextActionDate?.toISOString(),
     clickup_link: rest.clickupLink,
+    google_drive_link: rest.googleDriveLink,
     notes: rest.notes,
     max_capacity: rest.maxCapacity,
     target_capacity: rest.targetCapacity,
@@ -137,6 +139,7 @@ export const updateOpportunity = async (id: string, updates: Partial<Opportunity
   if (rest.primaryPartnerId !== undefined) dbUpdates.primary_partner_id = toUuidOrNull(rest.primaryPartnerId);
   if (rest.reType !== undefined) dbUpdates.re_type = rest.reType;
   if (rest.clickupLink !== undefined) dbUpdates.clickup_link = rest.clickupLink;
+  if (rest.googleDriveLink !== undefined) dbUpdates.google_drive_link = rest.googleDriveLink;
   if (nextActionDate !== undefined) dbUpdates.next_action_date = nextActionDate?.toISOString() || null;
   if (targetDecisionDate !== undefined) dbUpdates.target_decision_date = targetDecisionDate?.toISOString() || null;
   
