@@ -371,6 +371,8 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
     .reduce((sum, o) => sum + (Number(o.targetCapacity) || 0), 0);
 
   const movementMW = activeMovedMW;
+  const movementDealsCount = displayedOpportunities
+    .filter(o => new Date(o.updatedAt) >= startDate && o.stage !== 'Prospect').length;
 
   if (loading) {
     return (
@@ -513,9 +515,9 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
 
           <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
             <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
-              <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Velocity</p>
-              <p className="text-2xl font-bold text-white">{velocityMetrics.stageMovements}</p>
-              <p className="text-xs text-emerald-400 mt-1">Score</p>
+              <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Moving</p>
+              <p className="text-2xl font-bold text-white">{formatMetric(movementMW, 'capacity')}</p>
+              <p className="text-xs text-slate-400 mt-1">{movementDealsCount} Deals</p>
             </div>
 
             <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
