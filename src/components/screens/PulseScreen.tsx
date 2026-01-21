@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { QuickAddModal } from '../crm/QuickAddModal';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppContext } from '@/contexts/AppContext';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import Papa from 'papaparse';
@@ -476,6 +477,7 @@ interface PulseScreenProps {
 
 export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
   const { user, profile } = useAuth();
+  const { createActivity } = useAppContext();
   const [activeTab, setActiveTab] = useState<'internal' | 'market'>('internal');
   const [showPostModal, setShowPostModal] = useState(false);
   const [showAnalystModal, setShowAnalystModal] = useState(false);
@@ -910,21 +912,20 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
 
   const handleQuickAddSubmit = async (data: any) => {
     try {
-      const { error } = await supabase.from('activities').insert({
+      await createActivity({
         type: data.type,
         summary: data.summary,
         details: data.details,
-        is_task: data.isTask,
-        status: data.isTask ? data.taskStatus : undefined,
-        due_date: data.dueDate,
+        isTask: data.isTask,
+        taskStatus: data.isTask ? (data.taskStatus || 'Pending') : undefined,
+        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         priority: data.priority,
-        assigned_to_id: data.assignedToId || user?.id,
-        related_to_type: data.relatedToType,
-        related_to_id: data.relatedToId,
-        created_by: user?.id
+        assignedToId: data.assignedToId || user?.id,
+        relatedToType: data.relatedToType,
+        relatedToId: data.relatedToId,
+        createdById: user?.id || ''
       });
 
-      if (error) throw error;
       toast.success("Task created successfully");
       setShowQuickAdd(false);
       loadInternalFeed();
