@@ -490,9 +490,9 @@ export default function AppLayout() {
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-screen max-w-full min-w-0 overflow-hidden">
-        {/* Header - STICKY AT THIS LEVEL - visible on mobile, simplified on desktop */}
+      {/* Main Content Area - THIS CONTAINER SCROLLS */}
+      <div className="flex-1 flex flex-col h-screen max-w-full min-w-0 overflow-y-auto overflow-x-hidden">
+        {/* Header - STICKY WITHIN THIS SCROLLING CONTAINER */}
         <Header
           onQuickAdd={() => setShowQuickAdd(true)}
           onNavigate={handleDeepLink}
@@ -500,10 +500,10 @@ export default function AppLayout() {
           onSearchClick={() => setActiveTab('search')}
         />
 
-        {/* Main Content - Scrolls independently */}
+        {/* Main Content - No scroll, just layout */}
         <main
           id="main-content"
-          className={`flex-1 overflow-y-auto overflow-x-hidden ${
+          className={`flex-1 ${
             activeTab === 'pulse'
               ? 'p-0 pb-20'
               : 'p-3 sm:p-4 lg:p-8 pb-24 lg:pb-8'
