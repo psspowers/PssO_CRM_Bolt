@@ -643,30 +643,30 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
         </div>
       </div>
 
-      {/* ClickUp Link */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">ClickUp Link</label>
-        <input
-          type="url"
-          inputMode="url"
-          value={form.clickupLink}
-          onChange={e => setForm({ ...form, clickupLink: e.target.value })}
-          className={inputClass}
-          placeholder="https://app.clickup.com/..."
-        />
-      </div>
-
-      {/* Google Drive Link */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">Google Drive Link</label>
-        <input
-          type="url"
-          inputMode="url"
-          value={form.googleDriveLink}
-          onChange={e => setForm({ ...form, googleDriveLink: e.target.value })}
-          className={inputClass}
-          placeholder="https://drive.google.com/..."
-        />
+      {/* Project Links */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">ClickUp Link</label>
+          <input
+            type="url"
+            inputMode="url"
+            value={form.clickupLink}
+            onChange={e => setForm({ ...form, clickupLink: e.target.value })}
+            className={inputClass}
+            placeholder="https://app.clickup.com/..."
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Google Drive Link</label>
+          <input
+            type="url"
+            inputMode="url"
+            value={form.googleDriveLink}
+            onChange={e => setForm({ ...form, googleDriveLink: e.target.value })}
+            className={inputClass}
+            placeholder="https://drive.google.com/..."
+          />
+        </div>
       </div>
 
       <div>
