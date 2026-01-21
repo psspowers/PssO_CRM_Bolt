@@ -64,31 +64,43 @@ const VelocityStatCard: React.FC<VelocityStatCardProps> = ({
   return (
     <button
       onClick={onClick}
-      className={`w-full p-4 lg:p-5 rounded-xl lg:rounded-2xl border ${colorClasses[color]} text-left transition-all hover:shadow-lg active:scale-[0.98]`}
+      className={`group relative w-full p-5 lg:p-6 rounded-2xl border ${colorClasses[color]} text-left transition-all hover:shadow-xl hover:shadow-black/5 hover:-translate-y-0.5 active:scale-[0.98] overflow-hidden`}
     >
-      <div className="flex items-start justify-between">
-        <div className={`w-10 h-10 lg:w-11 lg:h-11 rounded-xl ${iconBgClasses[color]} flex items-center justify-center`}>
-          <Icon className="w-5 h-5" />
-        </div>
-        {delta !== undefined && (
-          <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold ${
-            delta >= 0
-              ? 'bg-emerald-100 text-emerald-700'
-              : 'bg-red-100 text-red-700'
-          }`}>
-            {delta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            {Math.abs(delta).toFixed(1)}%
+      <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+      <div className="relative">
+        <div className="flex items-start justify-between mb-4">
+          <div className={`w-11 h-11 lg:w-12 lg:h-12 rounded-xl ${iconBgClasses[color]} flex items-center justify-center shadow-sm`}>
+            <Icon className="w-5 h-5 lg:w-5.5 lg:h-5.5" />
           </div>
-        )}
-      </div>
-      <div className="mt-3">
-        <p className="text-2xl lg:text-3xl font-bold text-gray-900">
-          {value}{unit && <span className="text-lg ml-1">{unit}</span>}
-        </p>
-        <p className="text-sm font-medium text-slate-600 mt-1">{title}</p>
-        {delta !== undefined && (
-          <p className="text-xs text-slate-400 mt-0.5">{periodLabel}</p>
-        )}
+          {delta !== undefined && (
+            <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold shadow-sm ${
+              delta >= 0
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-red-100 text-red-700'
+            }`}>
+              {delta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              {Math.abs(delta).toFixed(1)}%
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-baseline gap-1.5">
+            <p className="text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight">
+              {value}
+            </p>
+            {unit && (
+              <span className="text-[11px] lg:text-xs font-medium text-slate-400 uppercase tracking-wide">
+                {unit}
+              </span>
+            )}
+          </div>
+          <p className="text-sm font-semibold text-slate-600">{title}</p>
+          {delta !== undefined && (
+            <p className="text-[11px] text-slate-400 font-medium">{periodLabel}</p>
+          )}
+        </div>
       </div>
     </button>
   );
@@ -125,16 +137,19 @@ const PipelineStage: React.FC<PipelineStageProps> = ({
       >
         <div className="h-6 mb-1">
           {change !== undefined && change !== 0 && (
-            <div className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+            <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm ${
               change > 0 ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
             }`}>
-              {change > 0 ? '+' : ''}{Math.abs(mwChange).toFixed(2)} MW
+              {change > 0 ? '+' : ''}{Math.abs(mwChange).toFixed(2)} <span className="text-[9px] opacity-70">MW</span>
             </div>
           )}
         </div>
-        <div className={`w-16 h-16 lg:w-24 lg:h-24 rounded-2xl ${color} flex flex-col items-center justify-center text-white shadow-lg group-hover:shadow-xl transition-shadow`}>
+        <div className={`w-16 h-16 lg:w-24 lg:h-24 rounded-2xl ${color} flex flex-col items-center justify-center text-white shadow-lg group-hover:shadow-xl transition-all`}>
           <span className="text-lg lg:text-xl font-bold">{count}</span>
-          <span className="text-sm lg:text-base font-bold opacity-90">{mw.toFixed(2)} MW</span>
+          <div className="flex items-baseline gap-0.5 mt-0.5">
+            <span className="text-sm lg:text-base font-bold">{mw.toFixed(2)}</span>
+            <span className="text-[9px] lg:text-[10px] font-semibold opacity-70 uppercase">MW</span>
+          </div>
         </div>
         <span className="text-xs font-medium text-slate-600 mt-1.5 text-center max-w-[80px] group-hover:text-slate-900 transition-colors">{stage}</span>
       </button>

@@ -33,23 +33,32 @@ export const StatCard: React.FC<StatCardProps> = ({
   return (
     <button
       onClick={onClick}
-      className={`w-full p-4 lg:p-6 rounded-xl lg:rounded-2xl border ${colorClasses[color]} text-left transition-all hover:shadow-lg active:scale-95`}
+      className={`group relative w-full p-5 lg:p-6 rounded-2xl border ${colorClasses[color]} text-left transition-all hover:shadow-xl hover:shadow-black/5 hover:-translate-y-0.5 active:scale-[0.98] overflow-hidden`}
     >
-      <div className="flex items-start justify-between">
-        <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-xl ${iconBgClasses[color]} flex items-center justify-center`}>
-          <Icon className="w-5 h-5 lg:w-6 lg:h-6" />
-        </div>
-        {trend !== undefined && (
-          <div className={`flex items-center gap-1 text-xs font-medium ${trend >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-            {trend >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-            {Math.abs(trend)}%
+      <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+      <div className="relative">
+        <div className="flex items-start justify-between mb-4">
+          <div className={`w-11 h-11 lg:w-12 lg:h-12 rounded-xl ${iconBgClasses[color]} flex items-center justify-center shadow-sm`}>
+            <Icon className="w-5 h-5 lg:w-5.5 lg:h-5.5" />
           </div>
-        )}
-      </div>
-      <div className="mt-3 lg:mt-4">
-        <p className="text-2xl lg:text-3xl font-bold text-gray-900">{value}</p>
-        <p className="text-sm lg:text-base font-medium mt-1">{title}</p>
-        {subtitle && <p className="text-xs lg:text-sm text-gray-500 mt-0.5">{subtitle}</p>}
+          {trend !== undefined && (
+            <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold shadow-sm ${
+              trend >= 0
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-red-100 text-red-700'
+            }`}>
+              {trend >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              {Math.abs(trend)}%
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <p className="text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight">{value}</p>
+          <p className="text-sm font-semibold text-slate-600">{title}</p>
+          {subtitle && <p className="text-[11px] text-slate-400 font-medium">{subtitle}</p>}
+        </div>
       </div>
     </button>
   );
