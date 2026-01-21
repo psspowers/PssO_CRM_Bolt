@@ -1595,60 +1595,77 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        {(item.dealName || item.targetMW) && (
-                          <div className="flex items-center gap-2 mb-1 text-sm">
-                            {item.dealName && (
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <div className="flex items-center gap-2 flex-wrap min-w-0">
+                            {(item.dealName || item.targetMW) ? (
                               <>
-                                <span className="font-bold text-slate-900 dark:text-white">
-                                  {item.dealName}
+                                {item.dealName && (
+                                  <span className="font-bold text-slate-900 dark:text-white text-base">
+                                    {item.dealName}
+                                  </span>
+                                )}
+                                {item.dealName && item.targetMW && (
+                                  <span className="text-slate-400 dark:text-slate-500">|</span>
+                                )}
+                                {item.targetMW && (
+                                  <span className="font-semibold text-blue-600 dark:text-blue-400 text-base">
+                                    {item.targetMW} MW
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-slate-700 dark:text-slate-300 text-sm">
+                                  {item.user_name || 'System'}
                                 </span>
-                                {item.targetMW && <span className="text-slate-400 dark:text-slate-500">|</span>}
+                                <span className="text-slate-400 dark:text-slate-500">|</span>
+                                <span className="text-slate-600 dark:text-slate-400 text-sm">
+                                  {item.activityType || (item.type === 'activity' ? 'Activity' : 'Update')}
+                                </span>
+                                <span className="text-slate-400 dark:text-slate-500">|</span>
+                                <span className="text-slate-400 dark:text-slate-500 text-sm">
+                                  {timeAgo}
+                                </span>
                               </>
                             )}
+                          </div>
 
-                            {item.targetMW && (
-                              <span className="font-semibold text-blue-600 dark:text-blue-400">
-                                {item.targetMW} MW
-                              </span>
-                            )}
+                          {item.relatedToId && item.relatedToType && onNavigate && (
+                            <button
+                              className="flex-shrink-0 p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
+                              onClick={() => {
+                                const typeMap: Record<string, string> = {
+                                  'Opportunity': 'opportunities',
+                                  'Project': 'projects',
+                                  'Account': 'accounts',
+                                  'Contact': 'contacts',
+                                  'Partner': 'partners'
+                                };
+                                const view = typeMap[item.relatedToType] || 'home';
+                                onNavigate(view);
+                              }}
+                              title={`Go to ${item.relatedToType}`}
+                            >
+                              <ExternalLink className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                            </button>
+                          )}
+                        </div>
 
-                            {item.relatedToId && item.relatedToType && onNavigate && (
-                              <button
-                                className="ml-auto flex-shrink-0 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
-                                onClick={() => {
-                                  const typeMap: Record<string, string> = {
-                                    'Opportunity': 'opportunities',
-                                    'Project': 'projects',
-                                    'Account': 'accounts',
-                                    'Contact': 'contacts',
-                                    'Partner': 'partners'
-                                  };
-                                  const view = typeMap[item.relatedToType] || 'home';
-                                  onNavigate(view);
-                                }}
-                                title={`Go to ${item.relatedToType}`}
-                              >
-                                <ExternalLink className="w-3 h-3 text-slate-500 dark:text-slate-400" />
-                              </button>
-                            )}
+                        {(item.dealName || item.targetMW) && (
+                          <div className="flex items-center gap-2 mb-1.5 text-sm">
+                            <span className="text-slate-700 dark:text-slate-300">
+                              {item.user_name || 'System'}
+                            </span>
+                            <span className="text-slate-400 dark:text-slate-500">|</span>
+                            <span className="text-slate-600 dark:text-slate-400">
+                              {item.activityType || (item.type === 'activity' ? 'Activity' : 'Update')}
+                            </span>
+                            <span className="text-slate-400 dark:text-slate-500">|</span>
+                            <span className="text-slate-400 dark:text-slate-500">
+                              {timeAgo}
+                            </span>
                           </div>
                         )}
-
-                        <div className="flex items-center gap-2 mb-1.5 text-sm">
-                          <span className="text-slate-700 dark:text-slate-300">
-                            {item.user_name || 'System'}
-                          </span>
-                          <span className="text-slate-400 dark:text-slate-500">|</span>
-
-                          <span className="text-slate-600 dark:text-slate-400 text-xs">
-                            {item.activityType || (item.type === 'activity' ? 'Activity' : 'Update')}
-                          </span>
-                          <span className="text-slate-400 dark:text-slate-500">|</span>
-
-                          <span className="text-slate-400 dark:text-slate-500 text-xs">
-                            {timeAgo}
-                          </span>
-                        </div>
 
                         <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
                           {item.content}
