@@ -479,7 +479,7 @@ export default function AppLayout() {
         className="sr-only"
       />
 
-      <div className="min-h-screen bg-slate-100 flex overflow-x-hidden max-w-full">
+      <div className="min-h-screen bg-slate-100 flex max-w-full">
       {/* Desktop Sidebar */}
       <Sidebar
         activeTab={activeTab}
@@ -491,7 +491,7 @@ export default function AppLayout() {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden max-w-full min-w-0">
+      <div className="flex-1 flex flex-col min-h-screen max-w-full min-w-0">
         {/* Header - STICKY AT THIS LEVEL - visible on mobile, simplified on desktop */}
         <Header
           onQuickAdd={() => setShowQuickAdd(true)}
