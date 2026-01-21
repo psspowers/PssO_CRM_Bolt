@@ -440,6 +440,8 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
       else if (entityType === 'Project') humanType = 'Project';
       else humanType = entityType || 'Item';
 
+      const isContactCreation = entityType === 'Contact' && rawItem.opportunity_id;
+
       const hasExtraContext = parsedDetails?.value || parsedDetails?.target_capacity;
       let extraContext = null;
 
@@ -475,8 +477,8 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         iconBgColor: 'bg-green-100 dark:bg-green-900/50',
         dealName: dealName,
         targetMW: targetMW,
-        relatedToId: details.entity_id || parsedDetails?.id,
-        relatedToType: details.entity_type || entityType,
+        relatedToId: isContactCreation ? rawItem.opportunity_id : (details.entity_id || parsedDetails?.id),
+        relatedToType: isContactCreation ? 'Opportunity' : (details.entity_type || entityType),
         activityType: 'Create'
       };
     }
@@ -732,6 +734,8 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
 
     if (logs) {
       const logOpportunityIds: string[] = [];
+      const contactAccountIds: string[] = [];
+      const accountToContactMap = new Map<string, string>();
 
       logs.forEach((log: any) => {
         try {
@@ -754,6 +758,11 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
             return;
           }
 
+          if (isContactCreation && logDetails.account_id) {
+            contactAccountIds.push(logDetails.account_id);
+            accountToContactMap.set(log.id, logDetails.account_id);
+          }
+
           if (logDetails.related_to_id && logDetails.related_to_type?.toLowerCase() === 'opportunity') {
             if (!nameMap.has(logDetails.related_to_id)) {
               logOpportunityIds.push(logDetails.related_to_id);
@@ -767,6 +776,32 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
           console.error('Error parsing log details', e);
         }
       });
+
+      const accountToOpportunityMap = new Map<string, { id: string; name: string; target_capacity: number | null }>();
+
+      if (contactAccountIds.length > 0) {
+        const { data: accountOpportunities } = await supabase
+          .from('opportunities')
+          .select('id, name, target_capacity, linked_account_id')
+          .in('linked_account_id', contactAccountIds)
+          .neq('stage', 'Won')
+          .neq('stage', 'Lost')
+          .order('created_at', { ascending: false });
+
+        if (accountOpportunities && accountOpportunities.length > 0) {
+          accountOpportunities.forEach((opp: any) => {
+            if (opp.linked_account_id && !accountToOpportunityMap.has(opp.linked_account_id)) {
+              accountToOpportunityMap.set(opp.linked_account_id, {
+                id: opp.id,
+                name: opp.name,
+                target_capacity: opp.target_capacity
+              });
+              nameMap.set(opp.id, opp.name);
+              if (opp.target_capacity) mwMap.set(opp.id, opp.target_capacity);
+            }
+          });
+        }
+      }
 
       if (logOpportunityIds.length > 0) {
         const { data: logOpportunities } = await supabase
@@ -785,6 +820,7 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
       logs.forEach((log: any) => {
         let logDealName = null;
         let logTargetMW = null;
+        let logOpportunityId = null;
 
         try {
           const logDetails = typeof log.details === 'string' ? JSON.parse(log.details) : (log.details || {});
@@ -806,12 +842,24 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
             return;
           }
 
+          if (isContactCreation && logDetails.account_id) {
+            const opportunity = accountToOpportunityMap.get(logDetails.account_id);
+            if (!opportunity) {
+              return;
+            }
+            logDealName = opportunity.name;
+            logTargetMW = opportunity.target_capacity;
+            logOpportunityId = opportunity.id;
+          }
+
           if (logDetails.related_to_id && logDetails.related_to_type?.toLowerCase() === 'opportunity') {
             logDealName = nameMap.get(logDetails.related_to_id);
             logTargetMW = mwMap.get(logDetails.related_to_id);
+            logOpportunityId = logDetails.related_to_id;
           } else if (logDetails.entity_id && logDetails.entity_type?.toLowerCase() === 'opportunity') {
             logDealName = nameMap.get(logDetails.entity_id);
             logTargetMW = mwMap.get(logDetails.entity_id);
+            logOpportunityId = logDetails.entity_id;
           }
         } catch (e) {
           console.error('Error parsing log details', e);
@@ -826,7 +874,8 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
           user_name: log.crm_users?.name,
           user_avatar: log.crm_users?.avatar,
           deal_name: logDealName,
-          target_mw: logTargetMW
+          target_mw: logTargetMW,
+          opportunity_id: logOpportunityId
         });
       });
     }
