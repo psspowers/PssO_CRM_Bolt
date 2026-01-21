@@ -11,6 +11,7 @@ import {
   CreditRiskHub,
   SearchBar
 } from '../crm';
+import { VelocityHeatmap } from '../crm/VelocityHeatmap';
 import { useAppContext } from '../../contexts/AppContext';
 import { Opportunity } from '../../types/crm';
 import {
@@ -558,6 +559,15 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           )}
         </div>
       </div>
+
+      {/* Velocity Heatmap */}
+      {!selectionMode && filtered.length > 0 && (
+        <VelocityHeatmap
+          opportunities={filtered}
+          onFilterChange={setStagnationFilter}
+          activeFilter={stagnationFilter}
+        />
+      )}
 
       {/* Deals Grid/List */}
       <div className={`w-full max-w-full overflow-hidden ${viewMode === 'grid' && !selectionMode ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4' : 'flex flex-col gap-3'}`}>
