@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Plus, Loader2, Check, Clock, ExternalLink, Trash2, AlertCircle, Search, X } from 'lucide-react';
+import { Bell, Plus, Loader2, Clock, ExternalLink, Trash2, AlertCircle, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
 import { OnlineUsersStack } from './OnlineUsersStack';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAppContext } from '@/contexts/AppContext';
 import { supabase } from '@/lib/supabase';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -23,21 +22,18 @@ interface HeaderProps {
   onQuickAdd: () => void;
   onNavigate?: (tab: any, id?: string) => void;
   activeTab?: string;
+  onSearchClick?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTab = 'home' }) => {
+export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTab = 'home', onSearchClick }) => {
   const { user, loading: authLoading } = useAuth();
-  const { searchQuery, setSearchQuery } = useAppContext();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [tableExists, setTableExists] = useState(true);
   const [notificationPopoverOpen, setNotificationPopoverOpen] = useState(false);
-  const [searchExpanded, setSearchExpanded] = useState(false);
   const channelRef = useRef<any>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const prevTabRef = useRef(activeTab);
 
   // Fetch notifications from database
   useEffect(() => {
@@ -265,39 +261,6 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
     };
   }, []);
 
-  // Clear search when leaving home tab - Ref-guarded to prevent infinite loops
-  useEffect(() => {
-    // Only run if the tab actually CHANGED
-    if (prevTabRef.current !== activeTab) {
-      prevTabRef.current = activeTab;
-
-      // Logic: Clear search when leaving home
-      if (activeTab !== 'home') {
-        setSearchQuery('');
-        setSearchExpanded(false);
-      }
-    }
-  }, [activeTab, setSearchQuery]);
-
-  // Handle search expand
-  const handleSearchExpand = () => {
-    setSearchExpanded(true);
-    setTimeout(() => searchInputRef.current?.focus(), 100);
-  };
-
-  // Handle search collapse
-  const handleSearchCollapse = () => {
-    if (!searchQuery) {
-      setSearchExpanded(false);
-    }
-  };
-
-  // Handle search clear
-  const handleSearchClear = () => {
-    setSearchQuery('');
-    setSearchExpanded(false);
-  };
-
   // Format time ago
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -336,84 +299,32 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
           </div>
         </button>
 
-        {/* Desktop: Functional Search Bar - Only on home tab */}
-        {activeTab === 'home' && (
-          <div className="hidden lg:flex items-center flex-1">
-            <div className="relative max-w-md w-full">
+        {/* Desktop: Global Search Button - Always visible */}
+        <div className="hidden lg:flex items-center flex-1">
+          <button
+            onClick={() => onSearchClick?.()}
+            className="relative max-w-md w-full"
+          >
+            <div className="flex items-center w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 hover:bg-slate-200 hover:border-slate-300 transition-all cursor-pointer text-left">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery || ''}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search deals, accounts, contacts..."
-                className="w-full pl-10 pr-10 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-slate-200 rounded-lg transition-colors"
-                  aria-label="Clear search"
-                >
-                  <X className="w-3.5 h-3.5 text-slate-400" />
-                </button>
-              )}
+              <span>Search deals, accounts, contacts...</span>
+              <span className="ml-auto text-xs text-slate-400 font-medium">Ctrl+K</span>
             </div>
-          </div>
-        )}
+          </button>
+        </div>
         
         <div className="flex items-center gap-3">
           {/* ONLY SHOW CRM TOOLS IF LOGGED IN */}
           {user ? (
             <>
-              {/* Mobile Search - Expandable - Only on home tab */}
-              {activeTab === 'home' && (
-                <>
-                  {!searchExpanded ? (
-                    <button
-                      onClick={handleSearchExpand}
-                      className="lg:hidden w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors"
-                      aria-label="Open search"
-                    >
-                      <Search className="w-5 h-5" />
-                    </button>
-                  ) : (
-                    <div className="lg:hidden fixed inset-x-0 top-16 z-50 px-4 py-3 bg-white border-b border-slate-200 shadow-lg">
-                      <div className="relative flex items-center gap-2">
-                        <div className="relative flex-1">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                          <input
-                            ref={searchInputRef}
-                            type="text"
-                            value={searchQuery || ''}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onBlur={handleSearchCollapse}
-                            placeholder="Search deals, accounts, contacts..."
-                            className="w-full pl-10 pr-10 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
-                          />
-                          {searchQuery && (
-                            <button
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={() => setSearchQuery('')}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-slate-200 rounded-lg transition-colors"
-                              aria-label="Clear search"
-                            >
-                              <X className="w-3.5 h-3.5 text-slate-400" />
-                            </button>
-                          )}
-                        </div>
-                        <button
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={handleSearchClear}
-                          className="p-2.5 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors flex-shrink-0"
-                          aria-label="Close search"
-                        >
-                          <X className="w-5 h-5 text-slate-600" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
+              {/* Mobile Search - Opens Global Search */}
+              <button
+                onClick={() => onSearchClick?.()}
+                className="lg:hidden w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors"
+                aria-label="Open search"
+              >
+                <Search className="w-5 h-5" />
+              </button>
 
               {/* Quick Add - Mobile only (desktop has sidebar button) */}
               <button
