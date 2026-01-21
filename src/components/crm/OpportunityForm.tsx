@@ -31,7 +31,7 @@ const priorities: Priority[] = ['Low', 'Medium', 'High'];
 const RE_OPTIONS: REType[] = ['PV - Roof', 'PV - Ground', 'PV - Floating', 'BESS', 'Wind'];
 
 export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, onSave, onCancel }) => {
-  const { users, accounts, createAccount } = useAppContext();
+  const { users, accounts, partners, createAccount } = useAppContext();
   const [form, setForm] = useState({
     name: opportunity.name,
     accountId: opportunity.accountId || '',
@@ -44,6 +44,8 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
     ppaTermYears: opportunity.ppaTermYears || 0,
     epcCost: opportunity.epcCost || 0,
     manualProbability: opportunity.manualProbability || 0,
+    projectIRR: opportunity.projectIRR || 0,
+    primaryPartnerId: opportunity.primaryPartnerId || '',
     reType: Array.isArray(opportunity.reType) ? opportunity.reType : (opportunity.reType ? [opportunity.reType as any] : []),
     nextAction: opportunity.nextAction || '',
     nextActionDate: opportunity.nextActionDate ? new Date(opportunity.nextActionDate).toISOString().split('T')[0] : '',
@@ -162,6 +164,8 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
         ppaTermYears: form.ppaTermYears,
         epcCost: form.epcCost,
         manualProbability: form.manualProbability,
+        projectIRR: form.projectIRR,
+        primaryPartnerId: form.primaryPartnerId || undefined,
         reType: form.reType,
         nextAction: form.nextAction,
         nextActionDate: form.nextActionDate ? new Date(form.nextActionDate) : undefined,
@@ -199,8 +203,8 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
         />
       </div>
 
-      {/* Account Selector with Inline Create */}
-      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+      {/* Account & Partner Section */}
+      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
         <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
           <Building2 className="w-4 h-4" />
           Account / Company
@@ -300,6 +304,28 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
             </div>
           </div>
         )}
+
+        {/* Primary Partner Selector */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Primary Partner (EPC / Developer)</label>
+          <div className="relative">
+            <select
+              value={form.primaryPartnerId}
+              onChange={e => setForm({ ...form, primaryPartnerId: e.target.value })}
+              className={selectClass}
+            >
+              <option value="">-- Select Primary Partner --</option>
+              {partners
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.partnerType || 'Partner'})
+                  </option>
+                ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -345,6 +371,23 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
           />
         </div>
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Project IRR (%)</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            min="0"
+            max="100"
+            value={form.projectIRR}
+            onChange={e => setForm({ ...form, projectIRR: Number(e.target.value) })}
+            className={inputClass}
+            placeholder="Expected IRR"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Manual Probability (%)</label>
           <input
             type="number"
@@ -358,6 +401,7 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
             placeholder="Leader's commitment %"
           />
         </div>
+        <div></div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

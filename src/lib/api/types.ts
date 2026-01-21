@@ -42,6 +42,8 @@ export interface DbOpportunity {
   ppa_term?: number;
   epc_cost?: number;
   manual_probability?: number;
+  project_irr?: number;
+  primary_partner_id?: string;
   re_type: string; target_decision_date?: string;
   company_name?: string;
   // Thai Taxonomy Classification

@@ -32,6 +32,8 @@ const toOpp = (db: DbOpportunity, partnerIds: string[] = []): Opportunity => ({
   ppaTermYears: db.ppa_term,
   epcCost: db.epc_cost,
   manualProbability: db.manual_probability,
+  projectIRR: db.project_irr,
+  primaryPartnerId: db.primary_partner_id,
   reType: (db.re_type || []) as REType[],
   targetDecisionDate: db.target_decision_date ? new Date(db.target_decision_date) : undefined,
   companyName: db.company_name,
@@ -91,6 +93,8 @@ export const createOpportunity = async (opp: Omit<Opportunity, 'id' | 'createdAt
     ppa_term: rest.ppaTermYears,
     epc_cost: rest.epcCost,
     manual_probability: rest.manualProbability,
+    project_irr: rest.projectIRR,
+    primary_partner_id: toUuidOrNull(rest.primaryPartnerId),
     re_type: rest.reType,
     target_decision_date: rest.targetDecisionDate?.toISOString(),
 
@@ -129,6 +133,8 @@ export const updateOpportunity = async (id: string, updates: Partial<Opportunity
   if (rest.ppaTermYears !== undefined) dbUpdates.ppa_term = rest.ppaTermYears;
   if (rest.epcCost !== undefined) dbUpdates.epc_cost = rest.epcCost;
   if (rest.manualProbability !== undefined) dbUpdates.manual_probability = rest.manualProbability;
+  if (rest.projectIRR !== undefined) dbUpdates.project_irr = rest.projectIRR;
+  if (rest.primaryPartnerId !== undefined) dbUpdates.primary_partner_id = toUuidOrNull(rest.primaryPartnerId);
   if (rest.reType !== undefined) dbUpdates.re_type = rest.reType;
   if (rest.clickupLink !== undefined) dbUpdates.clickup_link = rest.clickupLink;
   if (nextActionDate !== undefined) dbUpdates.next_action_date = nextActionDate?.toISOString() || null;

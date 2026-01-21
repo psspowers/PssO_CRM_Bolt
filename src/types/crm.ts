@@ -111,6 +111,8 @@ export interface Opportunity {
   completedMilestones?: string[];
   lostReason?: string;
   companyName?: string;
+  projectIRR?: number;
+  primaryPartnerId?: string;
   // NEW CLASSIFICATION FIELDS (Thai Taxonomy)
   sector: string;
   industry: string;

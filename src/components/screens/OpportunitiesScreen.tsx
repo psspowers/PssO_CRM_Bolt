@@ -715,8 +715,24 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                   <p className="text-sm font-semibold text-slate-900">{(selectedOpp.maxCapacity || 0).toFixed(3)} MW</p>
                 </div>
                 <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Project IRR</p>
+                  <p className="text-sm font-semibold text-emerald-700">{selectedOpp.projectIRR ? `${selectedOpp.projectIRR.toFixed(1)}%` : 'N/A'}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
                   <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Probability</p>
                   <p className="text-sm font-semibold text-slate-900">{selectedOpp.manualProbability || 0}%</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Primary Partner</p>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {selectedOpp.primaryPartnerId
+                      ? partners.find(p => p.id === selectedOpp.primaryPartnerId)?.name || 'Unknown'
+                      : 'Not Set'
+                    }
+                  </p>
                 </div>
               </div>
 
