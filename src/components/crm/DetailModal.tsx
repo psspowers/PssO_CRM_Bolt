@@ -111,40 +111,40 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             ))}
           </div>
 
-          {/* Sub-Tabs - Row 2 (Pill Style) */}
+          {/* Sub-Tabs - Row 2 (Segmented Grid) */}
           {activeTab === 'velocity' && showVelocity && (
-            <div className="flex gap-2 mt-2 px-1">
+            <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100/50 rounded-xl w-full mt-2">
               {velocitySubTabs.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => setVelocityTab(id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  className={`flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
                     velocityTab === id
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
-                  <Icon className="w-3 h-3" />
-                  {label}
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{label}</span>
                 </button>
               ))}
             </div>
           )}
 
           {activeTab === 'activity' && (
-            <div className="flex gap-2 mt-2 px-1">
+            <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100/50 rounded-xl w-full mt-2">
               {activitySubTabs.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => setActivityTab(id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  className={`flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
                     activityTab === id
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
-                  <Icon className="w-3 h-3" />
-                  {label}
+                  <Icon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{label}</span>
                 </button>
               ))}
             </div>
