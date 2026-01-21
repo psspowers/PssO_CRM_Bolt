@@ -79,6 +79,20 @@ export const ActivityTimelineScreen: React.FC<ActivityTimelineScreenProps> = ({ 
     }
   };
 
+  const getContactOpportunity = (contactId: string) => {
+    const contact = contacts.find(c => c.id === contactId);
+    if (!contact?.accountId) return null;
+
+    const accountOpportunities = opportunities.filter(o => o.accountId === contact.accountId);
+    if (accountOpportunities.length === 0) return null;
+
+    const sortedOpportunities = accountOpportunities.sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    return sortedOpportunities[0];
+  };
+
   const filteredActivities = useMemo(() => {
     return activities
       .filter(a => {
@@ -193,10 +207,24 @@ export const ActivityTimelineScreen: React.FC<ActivityTimelineScreenProps> = ({ 
       <div className="text-sm text-gray-500">{filteredActivities.length} activities</div>
 
       <div className="relative">
-        {filteredActivities.map(activity => (
-          <TimelineActivityItem key={activity.id} activity={activity} user={users.find(u => u.id === activity.createdById)}
-            entityName={getEntityName(activity)} onEntityClick={onNavigateToEntity} />
-        ))}
+        {filteredActivities.map(activity => {
+          const opportunity = activity.relatedToType === 'Contact'
+            ? getContactOpportunity(activity.relatedToId)
+            : null;
+
+          return (
+            <TimelineActivityItem
+              key={activity.id}
+              activity={activity}
+              user={users.find(u => u.id === activity.createdById)}
+              entityName={getEntityName(activity)}
+              onEntityClick={onNavigateToEntity}
+              opportunityName={opportunity?.name}
+              opportunityCapacity={opportunity?.targetCapacity}
+              opportunityId={opportunity?.id}
+            />
+          );
+        })}
         {filteredActivities.length === 0 && (
           <div className="text-center py-12 text-gray-500">
             <Clock className="w-12 h-12 mx-auto mb-3 text-gray-300" />
