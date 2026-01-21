@@ -86,6 +86,7 @@ XYZ Manufacturing,Delays renewable transition amid financial restructuring,"Comp
 - Research ALL companies on the target list
 - Do NOT skip companies even if information is limited
 - If you find minimal information, still create an entry with "neutral" impact and note data limitations in Summary
+- **DEDUPLICATE:** If multiple sources report the same event, combine them into ONE row. Do not list the same story twice.
 - Ensure CSV is properly formatted with commas separating fields and quotes around fields containing commas
 - Include header row exactly as specified
 - Do NOT add any commentary, explanations, or text outside the CSV format
@@ -1090,12 +1091,61 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
         let failCount = 0;
         let skippedCount = 0;
         let linkedCount = 0;
+        let duplicateCount = 0;
         const errorDetails: string[] = [];
 
         if (rows.length === 0) {
           toast.error('CSV file is empty or has no valid rows.');
           return;
         }
+
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const { data: recentNews } = await supabase
+          .from('market_news')
+          .select('title, related_account_id')
+          .gte('news_date', sevenDaysAgo.toISOString().split('T')[0]);
+
+        const recentNewsMap = new Map<string, string[]>();
+        if (recentNews) {
+          recentNews.forEach((news: any) => {
+            if (news.related_account_id) {
+              if (!recentNewsMap.has(news.related_account_id)) {
+                recentNewsMap.set(news.related_account_id, []);
+              }
+              recentNewsMap.get(news.related_account_id)!.push(news.title);
+            }
+          });
+        }
+
+        const isDuplicate = (newTitle: string, existingTitles: string[]) => {
+          const newTokens = new Set(
+            newTitle
+              .toLowerCase()
+              .replace(/[^a-z0-9\s]/g, '')
+              .split(/\s+/)
+              .filter(t => t.length > 2)
+          );
+
+          if (newTokens.size === 0) return false;
+
+          return existingTitles.some(existing => {
+            const oldTokens = new Set(
+              existing
+                .toLowerCase()
+                .replace(/[^a-z0-9\s]/g, '')
+                .split(/\s+/)
+                .filter(t => t.length > 2)
+            );
+
+            if (oldTokens.size === 0) return false;
+
+            const intersection = [...newTokens].filter(x => oldTokens.has(x));
+            const similarity = intersection.length / newTokens.size;
+            return similarity > 0.6;
+          });
+        };
 
         const normalize = (str: string) =>
           str
@@ -1164,6 +1214,16 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
               impactType = impactRaw as 'opportunity' | 'threat' | 'neutral';
             }
 
+            if (accountId && recentNewsMap.has(accountId)) {
+              const existingTitles = recentNewsMap.get(accountId)!;
+              if (isDuplicate(title.trim(), existingTitles)) {
+                console.log(`✖ Skipping duplicate for ${companyName || 'Unknown'}:`, title.trim());
+                duplicateCount++;
+                skippedCount++;
+                continue;
+              }
+            }
+
             const { error } = await supabase.from('market_news').insert({
               title: title.trim(),
               summary: summary && summary.trim() !== '' ? summary.trim() : null,
@@ -1223,7 +1283,8 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
 
         const linkInfo = linkedCount > 0 ? ` ${linkedCount} linked to Accounts.` : '';
         const dripFeedHours = Math.round((successCount * 50) / 60);
-        const message = `Imported ${successCount} items. They will drip-feed over the next ${dripFeedHours} hours.${linkInfo}${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}${failCount > 0 ? ` (${failCount} failed)` : ''}`;
+        const duplicateInfo = duplicateCount > 0 ? ` Skipped ${duplicateCount} duplicate${duplicateCount > 1 ? 's' : ''}.` : '';
+        const message = `Imported ${successCount} items. They will drip-feed over the next ${dripFeedHours} hours.${linkInfo}${duplicateInfo}${skippedCount > duplicateCount ? ` (${skippedCount - duplicateCount} other skipped)` : ''}${failCount > 0 ? ` (${failCount} failed)` : ''}`;
         toast.success(message, { duration: 5000 });
         loadMarketNews();
       },
