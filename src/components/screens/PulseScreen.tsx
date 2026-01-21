@@ -656,6 +656,8 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
 
     try {
       const rawFeed: any[] = [];
+      const nameMap = new Map();
+      const mwMap = new Map();
 
     const { data: activities } = await supabase
       .from('activities')
@@ -686,9 +688,6 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
         contactIds.length > 0 ? supabase.from('contacts').select('id, full_name').in('id', contactIds) : Promise.resolve({ data: [] }),
         partnerIds.length > 0 ? supabase.from('partners').select('id, name').in('id', partnerIds) : Promise.resolve({ data: [] })
       ]);
-
-      const nameMap = new Map();
-      const mwMap = new Map();
       opportunitiesRes.data?.forEach((o: any) => {
         nameMap.set(o.id, o.name);
         if (o.target_capacity) mwMap.set(o.id, o.target_capacity);
