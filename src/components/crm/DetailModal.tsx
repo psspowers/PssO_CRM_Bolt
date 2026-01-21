@@ -51,7 +51,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
   const showPulse = (entityType === 'Opportunity' || entityType === 'Account');
   const showVelocity = entityType === 'Opportunity' && velocityContent;
-  const showContacts = entityType === 'Account';
+  const showContacts = entityType === 'Account' || entityType === 'Opportunity';
 
   useEffect(() => {
     setActiveTab('overview');
@@ -250,9 +250,17 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           )}
 
           {/* Contacts Tab */}
-          {activeTab === 'contacts' && showContacts && entityId && title && (
+          {activeTab === 'contacts' && showContacts && (
             <div className="p-4">
-              <AccountContacts accountId={entityId} accountName={title} />
+              {entityType === 'Account' && entityId && title && (
+                <AccountContacts accountId={entityId} accountName={title} />
+              )}
+              {entityType === 'Opportunity' && accountId && (
+                <AccountContacts
+                  accountId={accountId}
+                  accountName={accounts.find(a => a.id === accountId)?.name || 'Account'}
+                />
+              )}
             </div>
           )}
 
