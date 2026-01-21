@@ -266,6 +266,23 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           activityType: 'Site Visit'
         };
 
+      case 'stage change':
+        return {
+          id: rawItem.id,
+          type: 'activity',
+          content: summary || 'Stage change',
+          timestamp: rawItem.created_at,
+          user_name: rawItem.user_name,
+          user_avatar: rawItem.user_avatar,
+          icon: <TrendingUp className="w-4 h-4" />,
+          iconColor: 'text-green-600',
+          iconBgColor: 'bg-green-100 dark:bg-green-900/50',
+          dealName: rawItem.deal_name,
+          relatedToId: rawItem.related_to_id,
+          relatedToType: rawItem.related_to_type,
+          activityType: 'Stage Change'
+        };
+
       case 'whatsapp':
         return {
           id: rawItem.id,
