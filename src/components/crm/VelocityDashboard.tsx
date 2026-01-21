@@ -113,6 +113,10 @@ const PipelineStage: React.FC<PipelineStageProps> = ({
 }) => {
   const change = showChange === 'wow' ? wowChange : momChange;
 
+  const mwChange = change !== undefined && change !== 0 && mw > 0
+    ? mw - (mw / (1 + change / 100))
+    : 0;
+
   return (
     <div className="flex items-center">
       <button
@@ -124,13 +128,13 @@ const PipelineStage: React.FC<PipelineStageProps> = ({
             <div className={`px-2.5 py-1 rounded-full text-xs font-bold ${
               change > 0 ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
             }`}>
-              {change > 0 ? '+' : ''}{change.toFixed(2)}%
+              {change > 0 ? '+' : ''}{Math.abs(mwChange).toFixed(2)} MW
             </div>
           )}
         </div>
-        <div className={`w-16 h-16 lg:w-20 lg:h-20 rounded-2xl ${color} flex flex-col items-center justify-center text-white shadow-lg group-hover:shadow-xl transition-shadow`}>
-          <span className="text-xl lg:text-2xl font-bold">{count}</span>
-          <span className="text-[10px] opacity-80">{mw.toFixed(2)} MW</span>
+        <div className={`w-16 h-16 lg:w-24 lg:h-24 rounded-2xl ${color} flex flex-col items-center justify-center text-white shadow-lg group-hover:shadow-xl transition-shadow`}>
+          <span className="text-lg lg:text-xl font-bold">{count}</span>
+          <span className="text-sm lg:text-base font-bold opacity-90">{mw.toFixed(2)} MW</span>
         </div>
         <span className="text-xs font-medium text-slate-600 mt-1.5 text-center max-w-[80px] group-hover:text-slate-900 transition-colors">{stage}</span>
       </button>
@@ -593,6 +597,10 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
               const isNegative = change < 0;
               const isNeutral = change === 0;
 
+              const mwChange = change !== 0 && stage.mw > 0
+                ? stage.mw - (stage.mw / (1 + change / 100))
+                : 0;
+
               return (
                 <div key={stage.stage}>
                   <button
@@ -609,7 +617,7 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                           </div>
                           <div>
                             <h4 className="text-sm font-bold text-slate-900">{stage.stage}</h4>
-                            <p className="text-xs text-slate-500">Stage</p>
+                            <p className="text-xs text-slate-500">{stage.count} deals</p>
                           </div>
                         </div>
 
@@ -621,15 +629,15 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
                           }`}>
                             {isPositive && <TrendingUp className="w-3 h-3" />}
                             {isNegative && <TrendingDown className="w-3 h-3" />}
-                            {isPositive ? '+' : ''}{change.toFixed(2)}%
+                            {isPositive ? '+' : ''}{Math.abs(mwChange).toFixed(2)} MW
                           </div>
                         )}
                       </div>
 
                       <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                         <div>
-                          <p className="text-xs text-slate-500">Total MW Movement</p>
-                          <p className="text-lg font-bold text-slate-900">{stage.mw.toFixed(2)} MW</p>
+                          <p className="text-xs text-slate-500">Total MW</p>
+                          <p className="text-xl font-bold text-slate-900">{stage.mw.toFixed(2)} MW</p>
                         </div>
 
                         {change !== undefined && change !== 0 && (
