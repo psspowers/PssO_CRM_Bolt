@@ -6,6 +6,7 @@ export { StatCard } from './StatCard';
 export { OpportunityCard } from './OpportunityCard';
 export { AccountCard } from './AccountCard';
 export { ContactCard } from './ContactCard';
+export { AccountContacts } from './AccountContacts';
 export { PartnerCard } from './PartnerCard';
 export { ProjectCard } from './ProjectCard';
 export { ActivityItem } from './ActivityItem';

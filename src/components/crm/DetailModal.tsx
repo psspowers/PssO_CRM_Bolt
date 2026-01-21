@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ExternalLink, Activity as ActivityIcon, Building2, TrendingUp, Zap, FileText, MessageSquare, CheckSquare, AlertTriangle, Cpu, Calculator, Flag } from 'lucide-react';
+import { X, ExternalLink, Activity as ActivityIcon, Building2, TrendingUp, Zap, FileText, MessageSquare, CheckSquare, AlertTriangle, Cpu, Calculator, Flag, Users } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DealNotes } from './DealNotes';
 import { DealDocuments } from './DealDocuments';
@@ -10,6 +10,7 @@ import { CreditRiskHub } from './CreditRiskHub';
 import { LoadAnalyzer } from './LoadAnalyzer';
 import { MediaVault } from './MediaVault';
 import { QualityGate } from './QualityGate';
+import { AccountContacts } from './AccountContacts';
 import { Activity, Contact, Account, Partner, Relationship, Opportunity } from '../../types/crm';
 
 interface DetailModalUser { id: string; name: string; avatar: string; }
@@ -35,7 +36,7 @@ interface DetailModalProps {
   onUpdateOpportunity?: (id: string, updates: any) => Promise<void>;
 }
 
-type Tab = 'overview' | 'velocity' | 'activity' | 'pulse';
+type Tab = 'overview' | 'velocity' | 'activity' | 'pulse' | 'contacts';
 type VelocityTab = 'stage' | 'risk' | 'tech' | 'math';
 type ActivityTab = 'notes' | 'tasks' | 'dox';
 
@@ -50,6 +51,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
   const showPulse = (entityType === 'Opportunity' || entityType === 'Account');
   const showVelocity = entityType === 'Opportunity' && velocityContent;
+  const showContacts = entityType === 'Account';
 
   useEffect(() => {
     setActiveTab('overview');
@@ -61,6 +63,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'overview', label: 'Overview', icon: Building2 },
+    ...(showContacts ? [{ id: 'contacts' as Tab, label: 'Contacts', icon: Users }] : []),
     ...(showVelocity ? [{ id: 'velocity' as Tab, label: 'Velocity', icon: TrendingUp }] : []),
     { id: 'activity', label: 'Activity', icon: ActivityIcon },
     ...(showPulse ? [{ id: 'pulse' as Tab, label: 'Pulse', icon: Zap }] : []),
@@ -243,6 +246,13 @@ export const DetailModal: React.FC<DetailModalProps> = ({
                   entityType={entityType as 'Partner' | 'Account' | 'Contact' | 'Opportunity' | 'Project'}
                 />
               )}
+            </div>
+          )}
+
+          {/* Contacts Tab */}
+          {activeTab === 'contacts' && showContacts && entityId && title && (
+            <div className="p-4">
+              <AccountContacts accountId={entityId} accountName={title} />
             </div>
           )}
 
