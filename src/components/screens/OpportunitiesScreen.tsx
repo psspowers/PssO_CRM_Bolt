@@ -270,6 +270,13 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     }
   };
 
+  const handleUpdateOpportunity = async (id: string, updates: Partial<Opportunity>) => {
+    await updateOpportunity(id, updates);
+    if (selectedOpp && selectedOpp.id === id) {
+      setSelectedOpp({ ...selectedOpp, ...updates });
+    }
+  };
+
   const handleToggleMilestone = async (milestoneId: string) => {
     if (!selectedOpp) return;
     const currentMilestones = selectedOpp.completedMilestones || [];
@@ -597,6 +604,8 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         accounts={accounts}
         partners={partners}
         relationships={relationships}
+        opportunity={selectedOpp || undefined}
+        onUpdateOpportunity={handleUpdateOpportunity}
         velocityContent={
           selectedOpp && !isEditing ? (
             <div className="space-y-6 pb-20">

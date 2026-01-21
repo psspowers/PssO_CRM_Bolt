@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ExternalLink, Activity as ActivityIcon, Building2, TrendingUp, Zap, FileText, MessageSquare, CheckSquare, AlertTriangle, Cpu, Calculator } from 'lucide-react';
+import { X, ExternalLink, Activity as ActivityIcon, Building2, TrendingUp, Zap, FileText, MessageSquare, CheckSquare, AlertTriangle, Cpu, Calculator, Flag } from 'lucide-react';
 import { DealNotes } from './DealNotes';
 import { DealDocuments } from './DealDocuments';
 import { DealTasks } from './DealTasks';
@@ -8,7 +8,8 @@ import { InvestmentModeler } from './InvestmentModeler';
 import { CreditRiskHub } from './CreditRiskHub';
 import { LoadAnalyzer } from './LoadAnalyzer';
 import { MediaVault } from './MediaVault';
-import { Activity, Contact, Account, Partner, Relationship } from '../../types/crm';
+import { QualityGate } from './QualityGate';
+import { Activity, Contact, Account, Partner, Relationship, Opportunity } from '../../types/crm';
 
 interface DetailModalUser { id: string; name: string; avatar: string; }
 
@@ -29,19 +30,21 @@ interface DetailModalProps {
   partners?: Partner[];
   relationships?: Relationship[];
   accountId?: string | null;
+  opportunity?: Opportunity;
+  onUpdateOpportunity?: (id: string, updates: any) => Promise<void>;
 }
 
 type Tab = 'overview' | 'velocity' | 'activity' | 'pulse';
-type VelocityTab = 'risk' | 'tech' | 'math';
+type VelocityTab = 'stage' | 'risk' | 'tech' | 'math';
 type ActivityTab = 'notes' | 'tasks' | 'dox';
 
 export const DetailModal: React.FC<DetailModalProps> = ({
   isOpen, onClose, title, subtitle, entityId, entityType, clickupLink, children,
   velocityContent, activities, users, contacts = [], accounts = [], partners = [], relationships = [],
-  accountId
+  accountId, opportunity, onUpdateOpportunity
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
-  const [velocityTab, setVelocityTab] = useState<VelocityTab>('risk');
+  const [velocityTab, setVelocityTab] = useState<VelocityTab>('stage');
   const [activityTab, setActivityTab] = useState<ActivityTab>('notes');
 
   const showPulse = (entityType === 'Opportunity' || entityType === 'Account');
@@ -49,7 +52,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
   useEffect(() => {
     setActiveTab('overview');
-    setVelocityTab('risk');
+    setVelocityTab('stage');
     setActivityTab('notes');
   }, [entityId]);
 
@@ -63,6 +66,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
   ];
 
   const velocitySubTabs: { id: VelocityTab; label: string; icon: React.ElementType }[] = [
+    { id: 'stage', label: 'Stage', icon: Flag },
     { id: 'risk', label: 'Risk', icon: AlertTriangle },
     { id: 'tech', label: 'Tech', icon: Cpu },
     { id: 'math', label: 'Math', icon: Calculator },
@@ -155,6 +159,30 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           {/* Velocity Tab with Sub-Tabs */}
           {activeTab === 'velocity' && showVelocity && (
             <div className="p-4">
+              {velocityTab === 'stage' && opportunity && onUpdateOpportunity && (
+                <QualityGate
+                  currentStage={opportunity.stage}
+                  completedItems={opportunity.completedMilestones || []}
+                  onToggleItem={async (itemId) => {
+                    const current = opportunity.completedMilestones || [];
+                    const updated = current.includes(itemId)
+                      ? current.filter(i => i !== itemId)
+                      : [...current, itemId];
+                    await onUpdateOpportunity(opportunity.id, { completedMilestones: updated });
+                  }}
+                  lostReason={opportunity.lostReason}
+                  onLostReasonChange={async (reason) => {
+                    await onUpdateOpportunity(opportunity.id, { lostReason: reason });
+                  }}
+                  onAdvanceStage={async () => {
+                    const stages = ['Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Won'];
+                    const idx = stages.indexOf(opportunity.stage);
+                    if (idx < stages.length - 1) {
+                      await onUpdateOpportunity(opportunity.id, { stage: stages[idx + 1] as any, completedMilestones: [] });
+                    }
+                  }}
+                />
+              )}
               {velocityTab === 'risk' && (
                 <CreditRiskHub opportunityId={entityId} />
               )}
