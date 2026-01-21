@@ -34,7 +34,8 @@ import {
   ChevronDown,
   Clock,
   Flag,
-  Calendar
+  Calendar,
+  ExternalLink
 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -805,6 +806,29 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
                       </p>
                     </div>
                   </div>
+                  {selectedOpp.googleDriveLink && (
+                    <>
+                      <div className="w-px bg-slate-200 h-8" />
+                      <a
+                        href={selectedOpp.googleDriveLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 hover:bg-slate-100 px-2 rounded-lg transition-colors"
+                        aria-label="Open Google Drive"
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M8.5 3.5L3 13.5h5l5.5-10H8.5z" fill="#0066DA"/>
+                          <path d="M13.5 3.5l5.5 10h-5l-5.5-10h5z" fill="#00AC47"/>
+                          <path d="M8.5 13.5L3 13.5l2.75 5 2.75 5 5.5-10H8.5z" fill="#EA4335"/>
+                          <path d="M14 13.5h5l-2.75 5-2.25 4L8.5 13.5H14z" fill="#FFBA00"/>
+                        </svg>
+                        <div>
+                          <p className="text-[9px] text-slate-400 uppercase">Drive</p>
+                          <p className="text-xs font-bold text-slate-700">Open</p>
+                        </div>
+                      </a>
+                    </>
+                  )}
                 </div>
 
                 {userCanEdit && (

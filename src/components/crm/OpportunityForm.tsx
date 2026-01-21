@@ -51,6 +51,7 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
     nextActionDate: opportunity.nextActionDate ? new Date(opportunity.nextActionDate).toISOString().split('T')[0] : '',
     targetDecisionDate: opportunity.targetDecisionDate ? new Date(opportunity.targetDecisionDate).toISOString().split('T')[0] : '',
     clickupLink: opportunity.clickupLink || '',
+    googleDriveLink: opportunity.googleDriveLink || '',
     notes: opportunity.notes || '',
     // Thai Taxonomy Classification
     sector: opportunity.sector || '',
@@ -171,6 +172,7 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
         nextActionDate: form.nextActionDate ? new Date(form.nextActionDate) : undefined,
         targetDecisionDate: form.targetDecisionDate ? new Date(form.targetDecisionDate) : undefined,
         clickupLink: form.clickupLink,
+        googleDriveLink: form.googleDriveLink,
         notes: form.notes,
         // Thai Taxonomy Classification
         sector: form.sector,
@@ -651,6 +653,19 @@ export const OpportunityForm: React.FC<OpportunityFormProps> = ({ opportunity, o
           onChange={e => setForm({ ...form, clickupLink: e.target.value })}
           className={inputClass}
           placeholder="https://app.clickup.com/..."
+        />
+      </div>
+
+      {/* Google Drive Link */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Google Drive Link</label>
+        <input
+          type="url"
+          inputMode="url"
+          value={form.googleDriveLink}
+          onChange={e => setForm({ ...form, googleDriveLink: e.target.value })}
+          className={inputClass}
+          placeholder="https://drive.google.com/..."
         />
       </div>
 
