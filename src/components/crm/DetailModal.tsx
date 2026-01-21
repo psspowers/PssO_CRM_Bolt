@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, ExternalLink, Activity as ActivityIcon, Building2, TrendingUp, Zap, FileText, MessageSquare, CheckSquare, AlertTriangle, Cpu, Calculator, Flag } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DealNotes } from './DealNotes';
 import { DealDocuments } from './DealDocuments';
 import { DealTasks } from './DealTasks';
@@ -98,59 +99,80 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               <button onClick={onClose} className="p-3 hover:bg-gray-100 rounded-lg" aria-label="Close modal"><X className="w-5 h-5" /></button>
             </div>
           </div>
-          {/* Main Tabs - Row 1 */}
-          <div className="flex gap-1 mt-3">
-            {tabs.map(({ id, label, icon: Icon }) => (
-              <button key={id} onClick={() => setActiveTab(id)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === id
-                    ? 'bg-emerald-50 text-emerald-700 ring-2 ring-orange-500 ring-inset'
-                    : 'text-gray-500 hover:bg-gray-100'
-                }`}>
-                <Icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Sub-Tabs - Row 2 (Segmented Grid) */}
-          {activeTab === 'velocity' && showVelocity && (
-            <div className="grid grid-cols-4 gap-1 p-2 bg-emerald-50/50 rounded-xl w-full mt-2 ring-2 ring-orange-500 ring-inset">
-              {velocitySubTabs.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setVelocityTab(id)}
-                  className={`flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg transition-all ${
-                    velocityTab === id
-                      ? 'bg-emerald-500 text-white shadow-md'
-                      : 'text-emerald-700 hover:bg-emerald-100'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{label}</span>
-                </button>
+          {/* Main Tabs - Icon Only with Tooltips */}
+          <TooltipProvider delayDuration={200}>
+            <div className="grid grid-flow-col auto-cols-fr gap-1 p-1 bg-slate-50/50 rounded-xl w-full mt-3">
+              {tabs.map(({ id, label, icon: Icon }) => (
+                <Tooltip key={id}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setActiveTab(id)}
+                      className={`flex items-center justify-center py-3 rounded-lg transition-all ${
+                        activeTab === id
+                          ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-100 scale-[1.02]'
+                          : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    <p>{label}</p>
+                  </TooltipContent>
+                </Tooltip>
               ))}
             </div>
-          )}
 
-          {activeTab === 'activity' && (
-            <div className="grid grid-cols-3 gap-1 p-2 bg-emerald-50/50 rounded-xl w-full mt-2 ring-2 ring-orange-500 ring-inset">
-              {activitySubTabs.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setActivityTab(id)}
-                  className={`flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg transition-all ${
-                    activityTab === id
-                      ? 'bg-emerald-500 text-white shadow-md'
-                      : 'text-emerald-700 hover:bg-emerald-100'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{label}</span>
-                </button>
-              ))}
-            </div>
-          )}
+            {/* Velocity Sub-Tabs - Icon Only */}
+            {activeTab === 'velocity' && showVelocity && (
+              <div className="grid grid-flow-col auto-cols-fr gap-1 p-1 bg-slate-50/50 rounded-xl w-full mt-2">
+                {velocitySubTabs.map(({ id, label, icon: Icon }) => (
+                  <Tooltip key={id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setVelocityTab(id)}
+                        className={`flex items-center justify-center py-3 rounded-lg transition-all ${
+                          velocityTab === id
+                            ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-100 scale-[1.02]'
+                            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>{label}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+            )}
+
+            {/* Activity Sub-Tabs - Icon Only */}
+            {activeTab === 'activity' && (
+              <div className="grid grid-flow-col auto-cols-fr gap-1 p-1 bg-slate-50/50 rounded-xl w-full mt-2">
+                {activitySubTabs.map(({ id, label, icon: Icon }) => (
+                  <Tooltip key={id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setActivityTab(id)}
+                        className={`flex items-center justify-center py-3 rounded-lg transition-all ${
+                          activityTab === id
+                            ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-100 scale-[1.02]'
+                            : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/50'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>{label}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+            )}
+          </TooltipProvider>
         </div>
         <div className="flex-1 overflow-auto pb-32">
           {/* Overview Tab */}
