@@ -1,13 +1,23 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { useAppContext } from "@/contexts/AppContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Calendar, AlertCircle, Loader2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import {
+  Plus,
+  Calendar,
+  AlertCircle,
+  Loader2,
+  Flag,
+  User,
+  CheckCircle2
+} from "lucide-react";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 interface Task {
   id: string;
@@ -25,13 +35,23 @@ interface Task {
 
 interface DealTasksProps {
   entityId: string;
+  entityType?: "Opportunity" | "Account" | "Project";
 }
 
-export function DealTasks({ entityId }: DealTasksProps) {
+export function DealTasks({ entityId, entityType = "Opportunity" }: DealTasksProps) {
+  const { createActivity, updateActivity, users } = useAppContext();
+  const { user } = useAuth();
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newTaskSummary, setNewTaskSummary] = useState("");
   const [adding, setAdding] = useState(false);
+
+  const [summary, setSummary] = useState("");
+  const [assigneeId, setAssigneeId] = useState(user?.id || "");
+  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showAssignee, setShowAssignee] = useState(false);
 
   useEffect(() => {
     fetchTasks();
@@ -71,12 +91,8 @@ export function DealTasks({ entityId }: DealTasksProps) {
   const handleToggleComplete = async (taskId: string, currentStatus: string | null) => {
     try {
       const newStatus = currentStatus === "Completed" ? "Pending" : "Completed";
-      const { error } = await supabase
-        .from("activities")
-        .update({ task_status: newStatus })
-        .eq("id", taskId);
 
-      if (error) throw error;
+      await updateActivity(taskId, { taskStatus: newStatus });
 
       setTasks((prev) =>
         prev.map((task) =>
@@ -92,45 +108,30 @@ export function DealTasks({ entityId }: DealTasksProps) {
   };
 
   const handleAddTask = async () => {
-    if (!newTaskSummary.trim()) return;
+    if (!summary.trim() || !user?.id) return;
 
     try {
       setAdding(true);
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      await createActivity({
+        type: "task",
+        summary: summary.trim(),
+        isTask: true,
+        taskStatus: "Pending",
+        priority: priority,
+        assignedToId: assigneeId || user.id,
+        dueDate: dueDate,
+        relatedToId: entityId,
+        relatedToType: entityType,
+        createdById: user.id,
+      });
 
-      const { data: newTask, error } = await supabase
-        .from("activities")
-        .insert({
-          type: "task",
-          summary: newTaskSummary.trim(),
-          is_task: true,
-          task_status: "Pending",
-          related_to_id: entityId,
-          created_by: user.id,
-          assigned_to_id: user.id,
-          priority: "medium",
-        })
-        .select(
-          `
-          id,
-          summary,
-          task_status,
-          due_date,
-          assigned_to_id,
-          priority,
-          assignee:crm_users!activities_assigned_to_fkey(id, name, avatar)
-        `
-        )
-        .single();
+      setSummary("");
+      setPriority("medium");
+      setDueDate(undefined);
+      setAssigneeId(user.id);
 
-      if (error) throw error;
-
-      setTasks((prev) => [...prev, newTask]);
-      setNewTaskSummary("");
+      await fetchTasks();
       toast.success("Task added");
     } catch (error: any) {
       console.error("Error adding task:", error);
@@ -147,48 +148,52 @@ export function DealTasks({ entityId }: DealTasksProps) {
     }
   };
 
-  const getPriorityColor = (priority: Task["priority"]) => {
+  const cyclePriority = () => {
+    setPriority((prev) => {
+      if (prev === "low") return "medium";
+      if (prev === "medium") return "high";
+      return "low";
+    });
+  };
+
+  const getPriorityIcon = () => {
     switch (priority) {
-      case "urgent":
-        return "bg-red-100 text-red-700 border-red-200";
       case "high":
-        return "bg-orange-100 text-orange-700 border-orange-200";
+        return <Flag className="w-3.5 h-3.5 text-red-500 fill-red-500" />;
       case "medium":
-        return "bg-yellow-100 text-yellow-700 border-yellow-200";
+        return <Flag className="w-3.5 h-3.5 text-orange-500 fill-orange-500" />;
       case "low":
-        return "bg-blue-100 text-blue-700 border-blue-200";
-      default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
+        return <Flag className="w-3.5 h-3.5 text-blue-500" />;
     }
   };
 
-  const getDueDateBadge = (dueDate: string | null, taskStatus: string | null) => {
-    if (!dueDate || taskStatus === "Completed") return null;
+  const getPriorityColor = (taskPriority: Task["priority"]) => {
+    switch (taskPriority) {
+      case "urgent":
+      case "high":
+        return "text-red-600";
+      case "medium":
+        return "text-orange-600";
+      case "low":
+        return "text-blue-600";
+      default:
+        return "text-slate-400";
+    }
+  };
 
-    const date = new Date(dueDate);
+  const getDueDateText = (dueDateStr: string | null, taskStatus: string | null) => {
+    if (!dueDateStr || taskStatus === "Completed") return null;
+
+    const date = new Date(dueDateStr);
     const overdue = isPast(date) && !isToday(date);
 
-    let label = format(date, "MMM d");
-    let colorClass = "bg-gray-100 text-gray-600";
-
-    if (overdue) {
-      label = "Overdue";
-      colorClass = "bg-red-100 text-red-700";
-    } else if (isToday(date)) {
-      label = "Today";
-      colorClass = "bg-emerald-100 text-emerald-700";
-    } else if (isTomorrow(date)) {
-      label = "Tomorrow";
-      colorClass = "bg-blue-100 text-blue-700";
-    }
-
-    return (
-      <Badge variant="outline" className={`text-xs ${colorClass} border-0`}>
-        <Calendar className="w-3 h-3 mr-1" />
-        {label}
-      </Badge>
-    );
+    if (overdue) return { text: "Overdue", color: "text-red-600 font-semibold" };
+    if (isToday(date)) return { text: "Today", color: "text-emerald-600 font-semibold" };
+    if (isTomorrow(date)) return { text: "Tomorrow", color: "text-blue-600" };
+    return { text: format(date, "MMM d"), color: "text-slate-500" };
   };
+
+  const selectedUser = users.find((u) => u.id === assigneeId);
 
   if (loading) {
     return (
@@ -199,84 +204,181 @@ export function DealTasks({ entityId }: DealTasksProps) {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Quick Add Task */}
-      <div className="flex gap-2">
-        <Input
+    <div className="space-y-3">
+      {/* Rich Input Bar */}
+      <div className="flex items-center gap-2 p-2 bg-white border border-slate-200 rounded-xl shadow-sm focus-within:ring-2 ring-orange-500/10 transition-all">
+        <input
+          type="text"
           placeholder="Add a new task..."
-          value={newTaskSummary}
-          onChange={(e) => setNewTaskSummary(e.target.value)}
+          value={summary}
+          onChange={(e) => setSummary(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={adding}
-          className="flex-1"
+          className="flex-1 border-none focus:ring-0 text-sm placeholder:text-slate-400 bg-transparent outline-none px-2"
         />
-        <Button
-          onClick={handleAddTask}
-          disabled={adding || !newTaskSummary.trim()}
-          size="sm"
-        >
-          {adding ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <>
-              <Plus className="h-4 w-4 mr-1" />
-              Add
-            </>
-          )}
-        </Button>
+
+        <div className="flex items-center gap-1">
+          {/* Priority Toggle */}
+          <button
+            type="button"
+            onClick={cyclePriority}
+            className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+            title={`Priority: ${priority}`}
+          >
+            {getPriorityIcon()}
+          </button>
+
+          {/* Date Picker */}
+          <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className={`p-1.5 hover:bg-slate-100 rounded-lg transition-colors ${
+                  dueDate ? "text-orange-600" : "text-slate-400"
+                }`}
+                title="Set due date"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <CalendarComponent
+                mode="single"
+                selected={dueDate}
+                onSelect={(date) => {
+                  setDueDate(date);
+                  setShowDatePicker(false);
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+
+          {/* Assignee Selector */}
+          <Popover open={showAssignee} onOpenChange={setShowAssignee}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
+                title="Assign to"
+              >
+                {selectedUser ? (
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={selectedUser.avatar || undefined} />
+                    <AvatarFallback className="text-[10px] bg-gradient-to-br from-emerald-400 to-emerald-600 text-white">
+                      {selectedUser.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                ) : (
+                  <User className="w-3.5 h-3.5 text-slate-400" />
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2" align="end">
+              <div className="space-y-1">
+                <div className="text-xs font-semibold text-slate-500 px-2 py-1">
+                  Assign to
+                </div>
+                {users.map((usr) => (
+                  <button
+                    key={usr.id}
+                    onClick={() => {
+                      setAssigneeId(usr.id);
+                      setShowAssignee(false);
+                    }}
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors ${
+                      assigneeId === usr.id ? "bg-orange-50" : ""
+                    }`}
+                  >
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={usr.avatar || undefined} />
+                      <AvatarFallback className="text-[10px] bg-gradient-to-br from-emerald-400 to-emerald-600 text-white">
+                        {usr.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium text-slate-700">
+                      {usr.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Submit Button */}
+          <button
+            type="button"
+            onClick={handleAddTask}
+            disabled={adding || !summary.trim()}
+            className="p-1.5 hover:bg-orange-50 text-orange-600 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Add task"
+          >
+            {adding ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Plus className="w-3.5 h-3.5" />
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Task List */}
+      {/* High Density Task List */}
       {tasks.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <div className="text-sm font-medium">No tasks yet</div>
-          <div className="text-xs mt-1">Add your first task above</div>
+        <div className="text-center py-8 text-slate-400">
+          <AlertCircle className="w-10 h-10 mx-auto mb-2 opacity-40" />
+          <div className="text-xs font-medium">No tasks yet</div>
         </div>
       ) : (
-        <div className="space-y-2">
-          {tasks.map((task) => (
-            <div
-              key={task.id}
-              className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                task.task_status === "Completed"
-                  ? "bg-gray-50 border-gray-200"
-                  : "bg-card border-gray-200 hover:bg-accent/50"
-              }`}
-            >
-              <Checkbox
-                checked={task.task_status === "Completed"}
-                onCheckedChange={() => handleToggleComplete(task.id, task.task_status)}
-              />
+        <div className="space-y-0.5 mt-4">
+          {tasks.map((task) => {
+            const dueDateInfo = getDueDateText(task.due_date, task.task_status);
+            const isCompleted = task.task_status === "Completed";
 
-              <div className="flex-1 min-w-0">
-                <div
-                  className={`text-sm font-medium ${
-                    task.task_status === "Completed"
-                      ? "line-through text-muted-foreground"
-                      : "text-foreground"
-                  }`}
-                >
-                  {task.summary}
-                </div>
-              </div>
+            return (
+              <div
+                key={task.id}
+                className="group flex items-center gap-3 p-2 hover:bg-slate-50 border-b border-slate-100 last:border-0 transition-colors"
+              >
+                <Checkbox
+                  checked={isCompleted}
+                  onCheckedChange={() => handleToggleComplete(task.id, task.task_status)}
+                  className="shrink-0"
+                />
 
-              <div className="flex items-center gap-2">
-                {task.priority && task.task_status !== "Completed" && (
-                  <Badge
-                    variant="outline"
-                    className={`text-xs border ${getPriorityColor(task.priority)}`}
+                <div className="flex-1 min-w-0 flex items-center gap-2">
+                  <span
+                    className={`text-sm text-slate-700 truncate ${
+                      isCompleted ? "line-through text-slate-400" : ""
+                    }`}
                   >
-                    {task.priority.toUpperCase()}
-                  </Badge>
-                )}
+                    {task.summary}
+                  </span>
 
-                {getDueDateBadge(task.due_date, task.task_status)}
+                  {task.priority && !isCompleted && (
+                    <Flag
+                      className={`w-3 h-3 shrink-0 ${getPriorityColor(task.priority)}`}
+                    />
+                  )}
+
+                  {dueDateInfo && (
+                    <span className={`text-[10px] shrink-0 ${dueDateInfo.color}`}>
+                      {dueDateInfo.text}
+                    </span>
+                  )}
+                </div>
 
                 {task.assignee && (
-                  <Avatar className="h-6 w-6">
+                  <Avatar className="h-5 w-5 shrink-0">
                     <AvatarImage src={task.assignee.avatar || undefined} />
-                    <AvatarFallback className="text-xs bg-gradient-to-br from-emerald-400 to-emerald-600 text-white">
+                    <AvatarFallback className="text-[8px] bg-gradient-to-br from-emerald-400 to-emerald-600 text-white">
                       {task.assignee.name
                         .split(" ")
                         .map((n) => n[0])
@@ -285,9 +387,13 @@ export function DealTasks({ entityId }: DealTasksProps) {
                     </AvatarFallback>
                   </Avatar>
                 )}
+
+                {isCompleted && (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
