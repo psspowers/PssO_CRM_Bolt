@@ -177,11 +177,13 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     if (!preWinStages.includes(o.stage)) return false;
 
     // 1. HIERARCHY FILTER - Filter based on ownership/team view
+    // SMART SEARCH OVERRIDE: If user is searching, bypass "Mine" filter to show matching team deals
+    const isSearching = search.trim().length > 0;
     const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
-    if (hierarchyView === 'mine') {
+    if (!isSearching && hierarchyView === 'mine') {
       if (o.ownerId !== user?.id) return false;
-    } else {
+    } else if (hierarchyView === 'team' || isSearching) {
       const isMyDeal = o.ownerId === user?.id;
       const isSubordinateDeal = subordinateIds.includes(o.ownerId);
 
@@ -558,16 +560,21 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
 
       {/* Deals Grid/List */}
       <div className={`w-full max-w-full overflow-hidden ${viewMode === 'grid' && !selectionMode ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4' : 'flex flex-col gap-3'}`}>
-        {filtered.map(opp => (
-          <OpportunityCard
-            key={opp.id}
-            opportunity={opp}
-            accountName={accounts.find(a => a.id === opp.accountId)?.name}
-            ownerName={getOwnerName(opp.ownerId)}
-            onClick={() => !selectionMode && setSelectedOpp(opp)}
-            onPriorityChange={handlePriorityChange}
-          />
-        ))}
+        {filtered.map(opp => {
+          const isSearching = search.trim().length > 0;
+          const isTeamDeal = opp.ownerId !== user?.id && isSearching && hierarchyView === 'mine';
+          return (
+            <OpportunityCard
+              key={opp.id}
+              opportunity={opp}
+              accountName={accounts.find(a => a.id === opp.accountId)?.name}
+              ownerName={getOwnerName(opp.ownerId)}
+              onClick={() => !selectionMode && setSelectedOpp(opp)}
+              onPriorityChange={handlePriorityChange}
+              showTeamBadge={isTeamDeal}
+            />
+          );
+        })}
       </div>
 
       {filtered.length === 0 && (

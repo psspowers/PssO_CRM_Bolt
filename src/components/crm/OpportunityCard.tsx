@@ -1,5 +1,5 @@
 import React from 'react';
-import { Zap, Factory, Building2, Hotel, Wheat, Briefcase, ChevronDown } from 'lucide-react';
+import { Zap, Factory, Building2, Hotel, Wheat, Briefcase, ChevronDown, Users } from 'lucide-react';
 import { Opportunity, Priority } from '../../types/crm';
 
 interface OpportunityCardProps {
@@ -8,9 +8,10 @@ interface OpportunityCardProps {
   ownerName?: string;
   onClick: () => void;
   onPriorityChange?: (opportunityId: string, newPriority: Priority) => void;
+  showTeamBadge?: boolean;
 }
 
-export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, accountName, onClick, onPriorityChange }) => {
+export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, accountName, ownerName, onClick, onPriorityChange, showTeamBadge = false }) => {
   const getIndustryIcon = (sector?: string) => {
     if (sector?.includes('Manuf')) return Factory;
     if (sector?.includes('Hosp')) return Hotel;
@@ -52,9 +53,17 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({ opportunity, a
         </div>
 
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-bold text-slate-900 truncate pr-2 overflow-hidden whitespace-nowrap text-ellipsis">
-            {toTitleCase(opportunity.name)}
-          </h3>
+          <div className="flex items-center gap-2 mb-0.5">
+            <h3 className="text-sm font-bold text-slate-900 truncate overflow-hidden whitespace-nowrap text-ellipsis">
+              {toTitleCase(opportunity.name)}
+            </h3>
+            {showTeamBadge && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-bold whitespace-nowrap flex-shrink-0">
+                <Users className="w-2.5 h-2.5" />
+                {ownerName}
+              </span>
+            )}
+          </div>
           <p className="text-xs text-slate-500 truncate overflow-hidden whitespace-nowrap text-ellipsis">
             {toTitleCase(accountName || 'Unknown Account')}
           </p>
