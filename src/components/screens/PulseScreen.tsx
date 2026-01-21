@@ -618,7 +618,8 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
   const loadInternalFeed = async () => {
     if (!user?.id) return;
 
-    const rawFeed: any[] = [];
+    try {
+      const rawFeed: any[] = [];
 
     const { data: activities } = await supabase
       .from('activities')
@@ -741,35 +742,40 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
       setHiddenFeed(newHidden);
     }
 
-    const formattedFeed = rawFeed
-      .map(item => formatFeedItem(item))
-      .filter((item): item is FeedItem => item !== null);
+      const formattedFeed = rawFeed
+        .map(item => formatFeedItem(item))
+        .filter((item): item is FeedItem => item !== null);
 
-    formattedFeed.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    setFeedItems(formattedFeed);
+      formattedFeed.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setFeedItems(formattedFeed);
+    } catch (err) {
+      console.error("Fatal error loading internal feed:", err);
+      setFeedItems([]);
+    }
   };
 
   const loadMarketNews = async () => {
     if (!user?.id) return;
 
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const { data: newsData, error: newsError } = await supabase
-      .from('market_news')
-      .select(`
-        *,
-        accounts(name),
-        crm_users!market_news_created_by_fkey(name)
-      `)
-      .lte('published_at', new Date().toISOString())
-      .gte('news_date', thirtyDaysAgo.toISOString().split('T')[0])
-      .order('published_at', { ascending: false });
+      const { data: newsData, error: newsError } = await supabase
+        .from('market_news')
+        .select(`
+          *,
+          accounts(name),
+          crm_users!market_news_created_by_fkey(name)
+        `)
+        .lte('published_at', new Date().toISOString())
+        .gte('news_date', thirtyDaysAgo.toISOString().split('T')[0])
+        .order('published_at', { ascending: false });
 
-    if (newsError) {
-      console.error("News fetch error:", newsError);
-      return;
-    }
+      if (newsError) {
+        console.error("News fetch error:", newsError);
+        return;
+      }
 
     let allNewsData = [...(newsData || [])];
 
@@ -841,6 +847,12 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
     setMarketNews(formattedNews);
     setFavorites(newFavorites);
     setHiddenNews(newHidden);
+    } catch (err) {
+      console.error("Fatal error loading market news:", err);
+      setMarketNews([]);
+      setFavorites(new Set());
+      setHiddenNews(new Set());
+    }
   };
 
   const loadFavorites = async () => {
