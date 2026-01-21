@@ -508,9 +508,10 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
 
 interface PulseScreenProps {
   forcedOpenId?: string | null;
+  onNavigate?: (view: string) => void;
 }
 
-export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
+export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenProps) {
   const { user, profile } = useAuth();
   const { createActivity } = useAppContext();
   const [activeTab, setActiveTab] = useState<'internal' | 'market'>('internal');
@@ -1594,58 +1595,59 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1.5 flex-wrap text-sm leading-tight">
-                          {item.dealName && (
-                            <>
-                              <span className="font-semibold text-slate-900 dark:text-white">
-                                {item.dealName}
-                              </span>
-                              <span className="text-slate-400 dark:text-slate-500">·</span>
-                            </>
-                          )}
+                        {(item.dealName || item.targetMW) && (
+                          <div className="flex items-center gap-2 mb-1 text-sm">
+                            {item.dealName && (
+                              <>
+                                <span className="font-bold text-slate-900 dark:text-white">
+                                  {item.dealName}
+                                </span>
+                                {item.targetMW && <span className="text-slate-400 dark:text-slate-500">|</span>}
+                              </>
+                            )}
 
-                          {item.targetMW && (
-                            <>
-                              <span className="font-medium text-blue-600 dark:text-blue-400">
+                            {item.targetMW && (
+                              <span className="font-semibold text-blue-600 dark:text-blue-400">
                                 {item.targetMW} MW
                               </span>
-                              <span className="text-slate-400 dark:text-slate-500">·</span>
-                            </>
-                          )}
+                            )}
 
+                            {item.relatedToId && item.relatedToType && onNavigate && (
+                              <button
+                                className="ml-auto flex-shrink-0 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
+                                onClick={() => {
+                                  const typeMap: Record<string, string> = {
+                                    'Opportunity': 'opportunities',
+                                    'Project': 'projects',
+                                    'Account': 'accounts',
+                                    'Contact': 'contacts',
+                                    'Partner': 'partners'
+                                  };
+                                  const view = typeMap[item.relatedToType] || 'home';
+                                  onNavigate(view);
+                                }}
+                                title={`Go to ${item.relatedToType}`}
+                              >
+                                <ExternalLink className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 mb-1.5 text-sm">
                           <span className="text-slate-700 dark:text-slate-300">
                             {item.user_name || 'System'}
                           </span>
-                          <span className="text-slate-400 dark:text-slate-500">·</span>
+                          <span className="text-slate-400 dark:text-slate-500">|</span>
 
                           <span className="text-slate-600 dark:text-slate-400 text-xs">
                             {item.activityType || (item.type === 'activity' ? 'Activity' : 'Update')}
                           </span>
-                          <span className="text-slate-400 dark:text-slate-500">·</span>
+                          <span className="text-slate-400 dark:text-slate-500">|</span>
 
                           <span className="text-slate-400 dark:text-slate-500 text-xs">
                             {timeAgo}
                           </span>
-
-                          {item.relatedToId && item.relatedToType && (
-                            <button
-                              className="ml-auto flex-shrink-0 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
-                              onClick={() => {
-                                const typeMap: Record<string, string> = {
-                                  'Opportunity': 'opportunities',
-                                  'Project': 'projects',
-                                  'Account': 'accounts',
-                                  'Contact': 'contacts',
-                                  'Partner': 'partners'
-                                };
-                                const view = typeMap[item.relatedToType] || 'home';
-                                window.location.href = `/?view=${view}`;
-                              }}
-                              title={`Go to ${item.relatedToType}`}
-                            >
-                              <ExternalLink className="w-3 h-3 text-slate-500 dark:text-slate-400" />
-                            </button>
-                          )}
                         </div>
 
                         <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
