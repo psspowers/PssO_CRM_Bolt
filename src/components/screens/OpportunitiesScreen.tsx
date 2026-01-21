@@ -32,7 +32,8 @@ import {
   Search,
   ChevronDown,
   Clock,
-  Flag
+  Flag,
+  Calendar
 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -684,98 +685,133 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         {selectedOpp && (isEditing ? (
           <OpportunityForm opportunity={selectedOpp} onSave={handleSaveOpportunity} onCancel={() => setIsEditing(false)} />
         ) : (
-          <div className="space-y-4 pb-20">
-            {/* Basic Info Grid - Read Only */}
-            <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Deal Name</p>
-                  <p className="text-sm font-semibold text-slate-900">{selectedOpp.name}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Account</p>
-                  <p className="text-sm font-semibold text-slate-900">{linkedAccount?.name || 'Unlinked'}</p>
-                </div>
-              </div>
+          (() => {
+            const primaryPartnerName = partners.find(p => p.id === selectedOpp.primaryPartnerId)?.name || 'Not Set';
+            const ownerName = users.find(u => u.id === selectedOpp.ownerId)?.name || 'Unknown';
+            const creditRating = 'A-';
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">PPA Value</p>
-                  <p className="text-sm font-semibold text-slate-900">{formatValue(selectedOpp.value)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Target Capacity</p>
-                  <p className="text-sm font-semibold text-slate-900">{(selectedOpp.targetCapacity || 0).toFixed(3)} MW</p>
-                </div>
-              </div>
+            return (
+              <div className="space-y-4 pb-20">
+                {/* MAIN DATA GRID (2 Columns) */}
+                <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Max Capacity</p>
-                  <p className="text-sm font-semibold text-slate-900">{(selectedOpp.maxCapacity || 0).toFixed(3)} MW</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Project IRR</p>
-                  <p className="text-sm font-semibold text-emerald-700">{selectedOpp.projectIRR ? `${selectedOpp.projectIRR.toFixed(1)}%` : 'N/A'}</p>
-                </div>
-              </div>
+                  {/* Row 1: Name & Account */}
+                  <div className="grid grid-cols-2 border-b border-slate-100">
+                    <div className="p-4 border-r border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Deal Name</p>
+                      <p className="text-sm font-bold text-slate-900 truncate" title={selectedOpp.name}>{selectedOpp.name}</p>
+                    </div>
+                    <div className="p-4">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Account</p>
+                      <p className="text-sm font-bold text-slate-900 truncate">{linkedAccount?.name || 'Unlinked'}</p>
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Probability</p>
-                  <p className="text-sm font-semibold text-slate-900">{selectedOpp.manualProbability || 0}%</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Primary Partner</p>
-                  <p className="text-sm font-semibold text-slate-900">
-                    {selectedOpp.primaryPartnerId
-                      ? partners.find(p => p.id === selectedOpp.primaryPartnerId)?.name || 'Unknown'
-                      : 'Not Set'
-                    }
-                  </p>
-                </div>
-              </div>
+                  {/* Row 2: Capacity & Partner */}
+                  <div className="grid grid-cols-2 border-b border-slate-100">
+                    <div className="p-4 border-r border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Target Capacity</p>
+                      <p className="text-sm font-bold text-slate-900 flex items-center gap-1">
+                        <Zap className="w-3.5 h-3.5 text-amber-500 fill-current" />
+                        {selectedOpp.targetCapacity} MW
+                      </p>
+                    </div>
+                    <div className="p-4">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Primary Partner</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-purple-700">{primaryPartnerName}</span>
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">PPA Term</p>
-                  <p className="text-sm font-semibold text-slate-900">{selectedOpp.ppaTermYears || 0} years</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">EPC Cost</p>
-                  <p className="text-sm font-semibold text-slate-900">{formatValue(selectedOpp.epcCost || 0)}</p>
-                </div>
-              </div>
+                  {/* Row 3: IRR & Term */}
+                  <div className="grid grid-cols-2 border-b border-slate-100">
+                    <div className="p-4 border-r border-slate-100 bg-emerald-50/30">
+                      <p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Project IRR</p>
+                      <p className="text-lg font-black text-emerald-700">
+                        {selectedOpp.projectIRR ? `${selectedOpp.projectIRR}%` : 'N/A'}
+                      </p>
+                    </div>
+                    <div className="p-4">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">PPA Term</p>
+                      <p className="text-sm font-bold text-slate-900">{selectedOpp.ppaTermYears || '-'} Years</p>
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Owner</p>
-                  <p className="text-sm font-semibold text-slate-900">{getOwnerName(selectedOpp.ownerId)}</p>
+                  {/* Row 4: EPC & Probability */}
+                  <div className="grid grid-cols-2">
+                    <div className="p-4 border-r border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">EPC Cost</p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {selectedOpp.epcCost ? `฿${(selectedOpp.epcCost / 1000000).toFixed(1)}M` : '-'}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-yellow-50">
+                      <p className="text-[10px] font-bold text-yellow-700 uppercase mb-1">Probability</p>
+                      <p className="text-xl font-black text-yellow-800">{selectedOpp.manualProbability || 0}%</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Priority</p>
-                  <p className="text-sm font-semibold text-slate-900">{selectedOpp.priority}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Stage</p>
-                  <p className="text-sm font-semibold text-slate-900">{selectedOpp.stage}</p>
-                </div>
-              </div>
-            </div>
 
-            {userCanEdit && (
-              <button onClick={() => setIsEditing(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all">
-                <Pencil className="w-4 h-4" /> Edit Deal
-              </button>
-            )}
+                {/* STATUS FOOTER (3 Columns) */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <p className="text-[10px] text-slate-400 uppercase">Owner</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-5 h-5 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[10px] font-bold">
+                        {ownerName[0]}
+                      </div>
+                      <p className="text-xs font-bold text-slate-700 truncate">{ownerName.split(' ')[0]}</p>
+                    </div>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <p className="text-[10px] text-slate-400 uppercase">Stage</p>
+                    <p className="text-xs font-bold text-slate-700 mt-1">{selectedOpp.stage}</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <p className="text-[10px] text-slate-400 uppercase">Priority</p>
+                    <p className={`text-xs font-bold mt-1 ${selectedOpp.priority === 'High' ? 'text-red-600' : 'text-slate-700'}`}>
+                      {selectedOpp.priority}
+                    </p>
+                  </div>
+                </div>
 
-            {selectedOpp.notes && (
-              <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
-                <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">Internal Notes</p>
-                <p className="text-sm text-amber-900 leading-relaxed">{selectedOpp.notes}</p>
+                {/* CONTEXT STRIP (Risk & Dates) */}
+                <div className="flex gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-slate-400" />
+                    <div>
+                      <p className="text-[9px] text-slate-400 uppercase">Risk Rating</p>
+                      <p className="text-xs font-bold text-slate-700">{creditRating}</p>
+                    </div>
+                  </div>
+                  <div className="w-px bg-slate-200 h-8" />
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                    <div>
+                      <p className="text-[9px] text-slate-400 uppercase">Target Decision</p>
+                      <p className="text-xs font-bold text-slate-700">
+                        {selectedOpp.targetDecisionDate ? new Date(selectedOpp.targetDecisionDate).toLocaleDateString() : 'Not Set'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {userCanEdit && (
+                  <button onClick={() => setIsEditing(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all">
+                    <Pencil className="w-4 h-4" /> Edit Deal
+                  </button>
+                )}
+
+                {selectedOpp.notes && (
+                  <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                    <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">Internal Notes</p>
+                    <p className="text-sm text-amber-900 leading-relaxed">{selectedOpp.notes}</p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })()
         ))}
       </DetailModal>
 
