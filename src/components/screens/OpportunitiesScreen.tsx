@@ -686,7 +686,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
           <OpportunityForm opportunity={selectedOpp} onSave={handleSaveOpportunity} onCancel={() => setIsEditing(false)} />
         ) : (
           (() => {
-            const primaryPartnerName = partners.find(p => p.id === selectedOpp.primaryPartnerId)?.name || 'Not Set';
+            const primaryPartnerName = partners.find(p => p.id === selectedOpp.primaryPartnerId)?.name || 'Direct';
             const ownerName = users.find(u => u.id === selectedOpp.ownerId)?.name || 'Unknown';
             const creditRating = 'A-';
 
