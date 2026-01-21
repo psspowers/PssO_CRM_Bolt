@@ -348,8 +348,8 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         iconBgColor: 'bg-green-100 dark:bg-green-900/50',
         dealName: dealName,
         targetMW: targetMW,
-        relatedToId: details.entity_id,
-        relatedToType: details.entity_type,
+        relatedToId: rawItem.related_to_id || details.entity_id,
+        relatedToType: rawItem.related_to_type || details.entity_type,
         activityType: 'Update'
       };
     }
@@ -371,8 +371,8 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           iconBgColor: 'bg-green-100 dark:bg-green-900/50',
           dealName: dealName,
           targetMW: targetMW,
-          relatedToId: details.entity_id,
-          relatedToType: details.entity_type,
+          relatedToId: rawItem.related_to_id || details.entity_id,
+          relatedToType: rawItem.related_to_type || details.entity_type,
           activityType: 'Update'
         };
       }
@@ -391,8 +391,8 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           iconBgColor: 'bg-blue-100 dark:bg-blue-900/50',
           dealName: dealName,
           targetMW: targetMW,
-          relatedToId: details.entity_id,
-          relatedToType: details.entity_type,
+          relatedToId: rawItem.related_to_id || details.entity_id,
+          relatedToType: rawItem.related_to_type || details.entity_type,
           activityType: 'Update'
         };
       }
@@ -410,8 +410,8 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           iconBgColor: 'bg-purple-100 dark:bg-purple-900/50',
           dealName: dealName,
           targetMW: targetMW,
-          relatedToId: details.entity_id,
-          relatedToType: details.entity_type,
+          relatedToId: rawItem.related_to_id || details.entity_id,
+          relatedToType: rawItem.related_to_type || details.entity_type,
           activityType: 'Update'
         };
       }
@@ -475,8 +475,8 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         iconBgColor: 'bg-green-100 dark:bg-green-900/50',
         dealName: dealName,
         targetMW: targetMW,
-        relatedToId: details.entity_id || parsedDetails?.id,
-        relatedToType: details.entity_type || entityType,
+        relatedToId: rawItem.related_to_id || details.entity_id || parsedDetails?.id,
+        relatedToType: rawItem.related_to_type || details.entity_type || entityType,
         activityType: 'Create'
       };
     }
@@ -494,8 +494,8 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         iconBgColor: 'bg-slate-100 dark:bg-slate-800',
         dealName: dealName,
         targetMW: targetMW,
-        relatedToId: details.entity_id,
-        relatedToType: details.entity_type,
+        relatedToId: rawItem.related_to_id || details.entity_id,
+        relatedToType: rawItem.related_to_type || details.entity_type,
         activityType: action
       };
     }
@@ -733,6 +733,8 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
 
     if (logs) {
       const logOpportunityIds: string[] = [];
+      const contactAccountIds: string[] = [];
+      const contactAccountMap = new Map<string, string>();
 
       logs.forEach((log: any) => {
         try {
@@ -755,6 +757,11 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
             return;
           }
 
+          if (isContactCreation && logDetails.account_id) {
+            contactAccountIds.push(logDetails.account_id);
+            contactAccountMap.set(log.id, logDetails.account_id);
+          }
+
           if (logDetails.related_to_id && logDetails.related_to_type?.toLowerCase() === 'opportunity') {
             if (!nameMap.has(logDetails.related_to_id)) {
               logOpportunityIds.push(logDetails.related_to_id);
@@ -768,6 +775,29 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
           console.error('Error parsing log details', e);
         }
       });
+
+      const accountToOpportunityMap = new Map<string, { name: string; id: string; mw: number | null }>();
+      if (contactAccountIds.length > 0) {
+        const { data: accountOpportunities } = await supabase
+          .from('opportunities')
+          .select('id, name, target_capacity, account_id')
+          .in('account_id', contactAccountIds)
+          .not('stage', 'in', '("Won","Lost")');
+
+        if (accountOpportunities) {
+          accountOpportunities.forEach((opp: any) => {
+            if (!accountToOpportunityMap.has(opp.account_id)) {
+              accountToOpportunityMap.set(opp.account_id, {
+                name: opp.name,
+                id: opp.id,
+                mw: opp.target_capacity
+              });
+              nameMap.set(opp.id, opp.name);
+              if (opp.target_capacity) mwMap.set(opp.id, opp.target_capacity);
+            }
+          });
+        }
+      }
 
       if (logOpportunityIds.length > 0) {
         const { data: logOpportunities } = await supabase
@@ -786,6 +816,8 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
       logs.forEach((log: any) => {
         let logDealName = null;
         let logTargetMW = null;
+        let relatedToId = null;
+        let relatedToType = null;
 
         try {
           const logDetails = typeof log.details === 'string' ? JSON.parse(log.details) : (log.details || {});
@@ -807,12 +839,26 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
             return;
           }
 
-          if (logDetails.related_to_id && logDetails.related_to_type?.toLowerCase() === 'opportunity') {
+          if (isContactCreation && logDetails.account_id) {
+            const accountId = logDetails.account_id;
+            const opportunity = accountToOpportunityMap.get(accountId);
+            if (!opportunity) {
+              return;
+            }
+            logDealName = opportunity.name;
+            logTargetMW = opportunity.mw;
+            relatedToId = opportunity.id;
+            relatedToType = 'Opportunity';
+          } else if (logDetails.related_to_id && logDetails.related_to_type?.toLowerCase() === 'opportunity') {
             logDealName = nameMap.get(logDetails.related_to_id);
             logTargetMW = mwMap.get(logDetails.related_to_id);
+            relatedToId = logDetails.related_to_id;
+            relatedToType = 'Opportunity';
           } else if (logDetails.entity_id && logDetails.entity_type?.toLowerCase() === 'opportunity') {
             logDealName = nameMap.get(logDetails.entity_id);
             logTargetMW = mwMap.get(logDetails.entity_id);
+            relatedToId = logDetails.entity_id;
+            relatedToType = 'Opportunity';
           }
         } catch (e) {
           console.error('Error parsing log details', e);
@@ -827,7 +873,9 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
           user_name: log.crm_users?.name,
           user_avatar: log.crm_users?.avatar,
           deal_name: logDealName,
-          target_mw: logTargetMW
+          target_mw: logTargetMW,
+          related_to_id: relatedToId,
+          related_to_type: relatedToType
         });
       });
     }
