@@ -332,7 +332,8 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
   if (rawItem.source === 'log') {
     const details = rawItem.details || {};
     const action = rawItem.action;
-    const dealName = details.entity_name || rawItem.deal_name;
+    const dealName = rawItem.deal_name || details.entity_name;
+    const targetMW = rawItem.target_mw;
 
     if (details.old_stage && details.new_stage) {
       return {
@@ -346,6 +347,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         iconColor: 'text-green-600',
         iconBgColor: 'bg-green-100 dark:bg-green-900/50',
         dealName: dealName,
+        targetMW: targetMW,
         relatedToId: details.entity_id,
         relatedToType: details.entity_type,
         activityType: 'Update'
@@ -368,6 +370,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           iconColor: 'text-green-600',
           iconBgColor: 'bg-green-100 dark:bg-green-900/50',
           dealName: dealName,
+          targetMW: targetMW,
           relatedToId: details.entity_id,
           relatedToType: details.entity_type,
           activityType: 'Update'
@@ -387,6 +390,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           iconColor: 'text-blue-600',
           iconBgColor: 'bg-blue-100 dark:bg-blue-900/50',
           dealName: dealName,
+          targetMW: targetMW,
           relatedToId: details.entity_id,
           relatedToType: details.entity_type,
           activityType: 'Update'
@@ -405,6 +409,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
           iconColor: 'text-purple-600',
           iconBgColor: 'bg-purple-100 dark:bg-purple-900/50',
           dealName: dealName,
+          targetMW: targetMW,
           relatedToId: details.entity_id,
           relatedToType: details.entity_type,
           activityType: 'Update'
@@ -469,6 +474,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         iconColor: 'text-green-600',
         iconBgColor: 'bg-green-100 dark:bg-green-900/50',
         dealName: dealName,
+        targetMW: targetMW,
         relatedToId: details.entity_id || parsedDetails?.id,
         relatedToType: details.entity_type || entityType,
         activityType: 'Create'
@@ -487,6 +493,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         iconColor: 'text-slate-600',
         iconBgColor: 'bg-slate-100 dark:bg-slate-800',
         dealName: dealName,
+        targetMW: targetMW,
         relatedToId: details.entity_id,
         relatedToType: details.entity_type,
         activityType: action
@@ -724,7 +731,58 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
       .limit(50);
 
     if (logs) {
+      const logOpportunityIds: string[] = [];
+
       logs.forEach((log: any) => {
+        try {
+          const logDetails = typeof log.details === 'string' ? JSON.parse(log.details) : (log.details || {});
+
+          if (logDetails.related_to_id && logDetails.related_to_type?.toLowerCase() === 'opportunity') {
+            if (!nameMap.has(logDetails.related_to_id)) {
+              logOpportunityIds.push(logDetails.related_to_id);
+            }
+          } else if (logDetails.entity_id && logDetails.entity_type?.toLowerCase() === 'opportunity') {
+            if (!nameMap.has(logDetails.entity_id)) {
+              logOpportunityIds.push(logDetails.entity_id);
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing log details', e);
+        }
+      });
+
+      if (logOpportunityIds.length > 0) {
+        const { data: logOpportunities } = await supabase
+          .from('opportunities')
+          .select('id, name, target_capacity')
+          .in('id', logOpportunityIds);
+
+        if (logOpportunities) {
+          logOpportunities.forEach((opp: any) => {
+            nameMap.set(opp.id, opp.name);
+            if (opp.target_capacity) mwMap.set(opp.id, opp.target_capacity);
+          });
+        }
+      }
+
+      logs.forEach((log: any) => {
+        let logDealName = null;
+        let logTargetMW = null;
+
+        try {
+          const logDetails = typeof log.details === 'string' ? JSON.parse(log.details) : (log.details || {});
+
+          if (logDetails.related_to_id && logDetails.related_to_type?.toLowerCase() === 'opportunity') {
+            logDealName = nameMap.get(logDetails.related_to_id);
+            logTargetMW = mwMap.get(logDetails.related_to_id);
+          } else if (logDetails.entity_id && logDetails.entity_type?.toLowerCase() === 'opportunity') {
+            logDealName = nameMap.get(logDetails.entity_id);
+            logTargetMW = mwMap.get(logDetails.entity_id);
+          }
+        } catch (e) {
+          console.error('Error parsing log details', e);
+        }
+
         rawFeed.push({
           id: log.id,
           source: 'log',
@@ -732,7 +790,9 @@ export default function PulseScreen({ forcedOpenId }: PulseScreenProps) {
           details: log.details,
           created_at: log.created_at,
           user_name: log.crm_users?.name,
-          user_avatar: log.crm_users?.avatar
+          user_avatar: log.crm_users?.avatar,
+          deal_name: logDealName,
+          target_mw: logTargetMW
         });
       });
     }
