@@ -102,8 +102,10 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           <div className="flex gap-1 mt-3">
             {tabs.map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => setActiveTab(id)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === id ? 'bg-emerald-100 text-emerald-700' : 'text-gray-500 hover:bg-gray-100'
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === id
+                    ? 'bg-emerald-50 text-emerald-700 ring-2 ring-orange-500 ring-inset'
+                    : 'text-gray-500 hover:bg-gray-100'
                 }`}>
                 <Icon className="w-4 h-4" />
                 <span className="hidden sm:inline">{label}</span>
@@ -113,15 +115,15 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
           {/* Sub-Tabs - Row 2 (Segmented Grid) */}
           {activeTab === 'velocity' && showVelocity && (
-            <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100/50 rounded-xl w-full mt-2">
+            <div className="grid grid-cols-4 gap-1 p-2 bg-emerald-50/50 rounded-xl w-full mt-2 ring-2 ring-orange-500 ring-inset">
               {velocitySubTabs.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => setVelocityTab(id)}
-                  className={`flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
+                  className={`flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg transition-all ${
                     velocityTab === id
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
+                      ? 'bg-emerald-500 text-white shadow-md'
+                      : 'text-emerald-700 hover:bg-emerald-100'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -132,15 +134,15 @@ export const DetailModal: React.FC<DetailModalProps> = ({
           )}
 
           {activeTab === 'activity' && (
-            <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100/50 rounded-xl w-full mt-2">
+            <div className="grid grid-cols-3 gap-1 p-2 bg-emerald-50/50 rounded-xl w-full mt-2 ring-2 ring-orange-500 ring-inset">
               {activitySubTabs.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => setActivityTab(id)}
-                  className={`flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-lg transition-all ${
+                  className={`flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg transition-all ${
                     activityTab === id
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
+                      ? 'bg-emerald-500 text-white shadow-md'
+                      : 'text-emerald-700 hover:bg-emerald-100'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />

@@ -134,14 +134,14 @@ const Settings: React.FC = () => {
         ) : null}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-white border p-1 h-auto flex-wrap">
-            <TabsTrigger value="security" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700 gap-2">
+          <TabsList className="bg-emerald-50/50 border-none p-2 h-auto flex-wrap ring-2 ring-orange-500 ring-inset rounded-xl">
+            <TabsTrigger value="security" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 gap-2 font-bold">
               <Shield className="w-4 h-4" />Security
             </TabsTrigger>
-            <TabsTrigger value="profile" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700 gap-2">
+            <TabsTrigger value="profile" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 gap-2 font-bold">
               <User className="w-4 h-4" />Profile
             </TabsTrigger>
-            <TabsTrigger value="appearance" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700 gap-2">
+            <TabsTrigger value="appearance" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 gap-2 font-bold">
               <Palette className="w-4 h-4" />Appearance
             </TabsTrigger>
           </TabsList>

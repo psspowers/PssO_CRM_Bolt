@@ -102,17 +102,17 @@ const Admin: React.FC = () => {
         />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="bg-white border">
-            <TabsTrigger value="users" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
+          <TabsList className="bg-emerald-50/50 border-none p-2 ring-2 ring-orange-500 ring-inset rounded-xl">
+            <TabsTrigger value="users" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
               <Users className="w-4 h-4 mr-2" />Users
             </TabsTrigger>
-            <TabsTrigger value="org-chart" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
+            <TabsTrigger value="org-chart" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
               <Network className="w-4 h-4 mr-2" />Org Chart
             </TabsTrigger>
-            <TabsTrigger value="activity" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
+            <TabsTrigger value="activity" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
               <Activity className="w-4 h-4 mr-2" />Activity Logs
             </TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700">
+            <TabsTrigger value="settings" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
               <Settings className="w-4 h-4 mr-2" />Settings
             </TabsTrigger>
           </TabsList>

@@ -632,10 +632,10 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
               )}
 
               <Tabs defaultValue="underwriting" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-100 p-1 rounded-2xl">
-                  <TabsTrigger value="underwriting" className="text-[10px] font-black uppercase flex gap-1"><ShieldCheck className="w-3 h-3" /> Risk</TabsTrigger>
-                  <TabsTrigger value="technical" className="text-[10px] font-black uppercase flex gap-1"><Zap className="w-3 h-3" /> Tech</TabsTrigger>
-                  <TabsTrigger value="financial" className="text-[10px] font-black uppercase flex gap-1"><PieChart className="w-3 h-3" /> Math</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 mb-6 bg-emerald-50/50 p-2 rounded-2xl ring-2 ring-orange-500 ring-inset">
+                  <TabsTrigger value="underwriting" className="text-[10px] font-black uppercase flex gap-1 data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700"><ShieldCheck className="w-3 h-3" /> Risk</TabsTrigger>
+                  <TabsTrigger value="technical" className="text-[10px] font-black uppercase flex gap-1 data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700"><Zap className="w-3 h-3" /> Tech</TabsTrigger>
+                  <TabsTrigger value="financial" className="text-[10px] font-black uppercase flex gap-1 data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700"><PieChart className="w-3 h-3" /> Math</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="underwriting" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
