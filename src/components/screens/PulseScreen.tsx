@@ -508,7 +508,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
 
 interface PulseScreenProps {
   forcedOpenId?: string | null;
-  onNavigate?: (view: string, id?: string) => void;
+  onNavigate?: (view: string) => void;
 }
 
 export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenProps) {
@@ -1641,7 +1641,7 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
                                   'Partner': 'partners'
                                 };
                                 const view = typeMap[item.relatedToType] || 'home';
-                                onNavigate(view, item.relatedToId);
+                                onNavigate(view);
                               }}
                               title={`Go to ${item.relatedToType}`}
                             >
