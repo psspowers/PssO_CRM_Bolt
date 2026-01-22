@@ -28,8 +28,6 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
   const [showImportModal, setShowImportModal] = useState(false);
   const [importedData, setImportedData] = useState<Partial<Contact> | null>(null);
 
-  const contactPickerAvailable = isContactPickerSupported();
-
   useEffect(() => {
     if (forcedOpenId && contacts.length > 0) {
       const target = contacts.find(c => c.id === forcedOpenId);
@@ -87,6 +85,13 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
   };
 
   const handleImportFromPhone = async () => {
+    if (!isContactPickerSupported()) {
+      toast.error('Contact Picker API not available', {
+        description: 'This feature requires Chrome on Android with HTTPS, or a compatible browser.',
+      });
+      return;
+    }
+
     try {
       const selected = await openNativeContactPicker();
       if (selected && selected.length > 0) {
@@ -177,7 +182,7 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
           Showing <span className="font-semibold text-slate-900">{filtered.length}</span> contacts
         </p>
         <div className="flex items-center gap-2">
-          {contactPickerAvailable && !selectionMode && (
+          {!selectionMode && (
             <button
               onClick={handleImportFromPhone}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors"

@@ -19,8 +19,6 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
   const [importedData, setImportedData] = useState<Partial<Contact> | null>(null);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
 
-  const contactPickerAvailable = isContactPickerSupported();
-
   const accountContacts = useMemo(() => {
     return contacts.filter(c => c.accountId === accountId);
   }, [contacts, accountId]);
@@ -66,6 +64,13 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
   };
 
   const handleImportFromPhone = async () => {
+    if (!isContactPickerSupported()) {
+      toast.error('Contact Picker API not available', {
+        description: 'This feature requires Chrome on Android with HTTPS, or a compatible browser.',
+      });
+      return;
+    }
+
     try {
       const selected = await openNativeContactPicker();
       if (selected && selected.length > 0) {
@@ -146,15 +151,13 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
           Contacts ({accountContacts.length})
         </h3>
         <div className="flex items-center gap-2">
-          {contactPickerAvailable && (
-            <button
-              onClick={handleImportFromPhone}
-              className="flex items-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-semibold"
-            >
-              <Smartphone className="w-4 h-4" />
-              Import
-            </button>
-          )}
+          <button
+            onClick={handleImportFromPhone}
+            className="flex items-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-semibold"
+          >
+            <Smartphone className="w-4 h-4" />
+            Import
+          </button>
           <button
             onClick={() => setIsAdding(true)}
             className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-semibold"
@@ -173,15 +176,13 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
           <h4 className="text-lg font-semibold text-slate-900 mb-2">No contacts yet</h4>
           <p className="text-slate-500 text-sm mb-4">Add contacts to track key people at {accountName}</p>
           <div className="flex items-center justify-center gap-2">
-            {contactPickerAvailable && (
-              <button
-                onClick={handleImportFromPhone}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold"
-              >
-                <Smartphone className="w-4 h-4" />
-                Import from Phone
-              </button>
-            )}
+            <button
+              onClick={handleImportFromPhone}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold"
+            >
+              <Smartphone className="w-4 h-4" />
+              Import from Phone
+            </button>
             <button
               onClick={() => setIsAdding(true)}
               className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-semibold"
