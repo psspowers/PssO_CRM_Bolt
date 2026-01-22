@@ -175,7 +175,8 @@ export function MeScreen() {
   const fetchMyProjects = async () => {
     try {
       setProjectsLoading(true);
-      const { data, error } = await supabase
+
+      const { data: projectsData, error: projectsError } = await supabase
         .from("projects")
         .select(
           `
@@ -191,8 +192,42 @@ export function MeScreen() {
         .eq("owner_id", profile?.id)
         .order("updated_at", { ascending: false });
 
-      if (error) throw error;
-      setProjects(data || []);
+      if (projectsError) throw projectsError;
+
+      const { data: earlyOpps, error: oppsError } = await supabase
+        .from("opportunities")
+        .select("id, name, target_capacity, stage, expected_close_date, updated_at")
+        .eq("owner_id", profile?.id)
+        .in("stage", ["Qualifying", "Proposal"])
+        .order("updated_at", { ascending: false });
+
+      if (oppsError) throw oppsError;
+
+      const linkedOppIds = new Set(
+        (projectsData || [])
+          .map((p) => p.linked_opportunity_id)
+          .filter(Boolean)
+      );
+
+      const mappedOpps = (earlyOpps || [])
+        .filter((opp) => !linkedOppIds.has(opp.id))
+        .map((opp) => ({
+          id: opp.id,
+          name: opp.name,
+          capacity: opp.target_capacity,
+          status: null,
+          updated_at: opp.updated_at,
+          linked_opportunity_id: opp.id,
+          opportunity: {
+            id: opp.id,
+            name: opp.name,
+            target_capacity: opp.target_capacity,
+            stage: opp.stage,
+            expected_close_date: opp.expected_close_date,
+          },
+        }));
+
+      setProjects([...(projectsData || []), ...mappedOpps]);
     } catch (error: any) {
       console.error("Error fetching projects:", error);
       toast.error("Failed to load projects");
@@ -346,39 +381,39 @@ export function MeScreen() {
 
       {/* TABS */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex items-center justify-center gap-3 px-4 py-3">
+        <div className="flex items-center justify-center gap-2 px-4 py-2">
           <button
             onClick={() => setActiveTab("tasks")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
               activeTab === "tasks"
-                ? "bg-white text-slate-700 border-2 border-slate-200"
-                : "bg-transparent text-slate-500 border-2 border-transparent"
+                ? "bg-slate-100 text-slate-700"
+                : "bg-transparent text-slate-500"
             }`}
           >
             <ListTodo className="w-4 h-4" />
-            My Task
+            <span>My Task</span>
           </button>
           <button
             onClick={() => setActiveTab("projects")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
               activeTab === "projects"
-                ? "bg-emerald-500 text-white border-2 border-emerald-500"
-                : "bg-transparent text-slate-500 border-2 border-transparent"
+                ? "bg-emerald-500 text-white"
+                : "bg-transparent text-slate-500"
             }`}
           >
             <Briefcase className="w-4 h-4" />
-            My Project
+            <span>My Project</span>
           </button>
           <button
             onClick={() => setActiveTab("rewards")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
               activeTab === "rewards"
-                ? "bg-white text-slate-700 border-2 border-slate-200"
-                : "bg-transparent text-slate-500 border-2 border-transparent"
+                ? "bg-slate-100 text-slate-700"
+                : "bg-transparent text-slate-500"
             }`}
           >
             <Award className="w-4 h-4" />
-            My Rewards
+            <span>My Rewards</span>
           </button>
         </div>
 
@@ -433,11 +468,9 @@ export function MeScreen() {
                               />
                             )}
                           </div>
-                          {dueDateInfo && (
-                            <span className={`text-xs shrink-0 ${dueDateInfo.color}`}>
-                              {dueDateInfo.text}
-                            </span>
-                          )}
+                          <span className={`text-xs shrink-0 ${dueDateInfo ? dueDateInfo.color : 'text-slate-400'}`}>
+                            {dueDateInfo ? dueDateInfo.text : 'No Date'}
+                          </span>
                         </div>
 
                         <div className="text-xs text-slate-600 line-clamp-1">
@@ -514,7 +547,7 @@ export function MeScreen() {
                                   }}
                                   className="text-left text-slate-900 hover:text-orange-600 font-medium flex items-center gap-1 group"
                                 >
-                                  <span className="truncate max-w-[200px]">
+                                  <span className="truncate max-w-[120px]">
                                     {project.opportunity?.name || project.name}
                                   </span>
                                   <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
@@ -609,7 +642,7 @@ export function MeScreen() {
                                   }}
                                   className="text-left text-slate-900 hover:text-orange-600 font-medium flex items-center gap-1 group"
                                 >
-                                  <span className="truncate max-w-[200px]">
+                                  <span className="truncate max-w-[120px]">
                                     {project.opportunity?.name || project.name}
                                   </span>
                                   <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
