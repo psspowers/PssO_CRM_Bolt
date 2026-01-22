@@ -10,7 +10,8 @@ import {
   ActivityTimelineScreen,
   TasksScreen,
   ProjectsScreen,
-  PulseScreen
+  PulseScreen,
+  MeScreen
 } from './screens';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppContext } from '@/contexts/AppContext';
@@ -20,7 +21,7 @@ import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { supabase } from '@/lib/supabase';
 
 
-type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'projects' | 'pulse';
+type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'projects' | 'pulse' | 'me';
 type EntityType = 'Account' | 'Opportunity';
 
 export default function AppLayout() {
@@ -432,6 +433,7 @@ export default function AppLayout() {
       case 'pulse': return <PulseScreen forcedOpenId={autoOpenId} onNavigate={(view) => setActiveTab(view as Tab)} />;
       case 'timeline': return <ActivityTimelineScreen />;
       case 'search': return <SearchScreen onNavigate={handleDeepLink} />;
+      case 'me': return <MeScreen />;
       default:
         return (
           <VelocityDashboard
@@ -445,15 +447,17 @@ export default function AppLayout() {
 
 
   const titles: Record<Tab, string> = {
-    home: 'Dashboard', 
-    accounts: 'Accounts', 
+    home: 'Dashboard',
+    accounts: 'Accounts',
     opportunities: 'Deals',
-    partners: 'Partners', 
-    contacts: 'Contacts', 
+    partners: 'Partners',
+    contacts: 'Contacts',
     projects: 'Projects',
-    search: 'Search', 
-    timeline: 'Timeline', 
-    tasks: 'Tasks'
+    search: 'Search',
+    timeline: 'Timeline',
+    tasks: 'Tasks',
+    pulse: 'Pulse',
+    me: 'Me'
   };
 
   // Prepare entities for QuickAddModal
@@ -511,7 +515,7 @@ export default function AppLayout() {
         >
           <div className={activeTab === 'pulse' ? '' : 'max-w-7xl mx-auto w-full'}>
             {/* Page Title - Desktop */}
-            {activeTab !== 'home' && activeTab !== 'search' && activeTab !== 'opportunities' && activeTab !== 'pulse' && (
+            {activeTab !== 'home' && activeTab !== 'search' && activeTab !== 'opportunities' && activeTab !== 'pulse' && activeTab !== 'me' && (
               <div className="mb-6">
                 <h1 className="text-2xl lg:text-3xl font-bold text-slate-900">{titles[activeTab]}</h1>
                 <p className="text-slate-500 mt-1 hidden lg:block">

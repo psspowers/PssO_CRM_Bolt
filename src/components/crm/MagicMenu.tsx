@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Handshake, IdCard } from 'lucide-react';
+import { Building2, Handshake, IdCard, User } from 'lucide-react';
 
 interface MagicMenuProps {
   isOpen: boolean;
@@ -28,6 +28,14 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
         </button>
 
         <button
+          onClick={() => { onNavigate('me'); onClose(); }}
+          className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white shadow-lg shadow-orange-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-orange-500/60"
+          aria-label="Me"
+        >
+          <User className="w-6 h-6" />
+        </button>
+
+        <button
           onClick={() => { onNavigate('contacts'); onClose(); }}
           className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-xl shadow-cyan-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-2xl hover:shadow-cyan-500/60 mb-8"
           aria-label="Contacts"
@@ -37,7 +45,7 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
 
         <button
           onClick={() => { onNavigate('partners'); onClose(); }}
-          className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white shadow-lg shadow-purple-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-purple-500/60"
+          className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 hover:from-purple-400 hover:to-pink-500 text-white shadow-lg shadow-purple-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-purple-500/60"
           aria-label="Partners"
         >
           <Handshake className="w-6 h-6" />
