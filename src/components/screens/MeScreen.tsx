@@ -248,9 +248,9 @@ export function MeScreen() {
   };
 
   const calculateProjectCommission = (project: Project) => {
-    if (!stats || !project.opportunity) return 0;
-    const mw = project.opportunity.target_capacity || 0;
-    const rate = stats.commission / stats.won_mw || 0;
+    if (!stats) return 0;
+    const mw = project.opportunity?.target_capacity || project.capacity || 0;
+    const rate = stats.won_mw > 0 ? stats.commission / stats.won_mw : 0;
     return mw * rate;
   };
 
@@ -262,7 +262,7 @@ export function MeScreen() {
 
   const calculateTotalMW = (projectsList: Project[]) => {
     return projectsList.reduce((total, project) => {
-      return total + (project.opportunity?.target_capacity || 0);
+      return total + (project.opportunity?.target_capacity || project.capacity || 0);
     }, 0);
   };
 
@@ -278,21 +278,23 @@ export function MeScreen() {
     return colors[quarter as keyof typeof colors] || "bg-slate-50";
   };
 
-  const advancedProjects = projects.filter(
-    (p) =>
-      p.opportunity &&
-      ["Negotiation", "Contract Review", "Won"].includes(p.opportunity.stage)
-  ).sort((a, b) => {
+  const advancedProjects = projects.filter((p) => {
+    if (p.opportunity) {
+      return ["Negotiation", "Contract Review", "Won"].includes(p.opportunity.stage);
+    }
+    return ["Permit/EPC", "Engineering", "Construction", "Operational", "Won"].includes(p.status || "");
+  }).sort((a, b) => {
     const dateA = a.opportunity?.expected_close_date || a.updated_at;
     const dateB = b.opportunity?.expected_close_date || b.updated_at;
     return new Date(dateA).getTime() - new Date(dateB).getTime();
   });
 
-  const earlyProjects = projects.filter(
-    (p) =>
-      p.opportunity &&
-      ["Qualifying", "Proposal"].includes(p.opportunity.stage)
-  ).sort((a, b) => {
+  const earlyProjects = projects.filter((p) => {
+    if (p.opportunity) {
+      return ["Qualifying", "Proposal"].includes(p.opportunity.stage);
+    }
+    return false;
+  }).sort((a, b) => {
     const dateA = a.opportunity?.expected_close_date || a.updated_at;
     const dateB = b.opportunity?.expected_close_date || b.updated_at;
     return new Date(dateA).getTime() - new Date(dateB).getTime();
@@ -344,20 +346,41 @@ export function MeScreen() {
 
       {/* TABS */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-slate-100 p-1">
-          <TabsTrigger value="tasks" className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-3 px-4 py-3">
+          <button
+            onClick={() => setActiveTab("tasks")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              activeTab === "tasks"
+                ? "bg-white text-slate-700 border-2 border-slate-200"
+                : "bg-transparent text-slate-500 border-2 border-transparent"
+            }`}
+          >
             <ListTodo className="w-4 h-4" />
             My Task
-          </TabsTrigger>
-          <TabsTrigger value="projects" className="flex items-center gap-2">
+          </button>
+          <button
+            onClick={() => setActiveTab("projects")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              activeTab === "projects"
+                ? "bg-emerald-500 text-white border-2 border-emerald-500"
+                : "bg-transparent text-slate-500 border-2 border-transparent"
+            }`}
+          >
             <Briefcase className="w-4 h-4" />
             My Project
-          </TabsTrigger>
-          <TabsTrigger value="rewards" className="flex items-center gap-2">
+          </button>
+          <button
+            onClick={() => setActiveTab("rewards")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              activeTab === "rewards"
+                ? "bg-white text-slate-700 border-2 border-slate-200"
+                : "bg-transparent text-slate-500 border-2 border-transparent"
+            }`}
+          >
             <Award className="w-4 h-4" />
             My Rewards
-          </TabsTrigger>
-        </TabsList>
+          </button>
+        </div>
 
         {/* MY TASKS TAB */}
         <TabsContent value="tasks" className="mt-4">
@@ -498,7 +521,7 @@ export function MeScreen() {
                                 </button>
                               </td>
                               <td className="px-3 py-2 text-right text-slate-700 font-medium">
-                                {(project.opportunity?.target_capacity || 0).toFixed(2)}
+                                {(project.opportunity?.target_capacity || project.capacity || 0).toFixed(2)}
                               </td>
                               <td className="px-3 py-2 text-right text-slate-700 font-medium">
                                 {showMoney ? (
@@ -593,7 +616,7 @@ export function MeScreen() {
                                 </button>
                               </td>
                               <td className="px-3 py-2 text-right text-slate-700 font-medium">
-                                {(project.opportunity?.target_capacity || 0).toFixed(2)}
+                                {(project.opportunity?.target_capacity || project.capacity || 0).toFixed(2)}
                               </td>
                               <td className="px-3 py-2 text-right text-slate-700 font-medium">
                                 {showMoney ? (
