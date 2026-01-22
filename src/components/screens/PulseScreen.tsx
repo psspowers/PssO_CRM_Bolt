@@ -440,6 +440,17 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
       else if (entityType === 'Project') humanType = 'Project';
       else humanType = entityType || 'Item';
 
+      let itemDealName = dealName;
+      let itemTargetMW = targetMW;
+
+      if (entityType === 'Opportunity' || entityType === 'opportunities') {
+        itemDealName = parsedDetails?.name || entityName;
+        itemTargetMW = parsedDetails?.target_capacity;
+      } else if (entityType === 'Account' || entityType === 'accounts') {
+        itemDealName = dealName;
+        itemTargetMW = targetMW;
+      }
+
       const hasExtraContext = parsedDetails?.value || parsedDetails?.target_capacity;
       let extraContext = null;
 
@@ -473,8 +484,8 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         icon: <Plus className="w-4 h-4" />,
         iconColor: 'text-green-600',
         iconBgColor: 'bg-green-100 dark:bg-green-900/50',
-        dealName: dealName,
-        targetMW: targetMW,
+        dealName: itemDealName,
+        targetMW: itemTargetMW,
         relatedToId: details.entity_id || parsedDetails?.id,
         relatedToType: details.entity_type || entityType,
         activityType: 'Create'
