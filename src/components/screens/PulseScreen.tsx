@@ -732,6 +732,7 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
 
     if (logs) {
       const logOpportunityIds: string[] = [];
+      const accountIdsForContactLogs = new Set<string>();
 
       logs.forEach((log: any) => {
         try {
@@ -754,6 +755,10 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
             return;
           }
 
+          if (isContactCreation && logDetails.account_id) {
+            accountIdsForContactLogs.add(logDetails.account_id);
+          }
+
           if (logDetails.related_to_id && logDetails.related_to_type?.toLowerCase() === 'opportunity') {
             if (!nameMap.has(logDetails.related_to_id)) {
               logOpportunityIds.push(logDetails.related_to_id);
@@ -767,6 +772,31 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
           console.error('Error parsing log details', e);
         }
       });
+
+      const accountOpportunityMap = new Map<string, { id: string; name: string; target_capacity?: number }>();
+
+      if (accountIdsForContactLogs.size > 0) {
+        const { data: contactAccountOpps } = await supabase
+          .from('opportunities')
+          .select('id, name, target_capacity, account_id')
+          .in('account_id', Array.from(accountIdsForContactLogs))
+          .neq('stage', 'Lost')
+          .order('created_at', { ascending: false });
+
+        if (contactAccountOpps) {
+          contactAccountOpps.forEach((opp: any) => {
+            if (opp.account_id && !accountOpportunityMap.has(opp.account_id)) {
+              accountOpportunityMap.set(opp.account_id, {
+                id: opp.id,
+                name: opp.name,
+                target_capacity: opp.target_capacity
+              });
+              nameMap.set(opp.id, opp.name);
+              if (opp.target_capacity) mwMap.set(opp.id, opp.target_capacity);
+            }
+          });
+        }
+      }
 
       if (logOpportunityIds.length > 0) {
         const { data: logOpportunities } = await supabase
@@ -806,7 +836,13 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
             return;
           }
 
-          if (logDetails.related_to_id && logDetails.related_to_type?.toLowerCase() === 'opportunity') {
+          if (isContactCreation && logDetails.account_id) {
+            const relatedOpp = accountOpportunityMap.get(logDetails.account_id);
+            if (relatedOpp) {
+              logDealName = relatedOpp.name;
+              logTargetMW = relatedOpp.target_capacity;
+            }
+          } else if (logDetails.related_to_id && logDetails.related_to_type?.toLowerCase() === 'opportunity') {
             logDealName = nameMap.get(logDetails.related_to_id);
             logTargetMW = mwMap.get(logDetails.related_to_id);
           } else if (logDetails.entity_id && logDetails.entity_type?.toLowerCase() === 'opportunity') {
