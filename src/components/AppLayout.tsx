@@ -430,17 +430,7 @@ export default function AppLayout() {
       case 'projects': return <ProjectsScreen forcedOpenId={autoOpenId} />;
       case 'tasks': return <TasksScreen />;
       case 'pulse': return <PulseScreen forcedOpenId={autoOpenId} onNavigate={(view, id) => handleDeepLink(view as Tab, id)} />;
-      case 'timeline': return <ActivityTimelineScreen onNavigateToEntity={(entityId, entityType) => {
-        const tabMap: Record<string, Tab> = {
-          'Opportunity': 'opportunities',
-          'Account': 'accounts',
-          'Contact': 'contacts',
-          'Partner': 'partners',
-          'Project': 'projects'
-        };
-        const tab = tabMap[entityType];
-        if (tab) handleDeepLink(tab, entityId);
-      }} />;
+      case 'timeline': return <ActivityTimelineScreen />;
       case 'search': return <SearchScreen />;
       default:
         return (
@@ -455,16 +445,15 @@ export default function AppLayout() {
 
 
   const titles: Record<Tab, string> = {
-    home: 'Dashboard',
-    accounts: 'Accounts',
+    home: 'Dashboard', 
+    accounts: 'Accounts', 
     opportunities: 'Deals',
-    partners: 'Partners',
-    contacts: 'Contacts',
+    partners: 'Partners', 
+    contacts: 'Contacts', 
     projects: 'Projects',
-    search: 'Search',
-    timeline: 'Timeline',
-    tasks: 'Tasks',
-    pulse: 'Pulse'
+    search: 'Search', 
+    timeline: 'Timeline', 
+    tasks: 'Tasks'
   };
 
   // Prepare entities for QuickAddModal
