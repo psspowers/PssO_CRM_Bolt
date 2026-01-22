@@ -13,7 +13,11 @@ interface SearchResult {
   color: string;
 }
 
-export const SearchScreen: React.FC = () => {
+interface SearchScreenProps {
+  onNavigate?: (tab: string, id?: string) => void;
+}
+
+export const SearchScreen: React.FC<SearchScreenProps> = ({ onNavigate }) => {
   const { accounts, opportunities, partners, contacts, projects } = useAppContext();
   const [query, setQuery] = useState('');
 
@@ -78,6 +82,20 @@ export const SearchScreen: React.FC = () => {
     account: 'Accounts', opportunity: 'Opportunities', partner: 'Partners', contact: 'Contacts', project: 'Projects'
   };
 
+  const handleResultClick = (result: SearchResult) => {
+    if (!onNavigate) return;
+
+    const tabMap: Record<ResultType, string> = {
+      account: 'accounts',
+      opportunity: 'opportunities',
+      partner: 'partners',
+      contact: 'contacts',
+      project: 'projects'
+    };
+
+    onNavigate(tabMap[result.type], result.id);
+  };
+
   return (
     <div className="pb-24 space-y-4">
       <div className="relative">
@@ -106,7 +124,11 @@ export const SearchScreen: React.FC = () => {
           <h3 className="text-sm font-medium text-gray-500 mb-2">{typeLabels[type as ResultType]}</h3>
           <div className="space-y-2">
             {items.map(item => (
-              <button key={item.id} className="w-full flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200 hover:border-emerald-300 transition-colors text-left">
+              <button
+                key={item.id}
+                onClick={() => handleResultClick(item)}
+                className="w-full flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200 hover:border-emerald-300 hover:shadow-md transition-all text-left"
+              >
                 <div className={`w-10 h-10 rounded-lg ${item.color} flex items-center justify-center`}>
                   <item.icon className="w-5 h-5" />
                 </div>

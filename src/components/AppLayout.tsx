@@ -431,7 +431,7 @@ export default function AppLayout() {
       case 'tasks': return <TasksScreen />;
       case 'pulse': return <PulseScreen forcedOpenId={autoOpenId} onNavigate={(view) => setActiveTab(view as Tab)} />;
       case 'timeline': return <ActivityTimelineScreen />;
-      case 'search': return <SearchScreen />;
+      case 'search': return <SearchScreen onNavigate={handleDeepLink} />;
       default:
         return (
           <VelocityDashboard
