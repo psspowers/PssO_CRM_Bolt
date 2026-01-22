@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, MessageSquare, Users, MapPin, Mail, FileText, StickyNote, Image, ExternalLink, Building2, Target, Briefcase, FolderKanban, Zap } from 'lucide-react';
+import { Phone, MessageSquare, Users, MapPin, Mail, FileText, StickyNote, Image, ExternalLink, Building2, Target, Briefcase, FolderKanban } from 'lucide-react';
 import { Activity, ActivityType, User } from '../../types/crm';
 
 interface TimelineActivityItemProps {
@@ -7,9 +7,6 @@ interface TimelineActivityItemProps {
   user?: User;
   entityName?: string;
   onEntityClick?: (entityId: string, entityType: string) => void;
-  opportunityName?: string;
-  opportunityCapacity?: number;
-  opportunityId?: string;
 }
 
 const typeIcons: Record<ActivityType, React.ElementType> = {
@@ -32,74 +29,11 @@ const entityIcons: Record<string, React.ElementType> = {
   Partner: Users, Account: Building2, Contact: Briefcase, Opportunity: Target, Project: FolderKanban,
 };
 
-export const TimelineActivityItem: React.FC<TimelineActivityItemProps> = ({
-  activity,
-  user,
-  entityName,
-  onEntityClick,
-  opportunityName,
-  opportunityCapacity,
-  opportunityId
-}) => {
+export const TimelineActivityItem: React.FC<TimelineActivityItemProps> = ({ activity, user, entityName, onEntityClick }) => {
   const Icon = typeIcons[activity.type];
   const colors = typeColors[activity.type];
   const EntityIcon = entityIcons[activity.relatedToType];
   const date = new Date(activity.createdAt);
-
-  const isContactActivity = activity.relatedToType === 'Contact' && activity.summary.includes('Contact');
-
-  if (isContactActivity && opportunityName) {
-    return (
-      <div className="relative pl-8 pb-6 last:pb-0">
-        <div className={`absolute left-0 top-0 w-6 h-6 rounded-full ${colors.bg} flex items-center justify-center ring-4 ring-white`}>
-          <Icon className={`w-3 h-3 ${colors.icon}`} />
-        </div>
-        <div className="absolute left-[11px] top-6 bottom-0 w-0.5 bg-gray-200 last:hidden" />
-
-        <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-start gap-3">
-            {user?.avatar && (
-              <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full flex-shrink-0" />
-            )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="font-semibold text-gray-900 text-sm">{opportunityName}</span>
-                <span className="text-gray-400">|</span>
-                <div className="flex items-center gap-1 text-sm text-orange-600">
-                  <Zap className="w-3.5 h-3.5" />
-                  <span className="font-medium">{opportunityCapacity} MW</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                <span>{user?.name}</span>
-                <span>•</span>
-                <span>Create</span>
-                <span>•</span>
-                <span>
-                  {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                </span>
-              </div>
-
-              <p className="text-sm text-gray-900 mb-2">
-                {activity.summary}
-              </p>
-
-              {opportunityId && (
-                <button
-                  onClick={() => onEntityClick?.(opportunityId, 'Opportunity')}
-                  className="flex items-center gap-1.5 text-xs text-orange-600 hover:text-orange-700 font-medium"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Go to Opportunity</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="relative pl-8 pb-6 last:pb-0">
@@ -107,7 +41,7 @@ export const TimelineActivityItem: React.FC<TimelineActivityItemProps> = ({
         <Icon className={`w-3 h-3 ${colors.icon}`} />
       </div>
       <div className="absolute left-[11px] top-6 bottom-0 w-0.5 bg-gray-200 last:hidden" />
-
+      
       <div className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm hover:shadow-md transition-shadow">
         <div className="flex items-start gap-3">
           {user?.avatar && (
@@ -124,7 +58,7 @@ export const TimelineActivityItem: React.FC<TimelineActivityItemProps> = ({
             </div>
             <h4 className="font-medium text-gray-900 text-sm mb-1">{activity.summary}</h4>
             {activity.details && <p className="text-xs text-gray-500 mb-2 line-clamp-2">{activity.details}</p>}
-
+            
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {user && <span className="text-xs text-gray-500">{user.name}</span>}
