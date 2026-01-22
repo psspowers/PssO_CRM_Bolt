@@ -5,12 +5,13 @@ import { UserRole } from '@/types/crm';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, MoreVertical, Network, Users, RefreshCw, Briefcase, UserPlus, Trash2, Edit, UserX, UserCheck } from 'lucide-react';
+import { User, MoreVertical, Network, Users, RefreshCw, Briefcase, UserPlus, Trash2, Edit, UserX, UserCheck, DollarSign } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Card } from '@/components/ui/card';
 import { CreateUserDialog } from './CreateUserDialog';
 import { EditUserDialog } from './EditUserDialog';
+import CommissionDialog from './CommissionDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +31,9 @@ interface CRMUser {
   avatar?: string;
   is_active?: boolean;
   created_at?: string;
-  reports_to?: string | null; // Read-only display - managed via OrgChart
+  reports_to?: string | null;
+  commission_rate_thb_mw?: number;
+  annual_quota_mw?: number;
 }
 
 export const UserManagement: React.FC = () => {
@@ -38,6 +41,7 @@ export const UserManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [commissionDialogOpen, setCommissionDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<CRMUser | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState<CRMUser | null>(null);
   const { profile } = useAuth();
@@ -128,10 +132,14 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  // Handle edit user
   const handleEditUser = (user: CRMUser) => {
     setSelectedUser(user);
     setEditDialogOpen(true);
+  };
+
+  const handleEditCommission = (user: CRMUser) => {
+    setSelectedUser(user);
+    setCommissionDialogOpen(true);
   };
 
   // Get manager name by ID (read-only display)
@@ -395,6 +403,13 @@ export const UserManagement: React.FC = () => {
                         Edit User
                       </DropdownMenuItem>
                       <DropdownMenuItem
+                        onClick={() => handleEditCommission(user)}
+                        className="flex items-center gap-2"
+                      >
+                        <DollarSign className="w-4 h-4" />
+                        Commission
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
                         onClick={() => toggleActive(user.id, !(user.is_active ?? true))}
                         className="flex items-center gap-2"
                       >
@@ -452,6 +467,15 @@ export const UserManagement: React.FC = () => {
         user={selectedUser}
         users={users}
       />
+
+      {selectedUser && (
+        <CommissionDialog
+          open={commissionDialogOpen}
+          onClose={() => setCommissionDialogOpen(false)}
+          onSuccess={fetchUsers}
+          user={selectedUser}
+        />
+      )}
 
       <AlertDialog open={!!deleteConfirmation} onOpenChange={() => setDeleteConfirmation(null)}>
         <AlertDialogContent>
