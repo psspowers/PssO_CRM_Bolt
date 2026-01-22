@@ -439,7 +439,14 @@ export default function AppLayout() {
           'Project': 'projects'
         };
         const tab = tabMap[entityType];
-        if (tab) handleDeepLink(tab, entityId);
+        if (tab && entityId) {
+          console.log(`[Timeline Navigation] Navigating to ${entityType} (${entityId}) -> tab: ${tab}`);
+          handleDeepLink(tab, entityId);
+        } else if (!tab) {
+          console.warn(`[Timeline Navigation] Unknown entity type for deep linking: ${entityType}`);
+        } else if (!entityId) {
+          console.warn(`[Timeline Navigation] Missing entityId for ${entityType}`);
+        }
       }} />;
       case 'search': return <SearchScreen />;
       default:
