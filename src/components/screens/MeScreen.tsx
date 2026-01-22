@@ -34,6 +34,7 @@ interface MyStats {
   commission: number;
   watts: number;
   pending_tasks: number;
+  rate: number;
 }
 
 interface Task {
@@ -285,7 +286,7 @@ export function MeScreen() {
   const calculateProjectCommission = (project: Project) => {
     if (!stats) return 0;
     const mw = project.opportunity?.target_capacity || project.capacity || 0;
-    const rate = stats.won_mw > 0 ? stats.commission / stats.won_mw : 0;
+    const rate = stats.rate || 0;
     return mw * rate;
   };
 
