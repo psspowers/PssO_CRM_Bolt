@@ -440,17 +440,6 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
       else if (entityType === 'Project') humanType = 'Project';
       else humanType = entityType || 'Item';
 
-      let itemDealName = dealName;
-      let itemTargetMW = targetMW;
-
-      if (entityType === 'Opportunity' || entityType === 'opportunities') {
-        itemDealName = parsedDetails?.name || entityName;
-        itemTargetMW = parsedDetails?.target_capacity;
-      } else if (entityType === 'Account' || entityType === 'accounts') {
-        itemDealName = dealName;
-        itemTargetMW = targetMW;
-      }
-
       const hasExtraContext = parsedDetails?.value || parsedDetails?.target_capacity;
       let extraContext = null;
 
@@ -484,8 +473,8 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
         icon: <Plus className="w-4 h-4" />,
         iconColor: 'text-green-600',
         iconBgColor: 'bg-green-100 dark:bg-green-900/50',
-        dealName: itemDealName,
-        targetMW: itemTargetMW,
+        dealName: dealName,
+        targetMW: targetMW,
         relatedToId: details.entity_id || parsedDetails?.id,
         relatedToType: details.entity_type || entityType,
         activityType: 'Create'
@@ -744,6 +733,8 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
     if (logs) {
       const logOpportunityIds: string[] = [];
       const accountIdsForContactLogs = new Set<string>();
+      const accountIdsForAccountLogs = new Set<string>();
+      const opportunityCreationIds = new Set<string>();
 
       logs.forEach((log: any) => {
         try {
@@ -770,6 +761,20 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
             accountIdsForContactLogs.add(logDetails.account_id);
           }
 
+          const isAccountCreation = (log.action === 'create' || log.action === 'CREATE') &&
+                                    logDetails.entity_type?.toLowerCase() === 'account';
+
+          if (isAccountCreation && logDetails.id) {
+            accountIdsForAccountLogs.add(logDetails.id);
+          }
+
+          const isOpportunityCreation = (log.action === 'create' || log.action === 'CREATE') &&
+                                        logDetails.entity_type?.toLowerCase() === 'opportunity';
+
+          if (isOpportunityCreation && logDetails.id) {
+            opportunityCreationIds.add(logDetails.id);
+          }
+
           if (logDetails.related_to_id && logDetails.related_to_type?.toLowerCase() === 'opportunity') {
             if (!nameMap.has(logDetails.related_to_id)) {
               logOpportunityIds.push(logDetails.related_to_id);
@@ -785,12 +790,15 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
       });
 
       const accountOpportunityMap = new Map<string, { id: string; name: string; target_capacity?: number }>();
+      const opportunityDataMap = new Map<string, { name: string; target_capacity?: number }>();
 
-      if (accountIdsForContactLogs.size > 0) {
+      const allAccountIds = new Set([...accountIdsForContactLogs, ...accountIdsForAccountLogs]);
+
+      if (allAccountIds.size > 0) {
         const { data: contactAccountOpps } = await supabase
           .from('opportunities')
           .select('id, name, target_capacity, account_id')
-          .in('account_id', Array.from(accountIdsForContactLogs))
+          .in('account_id', Array.from(allAccountIds))
           .neq('stage', 'Lost')
           .order('created_at', { ascending: false });
 
@@ -805,6 +813,24 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
               nameMap.set(opp.id, opp.name);
               if (opp.target_capacity) mwMap.set(opp.id, opp.target_capacity);
             }
+          });
+        }
+      }
+
+      if (opportunityCreationIds.size > 0) {
+        const { data: createdOpps } = await supabase
+          .from('opportunities')
+          .select('id, name, target_capacity')
+          .in('id', Array.from(opportunityCreationIds));
+
+        if (createdOpps) {
+          createdOpps.forEach((opp: any) => {
+            opportunityDataMap.set(opp.id, {
+              name: opp.name,
+              target_capacity: opp.target_capacity
+            });
+            nameMap.set(opp.id, opp.name);
+            if (opp.target_capacity) mwMap.set(opp.id, opp.target_capacity);
           });
         }
       }
@@ -847,11 +873,29 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
             return;
           }
 
+          const isAccountCreation = (log.action === 'create' || log.action === 'CREATE') &&
+                                    logDetails.entity_type?.toLowerCase() === 'account';
+
+          const isOpportunityCreation = (log.action === 'create' || log.action === 'CREATE') &&
+                                        logDetails.entity_type?.toLowerCase() === 'opportunity';
+
           if (isContactCreation && logDetails.account_id) {
             const relatedOpp = accountOpportunityMap.get(logDetails.account_id);
             if (relatedOpp) {
               logDealName = relatedOpp.name;
               logTargetMW = relatedOpp.target_capacity;
+            }
+          } else if (isAccountCreation && logDetails.id) {
+            const relatedOpp = accountOpportunityMap.get(logDetails.id);
+            if (relatedOpp) {
+              logDealName = relatedOpp.name;
+              logTargetMW = relatedOpp.target_capacity;
+            }
+          } else if (isOpportunityCreation && logDetails.id) {
+            const oppData = opportunityDataMap.get(logDetails.id);
+            if (oppData) {
+              logDealName = oppData.name;
+              logTargetMW = oppData.target_capacity;
             }
           } else if (logDetails.related_to_id && logDetails.related_to_type?.toLowerCase() === 'opportunity') {
             logDealName = nameMap.get(logDetails.related_to_id);
