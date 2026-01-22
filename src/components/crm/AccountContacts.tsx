@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, User, Loader2, Trash2 } from 'lucide-react';
+import { Plus, User, Loader2, Trash2, Smartphone } from 'lucide-react';
 import { Contact } from '../../types/crm';
 import { useAppContext } from '../../contexts/AppContext';
 import { ContactForm } from './ContactForm';
 import { ContactCard } from './ContactCard';
+import { isContactPickerSupported, openNativeContactPicker, mapNativeToCRM } from '../../lib/device/contacts';
+import { toast } from 'sonner';
 
 interface AccountContactsProps {
   accountId: string;
@@ -13,7 +15,11 @@ interface AccountContactsProps {
 export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, accountName }) => {
   const { contacts, createContact, deleteContact, canDelete } = useAppContext();
   const [isAdding, setIsAdding] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importedData, setImportedData] = useState<Partial<Contact> | null>(null);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+
+  const contactPickerAvailable = isContactPickerSupported();
 
   const accountContacts = useMemo(() => {
     return contacts.filter(c => c.accountId === accountId);
@@ -59,6 +65,30 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
     }
   };
 
+  const handleImportFromPhone = async () => {
+    try {
+      const selected = await openNativeContactPicker();
+      if (selected && selected.length > 0) {
+        const mappedData = mapNativeToCRM(selected[0]);
+        setImportedData(mappedData);
+        setIsImporting(true);
+      }
+    } catch (err) {
+      console.error('Phone import error:', err);
+      toast.error('Failed to import contact from phone');
+    }
+  };
+
+  const handleSaveImportedContact = async (data: Partial<Contact>) => {
+    await createContact({
+      ...data,
+      accountId: accountId,
+    });
+    setIsImporting(false);
+    setImportedData(null);
+    toast.success('Contact imported successfully');
+  };
+
   if (isAdding) {
     return (
       <div className="space-y-4">
@@ -66,8 +96,28 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
           <h3 className="text-sm font-semibold text-slate-700">Add Contact to {accountName}</h3>
         </div>
         <ContactForm
+          defaultAccountId={accountId}
           onSave={handleSaveContact}
           onCancel={() => setIsAdding(false)}
+        />
+      </div>
+    );
+  }
+
+  if (isImporting && importedData) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-slate-700">Import Contact to {accountName}</h3>
+        </div>
+        <ContactForm
+          initialData={importedData}
+          defaultAccountId={accountId}
+          onSave={handleSaveImportedContact}
+          onCancel={() => {
+            setIsImporting(false);
+            setImportedData(null);
+          }}
         />
       </div>
     );
@@ -81,6 +131,7 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
         </div>
         <ContactForm
           contact={selectedContact}
+          defaultAccountId={accountId}
           onSave={handleUpdateContact}
           onCancel={() => setSelectedContact(null)}
         />
@@ -94,13 +145,24 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
         <h3 className="text-sm font-semibold text-slate-700">
           Contacts ({accountContacts.length})
         </h3>
-        <button
-          onClick={() => setIsAdding(true)}
-          className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-semibold"
-        >
-          <Plus className="w-4 h-4" />
-          Add Contact
-        </button>
+        <div className="flex items-center gap-2">
+          {contactPickerAvailable && (
+            <button
+              onClick={handleImportFromPhone}
+              className="flex items-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-semibold"
+            >
+              <Smartphone className="w-4 h-4" />
+              Import
+            </button>
+          )}
+          <button
+            onClick={() => setIsAdding(true)}
+            className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-semibold"
+          >
+            <Plus className="w-4 h-4" />
+            Add
+          </button>
+        </div>
       </div>
 
       {accountContacts.length === 0 ? (
@@ -110,13 +172,24 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
           </div>
           <h4 className="text-lg font-semibold text-slate-900 mb-2">No contacts yet</h4>
           <p className="text-slate-500 text-sm mb-4">Add contacts to track key people at {accountName}</p>
-          <button
-            onClick={() => setIsAdding(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-semibold"
-          >
-            <Plus className="w-4 h-4" />
-            Add First Contact
-          </button>
+          <div className="flex items-center justify-center gap-2">
+            {contactPickerAvailable && (
+              <button
+                onClick={handleImportFromPhone}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors font-semibold"
+              >
+                <Smartphone className="w-4 h-4" />
+                Import from Phone
+              </button>
+            )}
+            <button
+              onClick={() => setIsAdding(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-semibold"
+            >
+              <Plus className="w-4 h-4" />
+              Add First Contact
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-2">

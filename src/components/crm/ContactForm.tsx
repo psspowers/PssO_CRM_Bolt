@@ -1,34 +1,50 @@
-import React, { useState, useMemo } from 'react';
-import { Save, X, Loader2, Building2, Plus } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Save, X, Loader2, Building2, Plus, Lock } from 'lucide-react';
 import { Contact } from '../../types/crm';
 import { useAppContext } from '../../contexts/AppContext';
 import { getSectors } from '../../data/thaiTaxonomy';
 
 interface ContactFormProps {
   contact?: Contact;
+  initialData?: Partial<Contact>;
+  defaultAccountId?: string;
   onSave: (data: Partial<Contact>) => Promise<void>;
   onCancel: () => void;
 }
 
-export const ContactForm: React.FC<ContactFormProps> = ({ contact, onSave, onCancel }) => {
+export const ContactForm: React.FC<ContactFormProps> = ({
+  contact,
+  initialData,
+  defaultAccountId,
+  onSave,
+  onCancel
+}) => {
   const { accounts, createAccount } = useAppContext();
 
+  const sourceData = contact || initialData || {};
+
   const [form, setForm] = useState({
-    fullName: contact?.fullName || '',
-    role: contact?.role || '',
-    accountId: contact?.accountId || '',
-    email: contact?.email || '',
-    phone: contact?.phone || '',
-    city: contact?.city || '',
-    country: contact?.country || 'Thailand',
-    clickupLink: contact?.clickupLink || '',
-    tags: contact?.tags.join(', ') || '',
+    fullName: sourceData.fullName || '',
+    role: sourceData.role || '',
+    accountId: defaultAccountId || sourceData.accountId || '',
+    email: sourceData.email || '',
+    phone: sourceData.phone || '',
+    city: sourceData.city || '',
+    country: sourceData.country || 'Thailand',
+    clickupLink: sourceData.clickupLink || '',
+    tags: (sourceData.tags || []).join(', ') || '',
   });
 
   const [orgSearch, setOrgSearch] = useState('');
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [newAccountData, setNewAccountData] = useState({ name: '', sector: '' });
   const [saving, setSaving] = useState(false);
+
+  const isAccountLocked = Boolean(defaultAccountId);
+  const lockedAccount = useMemo(() =>
+    accounts.find(a => a.id === defaultAccountId),
+    [accounts, defaultAccountId]
+  );
 
   const filteredAccounts = useMemo(() => {
     const sorted = accounts.sort((a, b) => a.name.localeCompare(b.name));
@@ -76,6 +92,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({ contact, onSave, onCan
   };
 
   const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none transition-all";
+  const lockedInputClass = "w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-600 cursor-not-allowed";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -90,75 +107,85 @@ export const ContactForm: React.FC<ContactFormProps> = ({ contact, onSave, onCan
         </div>
       </div>
 
-      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+      <div className={`p-3 rounded-xl border ${isAccountLocked ? 'bg-slate-100 border-slate-300' : 'bg-slate-50 border-slate-200'}`}>
         <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-2">
+          {isAccountLocked && <Lock className="w-3 h-3" />}
           <Building2 className="w-3 h-3" /> Organization / Account
         </label>
 
-        {!isCreatingAccount ? (
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search or Create Organization..."
-              className={inputClass}
-              value={orgSearch || (accounts.find(a => a.id === form.accountId)?.name || '')}
-              onChange={e => {
-                setOrgSearch(e.target.value);
-                setForm(prev => ({ ...prev, accountId: '' }));
-              }}
-            />
-            {orgSearch && !form.accountId && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                {filteredAccounts.map(acc => (
-                  <button
-                    key={acc.id}
-                    type="button"
-                    onClick={() => handleOrgSelect(acc.id, acc.name)}
-                    className="w-full text-left px-3 py-2 hover:bg-slate-50 text-sm border-b border-slate-50 last:border-0"
-                  >
-                    <span className="font-bold text-slate-700">{acc.name}</span>
-                    <span className="text-xs text-slate-400 ml-2">({acc.country})</span>
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCreatingAccount(true);
-                    setNewAccountData({ ...newAccountData, name: orgSearch });
-                  }}
-                  className="w-full text-left px-3 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 text-sm font-bold flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create new account: "{orgSearch}"
-                </button>
-              </div>
-            )}
+        {isAccountLocked ? (
+          <div className={lockedInputClass}>
+            <span className="font-bold text-slate-700">{lockedAccount?.name || 'Locked Account'}</span>
+            <span className="text-xs text-slate-400 ml-2">Auto-linked</span>
           </div>
         ) : (
-          <div className="animate-in fade-in slide-in-from-top-2 space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-orange-600">Creating New Account</span>
-              <button type="button" onClick={() => setIsCreatingAccount(false)} className="text-xs text-slate-400 hover:text-slate-600">Cancel</button>
-            </div>
-            <input
-              type="text"
-              value={newAccountData.name}
-              onChange={e => setNewAccountData({ ...newAccountData, name: e.target.value })}
-              className={inputClass}
-              placeholder="Company Name"
-            />
-            <select
-              value={newAccountData.sector}
-              onChange={e => setNewAccountData({ ...newAccountData, sector: e.target.value })}
-              className={inputClass}
-              required
-            >
-              <option value="">Select Sector...</option>
-              {getSectors().map(sector => (
-                <option key={sector} value={sector}>{sector}</option>
-              ))}
-            </select>
-          </div>
+          <>
+            {!isCreatingAccount ? (
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search or Create Organization..."
+                  className={inputClass}
+                  value={orgSearch || (accounts.find(a => a.id === form.accountId)?.name || '')}
+                  onChange={e => {
+                    setOrgSearch(e.target.value);
+                    setForm(prev => ({ ...prev, accountId: '' }));
+                  }}
+                />
+                {orgSearch && !form.accountId && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                    {filteredAccounts.map(acc => (
+                      <button
+                        key={acc.id}
+                        type="button"
+                        onClick={() => handleOrgSelect(acc.id, acc.name)}
+                        className="w-full text-left px-3 py-2 hover:bg-slate-50 text-sm border-b border-slate-50 last:border-0"
+                      >
+                        <span className="font-bold text-slate-700">{acc.name}</span>
+                        <span className="text-xs text-slate-400 ml-2">({acc.country})</span>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCreatingAccount(true);
+                        setNewAccountData({ ...newAccountData, name: orgSearch });
+                      }}
+                      className="w-full text-left px-3 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 text-sm font-bold flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Create new account: "{orgSearch}"
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="animate-in fade-in slide-in-from-top-2 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-orange-600">Creating New Account</span>
+                  <button type="button" onClick={() => setIsCreatingAccount(false)} className="text-xs text-slate-400 hover:text-slate-600">Cancel</button>
+                </div>
+                <input
+                  type="text"
+                  value={newAccountData.name}
+                  onChange={e => setNewAccountData({ ...newAccountData, name: e.target.value })}
+                  className={inputClass}
+                  placeholder="Company Name"
+                />
+                <select
+                  value={newAccountData.sector}
+                  onChange={e => setNewAccountData({ ...newAccountData, sector: e.target.value })}
+                  className={inputClass}
+                  required
+                >
+                  <option value="">Select Sector...</option>
+                  {getSectors().map(sector => (
+                    <option key={sector} value={sector}>{sector}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </>
         )}
       </div>
 

@@ -1,18 +1,20 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ContactCard, DetailModal, ContactForm, FilterModal, SearchBar } from '../crm';
+import { ContactCard, DetailModal, ContactForm, FilterModal, SearchBar, SimpleModal } from '../crm';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Contact } from '../../types/crm';
-import { MapPin, Mail, Phone, Building2, Loader2, CheckSquare, Square, X, Trash2, Pencil, UserCircle, Search, Filter } from 'lucide-react';
+import { MapPin, Mail, Phone, Building2, Loader2, CheckSquare, Square, X, Trash2, Pencil, UserCircle, Search, Filter, Smartphone } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { Input } from '../ui/input';
+import { isContactPickerSupported, openNativeContactPicker, mapNativeToCRM } from '../../lib/device/contacts';
+import { toast } from 'sonner';
 
 interface ContactsScreenProps {
   forcedOpenId?: string | null;
 }
 
 export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) => {
-  const { contacts, accounts, partners, activities, relationships, users, loading, deleteContact, updateContact, canDelete, canEdit } = useAppContext();
+  const { contacts, accounts, partners, activities, relationships, users, loading, deleteContact, updateContact, createContact, canDelete, canEdit } = useAppContext();
   const { profile } = useAuth();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -23,6 +25,10 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importedData, setImportedData] = useState<Partial<Contact> | null>(null);
+
+  const contactPickerAvailable = isContactPickerSupported();
 
   useEffect(() => {
     if (forcedOpenId && contacts.length > 0) {
@@ -78,6 +84,27 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
       setSelectedContact({ ...selectedContact, ...updates });
       setIsEditing(false);
     }
+  };
+
+  const handleImportFromPhone = async () => {
+    try {
+      const selected = await openNativeContactPicker();
+      if (selected && selected.length > 0) {
+        const mappedData = mapNativeToCRM(selected[0]);
+        setImportedData(mappedData);
+        setShowImportModal(true);
+      }
+    } catch (err) {
+      console.error('Phone import error:', err);
+      toast.error('Failed to import contact from phone');
+    }
+  };
+
+  const handleSaveImportedContact = async (data: Partial<Contact>) => {
+    await createContact(data);
+    setShowImportModal(false);
+    setImportedData(null);
+    toast.success('Contact imported successfully');
   };
 
   const handleCloseModal = () => { setSelectedContact(null); setIsEditing(false); };
@@ -149,16 +176,28 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
         <p className="text-sm text-slate-500">
           Showing <span className="font-semibold text-slate-900">{filtered.length}</span> contacts
         </p>
-        {isAdmin && !selectionMode && (
-          <button
-            onClick={() => setSelectionMode(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:text-orange-600 hover:border-orange-300 transition-colors"
-            aria-label="Bulk select"
-          >
-            <CheckSquare className="w-3.5 h-3.5" />
-            <span>Bulk Select</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {contactPickerAvailable && !selectionMode && (
+            <button
+              onClick={handleImportFromPhone}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors"
+              aria-label="Import from phone"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>Import</span>
+            </button>
+          )}
+          {isAdmin && !selectionMode && (
+            <button
+              onClick={() => setSelectionMode(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:text-orange-600 hover:border-orange-300 transition-colors"
+              aria-label="Bulk select"
+            >
+              <CheckSquare className="w-3.5 h-3.5" />
+              <span>Bulk Select</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col gap-2 lg:gap-3">
@@ -248,6 +287,26 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
           </div>
         ))}
       </DetailModal>
+
+      <SimpleModal
+        isOpen={showImportModal}
+        onClose={() => {
+          setShowImportModal(false);
+          setImportedData(null);
+        }}
+        title="Import Contact from Phone"
+      >
+        {importedData && (
+          <ContactForm
+            initialData={importedData}
+            onSave={handleSaveImportedContact}
+            onCancel={() => {
+              setShowImportModal(false);
+              setImportedData(null);
+            }}
+          />
+        )}
+      </SimpleModal>
 
       <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
         <AlertDialogContent>
