@@ -22,9 +22,11 @@ import {
   Briefcase,
   ListTodo,
   Award,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
-import { format, isPast, isToday, isTomorrow } from "date-fns";
+import { format, isPast, isToday, isTomorrow, getQuarter } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 interface MyStats {
   won_mw: number;
@@ -42,6 +44,8 @@ interface Task {
   priority: "low" | "medium" | "high" | "urgent" | null;
   related_to_type: string | null;
   related_to_id: string | null;
+  details: string | null;
+  entityName?: string | null;
 }
 
 interface Project {
@@ -50,15 +54,20 @@ interface Project {
   capacity: number | null;
   status: string | null;
   updated_at: string;
+  linked_opportunity_id: string | null;
   opportunity: {
+    id: string;
     name: string;
     target_capacity: number;
+    stage: string;
+    expected_close_date: string | null;
   } | null;
 }
 
 export function MeScreen() {
   const { profile } = useAuth();
   const { updateActivity } = useAppContext();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<MyStats | null>(null);
   const [showMoney, setShowMoney] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -66,7 +75,7 @@ export function MeScreen() {
   const [tasksLoading, setTasksLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("rewards");
+  const [activeTab, setActiveTab] = useState("tasks");
 
   useEffect(() => {
     fetchStats();
@@ -102,7 +111,8 @@ export function MeScreen() {
           due_date,
           priority,
           related_to_type,
-          related_to_id
+          related_to_id,
+          details
         `
         )
         .eq("assigned_to_id", profile?.id)
@@ -113,7 +123,47 @@ export function MeScreen() {
         .limit(100);
 
       if (error) throw error;
-      setTasks(data || []);
+
+      const tasksWithNames = await Promise.all(
+        (data || []).map(async (task) => {
+          let entityName = null;
+          if (task.related_to_id && task.related_to_type) {
+            try {
+              if (task.related_to_type === "Opportunity") {
+                const { data: opp } = await supabase
+                  .from("opportunities")
+                  .select("name")
+                  .eq("id", task.related_to_id)
+                  .maybeSingle();
+                entityName = opp?.name;
+              } else if (task.related_to_type === "Account") {
+                const { data: acc } = await supabase
+                  .from("accounts")
+                  .select("name")
+                  .eq("id", task.related_to_id)
+                  .maybeSingle();
+                entityName = acc?.name;
+              } else if (task.related_to_type === "Project") {
+                const { data: proj } = await supabase
+                  .from("projects")
+                  .select("name")
+                  .eq("id", task.related_to_id)
+                  .maybeSingle();
+                entityName = proj?.name;
+              }
+            } catch (err) {
+              console.error("Error fetching entity name:", err);
+            }
+          }
+
+          return {
+            ...task,
+            entityName,
+          };
+        })
+      );
+
+      setTasks(tasksWithNames as any);
     } catch (error: any) {
       console.error("Error fetching tasks:", error);
       toast.error("Failed to load tasks");
@@ -134,7 +184,8 @@ export function MeScreen() {
           capacity,
           status,
           updated_at,
-          opportunity:linked_opportunity_id(name, target_capacity)
+          linked_opportunity_id,
+          opportunity:linked_opportunity_id(id, name, target_capacity, stage, expected_close_date)
         `
         )
         .eq("owner_id", profile?.id)
@@ -187,6 +238,15 @@ export function MeScreen() {
     return { text: format(date, "MMM d"), color: "text-slate-500" };
   };
 
+  const formatRewards = (amount: number): string => {
+    if (amount >= 1000000) {
+      return `${(amount / 1000000).toFixed(1)}M`;
+    } else if (amount >= 1000) {
+      return `${Math.round(amount / 1000)}k`;
+    }
+    return amount.toFixed(0);
+  };
+
   const calculateProjectCommission = (project: Project) => {
     if (!stats || !project.opportunity) return 0;
     const mw = project.opportunity.target_capacity || 0;
@@ -194,17 +254,49 @@ export function MeScreen() {
     return mw * rate;
   };
 
-  const calculateTotalCommission = () => {
-    return projects.reduce((total, project) => {
+  const calculateTotalCommission = (projectsList: Project[]) => {
+    return projectsList.reduce((total, project) => {
       return total + calculateProjectCommission(project);
     }, 0);
   };
 
-  const calculateTotalMW = () => {
-    return projects.reduce((total, project) => {
+  const calculateTotalMW = (projectsList: Project[]) => {
+    return projectsList.reduce((total, project) => {
       return total + (project.opportunity?.target_capacity || 0);
     }, 0);
   };
+
+  const getQuarterColor = (date: string | null): string => {
+    if (!date) return "bg-slate-50";
+    const quarter = getQuarter(new Date(date));
+    const colors = {
+      1: "bg-blue-50",
+      2: "bg-emerald-50",
+      3: "bg-amber-50",
+      4: "bg-purple-50",
+    };
+    return colors[quarter as keyof typeof colors] || "bg-slate-50";
+  };
+
+  const advancedProjects = projects.filter(
+    (p) =>
+      p.opportunity &&
+      ["Negotiation", "Contract Review", "Won"].includes(p.opportunity.stage)
+  ).sort((a, b) => {
+    const dateA = a.opportunity?.expected_close_date || a.updated_at;
+    const dateB = b.opportunity?.expected_close_date || b.updated_at;
+    return new Date(dateA).getTime() - new Date(dateB).getTime();
+  });
+
+  const earlyProjects = projects.filter(
+    (p) =>
+      p.opportunity &&
+      ["Qualifying", "Proposal"].includes(p.opportunity.stage)
+  ).sort((a, b) => {
+    const dateA = a.opportunity?.expected_close_date || a.updated_at;
+    const dateB = b.opportunity?.expected_close_date || b.updated_at;
+    return new Date(dateA).getTime() - new Date(dateB).getTime();
+  });
 
   const quotaProgress = stats
     ? Math.min((stats.won_mw / stats.quota_mw) * 100, 100)
@@ -270,10 +362,10 @@ export function MeScreen() {
         {/* MY TASKS TAB */}
         <TabsContent value="tasks" className="mt-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-slate-200 bg-slate-50">
+            <div className="p-3 border-b border-slate-200 bg-slate-50">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-slate-900">My Tasks</h2>
-                <Badge variant="secondary" className="bg-orange-100 text-orange-700">
+                <h2 className="text-sm font-semibold text-slate-900">My Tasks</h2>
+                <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-xs">
                   {tasks.length}
                 </Badge>
               </div>
@@ -281,14 +373,13 @@ export function MeScreen() {
 
             <div className="divide-y divide-slate-100">
               {tasksLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
                 </div>
               ) : tasks.length === 0 ? (
-                <div className="text-center py-12 text-slate-400">
-                  <CheckCircle2 className="w-12 h-12 mx-auto mb-2 opacity-40" />
-                  <div className="text-sm font-medium">All caught up!</div>
-                  <div className="text-xs mt-1">No pending tasks</div>
+                <div className="text-center py-8 text-slate-400">
+                  <CheckCircle2 className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                  <div className="text-xs font-medium">All caught up!</div>
                 </div>
               ) : (
                 tasks.map((task) => {
@@ -297,7 +388,7 @@ export function MeScreen() {
                   return (
                     <div
                       key={task.id}
-                      className="group flex items-start gap-3 p-4 hover:bg-slate-50 transition-colors"
+                      className="group flex items-start gap-2 p-3 hover:bg-slate-50 transition-colors"
                     >
                       <Checkbox
                         checked={false}
@@ -305,32 +396,29 @@ export function MeScreen() {
                         className="shrink-0 mt-0.5"
                       />
 
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-slate-900 truncate">
-                            {task.summary}
-                          </span>
-                          {task.priority && (
-                            <Flag
-                              className={`w-3 h-3 shrink-0 ${getPriorityColor(
-                                task.priority
-                              )}`}
-                            />
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2 text-xs text-slate-500">
-                          {task.related_to_type && (
-                            <>
-                              <span className="truncate">{task.related_to_type}</span>
-                              <span>•</span>
-                            </>
-                          )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                            <span className="text-xs font-medium text-slate-900 truncate">
+                              {task.entityName || "No Deal"}
+                            </span>
+                            {task.priority && (
+                              <Flag
+                                className={`w-3 h-3 shrink-0 ${getPriorityColor(
+                                  task.priority
+                                )}`}
+                              />
+                            )}
+                          </div>
                           {dueDateInfo && (
-                            <span className={dueDateInfo.color}>
+                            <span className={`text-xs shrink-0 ${dueDateInfo.color}`}>
                               {dueDateInfo.text}
                             </span>
                           )}
+                        </div>
+
+                        <div className="text-xs text-slate-600 line-clamp-1">
+                          {task.details || task.summary}
                         </div>
                       </div>
                     </div>
@@ -342,92 +430,209 @@ export function MeScreen() {
         </TabsContent>
 
         {/* MY PROJECTS TAB */}
-        <TabsContent value="projects" className="mt-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-slate-200 bg-slate-50">
-              <h2 className="text-lg font-semibold text-slate-900">My Projects</h2>
+        <TabsContent value="projects" className="mt-4 space-y-4">
+          {projectsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
             </div>
+          ) : projects.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 bg-white rounded-2xl border border-slate-200">
+              <Briefcase className="w-12 h-12 mx-auto mb-2 opacity-40" />
+              <div className="text-sm font-medium">No active projects</div>
+            </div>
+          ) : (
+            <>
+              {/* ADVANCED STAGE PROJECTS */}
+              {advancedProjects.length > 0 && (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="p-3 border-b border-slate-200 bg-slate-50">
+                    <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
+                      Negotiation & Above ({advancedProjects.length})
+                    </h3>
+                  </div>
 
-            {projectsLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
-              </div>
-            ) : projects.length === 0 ? (
-              <div className="text-center py-12 text-slate-400">
-                <Briefcase className="w-12 h-12 mx-auto mb-2 opacity-40" />
-                <div className="text-sm font-medium">No active projects</div>
-              </div>
-            ) : (
-              <>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-slate-50 border-b border-slate-200">
-                      <tr>
-                        <th className="text-left text-xs font-semibold text-slate-600 px-4 py-3">
-                          Deal Name
-                        </th>
-                        <th className="text-right text-xs font-semibold text-slate-600 px-4 py-3">
-                          MW
-                        </th>
-                        <th className="text-right text-xs font-semibold text-slate-600 px-4 py-3">
-                          Commission
-                        </th>
-                        <th className="text-right text-xs font-semibold text-slate-600 px-4 py-3">
-                          Due Date
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {projects.map((project) => (
-                        <tr key={project.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-4 py-3 text-sm text-slate-900">
-                            {project.opportunity?.name || project.name}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                          <th className="text-left font-semibold text-slate-600 px-3 py-2">
+                            Deal Name
+                          </th>
+                          <th className="text-right font-semibold text-slate-600 px-3 py-2">
+                            MW
+                          </th>
+                          <th className="text-right font-semibold text-slate-600 px-3 py-2">
+                            Rewards
+                          </th>
+                          <th className="text-right font-semibold text-slate-600 px-3 py-2">
+                            Due Date
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {advancedProjects.map((project) => {
+                          const closeDate = project.opportunity?.expected_close_date || project.updated_at;
+                          return (
+                            <tr
+                              key={project.id}
+                              className={`hover:bg-slate-50 transition-colors ${getQuarterColor(closeDate)}`}
+                            >
+                              <td className="px-3 py-2">
+                                <button
+                                  onClick={() => {
+                                    if (project.linked_opportunity_id) {
+                                      navigate("/", {
+                                        state: {
+                                          activeTab: "opportunities",
+                                          detailId: project.linked_opportunity_id,
+                                        },
+                                      });
+                                    }
+                                  }}
+                                  className="text-left text-slate-900 hover:text-orange-600 font-medium flex items-center gap-1 group"
+                                >
+                                  <span className="truncate max-w-[200px]">
+                                    {project.opportunity?.name || project.name}
+                                  </span>
+                                  <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                                </button>
+                              </td>
+                              <td className="px-3 py-2 text-right text-slate-700 font-medium">
+                                {(project.opportunity?.target_capacity || 0).toFixed(2)}
+                              </td>
+                              <td className="px-3 py-2 text-right text-slate-700 font-medium">
+                                {showMoney ? (
+                                  `฿${formatRewards(calculateProjectCommission(project))}`
+                                ) : (
+                                  <span className="text-slate-400">฿•••</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-right text-slate-500">
+                                {format(new Date(closeDate), "MMM d")}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot className="bg-slate-50 border-t-2 border-slate-300">
+                        <tr>
+                          <td className="px-3 py-2 font-semibold text-slate-900">
+                            Total
                           </td>
-                          <td className="px-4 py-3 text-sm text-right text-slate-700 font-medium">
-                            {(project.opportunity?.target_capacity || 0).toFixed(2)}
+                          <td className="px-3 py-2 text-right font-bold text-slate-900">
+                            {calculateTotalMW(advancedProjects).toFixed(2)}
                           </td>
-                          <td className="px-4 py-3 text-sm text-right text-slate-700 font-medium">
+                          <td className="px-3 py-2 text-right font-bold text-slate-900">
                             {showMoney ? (
-                              `฿${calculateProjectCommission(project).toLocaleString(undefined, {
-                                minimumFractionDigits: 0,
-                                maximumFractionDigits: 0,
-                              })}`
+                              `฿${formatRewards(calculateTotalCommission(advancedProjects))}`
                             ) : (
-                              <span className="text-slate-400">฿•••,•••</span>
+                              <span className="text-slate-400">฿•••</span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-sm text-right text-slate-500">
-                            {format(new Date(project.updated_at), "MMM d, yyyy")}
-                          </td>
+                          <td className="px-3 py-2"></td>
                         </tr>
-                      ))}
-                    </tbody>
-                    <tfoot className="bg-slate-50 border-t-2 border-slate-300">
-                      <tr>
-                        <td className="px-4 py-3 text-sm font-semibold text-slate-900">
-                          Total
-                        </td>
-                        <td className="px-4 py-3 text-sm text-right font-bold text-slate-900">
-                          {calculateTotalMW().toFixed(2)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-right font-bold text-slate-900">
-                          {showMoney ? (
-                            `฿${calculateTotalCommission().toLocaleString(undefined, {
-                              minimumFractionDigits: 0,
-                              maximumFractionDigits: 0,
-                            })}`
-                          ) : (
-                            <span className="text-slate-400">฿•••,•••</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3"></td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                      </tfoot>
+                    </table>
+                  </div>
                 </div>
-              </>
-            )}
-          </div>
+              )}
+
+              {/* EARLY STAGE PROJECTS */}
+              {earlyProjects.length > 0 && (
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  <div className="p-3 border-b border-slate-200 bg-slate-50">
+                    <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
+                      Qualifying & Proposal ({earlyProjects.length})
+                    </h3>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                          <th className="text-left font-semibold text-slate-600 px-3 py-2">
+                            Deal Name
+                          </th>
+                          <th className="text-right font-semibold text-slate-600 px-3 py-2">
+                            MW
+                          </th>
+                          <th className="text-right font-semibold text-slate-600 px-3 py-2">
+                            Rewards
+                          </th>
+                          <th className="text-right font-semibold text-slate-600 px-3 py-2">
+                            Due Date
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {earlyProjects.map((project) => {
+                          const closeDate = project.opportunity?.expected_close_date || project.updated_at;
+                          return (
+                            <tr
+                              key={project.id}
+                              className={`hover:bg-slate-50 transition-colors ${getQuarterColor(closeDate)}`}
+                            >
+                              <td className="px-3 py-2">
+                                <button
+                                  onClick={() => {
+                                    if (project.linked_opportunity_id) {
+                                      navigate("/", {
+                                        state: {
+                                          activeTab: "opportunities",
+                                          detailId: project.linked_opportunity_id,
+                                        },
+                                      });
+                                    }
+                                  }}
+                                  className="text-left text-slate-900 hover:text-orange-600 font-medium flex items-center gap-1 group"
+                                >
+                                  <span className="truncate max-w-[200px]">
+                                    {project.opportunity?.name || project.name}
+                                  </span>
+                                  <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                                </button>
+                              </td>
+                              <td className="px-3 py-2 text-right text-slate-700 font-medium">
+                                {(project.opportunity?.target_capacity || 0).toFixed(2)}
+                              </td>
+                              <td className="px-3 py-2 text-right text-slate-700 font-medium">
+                                {showMoney ? (
+                                  `฿${formatRewards(calculateProjectCommission(project))}`
+                                ) : (
+                                  <span className="text-slate-400">฿•••</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-right text-slate-500">
+                                {format(new Date(closeDate), "MMM d")}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot className="bg-slate-50 border-t-2 border-slate-300">
+                        <tr>
+                          <td className="px-3 py-2 font-semibold text-slate-900">
+                            Total
+                          </td>
+                          <td className="px-3 py-2 text-right font-bold text-slate-900">
+                            {calculateTotalMW(earlyProjects).toFixed(2)}
+                          </td>
+                          <td className="px-3 py-2 text-right font-bold text-slate-900">
+                            {showMoney ? (
+                              `฿${formatRewards(calculateTotalCommission(earlyProjects))}`
+                            ) : (
+                              <span className="text-slate-400">฿•••</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2"></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </TabsContent>
 
         {/* MY REWARDS TAB */}
