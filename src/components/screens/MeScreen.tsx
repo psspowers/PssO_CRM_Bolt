@@ -198,7 +198,7 @@ export function MeScreen() {
         .from("opportunities")
         .select("id, name, target_capacity, stage, expected_close_date, updated_at")
         .eq("owner_id", profile?.id)
-        .in("stage", ["Qualifying", "Proposal"])
+        .in("stage", ["Qualifying", "Qualified", "Proposal"])
         .order("updated_at", { ascending: false });
 
       if (oppsError) throw oppsError;
@@ -326,7 +326,7 @@ export function MeScreen() {
 
   const earlyProjects = projects.filter((p) => {
     if (p.opportunity) {
-      return ["Qualifying", "Proposal"].includes(p.opportunity.stage);
+      return ["Qualifying", "Qualified", "Proposal"].includes(p.opportunity.stage);
     }
     return false;
   }).sort((a, b) => {
@@ -381,12 +381,12 @@ export function MeScreen() {
 
       {/* TABS */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex items-center justify-center gap-2 px-4 py-2">
+        <div className="flex items-center justify-center gap-3 px-4 py-2">
           <button
             onClick={() => setActiveTab("tasks")}
-            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === "tasks"
-                ? "bg-slate-100 text-slate-700"
+                ? "bg-white text-slate-700 shadow-sm"
                 : "bg-transparent text-slate-500"
             }`}
           >
@@ -395,9 +395,9 @@ export function MeScreen() {
           </button>
           <button
             onClick={() => setActiveTab("projects")}
-            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === "projects"
-                ? "bg-emerald-500 text-white"
+                ? "bg-emerald-500 text-white shadow-sm"
                 : "bg-transparent text-slate-500"
             }`}
           >
@@ -406,9 +406,9 @@ export function MeScreen() {
           </button>
           <button
             onClick={() => setActiveTab("rewards")}
-            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === "rewards"
-                ? "bg-slate-100 text-slate-700"
+                ? "bg-white text-slate-700 shadow-sm"
                 : "bg-transparent text-slate-500"
             }`}
           >
