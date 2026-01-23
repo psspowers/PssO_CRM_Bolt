@@ -195,12 +195,12 @@ export default function AppLayout() {
           linkedPartnerIds: data.linkedPartnerIds || [],
           ownerId: user?.id,
         });
-        toast({ 
-          title: 'Customer Created', 
-          description: `${newAccount.name} has been added successfully.` 
+        toast({
+          title: 'Customer Created',
+          description: `${newAccount.name} has been added successfully.`
         });
-        // Navigate to accounts tab to see the new customer
         setActiveTab('accounts');
+        return newAccount;
       } else if (entityType === 'Opportunity') {
         const newOpp = await createOpportunity({
           name: data.name,
@@ -219,16 +219,16 @@ export default function AppLayout() {
           ownerId: data.ownerId || user?.id || '',
           linkedPartnerIds: data.linkedPartnerIds || [],
         });
-        toast({ 
-          title: 'Deal Created', 
-          description: `${newOpp.name} has been added successfully.` 
+        toast({
+          title: 'Deal Created',
+          description: `${newOpp.name} has been added successfully.`
         });
-        // Navigate to opportunities tab to see the new deal
         setActiveTab('opportunities');
+        return newOpp;
       }
     } catch (error) {
       console.error('Error creating entity:', error);
-      throw error; // Re-throw so QuickAddModal can handle it
+      throw error;
     }
   };
 

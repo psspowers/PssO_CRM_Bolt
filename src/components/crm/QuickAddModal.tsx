@@ -71,9 +71,23 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [newAccountData, setNewAccountData] = useState({ name: '', sector: '' });
 
+  // Smart Deal Picker State (for Task linking)
+  const [dealSearch, setDealSearch] = useState('');
+  const [isCreatingDeal, setIsCreatingDeal] = useState(false);
+  const [newDealData, setNewDealData] = useState({ name: '', value: 0, stage: 'Prospect' as OpportunityStage });
+
   // Filter accounts based on search
   const filteredAccounts = entities?.accounts
     ?.filter(a => a.name.toLowerCase().includes(accountSearch.toLowerCase()))
+    .slice(0, 5) || [];
+
+  // Filter deals based on search (for task linking)
+  const filteredDealsForSearch = entities?.opportunities
+    ?.filter(opp => {
+      const targetUserId = assignedToId || profile?.id;
+      if (!targetUserId) return false;
+      return opp.ownerId === targetUserId && opp.name.toLowerCase().includes(dealSearch.toLowerCase());
+    })
     .slice(0, 5) || [];
 
   // Account form state
@@ -191,6 +205,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
       setAccountSearch('');
       setIsCreatingAccount(false);
       setNewAccountData({ name: '', sector: '' });
+      setDealSearch('');
+      setIsCreatingDeal(false);
+      setNewDealData({ name: '', value: 0, stage: 'Prospect' });
     }
   }, [isOpen, initialData]);
 
@@ -390,27 +407,169 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase">Link to Opportunity</label>
-                    <select
-                      value={relateToType === 'Opportunity' ? relateToId : ''}
-                      onChange={e => {
-                        if (e.target.value) {
-                          setRelateToType('Opportunity');
-                          setRelateToId(e.target.value);
-                        } else {
-                          setRelateToId('');
-                        }
-                      }}
-                      className="w-full mt-1 px-3 py-2 border rounded-lg text-sm bg-white"
-                    >
-                      <option value="">-- Select Opportunity (Optional) --</option>
-                      {filteredOpportunities.map(opp => (
-                        <option key={opp.id} value={opp.id}>{opp.name}</option>
-                      ))}
-                      {filteredOpportunities.length === 0 && (
-                        <option value="" disabled>No opportunities found for this user</option>
-                      )}
-                    </select>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase">Link to Opportunity (Optional)</label>
+
+                    {!isCreatingDeal ? (
+                      <div className="relative mt-1">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                          <Search className="w-4 h-4" />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Search or create deal..."
+                          className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-white"
+                          value={dealSearch || (relateToType === 'Opportunity' && relateToId ? entities?.opportunities.find(o => o.id === relateToId)?.name || '' : '')}
+                          onChange={e => {
+                            setDealSearch(e.target.value);
+                            if (relateToId) {
+                              setRelateToId('');
+                              setRelateToType('Partner');
+                            }
+                          }}
+                        />
+                        {dealSearch && !relateToId && (assignedToId || profile?.id) && (
+                          <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                            {filteredDealsForSearch.length > 0 ? (
+                              <>
+                                {filteredDealsForSearch.map(opp => (
+                                  <button
+                                    key={opp.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setRelateToType('Opportunity');
+                                      setRelateToId(opp.id);
+                                      setDealSearch(opp.name);
+                                    }}
+                                    className="w-full text-left px-4 py-2.5 hover:bg-slate-50 text-sm border-b border-slate-50 last:border-0"
+                                  >
+                                    <span className="font-semibold text-slate-700">{opp.name}</span>
+                                  </button>
+                                ))}
+                              </>
+                            ) : null}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsCreatingDeal(true);
+                                setNewDealData({ ...newDealData, name: dealSearch });
+                              }}
+                              className="w-full text-left px-4 py-2.5 bg-orange-50 hover:bg-orange-100 text-orange-700 text-sm font-bold flex items-center gap-2"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Create new Deal: "{dealSearch}"
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mt-1 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3 animate-in fade-in slide-in-from-top-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-orange-600">New Deal</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsCreatingDeal(false);
+                              setNewDealData({ name: '', value: 0, stage: 'Prospect' });
+                            }}
+                          >
+                            <X className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+                          </button>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Deal Name *</label>
+                          <input
+                            type="text"
+                            value={newDealData.name}
+                            onChange={e => setNewDealData({ ...newDealData, name: e.target.value })}
+                            className="w-full p-2 border rounded-lg text-sm"
+                            placeholder="e.g. 5MW Solar Project"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Value (฿)</label>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={newDealData.value ? Math.round(newDealData.value).toLocaleString('en-US') : ''}
+                            onChange={e => {
+                              const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                              setNewDealData({ ...newDealData, value: numericValue ? Number(numericValue) : 0 });
+                            }}
+                            className="w-full p-2 border rounded-lg text-sm"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Stage</label>
+                          <select
+                            value={newDealData.stage}
+                            onChange={e => setNewDealData({ ...newDealData, stage: e.target.value as OpportunityStage })}
+                            className="w-full p-2 border rounded-lg text-sm bg-white"
+                          >
+                            {stages.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!newDealData.name.trim()) {
+                              alert('Please enter a deal name');
+                              return;
+                            }
+                            if (!onAddEntity) {
+                              alert('Cannot create deal: onAddEntity not provided');
+                              return;
+                            }
+
+                            setSaving(true);
+                            try {
+                              const newOpp = await onAddEntity('Opportunity', {
+                                name: newDealData.name,
+                                accountId: '',
+                                value: newDealData.value,
+                                stage: newDealData.stage,
+                                priority: 'Medium',
+                                targetCapacity: 0,
+                                reType: [],
+                                sector: 'Other',
+                                industry: 'Other',
+                                subIndustry: 'Other',
+                                ownerId: assignedToId || profile?.id || '',
+                                linkedPartnerIds: [],
+                                notes: 'Created via Task Quick Add',
+                              });
+
+                              if (newOpp && 'id' in newOpp) {
+                                setRelateToType('Opportunity');
+                                setRelateToId(newOpp.id);
+                                setDealSearch(newDealData.name);
+                                setIsCreatingDeal(false);
+                                setNewDealData({ name: '', value: 0, stage: 'Prospect' });
+                              }
+                            } catch (error) {
+                              console.error('Error creating deal:', error);
+                              alert('Failed to create deal: ' + (error as Error).message);
+                            } finally {
+                              setSaving(false);
+                            }
+                          }}
+                          disabled={saving}
+                          className="w-full py-2 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {saving ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Target className="w-4 h-4" />
+                              Save & Link
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-gray-400 uppercase">Deadline</label>
