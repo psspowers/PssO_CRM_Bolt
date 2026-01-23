@@ -513,7 +513,7 @@ interface PulseScreenProps {
 
 export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenProps) {
   const { user, profile } = useAuth();
-  const { createActivity } = useAppContext();
+  const { createActivity, createOpportunity } = useAppContext();
   const [activeTab, setActiveTab] = useState<'internal' | 'market'>('internal');
   const [showPostModal, setShowPostModal] = useState(false);
   const [showAnalystModal, setShowAnalystModal] = useState(false);
@@ -2245,6 +2245,12 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
         isOpen={showQuickAdd}
         onClose={() => setShowQuickAdd(false)}
         onAdd={handleQuickAddSubmit}
+        onAddEntity={async (entityType, data) => {
+          if (entityType === 'Opportunity') {
+            return await createOpportunity(data as any);
+          }
+          throw new Error('Unsupported entity type');
+        }}
         initialData={taskInitialData}
         entities={{ accounts: accounts, partners: [], opportunities: opportunities, contacts: [] }}
         users={users}

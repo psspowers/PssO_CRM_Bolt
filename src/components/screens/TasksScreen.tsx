@@ -63,9 +63,11 @@ export const TasksScreen: React.FC = () => {
 
     taskItems.push(...opportunityTasks);
 
-    // Sort by due date
+    // Sort by due date (tasks without dates go to the end, then by creation order)
     return taskItems.sort((a, b) => {
-      if (!a.dueDate || !b.dueDate) return 0;
+      if (!a.dueDate && !b.dueDate) return 0;
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
       return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
     });
   }, [activities, opportunities, accounts, filter, currentUser]);
