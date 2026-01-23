@@ -722,6 +722,7 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
       .select(`
         id,
         action,
+        entity_type,
         details,
         created_at,
         user_id,
@@ -741,7 +742,7 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
           const logDetails = typeof log.details === 'string' ? JSON.parse(log.details) : (log.details || {});
 
           const isActivityCreation = (log.action === 'create' || log.action === 'CREATE' || log.action === 'INSERT') &&
-                                      (logDetails.entity_type?.toLowerCase() === 'activity' || logDetails.type === 'task' || logDetails.type === 'call' || logDetails.type === 'meeting');
+                                      (log.entity_type === 'activities' || logDetails.type === 'task' || logDetails.type === 'call' || logDetails.type === 'meeting');
 
           if (isActivityCreation) {
             return;
@@ -857,7 +858,7 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
           const logDetails = typeof log.details === 'string' ? JSON.parse(log.details) : (log.details || {});
 
           const isActivityCreation = (log.action === 'create' || log.action === 'CREATE' || log.action === 'INSERT') &&
-                                      (logDetails.entity_type?.toLowerCase() === 'activity' || logDetails.type === 'task' || logDetails.type === 'call' || logDetails.type === 'meeting');
+                                      (log.entity_type === 'activities' || logDetails.type === 'task' || logDetails.type === 'call' || logDetails.type === 'meeting');
 
           if (isActivityCreation) {
             return;
