@@ -407,6 +407,34 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
                     </div>
                   </div>
                   <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase">Link to Customer (Optional)</label>
+                    <div className="relative mt-1">
+                      <select
+                        value={relateToType === 'Account' ? relateToId : ''}
+                        onChange={e => {
+                          if (e.target.value) {
+                            setRelateToType('Account');
+                            setRelateToId(e.target.value);
+                          } else {
+                            if (relateToType === 'Account') {
+                              setRelateToType('Partner');
+                              setRelateToId('');
+                            }
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none bg-white appearance-none"
+                      >
+                        <option value="">-- Select Customer --</option>
+                        {entities?.accounts
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map(acc => (
+                            <option key={acc.id} value={acc.id}>{acc.name}</option>
+                          ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div>
                     <label className="text-[10px] font-bold text-gray-400 uppercase">Link to Opportunity (Optional)</label>
 
                     {!isCreatingDeal ? (
@@ -421,13 +449,13 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
                           value={dealSearch || (relateToType === 'Opportunity' && relateToId ? entities?.opportunities.find(o => o.id === relateToId)?.name || '' : '')}
                           onChange={e => {
                             setDealSearch(e.target.value);
-                            if (relateToId) {
+                            if (relateToId && relateToType === 'Opportunity') {
                               setRelateToId('');
                               setRelateToType('Partner');
                             }
                           }}
                         />
-                        {dealSearch && !relateToId && (assignedToId || profile?.id) && (
+                        {dealSearch && !(relateToType === 'Opportunity' && relateToId) && (assignedToId || profile?.id) && (
                           <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                             {filteredDealsForSearch.length > 0 ? (
                               <>
