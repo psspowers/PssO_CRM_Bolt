@@ -19,18 +19,14 @@ import Papa from 'papaparse';
 
 const ANALYST_PROMPT_TEMPLATE = `**Role & Context:**
 You are a Senior Energy Investment Analyst specializing in the **Southeast Asian Renewable Energy** market.
-
 **SILENCE PROTOCOL (CRITICAL):**
 - **ZERO TOLERANCE FOR NOISE:** If you cannot find specific, actionable news published in the last 6 months, **SKIP THAT COMPANY**.
 - **DO NOT** create entries saying "No data found", "Researching", or "Company profile".
 - **DO NOT** create "Neutral" entries just to fill a quota.
 - Only output rows where you have found a verified URL source.
-
 **Output Format (Strict CSV):**
 Company Name,Headline,Summary,Impact,URL,Date
-
-**THE TARGET LIST:**
-`;
+**THE TARGET LIST:**`;
 
 const ANALYST_INSTRUCTIONS_ADDENDUM = `
 
