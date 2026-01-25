@@ -18,80 +18,18 @@ import { formatDistanceToNow } from 'date-fns';
 import Papa from 'papaparse';
 
 const ANALYST_PROMPT_TEMPLATE = `**Role & Context:**
-You are a Senior Energy Investment Analyst specializing in the **Southeast Asian Renewable Energy** market, with deep expertise in Battery Energy Storage Systems (BESS), solar, wind, and grid integration projects. Your primary responsibility is to conduct comprehensive market intelligence research on target companies to assess their potential as investment opportunities, strategic partners, or acquisition targets.
+You are a Senior Energy Investment Analyst specializing in the **Southeast Asian Renewable Energy** market.
 
-**Your Mission:**
-Research each company on today's target list and produce actionable intelligence that helps our investment team make informed decisions about market opportunities worth $50M-$500M+ in renewable energy infrastructure.
+**SILENCE PROTOCOL (CRITICAL):**
+- **ZERO TOLERANCE FOR NOISE:** If you cannot find specific, actionable news published in the last 6 months, **SKIP THAT COMPANY**.
+- **DO NOT** create entries saying "No data found", "Researching", or "Company profile".
+- **DO NOT** create "Neutral" entries just to fill a quota.
+- Only output rows where you have found a verified URL source.
 
-**Research Focus Areas:**
-
-1. **Business Overview & Strategic Position**
-   - Core business model and revenue streams
-   - Market position in renewable energy sector
-   - Geographic footprint and operational scale
-   - Key competitive advantages or unique capabilities
-
-2. **Financial Health & Growth Trajectory**
-   - Recent financial performance and trends
-   - Investment capacity and capital structure
-   - Growth indicators and expansion plans
-   - Notable recent transactions or funding rounds
-
-3. **Renewable Energy Portfolio & Capabilities**
-   - Existing renewable energy assets and projects
-   - Technical capabilities in BESS, solar, or wind
-   - Project pipeline and development capacity
-   - Innovation initiatives and technology partnerships
-
-4. **Investment Readiness & Strategic Fit**
-   - Appetite for renewable energy investments
-   - Partnership or M&A activity
-   - Alignment with ESG and sustainability goals
-   - Regulatory compliance and certifications
-
-5. **Market Intelligence & Risk Factors**
-   - Recent news, press releases, or announcements
-   - Leadership changes or strategic shifts
-   - Regulatory challenges or opportunities
-   - Competitive threats or market disruptions
-
-**Research Guidelines:**
-- Prioritize recent information (last 12-18 months)
-- Focus on publicly available sources: company websites, press releases, industry publications, financial filings, news articles
-- Verify information from multiple sources when possible
-- Identify data gaps and flag them clearly
-- Look for signals of investment readiness and strategic intent
-
-**The Strict Output Format (CSV):**
-Return your findings ONLY in this exact CSV format with these columns:
-
+**Output Format (Strict CSV):**
 Company Name,Headline,Summary,Impact,URL,Date
 
-**Column Definitions:**
-- **Company Name**: Exact name as provided in the target list
-- **Headline**: One compelling insight (8-12 words max) that captures the most important finding
-- **Summary**: Brief intelligence summary (2-3 sentences, 150 words max) covering key findings from research focus areas
-- **Impact**: Must be EXACTLY one of these three values:
-  - "opportunity" = Strong investment potential, positive signals, strategic alignment
-  - "threat" = Competitive threat, market risk, or negative indicators
-  - "neutral" = Noteworthy but no clear directional signal
-- **URL**: Primary source URL for verification (use most authoritative source)
-- **Date**: YYYY-MM-DD format (Publication Date of the news/announcement)
-
-**Example Output:**
-ABC Energy Corp,Announces $200M BESS expansion across Thailand,"ABC Energy announced plans to deploy 500MW of battery storage by 2025, partnering with leading EPC firms. Strong balance sheet with $300M credit facility. Active in solar+storage integration.",opportunity,https://abcenergy.com/news/2024-expansion,2025-12-15
-XYZ Manufacturing,Delays renewable transition amid financial restructuring,"Company postponed its 100MW solar project due to liquidity constraints. Undergoing debt restructuring with creditors. Renewable energy strategy on hold until Q3 2025.",threat,https://industry-journal.com/xyz-delays,2025-11-20
-
-**Critical Requirements:**
-- Research ALL companies on the target list
-- Do NOT skip companies even if information is limited
-- If you find minimal information, still create an entry with "neutral" impact and note data limitations in Summary
-- **DEDUPLICATE:** If multiple sources report the same event, combine them into ONE row. Do not list the same story twice.
-- Ensure CSV is properly formatted with commas separating fields and quotes around fields containing commas
-- Include header row exactly as specified
-- Do NOT add any commentary, explanations, or text outside the CSV format
-
-**THE TARGET LIST FOR TODAY:**
+**THE TARGET LIST:**
 `;
 
 const ANALYST_INSTRUCTIONS_ADDENDUM = `
@@ -1907,7 +1845,15 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
             </div>
           ) : (
             <div className="divide-y divide-slate-200 dark:divide-slate-700">
-              {marketNews.filter(news => news.id === forcedOpenId || !hiddenNews.has(news.id)).map((news) => {
+              {marketNews.filter(news => {
+                if (news.id === forcedOpenId) return true;
+                if (hiddenNews.has(news.id)) return false;
+
+                if (news.impact_type !== 'neutral') return true;
+                const text = (news.title + (news.summary || '')).toLowerCase();
+                const junkTriggers = ['not found', 'no data', 'no public', 'minimal', 'unclear', 'absent', 'limited', 'data gaps'];
+                return !junkTriggers.some(t => text.includes(t));
+              }).map((news) => {
                 const impactColor = news.impact_type === 'opportunity'
                   ? 'bg-green-50 dark:bg-green-950/20'
                   : news.impact_type === 'threat'
