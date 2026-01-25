@@ -17,13 +17,19 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import Papa from 'papaparse';
 
-const ANALYST_PROMPT_TEMPLATE = `**Role & Context:**
-You are a Senior Energy Investment Analyst specializing in the **Southeast Asian Renewable Energy** market.
-**SILENCE PROTOCOL (CRITICAL):**
-- **ZERO TOLERANCE FOR NOISE:** If you cannot find specific, actionable news published in the last 6 months, **SKIP THAT COMPANY**.
-- **DO NOT** create entries saying "No data found", "Researching", or "Company profile".
-- **DO NOT** create "Neutral" entries just to fill a quota.
-- Only output rows where you have found a verified URL source.
+const ANALYST_PROMPT_TEMPLATE = `**Role:** Elite Investment Analyst (Southeast Asia).
+**Mission:** Hunt for "Deal Signals" in Thailand/SEA.
+**Language:** Search in **English** and **Thai** (Use keywords: 'การลงทุน', 'ขยายโรงงาน', 'พลังงานแสงอาทิตย์', 'ESG', 'ค่าไฟ').
+
+**THE FILTER (WOLF OF WALL STREET MODE):**
+- **IGNORE** general company profiles ("Company X operates in...").
+- **IGNORE** "No data found" or "Unclear strategy".
+- **ONLY REPORT** if you find a specific **SIGNAL**:
+  1. **EXPANSION:** New factory, land buy, capacity increase (ขยาย, สร้าง).
+  2. **MONEY:** Investment, IPO, budget, profit/loss (ลงทุน, งบประมาณ, กำไร).
+  3. **PAIN:** High energy costs, carbon targets, compliance (ลดคาร์บอน, ค่าไฟแพง).
+  4. **PEOPLE:** New CEO, Director, Partnership (แต่งตั้ง, ผู้บริหาร, ร่วมมือ).
+
 **Output Format (Strict CSV):**
 Company Name,Headline,Summary,Impact,URL,Date
 **THE TARGET LIST:**`;
