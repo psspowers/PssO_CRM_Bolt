@@ -1851,10 +1851,27 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
                 if (news.id === forcedOpenId) return true;
                 if (hiddenNews.has(news.id)) return false;
 
+                // Always show Opportunities/Threats (Analyst flagged)
                 if (news.impact_type !== 'neutral') return true;
+
                 const text = (news.title + (news.summary || '')).toLowerCase();
-                const junkTriggers = ['not found', 'no data', 'no public', 'minimal', 'unclear', 'absent', 'limited', 'data gaps'];
-                return !junkTriggers.some(t => text.includes(t));
+
+                // 1. The Kill List (Explicitly banning the noise you saw)
+                const banned = [
+                  'without energy', 'no clear', 'not publicly available', 'no public',
+                  'no data', 'not found', 'unclear', 'minimal', 'absent', 'limited',
+                  'data gaps', 'duplicate', 'operates healthcare', 'operates in',
+                  'general profile', 'no significant', 'not widely reported', 'limitations noted'
+                ];
+
+                if (banned.some(b => text.includes(b))) return false;
+
+                // 2. The Boring Check (Must have Money/Tech/Action to exist)
+                const hasSignal = ['baht', 'invest', 'expand', 'solar', 'mw', 'ppa', 'appoint', 'plan'].some(t => text.includes(t));
+                // If it's neutral and has NO signal keywords -> Hide it
+                if (!hasSignal) return false;
+
+                return true;
               }).map((news) => {
                 const impactColor = news.impact_type === 'opportunity'
                   ? 'bg-green-50 dark:bg-green-950/20'
