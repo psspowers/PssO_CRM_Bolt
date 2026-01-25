@@ -114,14 +114,63 @@ const AppRoutes = () => (
  */
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
+  const [identityVerified, setIdentityVerified] = useState(false);
+  const [identityError, setIdentityError] = useState<string | null>(null);
 
   useEffect(() => {
-    verifyDatabaseIdentity().catch((error) => {
-      console.error('🚨 DATABASE IDENTITY VERIFICATION FAILED');
-      alert(error.message);
-      throw error;
-    });
+    verifyDatabaseIdentity()
+      .then(() => {
+        setIdentityVerified(true);
+      })
+      .catch((error) => {
+        console.error('🚨 DATABASE IDENTITY VERIFICATION FAILED');
+        setIdentityError(error.message);
+      });
   }, []);
+
+  if (identityError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-red-50 p-6">
+        <div className="max-w-2xl bg-white rounded-lg shadow-lg p-8 border-2 border-red-500">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <span className="text-2xl">🚨</span>
+              </div>
+            </div>
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-red-900 mb-4">
+                Database Identity Verification Failed
+              </h1>
+              <pre className="bg-red-50 p-4 rounded text-sm text-red-800 whitespace-pre-wrap font-mono mb-4">
+                {identityError}
+              </pre>
+              <div className="bg-yellow-50 border border-yellow-200 rounded p-4">
+                <p className="text-sm text-yellow-800 font-semibold mb-2">
+                  ⚠️ Application Blocked for Safety
+                </p>
+                <p className="text-sm text-yellow-700">
+                  This app will not operate on an unverified database to prevent data loss.
+                  Follow the recovery steps above.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!identityVerified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+          <p className="text-gray-500">Verifying database identity...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ErrorBoundary>

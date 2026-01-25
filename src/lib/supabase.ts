@@ -41,7 +41,7 @@ export async function verifyDatabaseIdentity(): Promise<void> {
   try {
     const { data, error } = await supabase
       .from('db_identity')
-      .select('environment')
+      .select('environment, project_ref')
       .single();
 
     if (error) {
@@ -51,7 +51,8 @@ export async function verifyDatabaseIdentity(): Promise<void> {
         `Cannot verify database identity.\n` +
         `This usually means:\n` +
         `1. Connected to wrong database\n` +
-        `2. .env file was overwritten\n\n` +
+        `2. .env file was overwritten\n` +
+        `3. Migration was never applied\n\n` +
         `RECOVERY:\n` +
         `1. Check .env matches .env.ORIGINAL_BACKUP\n` +
         `2. Restore: cp .env.ORIGINAL_BACKUP .env\n` +
@@ -60,11 +61,21 @@ export async function verifyDatabaseIdentity(): Promise<void> {
       );
     }
 
-    if (data?.environment !== 'PRODUCTION_ORIGINAL') {
+    const expectedRef = 'shrglaqikuzcvoihzpyt';
+    const expectedEnv = 'PRODUCTION_ORIGINAL';
+
+    if (
+      data?.environment !== expectedEnv ||
+      data?.project_ref !== expectedRef
+    ) {
       throw new Error(
         `🚨 WRONG DATABASE DETECTED\n\n` +
-        `Expected: PRODUCTION_ORIGINAL\n` +
-        `Found: ${data?.environment || 'NONE'}\n\n` +
+        `Expected:\n` +
+        `  Environment: ${expectedEnv}\n` +
+        `  Project Ref: ${expectedRef}\n\n` +
+        `Found:\n` +
+        `  Environment: ${data?.environment || 'NONE'}\n` +
+        `  Project Ref: ${data?.project_ref || 'NONE'}\n\n` +
         `Your app is connected to the wrong database!\n\n` +
         `RECOVERY:\n` +
         `1. Check .env: ${supabaseUrl}\n` +
@@ -76,7 +87,7 @@ export async function verifyDatabaseIdentity(): Promise<void> {
     }
 
     identityVerified = true;
-    console.log('✅ Database identity verified: PRODUCTION_ORIGINAL');
+    console.log(`✅ Database identity verified: ${expectedEnv} (${expectedRef})`);
   } catch (err) {
     if (err instanceof Error) {
       throw err;
