@@ -3,7 +3,7 @@
  * Includes error boundary
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,6 +26,7 @@ import NotFound from "./pages/NotFound";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 import { Loader2 } from "lucide-react";
+import { verifyDatabaseIdentity } from "@/lib/supabase";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -113,6 +114,14 @@ const AppRoutes = () => (
  */
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    verifyDatabaseIdentity().catch((error) => {
+      console.error('🚨 DATABASE IDENTITY VERIFICATION FAILED');
+      alert(error.message);
+      throw error;
+    });
+  }, []);
 
   return (
     <ErrorBoundary>
