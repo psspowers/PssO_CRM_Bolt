@@ -120,8 +120,7 @@ export function MeScreen() {
         .eq("is_task", true)
         .neq("task_status", "Completed")
         .order("due_date", { ascending: true, nullsFirst: false })
-        .order("created_at", { ascending: false })
-        .limit(100);
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
@@ -382,13 +381,13 @@ export function MeScreen() {
 
       {/* TABS */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex items-center justify-center gap-3 px-4 py-2">
+        <div className="flex items-center gap-2 px-2 py-2 bg-slate-100 rounded-xl">
           <button
             onClick={() => setActiveTab("tasks")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === "tasks"
-                ? "bg-white text-slate-700 shadow-sm"
-                : "bg-transparent text-slate-500"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "bg-transparent text-slate-600 hover:text-slate-900"
             }`}
           >
             <ListTodo className="w-4 h-4" />
@@ -396,10 +395,10 @@ export function MeScreen() {
           </button>
           <button
             onClick={() => setActiveTab("projects")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === "projects"
-                ? "bg-emerald-500 text-white shadow-sm"
-                : "bg-transparent text-slate-500"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "bg-transparent text-slate-600 hover:text-slate-900"
             }`}
           >
             <Briefcase className="w-4 h-4" />
@@ -407,10 +406,10 @@ export function MeScreen() {
           </button>
           <button
             onClick={() => setActiveTab("rewards")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === "rewards"
-                ? "bg-white text-slate-700 shadow-sm"
-                : "bg-transparent text-slate-500"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "bg-transparent text-slate-600 hover:text-slate-900"
             }`}
           >
             <Award className="w-4 h-4" />
