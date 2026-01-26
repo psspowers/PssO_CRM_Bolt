@@ -8,6 +8,9 @@ import { isContactPickerSupported, openNativeContactPicker, mapNativeToCRM } fro
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
+import { Checkbox } from '../ui/checkbox';
+import { Badge } from '../ui/badge';
+import { ScrollArea } from '../ui/scroll-area';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
 
@@ -17,6 +20,13 @@ interface AccountContactsProps {
   opportunityName?: string;
 }
 
+interface ParsedCandidate {
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+}
+
 export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, accountName, opportunityName }) => {
   const { contacts, createContact, deleteContact, canDelete } = useAppContext();
   const [isAdding, setIsAdding] = useState(false);
@@ -24,10 +34,12 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
   const [importedData, setImportedData] = useState<Partial<Contact> | null>(null);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showGeminiModal, setShowGeminiModal] = useState(false);
-  const [geminiStep, setGeminiStep] = useState<1 | 2>(1);
+  const [geminiStep, setGeminiStep] = useState<1 | 2 | 3>(1);
   const [csvInput, setCsvInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [promptCopied, setPromptCopied] = useState(false);
+  const [parsedCandidates, setParsedCandidates] = useState<ParsedCandidate[]>([]);
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
 
   const isContactApiSupported = typeof navigator !== 'undefined' && 'contacts' in navigator && navigator.contacts && 'select' in navigator.contacts;
 
@@ -185,8 +197,7 @@ IMPORTANT: Each row must be on its own line. Do not combine multiple contacts in
         return;
       }
 
-      let created = 0;
-      let skipped = 0;
+      const candidates: ParsedCandidate[] = [];
 
       for (const line of dataLines) {
         const parsed = Papa.parse<string[]>(line, {
@@ -195,23 +206,60 @@ IMPORTANT: Each row must be on its own line. Do not combine multiple contacts in
         });
 
         if (!parsed.data || parsed.data.length === 0) {
-          skipped++;
           continue;
         }
 
         const row = parsed.data[0];
-        const fullName = row[0]?.trim() || '';
+        const name = row[0]?.trim() || '';
         const email = row[1]?.trim() || '';
         const phone = row[2]?.trim() || '';
         const role = row[3]?.trim() || '';
 
-        if (!fullName || !email) {
-          skipped++;
+        if (!name || !email) {
           continue;
         }
 
+        candidates.push({ name, email, phone, role });
+      }
+
+      if (candidates.length === 0) {
+        toast.error('No valid contacts found in CSV data');
+        setIsProcessing(false);
+        return;
+      }
+
+      setParsedCandidates(candidates);
+      const allIndices = new Set(candidates.map((_, index) => index));
+      setSelectedIndices(allIndices);
+      setGeminiStep(3);
+      toast.success(`Parsed ${candidates.length} contact(s). Review and select which to import.`);
+    } catch (err) {
+      console.error('CSV processing error:', err);
+      toast.error('Failed to process CSV data');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleExecuteImport = async () => {
+    if (selectedIndices.size === 0) {
+      toast.error('Please select at least one contact to import');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const selectedCandidates = parsedCandidates.filter((_, index) =>
+        selectedIndices.has(index)
+      );
+
+      let created = 0;
+      let skipped = 0;
+
+      for (const candidate of selectedCandidates) {
         const existingContact = contacts.find(
-          c => c.email?.toLowerCase() === email.toLowerCase()
+          c => c.email?.toLowerCase() === candidate.email.toLowerCase()
         );
 
         if (existingContact) {
@@ -220,10 +268,10 @@ IMPORTANT: Each row must be on its own line. Do not combine multiple contacts in
         }
 
         await createContact({
-          fullName: fullName,
-          email: email,
-          phone: phone,
-          role: role,
+          fullName: candidate.name,
+          email: candidate.email,
+          phone: candidate.phone,
+          role: candidate.role,
           accountId: accountId,
           country: 'Thailand',
           city: '',
@@ -237,12 +285,33 @@ IMPORTANT: Each row must be on its own line. Do not combine multiple contacts in
       setShowGeminiModal(false);
       setGeminiStep(1);
       setCsvInput('');
+      setParsedCandidates([]);
+      setSelectedIndices(new Set());
     } catch (err) {
-      console.error('CSV processing error:', err);
-      toast.error('Failed to process CSV data');
+      console.error('Import error:', err);
+      toast.error('Failed to import contacts');
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIndices.size === parsedCandidates.length) {
+      setSelectedIndices(new Set());
+    } else {
+      const allIndices = new Set(parsedCandidates.map((_, index) => index));
+      setSelectedIndices(allIndices);
+    }
+  };
+
+  const toggleSelection = (index: number) => {
+    const newSelected = new Set(selectedIndices);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedIndices(newSelected);
   };
 
   if (isAdding) {
@@ -402,6 +471,8 @@ IMPORTANT: Each row must be on its own line. Do not combine multiple contacts in
           setGeminiStep(1);
           setCsvInput('');
           setPromptCopied(false);
+          setParsedCandidates([]);
+          setSelectedIndices(new Set());
         }
       }}>
         <DialogContent className="max-w-2xl">
@@ -455,7 +526,7 @@ IMPORTANT: Each row must be on its own line. Do not combine multiple contacts in
                 </Button>
               </div>
             </div>
-          ) : (
+          ) : geminiStep === 2 ? (
             <div className="space-y-4">
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                 <h3 className="font-semibold text-purple-900 mb-2">Step 2: Paste CSV Results</h3>
@@ -491,7 +562,105 @@ Jane Smith,jane@example.com,+1234567891,CTO"
                       Processing...
                     </>
                   ) : (
-                    'Process Contacts'
+                    'Parse & Review'
+                  )}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h3 className="font-semibold text-purple-900 mb-2">Step 3: Review & Select Contacts</h3>
+                <p className="text-sm text-purple-700 mb-2">
+                  Select which contacts you want to import. Duplicates will be automatically skipped.
+                </p>
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-sm text-purple-800 font-semibold">
+                    {selectedIndices.size} of {parsedCandidates.length} selected
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleSelectAll}
+                    className="text-purple-700 border-purple-300 hover:bg-purple-100"
+                  >
+                    {selectedIndices.size === parsedCandidates.length ? 'Deselect All' : 'Select All'}
+                  </Button>
+                </div>
+              </div>
+
+              <ScrollArea className="h-[400px] rounded-lg border border-slate-200">
+                <div className="space-y-2 p-4">
+                  {parsedCandidates.map((candidate, index) => {
+                    const isSelected = selectedIndices.has(index);
+                    const isDuplicate = contacts.some(
+                      c => c.email?.toLowerCase() === candidate.email.toLowerCase()
+                    );
+
+                    return (
+                      <div
+                        key={index}
+                        className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
+                          isSelected && !isDuplicate
+                            ? 'bg-purple-50 border-purple-200'
+                            : isDuplicate
+                            ? 'bg-slate-50 border-slate-200 opacity-60'
+                            : 'bg-white border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleSelection(index)}
+                          disabled={isDuplicate}
+                          className="mt-1"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-slate-900 truncate">
+                              {candidate.name}
+                            </span>
+                            {isDuplicate && (
+                              <Badge variant="secondary" className="text-xs">
+                                Duplicate
+                              </Badge>
+                            )}
+                            {candidate.role && !isDuplicate && (
+                              <Badge variant="outline" className="text-xs">
+                                {candidate.role}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-slate-600 truncate">{candidate.email}</div>
+                          {candidate.phone && (
+                            <div className="text-xs text-slate-500 mt-1">{candidate.phone}</div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+
+              <div className="flex items-center justify-between pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setGeminiStep(2)}
+                  disabled={isProcessing}
+                >
+                  Back to Edit
+                </Button>
+                <Button
+                  onClick={handleExecuteImport}
+                  disabled={isProcessing || selectedIndices.size === 0}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Importing...
+                    </>
+                  ) : (
+                    `Import Selected (${selectedIndices.size})`
                   )}
                 </Button>
               </div>
