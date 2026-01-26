@@ -18,17 +18,27 @@ import { formatDistanceToNow } from 'date-fns';
 import Papa from 'papaparse';
 
 const ANALYST_PROMPT_TEMPLATE = `**Role:** Elite Investment Analyst (Southeast Asia).
-**Mission:** Hunt for "Deal Signals" in Thailand/SEA.
-**Language:** Search in **English** and **Thai** (Use keywords: 'การลงทุน', 'ขยายโรงงาน', 'พลังงานแสงอาทิตย์', 'ESG', 'ค่าไฟ').
+**Mission:** Filter noise. Hunt for **HARD ASSETS** and **CAPITAL FLOW** in Thailand/SEA.
+**Language:** Search in **English** and **Thai**.
 
-**THE FILTER (WOLF OF WALL STREET MODE):**
-- **IGNORE** general company profiles ("Company X operates in...").
-- **IGNORE** "No data found" or "Unclear strategy".
-- **ONLY REPORT** if you find a specific **SIGNAL**:
-  1. **EXPANSION:** New factory, land buy, capacity increase (ขยาย, สร้าง).
-  2. **MONEY:** Investment, IPO, budget, profit/loss (ลงทุน, งบประมาณ, กำไร).
-  3. **PAIN:** High energy costs, carbon targets, compliance (ลดคาร์บอน, ค่าไฟแพง).
-  4. **PEOPLE:** New CEO, Director, Partnership (แต่งตั้ง, ผู้บริหาร, ร่วมมือ).
+**CRITICAL INSTRUCTION: THE "IS IT WORTHY?" TEST**
+Before outputting ANY row, ask yourself:
+1. Does it mention a **Number**? (Currency, Capacity MW, Date, Percentage).
+2. Does it mention a **Specific Action**? (Signed, Started, Invested, Defaulted).
+3. Is it **News** (Last 6 months) or just **History** (Company Profile)?
+
+**❌ REJECT (OUTPUT NOTHING):**
+- "Company X operates in healthcare..." (Profile = TRASH)
+- "No public information available..." (Failure = TRASH)
+- "Strategy is unclear..." (Vague = TRASH)
+- "Duplicate entry..." (Duplicate = TRASH)
+
+**✅ ACCEPT (ADD TO CSV):**
+- "Company X **invests 500MB** in solar roof." (Money + Tech)
+- "Factory Y **halts production** due to energy costs." (Distress Signal)
+- "CEO Z **resigns** amid restructuring." (Strategic Shift)
+- "Company declares wants to improves sustainability initiative by investing in renewables"
+- "Company X declare they won the tender"
 
 **Output Format (Strict CSV):**
 Company Name,Headline,Summary,Impact,URL,Date
