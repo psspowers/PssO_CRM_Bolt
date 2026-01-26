@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import { User, UserRole } from '../../types/crm';
+import { User, UserRole, WattsTransaction } from '../../types/crm';
 import { DbUser } from './types';
 
 const toUser = (db: DbUser): User => ({
@@ -24,4 +24,14 @@ export const fetchUsers = async (): Promise<User[]> => {
   }
 
   return (data || []).map(toUser);
+};
+
+export const fetchWattsHistory = async (): Promise<WattsTransaction[]> => {
+  const { data, error } = await supabase
+    .from('watts_ledger')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data as WattsTransaction[];
 };

@@ -161,6 +161,14 @@ export interface User {
   reportsTo?: string;
 }
 
+export interface WattsTransaction {
+  id: string;
+  amount: number;
+  description: string;
+  category: 'Deal' | 'Bonus' | 'Redemption' | 'Adjustment';
+  created_at: string;
+}
+
 export interface MediaFile {
   id: string;
   url: string;

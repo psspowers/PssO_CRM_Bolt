@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppContext } from "@/contexts/AppContext";
 import { supabase } from "@/lib/supabase";
+import { WattsTransaction } from "@/types/crm";
+import { fetchWattsHistory } from "@/lib/api/users";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +25,10 @@ import {
   ListTodo,
   Award,
   ExternalLink,
+  Gift,
+  DollarSign,
+  Minus,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, isPast, isToday, isTomorrow, getQuarter } from "date-fns";
@@ -76,13 +82,29 @@ export function MeScreen() {
   const [tasksLoading, setTasksLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
+  const [ledger, setLedger] = useState<WattsTransaction[]>([]);
+  const [ledgerLoading, setLedgerLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("tasks");
 
   useEffect(() => {
     fetchStats();
     fetchMyTasks();
     fetchMyProjects();
+    fetchWattsLedger();
   }, []);
+
+  const fetchWattsLedger = async () => {
+    try {
+      setLedgerLoading(true);
+      const data = await fetchWattsHistory();
+      setLedger(data);
+    } catch (error: any) {
+      console.error("Error fetching watts history:", error);
+      toast.error("Failed to load watts history");
+    } finally {
+      setLedgerLoading(false);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -349,15 +371,13 @@ export function MeScreen() {
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-4 pb-24">
-      {/* HERO CARD - Dark Gradient */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 shadow-2xl">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,138,76,0.1),transparent)]" />
-
-        <div className="relative z-10 space-y-6">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16 ring-2 ring-white/20">
+      {/* COCKPIT HERO SECTION */}
+      <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
               <AvatarImage src={profile?.avatar || undefined} />
-              <AvatarFallback className="bg-gradient-to-br from-orange-500 to-orange-600 text-white text-xl font-bold">
+              <AvatarFallback className="bg-gradient-to-br from-orange-500 to-orange-600 text-white text-lg font-bold">
                 {profile?.name
                   .split(" ")
                   .map((n) => n[0])
@@ -366,15 +386,30 @@ export function MeScreen() {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-2xl font-bold text-white">{profile?.name}</h1>
-              <Badge
-                variant="secondary"
-                className="bg-orange-500/20 text-orange-300 border-orange-500/30"
-              >
-                <Trophy className="w-3 h-3 mr-1" />
-                Rainmaker
-              </Badge>
+              <h1 className="text-lg font-bold text-slate-900 dark:text-white">
+                Good morning, {profile?.name.split(' ')[0]}!
+              </h1>
+              <div className="text-xs text-slate-500">Let's close some deals.</div>
             </div>
+          </div>
+          <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50">
+            Rainmaker
+          </Badge>
+        </div>
+        <div className="grid grid-cols-3 gap-4 divide-x divide-slate-100 dark:divide-slate-700">
+          <div className="text-center">
+            <div className="text-2xl font-black text-slate-900 dark:text-white">{tasks.length}</div>
+            <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Pending Tasks</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-black text-blue-600">
+              {showMoney ? `฿${formatRewards(stats?.commission || 0)}` : '•••'}
+            </div>
+            <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Earnings</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-black text-orange-500">{stats?.watts.toLocaleString()}</div>
+            <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Watts Score</div>
           </div>
         </div>
       </div>
@@ -769,24 +804,74 @@ export function MeScreen() {
             </div>
 
             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl shadow-lg">
-                    <Zap className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl shadow-lg">
+                  <Zap className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-blue-700">
+                    Watts Balance
                   </div>
-                  <div>
-                    <div className="text-sm font-medium text-blue-700">
-                      Watts Balance
-                    </div>
-                    <div className="text-2xl font-bold text-blue-900">
-                      {stats?.watts.toLocaleString() || "0"}{" "}
-                      <span className="text-base font-normal text-blue-600">W</span>
-                    </div>
+                  <div className="text-2xl font-bold text-blue-900">
+                    {stats?.watts.toLocaleString() || "0"}{" "}
+                    <span className="text-base font-normal text-blue-600">W</span>
                   </div>
                 </div>
-                <Button disabled className="bg-blue-200 text-blue-500 cursor-not-allowed">
-                  Coming Soon
-                </Button>
+              </div>
+
+              {/* Transaction History */}
+              <div className="space-y-2 mt-4 border-t border-blue-200 pt-4">
+                <h3 className="text-xs font-bold text-blue-900 uppercase mb-3">Transaction History</h3>
+                {ledgerLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
+                  </div>
+                ) : ledger.length === 0 ? (
+                  <div className="text-center py-8 text-blue-400">
+                    <Zap className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                    <div className="text-xs font-medium">No transactions yet</div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {ledger.map((transaction) => {
+                      const isPositive = transaction.amount > 0;
+                      const Icon =
+                        transaction.category === 'Deal' ? DollarSign :
+                        transaction.category === 'Bonus' ? Gift :
+                        transaction.category === 'Redemption' ? Minus :
+                        Plus;
+
+                      return (
+                        <div
+                          key={transaction.id}
+                          className="flex items-center gap-3 p-3 bg-white rounded-lg border border-blue-100 hover:border-blue-200 transition-colors"
+                        >
+                          <div className={`p-2 rounded-lg ${
+                            transaction.category === 'Deal' ? 'bg-emerald-100 text-emerald-600' :
+                            transaction.category === 'Bonus' ? 'bg-purple-100 text-purple-600' :
+                            transaction.category === 'Redemption' ? 'bg-red-100 text-red-600' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-medium text-slate-900 truncate">
+                              {transaction.description}
+                            </div>
+                            <div className="text-[10px] text-slate-500">
+                              {format(new Date(transaction.created_at), "MMM d, yyyy")}
+                            </div>
+                          </div>
+                          <div className={`text-sm font-bold ${
+                            isPositive ? 'text-emerald-600' : 'text-red-600'
+                          }`}>
+                            {isPositive ? '+' : ''}{transaction.amount.toLocaleString()}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
