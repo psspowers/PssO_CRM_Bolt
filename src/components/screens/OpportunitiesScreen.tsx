@@ -8,8 +8,7 @@ import {
   MediaVault,
   QualityGate,
   InvestmentModeler,
-  CreditRiskHub,
-  SearchBar
+  CreditRiskHub
 } from '../crm';
 import { VelocityHeatmap } from '../crm/VelocityHeatmap';
 import { useAppContext } from '../../contexts/AppContext';
@@ -379,24 +378,54 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {/* Title */}
-          <div className="flex items-center gap-2 mb-1">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
-                    <Info className="w-4 h-4" />
+          {/* Title Row with Search & Filter */}
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
+                      <Info className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <p className="text-xs">
+                      <strong>Mine:</strong> Your opportunities<br />
+                      <strong>Team:</strong> Your deals + subordinates' deals
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <h1 className="text-2xl font-bold text-slate-900">Deals</h1>
+            </div>
+
+            {/* Search & Filter - Moved to Header Row */}
+            <div className="flex items-center gap-2 flex-1 max-w-md ml-auto">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search deals, accounts..."
+                  className="w-full pl-9 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5 text-slate-400" />
                   </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs">
-                  <p className="text-xs">
-                    <strong>Mine:</strong> Your opportunities<br />
-                    <strong>Team:</strong> Your deals + subordinates' deals
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <h1 className="text-2xl font-bold text-slate-900">Deals</h1>
+                )}
+              </div>
+              <button
+                onClick={() => setShowFilter(true)}
+                className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors flex-shrink-0"
+              >
+                <Filter className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
           </div>
 
           {/* Hierarchy View Toggle - My Deals vs Team Deals */}
@@ -456,13 +485,6 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Search Bar */}
-      {!selectionMode && (
-        <div className="mb-3">
-          <SearchBar value={search} onChange={setSearch} placeholder="Search deals, accounts..." onFilterClick={() => setShowFilter(true)} />
         </div>
       )}
 
