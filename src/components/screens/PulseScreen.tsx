@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CircleCheck as CheckCircle2, TrendingUp, TrendingDown, Minus, Phone, Users, FileText, Mail, ArrowRight, ArrowLeft, Settings, Zap, MapPin, Star, BrainCircuit, Trash2 } from 'lucide-react';
+import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CircleCheck as CheckCircle2, TrendingUp, TrendingDown, Minus, Phone, Users, FileText, Mail, ArrowRight, ArrowLeft, Settings, Zap, MapPin, Star, BrainCircuit, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -1969,15 +1969,28 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
 
                     <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/50">
                       <div className="flex items-center gap-1">
-                        {news.url && (
-                          <button
-                            onClick={() => window.open(news.url!, '_blank')}
-                            className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-orange-600 bg-slate-50 dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 px-2.5 py-1.5 rounded-lg transition-colors mr-2"
-                          >
+                        <button
+                          onClick={() => {
+                            const hasDeepLink = news.url && news.url.length > 25 && !news.url.includes('google.com');
+
+                            if (hasDeepLink) {
+                              window.open(news.url!, '_blank');
+                            } else {
+                              const query = `${news.account_name || ''} ${news.title} filetype:pdf OR site:news`;
+                              const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+                              window.open(searchUrl, '_blank');
+                            }
+                          }}
+                          className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-orange-600 bg-slate-50 dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 px-2.5 py-1.5 rounded-lg transition-colors mr-2"
+                          title={news.url && news.url.length > 25 ? "Open Source Link" : "Search for Source"}
+                        >
+                          {news.url && news.url.length > 25 ? (
                             <ExternalLink className="w-3 h-3" />
-                            Source
-                          </button>
-                        )}
+                          ) : (
+                            <Search className="w-3 h-3" />
+                          )}
+                          Source
+                        </button>
 
                         <TooltipProvider>
                           <Tooltip>
