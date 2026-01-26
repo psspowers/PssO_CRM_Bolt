@@ -454,7 +454,33 @@ export function MeScreen() {
                         className="shrink-0 mt-0.5"
                       />
 
-                      <div className="flex-1 min-w-0">
+                      <button
+                        onClick={() => {
+                          if (task.related_to_id && task.related_to_type === "Account") {
+                            navigate("/", {
+                              state: {
+                                activeTab: "accounts",
+                                detailId: task.related_to_id,
+                              },
+                            });
+                          } else if (task.related_to_id && task.related_to_type === "Opportunity") {
+                            navigate("/", {
+                              state: {
+                                activeTab: "opportunities",
+                                detailId: task.related_to_id,
+                              },
+                            });
+                          } else if (task.related_to_id && task.related_to_type === "Project") {
+                            navigate("/", {
+                              state: {
+                                activeTab: "projects",
+                                detailId: task.related_to_id,
+                              },
+                            });
+                          }
+                        }}
+                        className="flex-1 min-w-0 text-left"
+                      >
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             <span className="text-xs font-medium text-slate-900 truncate">
@@ -474,9 +500,9 @@ export function MeScreen() {
                         </div>
 
                         <div className="text-xs text-slate-600 line-clamp-1">
-                          {task.details || task.summary}
+                          {task.summary || task.details}
                         </div>
-                      </div>
+                      </button>
                     </div>
                   );
                 })
