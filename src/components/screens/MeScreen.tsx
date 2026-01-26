@@ -381,26 +381,26 @@ export function MeScreen() {
 
       {/* TABS */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-3 p-1 bg-slate-100 rounded-lg h-auto">
+        <TabsList className="grid w-full grid-cols-3 h-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 p-1 text-slate-500">
           <TabsTrigger
             value="tasks"
-            className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-semibold data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            className="w-full rounded-lg text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm"
           >
-            <ListTodo className="w-3.5 h-3.5" />
+            <ListTodo className="w-4 h-4 mr-1.5" />
             <span>My Task</span>
           </TabsTrigger>
           <TabsTrigger
             value="projects"
-            className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-semibold data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            className="w-full rounded-lg text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm"
           >
-            <Briefcase className="w-3.5 h-3.5" />
+            <Briefcase className="w-4 h-4 mr-1.5" />
             <span>My Project</span>
           </TabsTrigger>
           <TabsTrigger
             value="rewards"
-            className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-semibold data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            className="w-full rounded-lg text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-orange-600 data-[state=active]:shadow-sm"
           >
-            <Award className="w-3.5 h-3.5" />
+            <Award className="w-4 h-4 mr-1.5" />
             <span>My Rewards</span>
           </TabsTrigger>
         </TabsList>
@@ -755,7 +755,6 @@ export function MeScreen() {
               <Progress
                 value={quotaProgress}
                 className="h-3 bg-blue-100"
-                indicatorClassName="bg-gradient-to-r from-blue-500 to-indigo-500"
               />
 
               <div className="flex items-center justify-between text-xs text-blue-700">
