@@ -1,11 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, User, Loader2, Trash2, Smartphone } from 'lucide-react';
+import { Plus, User, Loader2, Trash2, Smartphone, Sparkles, Copy, Check } from 'lucide-react';
 import { Contact } from '../../types/crm';
 import { useAppContext } from '../../contexts/AppContext';
 import { ContactForm } from './ContactForm';
 import { ContactCard } from './ContactCard';
 import { isContactPickerSupported, openNativeContactPicker, mapNativeToCRM } from '../../lib/device/contacts';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Textarea } from '../ui/textarea';
 import { toast } from 'sonner';
+import Papa from 'papaparse';
 
 interface AccountContactsProps {
   accountId: string;
@@ -18,6 +22,11 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
   const [isImporting, setIsImporting] = useState(false);
   const [importedData, setImportedData] = useState<Partial<Contact> | null>(null);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [showGeminiModal, setShowGeminiModal] = useState(false);
+  const [geminiStep, setGeminiStep] = useState<1 | 2>(1);
+  const [csvInput, setCsvInput] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [promptCopied, setPromptCopied] = useState(false);
 
   const isContactApiSupported = typeof navigator !== 'undefined' && 'contacts' in navigator && navigator.contacts && 'select' in navigator.contacts;
 
@@ -96,6 +105,89 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
     toast.success('Contact imported successfully');
   };
 
+  const geminiPrompt = `Search my emails for contacts from "${accountName}". Extract all unique contacts and return them in CSV format with these columns: Full Name, Email, Phone, Role. Include the header row. Example format:
+Full Name,Email,Phone,Role
+John Doe,john@example.com,+1234567890,CEO
+Jane Smith,jane@example.com,+1234567891,CTO`;
+
+  const handleCopyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(geminiPrompt);
+      setPromptCopied(true);
+      toast.success('Prompt copied to clipboard');
+      setTimeout(() => setPromptCopied(false), 2000);
+    } catch (err) {
+      toast.error('Failed to copy prompt');
+    }
+  };
+
+  const handleProcessCSV = async () => {
+    if (!csvInput.trim()) {
+      toast.error('Please paste CSV data');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const parsed = Papa.parse<string[]>(csvInput.trim(), {
+        header: false,
+        skipEmptyLines: true,
+      });
+
+      if (!parsed.data || parsed.data.length < 2) {
+        toast.error('Invalid CSV format');
+        setIsProcessing(false);
+        return;
+      }
+
+      const rows = parsed.data.slice(1);
+      let created = 0;
+      let skipped = 0;
+
+      for (const row of rows) {
+        const [fullName, email, phone, role] = row;
+
+        if (!fullName || !email) {
+          skipped++;
+          continue;
+        }
+
+        const existingContact = contacts.find(
+          c => c.email?.toLowerCase() === email.toLowerCase()
+        );
+
+        if (existingContact) {
+          skipped++;
+          continue;
+        }
+
+        await createContact({
+          fullName: fullName.trim(),
+          email: email.trim(),
+          phone: phone?.trim() || '',
+          role: role?.trim() || '',
+          accountId: accountId,
+          country: 'Thailand',
+          city: '',
+          tags: [],
+        });
+
+        created++;
+      }
+
+      toast.success(`Imported ${created} contact(s). Skipped ${skipped} duplicate(s).`);
+      setShowGeminiModal(false);
+      setGeminiStep(1);
+      setCsvInput('');
+    } catch (err) {
+      console.error('CSV processing error:', err);
+      toast.error('Failed to process CSV data');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   if (isAdding) {
     return (
       <div className="space-y-4">
@@ -153,13 +245,20 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
           Contacts ({accountContacts.length})
         </h3>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowGeminiModal(true)}
+            className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-semibold"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span className="hidden sm:inline">Gemini</span>
+          </button>
           {isContactApiSupported && (
             <button
               onClick={handleImportFromPhone}
               className="flex items-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-semibold"
             >
               <Smartphone className="w-4 h-4" />
-              Import
+              <span className="hidden sm:inline">Import</span>
             </button>
           )}
           <button
@@ -179,7 +278,14 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
           </div>
           <h4 className="text-lg font-semibold text-slate-900 mb-2">No contacts yet</h4>
           <p className="text-slate-500 text-sm mb-4">Add contacts to track key people at {accountName}</p>
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <button
+              onClick={() => setShowGeminiModal(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold"
+            >
+              <Sparkles className="w-4 h-4" />
+              Gemini Import
+            </button>
             {isContactApiSupported && (
               <button
                 onClick={handleImportFromPhone}
@@ -222,6 +328,108 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
           ))}
         </div>
       )}
+
+      <Dialog open={showGeminiModal} onOpenChange={(open) => {
+        setShowGeminiModal(open);
+        if (!open) {
+          setGeminiStep(1);
+          setCsvInput('');
+          setPromptCopied(false);
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-600" />
+              Gemini Import - Step {geminiStep}
+            </DialogTitle>
+          </DialogHeader>
+
+          {geminiStep === 1 ? (
+            <div className="space-y-4">
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h3 className="font-semibold text-purple-900 mb-2">Step 1: Copy Prompt</h3>
+                <p className="text-sm text-purple-700 mb-4">
+                  Copy this prompt and paste it into Gemini to extract contacts from your emails.
+                </p>
+                <div className="bg-white border border-purple-200 rounded-lg p-4 text-sm font-mono whitespace-pre-wrap mb-4">
+                  {geminiPrompt}
+                </div>
+                <Button
+                  onClick={handleCopyPrompt}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                  disabled={promptCopied}
+                >
+                  {promptCopied ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy Prompt to Clipboard
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t">
+                <p className="text-sm text-slate-600">
+                  After Gemini generates the CSV, click Next to paste it.
+                </p>
+                <Button
+                  onClick={() => setGeminiStep(2)}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  Next: Paste CSV
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h3 className="font-semibold text-purple-900 mb-2">Step 2: Paste CSV Results</h3>
+                <p className="text-sm text-purple-700 mb-4">
+                  Paste the CSV data from Gemini below. We'll automatically check for duplicates.
+                </p>
+                <Textarea
+                  value={csvInput}
+                  onChange={(e) => setCsvInput(e.target.value)}
+                  placeholder="Full Name,Email,Phone,Role
+John Doe,john@example.com,+1234567890,CEO
+Jane Smith,jane@example.com,+1234567891,CTO"
+                  className="min-h-[200px] font-mono text-sm"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setGeminiStep(1)}
+                  disabled={isProcessing}
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleProcessCSV}
+                  disabled={isProcessing || !csvInput.trim()}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Process Contacts'
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
