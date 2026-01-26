@@ -458,7 +458,7 @@ const formatFeedItem = (rawItem: any): FeedItem | null => {
 
 interface PulseScreenProps {
   forcedOpenId?: string | null;
-  onNavigate?: (view: string) => void;
+  onNavigate?: (view: string, id?: string) => void;
 }
 
 export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenProps) {
@@ -1675,6 +1675,7 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
                             <button
                               className="flex-shrink-0 p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition-colors"
                               onClick={() => {
+                                const id = item.relatedToId;
                                 const typeMap: Record<string, string> = {
                                   'Opportunity': 'opportunities',
                                   'Project': 'projects',
@@ -1683,7 +1684,7 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
                                   'Partner': 'partners'
                                 };
                                 const view = typeMap[item.relatedToType] || 'home';
-                                onNavigate(view);
+                                onNavigate(view, id);
                               }}
                               title={`Go to ${item.relatedToType}`}
                             >
