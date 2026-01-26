@@ -26,9 +26,25 @@ export const openNativeContactPicker = async (): Promise<any[]> => {
   }
 };
 
-export const mapNativeToCRM = (nativeContact: any) => ({
-  fullName: ((nativeContact.name?.[0] || '') + ' ' + (nativeContact.name?.[1] || '')).trim() || nativeContact.name?.[0] || '',
-  email: nativeContact.email?.[0] || '',
-  phone: nativeContact.tel?.[0] || '',
-  role: '',
-});
+export const mapNativeToCRM = (nativeContact: any, contextAccountName?: string) => {
+  let rawFullName = ((nativeContact.name?.[0] || '') + ' ' + (nativeContact.name?.[1] || '')).trim() || nativeContact.name?.[0] || '';
+
+  if (contextAccountName && rawFullName) {
+    const accountPrefix = contextAccountName.substring(0, Math.min(7, contextAccountName.length)).toLowerCase();
+    const nameLower = rawFullName.toLowerCase();
+
+    if (nameLower.startsWith(accountPrefix)) {
+      const stripped = rawFullName.substring(accountPrefix.length).trim();
+      if (stripped.length > 0) {
+        rawFullName = stripped;
+      }
+    }
+  }
+
+  return {
+    fullName: rawFullName,
+    email: nativeContact.email?.[0] || '',
+    phone: nativeContact.tel?.[0] || '',
+    role: '',
+  };
+};

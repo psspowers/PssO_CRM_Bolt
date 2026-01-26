@@ -74,7 +74,7 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
     try {
       const selected = await openNativeContactPicker();
       if (selected && selected.length > 0) {
-        const mappedData = mapNativeToCRM(selected[0]);
+        const mappedData = mapNativeToCRM(selected[0], accountName);
         setImportedData(mappedData);
         setIsImporting(true);
       }
