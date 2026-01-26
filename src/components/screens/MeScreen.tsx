@@ -381,38 +381,38 @@ export function MeScreen() {
 
       {/* TABS */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex items-center gap-1 px-1 py-1 bg-slate-100 rounded-xl">
+        <div className="flex items-center gap-0.5 px-0.5 py-0.5 bg-slate-100 rounded-lg">
           <button
             onClick={() => setActiveTab("tasks")}
-            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-semibold transition-all ${
               activeTab === "tasks"
-                ? "bg-blue-500 text-white shadow-md"
+                ? "bg-blue-500 text-white shadow-sm"
                 : "bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
             }`}
           >
-            <ListTodo className="w-4 h-4" />
+            <ListTodo className="w-3.5 h-3.5" />
             <span>My Task</span>
           </button>
           <button
             onClick={() => setActiveTab("projects")}
-            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-semibold transition-all ${
               activeTab === "projects"
-                ? "bg-emerald-500 text-white shadow-md"
+                ? "bg-blue-500 text-white shadow-sm"
                 : "bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
             }`}
           >
-            <Briefcase className="w-4 h-4" />
+            <Briefcase className="w-3.5 h-3.5" />
             <span>My Project</span>
           </button>
           <button
             onClick={() => setActiveTab("rewards")}
-            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-semibold transition-all ${
               activeTab === "rewards"
-                ? "bg-amber-500 text-white shadow-md"
+                ? "bg-blue-500 text-white shadow-sm"
                 : "bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
             }`}
           >
-            <Award className="w-4 h-4" />
+            <Award className="w-3.5 h-3.5" />
             <span>My Rewards</span>
           </button>
         </div>
@@ -514,11 +514,11 @@ export function MeScreen() {
         {/* MY PROJECTS TAB */}
         <TabsContent value="projects" className="mt-4 space-y-4">
           {projectsLoading ? (
-            <div className="flex items-center justify-center py-12 bg-white rounded-2xl border-2 border-emerald-500 shadow-lg shadow-emerald-500/20">
-              <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+            <div className="flex items-center justify-center py-12 bg-white rounded-2xl border-2 border-blue-500 shadow-lg shadow-blue-500/20">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
             </div>
           ) : projects.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 bg-white rounded-2xl border-2 border-emerald-500 shadow-lg shadow-emerald-500/20">
+            <div className="text-center py-12 text-slate-400 bg-white rounded-2xl border-2 border-blue-500 shadow-lg shadow-blue-500/20">
               <Briefcase className="w-12 h-12 mx-auto mb-2 opacity-40" />
               <div className="text-sm font-medium">No active projects</div>
             </div>
@@ -526,9 +526,9 @@ export function MeScreen() {
             <>
               {/* ADVANCED STAGE PROJECTS */}
               {advancedProjects.length > 0 && (
-                <div className="bg-white rounded-2xl border-2 border-emerald-500 shadow-lg shadow-emerald-500/20 overflow-hidden">
-                  <div className="p-3 border-b border-emerald-200 bg-emerald-50">
-                    <h3 className="text-xs font-semibold text-emerald-900 uppercase tracking-wide">
+                <div className="bg-white rounded-2xl border-2 border-blue-500 shadow-lg shadow-blue-500/20 overflow-hidden">
+                  <div className="p-3 border-b border-blue-200 bg-blue-50">
+                    <h3 className="text-xs font-semibold text-blue-900 uppercase tracking-wide">
                       Negotiation & Above ({advancedProjects.length})
                     </h3>
                   </div>
@@ -621,9 +621,9 @@ export function MeScreen() {
 
               {/* EARLY STAGE PROJECTS */}
               {earlyProjects.length > 0 && (
-                <div className="bg-white rounded-2xl border-2 border-emerald-500 shadow-lg shadow-emerald-500/20 overflow-hidden">
-                  <div className="p-3 border-b border-emerald-200 bg-emerald-50">
-                    <h3 className="text-xs font-semibold text-emerald-900 uppercase tracking-wide">
+                <div className="bg-white rounded-2xl border-2 border-blue-500 shadow-lg shadow-blue-500/20 overflow-hidden">
+                  <div className="p-3 border-b border-blue-200 bg-blue-50">
+                    <h3 className="text-xs font-semibold text-blue-900 uppercase tracking-wide">
                       Qualifying & Proposal ({earlyProjects.length})
                     </h3>
                   </div>
@@ -719,36 +719,36 @@ export function MeScreen() {
 
         {/* MY REWARDS TAB */}
         <TabsContent value="rewards" className="mt-4 space-y-4">
-          <div className="space-y-4 p-6 bg-white rounded-2xl border-2 border-amber-500 shadow-lg shadow-amber-500/20">
+          <div className="space-y-4 p-6 bg-white rounded-2xl border-2 border-blue-500 shadow-lg shadow-blue-500/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Wallet className="w-5 h-5 text-amber-600" />
-                <span className="text-sm font-semibold text-amber-900">
+                <Wallet className="w-5 h-5 text-blue-600" />
+                <span className="text-sm font-semibold text-blue-900">
                   YTD Earnings
                 </span>
               </div>
               <button
                 onClick={() => setShowMoney(!showMoney)}
-                className="p-2 hover:bg-amber-50 rounded-lg transition-colors"
+                className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
               >
                 {showMoney ? (
-                  <EyeOff className="w-4 h-4 text-amber-600" />
+                  <EyeOff className="w-4 h-4 text-blue-600" />
                 ) : (
-                  <Eye className="w-4 h-4 text-amber-600" />
+                  <Eye className="w-4 h-4 text-blue-600" />
                 )}
               </button>
             </div>
 
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200 shadow-sm p-6">
-              <div className="text-3xl font-bold text-amber-900">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 shadow-sm p-6">
+              <div className="text-3xl font-bold text-blue-900">
                 {showMoney ? (
                   `฿${stats?.commission.toLocaleString() || "0"}`
                 ) : (
-                  <span className="text-amber-300">฿•••,•••</span>
+                  <span className="text-blue-300">฿•••,•••</span>
                 )}
               </div>
 
-              <div className="flex items-center gap-2 text-xs text-amber-700 mt-2">
+              <div className="flex items-center gap-2 text-xs text-blue-700 mt-2">
                 <TrendingUp className="w-3 h-3" />
                 <span>
                   Based on {stats?.won_mw.toFixed(2) || "0"} MW Closed
@@ -756,48 +756,48 @@ export function MeScreen() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200 shadow-sm p-6 space-y-3">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 shadow-sm p-6 space-y-3">
               <div className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-amber-600" />
-                <span className="text-sm font-semibold text-amber-900">
+                <Target className="w-5 h-5 text-blue-600" />
+                <span className="text-sm font-semibold text-blue-900">
                   Quota Progress
                 </span>
               </div>
 
               <Progress
                 value={quotaProgress}
-                className="h-3 bg-amber-100"
-                indicatorClassName="bg-gradient-to-r from-amber-500 to-orange-500"
+                className="h-3 bg-blue-100"
+                indicatorClassName="bg-gradient-to-r from-blue-500 to-indigo-500"
               />
 
-              <div className="flex items-center justify-between text-xs text-amber-700">
+              <div className="flex items-center justify-between text-xs text-blue-700">
                 <span>
                   {stats?.won_mw.toFixed(2) || "0"} MW /{" "}
                   {stats?.quota_mw.toFixed(2) || "0"} MW
                 </span>
-                <span className="font-semibold text-amber-900">
+                <span className="font-semibold text-blue-900">
                   {quotaProgress.toFixed(0)}%
                 </span>
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 p-6 shadow-sm">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl shadow-lg">
+                  <div className="p-3 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl shadow-lg">
                     <Zap className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-amber-700">
+                    <div className="text-sm font-medium text-blue-700">
                       Watts Balance
                     </div>
-                    <div className="text-2xl font-bold text-amber-900">
+                    <div className="text-2xl font-bold text-blue-900">
                       {stats?.watts.toLocaleString() || "0"}{" "}
-                      <span className="text-base font-normal text-amber-600">W</span>
+                      <span className="text-base font-normal text-blue-600">W</span>
                     </div>
                   </div>
                 </div>
-                <Button disabled className="bg-amber-200 text-amber-500 cursor-not-allowed">
+                <Button disabled className="bg-blue-200 text-blue-500 cursor-not-allowed">
                   Coming Soon
                 </Button>
               </div>
