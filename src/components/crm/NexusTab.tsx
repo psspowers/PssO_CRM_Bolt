@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Network, Star, Plus, User, Building2, Loader2, Search, ArrowRight, Users, Target, Orbit, List, X, ArrowLeft } from 'lucide-react';
+import { Network, Star, Plus, User, Building2, Loader2, Search, ArrowRight, Users, Target, Orbit, List, X, ArrowLeft, Sparkles } from 'lucide-react';
 import { NexusOrbitGraph } from './NexusOrbitGraph';
+import { NexusImportModal } from './NexusImportModal';
 
 interface NexusPath {
   path: Array<{
@@ -35,6 +36,7 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
   const [paths, setPaths] = useState<NexusPath[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [showAiImport, setShowAiImport] = useState(false);
   const [viewMode, setViewMode] = useState<'orbit' | 'list'>('orbit');
   const [targetEntityName, setTargetEntityName] = useState<string>('Target');
 
@@ -395,13 +397,22 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
               Team-wide connections to this target.
             </p>
           </div>
-          <button
-            onClick={() => setShowAdd(true)}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all active:scale-95 flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Link
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowAiImport(true)}
+              className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all active:scale-95 flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              AI Map
+            </button>
+            <button
+              onClick={() => setShowAdd(true)}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md transition-all active:scale-95 flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Link
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 bg-slate-800/50 rounded-lg p-1">
@@ -815,6 +826,13 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
           ))}
         </div>
       )}
+
+      <NexusImportModal
+        isOpen={showAiImport}
+        onClose={() => setShowAiImport(false)}
+        accountName={targetEntityName}
+        onImport={fetchPaths}
+      />
     </div>
   );
 };
