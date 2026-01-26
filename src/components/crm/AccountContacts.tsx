@@ -107,14 +107,38 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
   };
 
   const geminiPrompt = opportunityName
-    ? `Search my emails regarding the deal "${opportunityName}" or the company "${accountName}". Identify all stakeholders and contacts involved in this deal. Extract all unique contacts and return them in CSV format with these columns: Full Name, Email, Phone, Role. Include the header row. Example format:
+    ? `Search my emails regarding the deal "${opportunityName}" or the company "${accountName}". Identify all stakeholders and contacts involved in this deal.
+
+Output the result strictly as a **CSV Code Block**.
+Do NOT add conversational text or explanations.
+Ensure EACH contact is on a NEW LINE.
+
+Headers: Full Name,Email,Phone,Role
+
+Example format:
+\`\`\`csv
 Full Name,Email,Phone,Role
 John Doe,john@example.com,+1234567890,CEO
-Jane Smith,jane@example.com,+1234567891,CTO`
-    : `Search my emails for contacts from "${accountName}". Extract all unique contacts and return them in CSV format with these columns: Full Name, Email, Phone, Role. Include the header row. Example format:
+Jane Smith,jane@example.com,+1234567891,CTO
+\`\`\`
+
+IMPORTANT: Each row must be on its own line. Do not combine multiple contacts into one line.`
+    : `Search my emails for contacts from "${accountName}". Identify all stakeholders.
+
+Output the result strictly as a **CSV Code Block**.
+Do NOT add conversational text or explanations.
+Ensure EACH contact is on a NEW LINE.
+
+Headers: Full Name,Email,Phone,Role
+
+Example format:
+\`\`\`csv
 Full Name,Email,Phone,Role
 John Doe,john@example.com,+1234567890,CEO
-Jane Smith,jane@example.com,+1234567891,CTO`;
+Jane Smith,jane@example.com,+1234567891,CTO
+\`\`\`
+
+IMPORTANT: Each row must be on its own line. Do not combine multiple contacts into one line.`;
 
   const handleCopyPrompt = async () => {
     try {
@@ -136,23 +160,50 @@ Jane Smith,jane@example.com,+1234567891,CTO`;
     setIsProcessing(true);
 
     try {
-      const parsed = Papa.parse<string[]>(csvInput.trim(), {
-        header: false,
-        skipEmptyLines: true,
-      });
+      let cleanedInput = csvInput.trim();
 
-      if (!parsed.data || parsed.data.length < 2) {
-        toast.error('Invalid CSV format');
+      cleanedInput = cleanedInput.replace(/```csv\n?/g, '').replace(/```\n?/g, '');
+
+      const lines = cleanedInput.split('\n').filter(line => line.trim().length > 0);
+
+      if (lines.length === 0) {
+        toast.error('No valid data found');
         setIsProcessing(false);
         return;
       }
 
-      const rows = parsed.data.slice(1);
+      let dataLines = [...lines];
+
+      const firstLine = lines[0].toLowerCase();
+      if (firstLine.includes('full name') || firstLine.includes('email') || firstLine.includes('phone') || firstLine.includes('role')) {
+        dataLines = lines.slice(1);
+      }
+
+      if (dataLines.length === 0) {
+        toast.error('No contact data found after header');
+        setIsProcessing(false);
+        return;
+      }
+
       let created = 0;
       let skipped = 0;
 
-      for (const row of rows) {
-        const [fullName, email, phone, role] = row;
+      for (const line of dataLines) {
+        const parsed = Papa.parse<string[]>(line, {
+          header: false,
+          skipEmptyLines: true,
+        });
+
+        if (!parsed.data || parsed.data.length === 0) {
+          skipped++;
+          continue;
+        }
+
+        const row = parsed.data[0];
+        const fullName = row[0]?.trim() || '';
+        const email = row[1]?.trim() || '';
+        const phone = row[2]?.trim() || '';
+        const role = row[3]?.trim() || '';
 
         if (!fullName || !email) {
           skipped++;
@@ -169,10 +220,10 @@ Jane Smith,jane@example.com,+1234567891,CTO`;
         }
 
         await createContact({
-          fullName: fullName.trim(),
-          email: email.trim(),
-          phone: phone?.trim() || '',
-          role: role?.trim() || '',
+          fullName: fullName,
+          email: email,
+          phone: phone,
+          role: role,
           accountId: accountId,
           country: 'Thailand',
           city: '',
