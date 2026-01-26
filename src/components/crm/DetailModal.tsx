@@ -255,10 +255,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               {entityType === 'Account' && entityId && title && (
                 <AccountContacts accountId={entityId} accountName={title} />
               )}
-              {entityType === 'Opportunity' && accountId && (
+              {entityType === 'Opportunity' && (
                 <AccountContacts
-                  accountId={accountId}
+                  accountId={accountId || ''}
                   accountName={accounts.find(a => a.id === accountId)?.name || 'Account'}
+                  opportunityName={title}
                 />
               )}
             </div>

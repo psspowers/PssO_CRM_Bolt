@@ -14,9 +14,10 @@ import Papa from 'papaparse';
 interface AccountContactsProps {
   accountId: string;
   accountName: string;
+  opportunityName?: string;
 }
 
-export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, accountName }) => {
+export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, accountName, opportunityName }) => {
   const { contacts, createContact, deleteContact, canDelete } = useAppContext();
   const [isAdding, setIsAdding] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -105,7 +106,12 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
     toast.success('Contact imported successfully');
   };
 
-  const geminiPrompt = `Search my emails for contacts from "${accountName}". Extract all unique contacts and return them in CSV format with these columns: Full Name, Email, Phone, Role. Include the header row. Example format:
+  const geminiPrompt = opportunityName
+    ? `Search my emails regarding the deal "${opportunityName}" or the company "${accountName}". Identify all stakeholders and contacts involved in this deal. Extract all unique contacts and return them in CSV format with these columns: Full Name, Email, Phone, Role. Include the header row. Example format:
+Full Name,Email,Phone,Role
+John Doe,john@example.com,+1234567890,CEO
+Jane Smith,jane@example.com,+1234567891,CTO`
+    : `Search my emails for contacts from "${accountName}". Extract all unique contacts and return them in CSV format with these columns: Full Name, Email, Phone, Role. Include the header row. Example format:
 Full Name,Email,Phone,Role
 John Doe,john@example.com,+1234567890,CEO
 Jane Smith,jane@example.com,+1234567891,CTO`;
@@ -238,6 +244,16 @@ Jane Smith,jane@example.com,+1234567891,CTO`;
     );
   }
 
+  if (!accountId) {
+    return (
+      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <p className="text-amber-800 text-sm font-semibold">
+          Please link an Account to this Opportunity before importing contacts.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -350,7 +366,9 @@ Jane Smith,jane@example.com,+1234567891,CTO`;
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                 <h3 className="font-semibold text-purple-900 mb-2">Step 1: Copy Prompt</h3>
                 <p className="text-sm text-purple-700 mb-4">
-                  Copy this prompt and paste it into Gemini to extract contacts from your emails.
+                  {opportunityName
+                    ? 'Copy this prompt and paste it into Gemini to extract stakeholders from your emails related to this deal.'
+                    : 'Copy this prompt and paste it into Gemini to extract contacts from your emails.'}
                 </p>
                 <div className="bg-white border border-purple-200 rounded-lg p-4 text-sm font-mono whitespace-pre-wrap mb-4">
                   {geminiPrompt}
