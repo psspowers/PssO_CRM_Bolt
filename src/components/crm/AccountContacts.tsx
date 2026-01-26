@@ -119,38 +119,55 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
   };
 
   const geminiPrompt = opportunityName
-    ? `Search my emails regarding the deal "${opportunityName}" or the company "${accountName}". Identify all stakeholders and contacts involved in this deal.
+    ? `Search my Emails and **Calendar Invites** regarding:
+1. The Deal: "${opportunityName}"
+2. The Company: "${accountName}"
+3. Related keywords: "Meeting", "Kickoff", "Discussion", "Proposal" linked to the above.
 
-Output the result strictly as a **CSV Code Block**.
-Do NOT add conversational text or explanations.
-Ensure EACH contact is on a NEW LINE.
+**MISSION:**
+Identify ALL stakeholders, especially:
+- External Partners (e.g., Huawei, EPCs, Consultants).
+- **Meeting Attendees** from calendar invites.
+- People CC'd on high-level threads.
 
+**OUTPUT FORMAT:**
+Strict **CSV Code Block** only. No conversation.
 Headers: Full Name,Email,Phone,Role
 
-Example format:
+**RULES:**
+- Put EACH contact on a NEW LINE.
+- If Role is unknown, infer it from their signature or email domain (e.g., "@huawei.com" -> "Huawei Representative").
+- Do NOT truncate lists.
+
+Example:
 \`\`\`csv
-Full Name,Email,Phone,Role
-John Doe,john@example.com,+1234567890,CEO
-Jane Smith,jane@example.com,+1234567891,CTO
-\`\`\`
+John Doe,john@huawei.com,+66 123 456 789,Huawei Manager
+Jane Smith,jane@supplier.com,,Technical Lead
+\`\`\``
+    : `Search my Emails and **Calendar Invites** regarding:
+1. The Company: "${accountName}"
+2. Related keywords: "Meeting", "Discussion", "Proposal", "Partnership" linked to the above.
 
-IMPORTANT: Each row must be on its own line. Do not combine multiple contacts into one line.`
-    : `Search my emails for contacts from "${accountName}". Identify all stakeholders.
+**MISSION:**
+Identify ALL stakeholders, especially:
+- External Partners and Suppliers.
+- **Meeting Attendees** from calendar invites.
+- People CC'd on important threads.
 
-Output the result strictly as a **CSV Code Block**.
-Do NOT add conversational text or explanations.
-Ensure EACH contact is on a NEW LINE.
-
+**OUTPUT FORMAT:**
+Strict **CSV Code Block** only. No conversation.
 Headers: Full Name,Email,Phone,Role
 
-Example format:
-\`\`\`csv
-Full Name,Email,Phone,Role
-John Doe,john@example.com,+1234567890,CEO
-Jane Smith,jane@example.com,+1234567891,CTO
-\`\`\`
+**RULES:**
+- Put EACH contact on a NEW LINE.
+- If Role is unknown, infer it from their signature or email domain.
+- Do NOT truncate lists.
 
-IMPORTANT: Each row must be on its own line. Do not combine multiple contacts into one line.`;
+Example:
+\`\`\`csv
+John Doe,john@company.com,+66 123 456 789,Sales Manager
+Jane Smith,jane@supplier.com,,Technical Lead
+\`\`\``;
 
   const handleCopyPrompt = async () => {
     try {
