@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { TrendingUp, Calculator, ArrowRightLeft, ShieldCheck, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingUp, Calculator, ArrowRightLeft, ShieldCheck, Info, ChevronDown, ChevronUp, Settings, Coins, BarChart3, Zap } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
 
 const DAYS = ["5 Days", "6 Days", "7 Days"];
 
@@ -294,65 +296,107 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
         {showAdvanced ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
       </button>
 
-      {/* Advanced Settings Panel */}
+      {/* Advanced Settings Panel - Cockpit Style */}
       {showAdvanced && (
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
-          <div className="grid grid-cols-4 gap-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase leading-tight">Peak Rate<br/>(฿/kWh)</label>
-              <input
-                type="number"
-                value={peakRate}
-                onChange={e => setPeakRate(Number(e.target.value))}
-                step={0.01}
-                className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none"
-              />
+        <Card className="p-6 space-y-6 border-slate-200">
+          {/* Header */}
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+            <Settings className="w-5 h-5 text-slate-400" />
+            <h3 className="font-bold text-slate-700">Tariff & Tech Parameters</h3>
+          </div>
+
+          {/* Section 1: RATES */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 uppercase tracking-wider">
+              <Coins className="w-4 h-4" />
+              <span>Rates (฿/kWh)</span>
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase leading-tight">Off-Peak Rate<br/>(฿/kWh)</label>
-              <input
-                type="number"
-                value={offPeakRate}
-                onChange={e => setOffPeakRate(Number(e.target.value))}
-                step={0.01}
-                className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase leading-tight">Peak CUF<br/>(%)</label>
-              <input
-                type="number"
-                value={cufPeak}
-                onChange={e => setCufPeak(Number(e.target.value))}
-                min={0}
-                max={100}
-                className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase leading-tight">Off-Peak CUF<br/>(%)</label>
-              <input
-                type="number"
-                value={cufOffPeak}
-                onChange={e => setCufOffPeak(Number(e.target.value))}
-                min={0}
-                max={100}
-                className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              {/* Peak Pill */}
+              <div className="bg-orange-50 border border-orange-100 rounded-xl p-3">
+                <label className="text-xs font-bold text-orange-600 block mb-1">PEAK</label>
+                <Input
+                  type="number"
+                  value={peakRate}
+                  onChange={e => setPeakRate(Number(e.target.value))}
+                  step={0.01}
+                  className="border-0 bg-white/50 text-lg font-bold text-slate-700 h-10 shadow-none focus-visible:ring-1 focus-visible:ring-orange-300"
+                />
+              </div>
+              {/* Off-Peak Pill */}
+              <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+                <label className="text-xs font-bold text-emerald-600 block mb-1">OFF-PEAK</label>
+                <Input
+                  type="number"
+                  value={offPeakRate}
+                  onChange={e => setOffPeakRate(Number(e.target.value))}
+                  step={0.01}
+                  className="border-0 bg-white/50 text-lg font-bold text-slate-700 h-10 shadow-none focus-visible:ring-1 focus-visible:ring-emerald-300"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Second Row - Generation Baseline */}
-          <div className="grid grid-cols-4 gap-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-400 uppercase leading-tight">Gen Baseline<br/>(kWh/kWp/yr)</label>
-              <input
-                type="number"
-                value={genBaseline}
-                onChange={e => setGenBaseline(Number(e.target.value))}
-                min={0}
-                className="w-full p-2 border rounded-xl font-bold text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none"
-              />
+          {/* Section 2: CUF */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 uppercase tracking-wider">
+              <BarChart3 className="w-4 h-4" />
+              <span>Utilization (CUF %)</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {/* Peak CUF */}
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                <label className="text-xs font-bold text-blue-600 block mb-1">PEAK HRS</label>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    value={cufPeak}
+                    onChange={e => setCufPeak(Number(e.target.value))}
+                    min={0}
+                    max={100}
+                    className="border-0 bg-white/50 text-lg font-bold text-slate-700 h-10 shadow-none pr-8 focus-visible:ring-1 focus-visible:ring-blue-300"
+                  />
+                  <span className="absolute right-3 top-2 text-blue-400 font-bold">%</span>
+                </div>
+              </div>
+              {/* Off-Peak CUF */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <label className="text-xs font-bold text-slate-500 block mb-1">OFF-PEAK HRS</label>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    value={cufOffPeak}
+                    onChange={e => setCufOffPeak(Number(e.target.value))}
+                    min={0}
+                    max={100}
+                    className="border-0 bg-white/50 text-lg font-bold text-slate-700 h-10 shadow-none pr-8 focus-visible:ring-1 focus-visible:ring-slate-300"
+                  />
+                  <span className="absolute right-3 top-2 text-slate-400 font-bold">%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: BASELINE */}
+          <div className="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-2xl p-4 border border-teal-100 flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-teal-700 font-bold mb-1">
+                <Zap className="w-4 h-4 fill-current" />
+                GENERATION BASELINE
+              </div>
+              <div className="text-xs text-teal-600/70 font-medium">Yield Efficiency</div>
+            </div>
+            <div className="text-right">
+              <div className="flex items-baseline gap-1 justify-end">
+                <Input
+                  type="number"
+                  value={genBaseline}
+                  onChange={e => setGenBaseline(Number(e.target.value))}
+                  min={0}
+                  className="w-24 text-right border-0 bg-transparent text-2xl font-black text-teal-700 p-0 h-auto focus-visible:ring-0 shadow-none"
+                />
+                <span className="text-xs font-bold text-teal-600">kWh/kWp</span>
+              </div>
             </div>
           </div>
 
@@ -364,7 +408,7 @@ export const InvestmentModeler: React.FC<InvestmentModelerProps> = ({
               Peak hours typically have higher utilization. CUF adjusts automatically based on your operating schedule selection.
             </p>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* CHART */}
