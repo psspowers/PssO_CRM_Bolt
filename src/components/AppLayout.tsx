@@ -12,7 +12,8 @@ import {
   TasksScreen,
   ProjectsScreen,
   PulseScreen,
-  MeScreen
+  MeScreen,
+  NexusScreen
 } from './screens';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppContext } from '@/contexts/AppContext';
@@ -22,7 +23,7 @@ import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { supabase } from '@/lib/supabase';
 
 
-type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'projects' | 'pulse' | 'me';
+type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'projects' | 'pulse' | 'me' | 'nexus';
 type EntityType = 'Account' | 'Opportunity';
 
 export default function AppLayout() {
@@ -450,6 +451,7 @@ export default function AppLayout() {
       case 'timeline': return <ActivityTimelineScreen />;
       case 'search': return <SearchScreen onNavigate={handleDeepLink} />;
       case 'me': return <MeScreen />;
+      case 'nexus': return <NexusScreen />;
       default:
         return (
           <VelocityDashboard
@@ -473,7 +475,8 @@ export default function AppLayout() {
     timeline: 'Timeline',
     tasks: 'Tasks',
     pulse: 'Pulse',
-    me: 'Me'
+    me: 'Me',
+    nexus: 'Network Intelligence'
   };
 
   // Prepare entities for QuickAddModal

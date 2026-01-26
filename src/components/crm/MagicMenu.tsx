@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Handshake, IdCard, User } from 'lucide-react';
+import { Building2, Handshake, IdCard, User, Network } from 'lucide-react';
 
 interface MagicMenuProps {
   isOpen: boolean;
@@ -54,6 +54,15 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
             aria-label="Partners"
           >
             <Handshake className="w-6 h-6" />
+          </button>
+
+          {/* Nexus Button - Top Right Arc Position */}
+          <button
+            onClick={() => { onNavigate('nexus'); onClose(); }}
+            className="absolute right-8 top-12 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shadow-lg shadow-indigo-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-indigo-500/60 animate-in zoom-in duration-300 delay-200"
+            aria-label="Nexus"
+          >
+            <Network className="w-6 h-6" />
           </button>
 
         </div>
