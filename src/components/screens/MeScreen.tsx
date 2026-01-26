@@ -381,41 +381,29 @@ export function MeScreen() {
 
       {/* TABS */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex items-center gap-0.5 px-0.5 py-0.5 bg-slate-100 rounded-lg">
-          <button
-            onClick={() => setActiveTab("tasks")}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-semibold transition-all ${
-              activeTab === "tasks"
-                ? "bg-blue-500 text-white shadow-sm"
-                : "bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-            }`}
+        <TabsList className="w-full grid grid-cols-3 p-1 bg-slate-100 rounded-lg h-auto">
+          <TabsTrigger
+            value="tasks"
+            className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-semibold data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-600 hover:text-slate-900 hover:bg-slate-50"
           >
             <ListTodo className="w-3.5 h-3.5" />
             <span>My Task</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("projects")}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-semibold transition-all ${
-              activeTab === "projects"
-                ? "bg-blue-500 text-white shadow-sm"
-                : "bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-            }`}
+          </TabsTrigger>
+          <TabsTrigger
+            value="projects"
+            className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-semibold data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-600 hover:text-slate-900 hover:bg-slate-50"
           >
             <Briefcase className="w-3.5 h-3.5" />
             <span>My Project</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("rewards")}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-semibold transition-all ${
-              activeTab === "rewards"
-                ? "bg-blue-500 text-white shadow-sm"
-                : "bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-            }`}
+          </TabsTrigger>
+          <TabsTrigger
+            value="rewards"
+            className="flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-semibold data-[state=active]:bg-blue-500 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-600 hover:text-slate-900 hover:bg-slate-50"
           >
             <Award className="w-3.5 h-3.5" />
             <span>My Rewards</span>
-          </button>
-        </div>
+          </TabsTrigger>
+        </TabsList>
 
         {/* MY TASKS TAB */}
         <TabsContent value="tasks" className="mt-4">

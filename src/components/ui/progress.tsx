@@ -6,12 +6,13 @@ import { cn } from "@/lib/utils"
 interface ProgressProps extends
   React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> {
   variant?: "default" | "success" | "warning" | "error"
+  indicatorClassName?: string
 }
 
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
   ProgressProps
->(({ className, value, variant = "default", ...props }, ref) => (
+>(({ className, value, variant = "default", indicatorClassName, ...props }, ref) => (
   <ProgressPrimitive.Root
     ref={ref}
     className={cn(
@@ -27,6 +28,7 @@ const Progress = React.forwardRef<
         variant === "success" && "bg-green-500",
         variant === "warning" && "bg-yellow-500",
         variant === "error" && "bg-destructive",
+        indicatorClassName
       )}
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
     />
