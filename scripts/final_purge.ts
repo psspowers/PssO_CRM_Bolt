@@ -4,11 +4,18 @@ dotenv.config();
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
-  process.env.VITE_SUPABASE_ANON_KEY!
+  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY!
 );
 
 async function purge() {
   console.log('🔍 ANALYZING NOISE on:', process.env.VITE_SUPABASE_URL);
+
+  if (!process.env.VITE_SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('❌ VITE_SUPABASE_SERVICE_ROLE_KEY is required but not found in .env');
+    console.error('📝 Add it to .env: VITE_SUPABASE_SERVICE_ROLE_KEY=your_service_role_key');
+    console.error('🔑 Get it from: Supabase Dashboard > Settings > API > service_role key');
+    return;
+  }
 
   // Debug: Test basic query first
   const { data: testData, error: testError } = await supabase
