@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TrendingUp, TrendingDown, Minus, ExternalLink, Star, Trash2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Info, ExternalLink, Star, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatDistanceToNow } from 'date-fns';
@@ -33,18 +33,50 @@ export const NewsItemCard: React.FC<NewsItemCardProps> = ({
 
   const getImpactIcon = (impact: string) => {
     switch (impact) {
-      case 'opportunity': return <TrendingUp className="w-4 h-4 text-green-500" />;
-      case 'threat': return <TrendingDown className="w-4 h-4 text-red-500" />;
-      default: return <Minus className="w-4 h-4 text-slate-500" />;
+      case 'opportunity':
+        return (
+          <div className="bg-emerald-100 p-1.5 rounded-lg">
+            <TrendingUp className="w-4 h-4 text-emerald-600" />
+          </div>
+        );
+      case 'threat':
+        return (
+          <div className="bg-red-100 p-1.5 rounded-lg">
+            <TrendingDown className="w-4 h-4 text-red-600" />
+          </div>
+        );
+      default:
+        return (
+          <div className="bg-blue-100 p-1.5 rounded-lg">
+            <Info className="w-4 h-4 text-blue-600" />
+          </div>
+        );
+    }
+  };
+
+  const getImpactLabel = (impact: string) => {
+    switch (impact) {
+      case 'opportunity': return 'Opportunity';
+      case 'threat': return 'Threat';
+      default: return 'Market Info';
     }
   };
 
   return (
     <div className="p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors">
       <div className="flex items-start gap-2 mb-2">
-        <div className="flex-shrink-0 mt-1">
-          {getImpactIcon(news.impact_type)}
-        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex-shrink-0 mt-0.5">
+                {getImpactIcon(news.impact_type)}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              <p className="font-semibold">{getImpactLabel(news.impact_type)}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
           {news.creator_name && (
             <>
