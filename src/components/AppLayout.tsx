@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Header, BottomNav, Sidebar, QuickAddModal, OnboardingModal, VelocityDashboard, BulkImportWizard } from './crm';
 import type { EntityType as BulkEntityType } from './crm';
 import {
@@ -26,6 +27,7 @@ type EntityType = 'Account' | 'Opportunity';
 
 export default function AppLayout() {
   const { user, loading: authLoading } = useAuth();
+  const location = useLocation();
   const {
     accounts,
     partners,
@@ -40,7 +42,7 @@ export default function AppLayout() {
     createProject,
     refreshData
   } = useAppContext();
-  
+
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
@@ -48,6 +50,20 @@ export default function AppLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [stageFilter, setStageFilter] = useState<string | null>(null);
+
+  // Handle navigation from other screens with state
+  useEffect(() => {
+    if (location.state) {
+      const state = location.state as any;
+      if (state.activeTab) {
+        setActiveTab(state.activeTab);
+      }
+      if (state.detailId) {
+        setAutoOpenId(state.detailId);
+        setTimeout(() => setAutoOpenId(null), 2000);
+      }
+    }
+  }, [location.state]);
 
   // Keyboard shortcuts
   const shortcuts = useKeyboardShortcuts({
