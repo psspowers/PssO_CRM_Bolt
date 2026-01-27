@@ -21,6 +21,7 @@ interface ParsedContact {
   phone?: string;
   role?: string;
   company?: string;
+  isDuplicate?: boolean;
 }
 
 export const GeminiImportModal: React.FC<GeminiImportModalProps> = ({
@@ -77,7 +78,7 @@ Sarah Johnson,sarah.j@company.com,,Senior Manager,Tech Inc
     }
   };
 
-  const handleParse = () => {
+  const handleParse = async () => {
     if (!csvInput.trim()) {
       toast.error('Please paste CSV data');
       return;
@@ -137,7 +138,8 @@ Sarah Johnson,sarah.j@company.com,,Senior Manager,Tech Inc
           email,
           phone: phone || undefined,
           role: role || undefined,
-          company: accountName || company || undefined
+          company: accountName || company || undefined,
+          isDuplicate: false
         });
       }
 
@@ -147,13 +149,47 @@ Sarah Johnson,sarah.j@company.com,,Senior Manager,Tech Inc
         return;
       }
 
+      const extractedEmails = contacts.map(c => c.email);
+
+      const { data: existingContacts, error: dbError } = await supabase
+        .from('contacts')
+        .select('email')
+        .in('email', extractedEmails);
+
+      if (dbError) {
+        console.error('Database error checking duplicates:', dbError);
+      }
+
+      const existingEmailsSet = new Set(
+        (existingContacts || []).map(c => c.email.toLowerCase())
+      );
+
+      contacts.forEach(contact => {
+        if (existingEmailsSet.has(contact.email)) {
+          contact.isDuplicate = true;
+        }
+      });
+
       setParsedContacts(contacts);
 
-      const allIndices = contacts.map((_, idx) => idx);
-      setSelectedIndices(new Set(allIndices));
+      const newContactIndices = contacts
+        .map((contact, idx) => (!contact.isDuplicate ? idx : null))
+        .filter((idx): idx is number => idx !== null);
+
+      setSelectedIndices(new Set(newContactIndices));
+
+      const duplicateCount = contacts.filter(c => c.isDuplicate).length;
+      const newCount = contacts.length - duplicateCount;
 
       setStep('review');
-      toast.success(`Parsed ${contacts.length} contacts (excluding yourself)`);
+
+      if (duplicateCount > 0) {
+        toast.success(
+          `Found ${newCount} new contact${newCount !== 1 ? 's' : ''} (${duplicateCount} duplicate${duplicateCount !== 1 ? 's' : ''} excluded)`
+        );
+      } else {
+        toast.success(`Parsed ${contacts.length} contact${contacts.length !== 1 ? 's' : ''} (excluding yourself)`);
+      }
     } catch (err) {
       console.error('Parse error:', err);
       toast.error('Failed to parse CSV');
@@ -181,7 +217,9 @@ Sarah Johnson,sarah.j@company.com,,Senior Manager,Tech Inc
   };
 
   const executeImport = async () => {
-    const selectedContacts = parsedContacts.filter((_, idx) => selectedIndices.has(idx));
+    const selectedContacts = parsedContacts.filter(
+      (contact, idx) => selectedIndices.has(idx) && !contact.isDuplicate
+    );
 
     if (selectedContacts.length === 0) {
       toast.error('No contacts selected');
@@ -207,7 +245,7 @@ Sarah Johnson,sarah.j@company.com,,Senior Manager,Tech Inc
 
       if (error) throw error;
 
-      toast.success(`Imported ${data.length} contacts successfully`);
+      toast.success(`Imported ${data.length} contact${data.length !== 1 ? 's' : ''} successfully`);
       onImport();
       handleClose();
     } catch (err: any) {
@@ -363,6 +401,8 @@ Sarah Johnson,sarah.j@company.com,,Senior Manager,Tech Inc
                       key={index}
                       onClick={() => handleToggleContact(index)}
                       className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                        contact.isDuplicate ? 'opacity-50' : ''
+                      } ${
                         selectedIndices.has(index)
                           ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-500/50'
                           : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
@@ -382,6 +422,11 @@ Sarah Johnson,sarah.j@company.com,,Senior Manager,Tech Inc
                             <span className="font-bold text-slate-900 dark:text-white">
                               {contact.name}
                             </span>
+                            {contact.isDuplicate && (
+                              <span className="px-2 py-0.5 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300 rounded text-xs font-bold">
+                                Existing
+                              </span>
+                            )}
                             {contact.role && (
                               <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 rounded text-xs font-bold">
                                 {contact.role}
@@ -410,8 +455,8 @@ Sarah Johnson,sarah.j@company.com,,Senior Manager,Tech Inc
 
               <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-500/30 rounded-lg p-3">
                 <p className="text-xs text-orange-900 dark:text-orange-300">
-                  <strong>Note:</strong> Your own email has been automatically excluded from this list.
-                  Uncheck any contacts you don't want to import.
+                  <strong>Note:</strong> Your own email and existing contacts have been automatically excluded.
+                  Contacts marked as "Existing" are already in your database and are unchecked by default.
                 </p>
               </div>
 
