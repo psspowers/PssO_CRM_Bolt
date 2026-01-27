@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Zap, Save, Loader2 } from 'lucide-react';
+import { Zap, Check, Loader2, Activity } from 'lucide-react';
 
 interface GamificationRule {
   id: string;
@@ -120,89 +120,110 @@ export const GamificationConsole: React.FC = () => {
     );
   }
 
+  const activeRulesCount = rules.filter(r => r.is_active).length;
+  const totalRulesCount = rules.length;
+
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-orange-500" />
-            <CardTitle>Gamification Rules</CardTitle>
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl p-6 text-white shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
+              <Zap className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">Mission Control</h2>
+              <p className="text-sm text-white/80">Gamification Rule Configuration</p>
+            </div>
           </div>
-          <CardDescription>
-            Configure point rewards for various actions. Changes take effect immediately.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {rules.map(rule => (
-              <Card key={rule.id} className="border-l-4 border-l-orange-500">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col md:flex-row md:items-start gap-4">
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-lg">{rule.name}</h3>
-                        <Badge variant={getCurrentActive(rule) ? 'default' : 'secondary'}>
-                          {getCurrentActive(rule) ? 'Active' : 'Inactive'}
-                        </Badge>
-                        {rule.multiplier_type && (
-                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
-                            {rule.multiplier_type === 'per_mw' ? 'Per MW' : 'Fixed'}
-                          </Badge>
-                        )}
-                      </div>
-                      {rule.description && (
-                        <p className="text-sm text-gray-600">{rule.description}</p>
-                      )}
-                      <p className="text-xs text-gray-400 font-mono">{rule.event_key}</p>
-                    </div>
-
-                    <div className="flex items-end gap-3">
-                      <div className="space-y-2">
-                        <Label htmlFor={`points-${rule.id}`} className="text-xs">Points</Label>
-                        <Input
-                          id={`points-${rule.id}`}
-                          type="number"
-                          value={getCurrentPoints(rule)}
-                          onChange={(e) => handlePointsChange(rule.id, e.target.value)}
-                          className="w-24 text-center font-bold"
-                          min="0"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          id={`active-${rule.id}`}
-                          checked={getCurrentActive(rule)}
-                          onCheckedChange={(checked) => handleToggleActive(rule.id, checked)}
-                        />
-                        <Label htmlFor={`active-${rule.id}`} className="text-xs cursor-pointer">
-                          {getCurrentActive(rule) ? 'On' : 'Off'}
-                        </Label>
-                      </div>
-
-                      <Button
-                        onClick={() => handleSave(rule.id)}
-                        disabled={!hasChanges(rule.id) || saving === rule.id}
-                        size="sm"
-                        className="bg-orange-500 hover:bg-orange-600"
-                      >
-                        {saving === rule.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Save className="w-4 h-4 mr-1" />
-                            Save
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="text-right">
+            <div className="flex items-center gap-2 justify-end mb-1">
+              <Activity className="w-5 h-5" />
+              <span className="text-3xl font-black">{activeRulesCount}</span>
+              <span className="text-white/70">/</span>
+              <span className="text-xl font-semibold text-white/70">{totalRulesCount}</span>
+            </div>
+            <p className="text-xs text-white/70">Active Rules</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {rules.map(rule => {
+          const isActive = getCurrentActive(rule);
+          const points = getCurrentPoints(rule);
+          const changed = hasChanges(rule.id);
+
+          return (
+            <div
+              key={rule.id}
+              className={`rounded-xl border-2 p-5 transition-all ${
+                isActive
+                  ? 'border-orange-500 bg-white shadow-md'
+                  : 'border-slate-200 bg-slate-50 opacity-75 grayscale-[0.5]'
+              }`}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <h3 className="font-bold text-slate-900 leading-tight flex-1 pr-2">{rule.name}</h3>
+                <Switch
+                  id={`active-${rule.id}`}
+                  checked={isActive}
+                  onCheckedChange={(checked) => handleToggleActive(rule.id, checked)}
+                  className="flex-shrink-0"
+                />
+              </div>
+
+              <div className="h-10 mb-4">
+                <p className="text-xs text-slate-500 line-clamp-2">
+                  {rule.description || 'No description available'}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-slate-600 font-semibold uppercase tracking-wide">Points</Label>
+                  {rule.multiplier_type && (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300 text-[10px]">
+                      {rule.multiplier_type === 'per_mw' ? 'Per MW' : 'Fixed'}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Input
+                    id={`points-${rule.id}`}
+                    type="number"
+                    value={points}
+                    onChange={(e) => handlePointsChange(rule.id, e.target.value)}
+                    className="flex-1 text-2xl font-black text-center border-2 h-14"
+                    min="0"
+                  />
+                  <button
+                    onClick={() => handleSave(rule.id)}
+                    disabled={!changed || saving === rule.id}
+                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                      changed
+                        ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-lg'
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }`}
+                    title="Save changes"
+                  >
+                    {saving === rule.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Check className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+
+                <p className="text-[10px] text-slate-400 font-mono truncate">
+                  {rule.event_key}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
