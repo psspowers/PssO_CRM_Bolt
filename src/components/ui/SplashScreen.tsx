@@ -11,11 +11,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsFading(true);
-    }, 3500);
+    }, 5000);
 
     const cleanup = setTimeout(() => {
       onComplete();
-    }, 4000);
+    }, 5500);
 
     return () => {
       clearTimeout(timer);
