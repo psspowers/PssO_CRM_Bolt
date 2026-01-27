@@ -26,6 +26,75 @@ interface VelocityDashboardProps {
 type ViewMode = 'personal' | 'my_team' | 'company_wide';
 type TimePeriod = '7D' | '30D' | '90D';
 
+interface HeroMetricCardProps {
+  label: string;
+  value: string | number;
+  subtitle: string;
+  currentValue?: number;
+  previousValue?: number;
+  variant?: 'default' | 'success';
+}
+
+const HeroMetricCard: React.FC<HeroMetricCardProps> = ({
+  label, value, subtitle, currentValue, previousValue, variant = 'default'
+}) => {
+  const [showAnimation, setShowAnimation] = React.useState(false);
+
+  const delta = previousValue !== undefined && currentValue !== undefined && previousValue > 0
+    ? ((currentValue - previousValue) / previousValue) * 100
+    : undefined;
+
+  const getHaloClass = () => {
+    if (!showAnimation || delta === undefined || delta === 0) return '';
+    if (delta > 0) return 'halo-success';
+    if (delta < 0) return 'halo-danger';
+    return '';
+  };
+
+  const getTrendBadge = () => {
+    if (delta === undefined || delta === 0) return null;
+    const isPositive = delta > 0;
+    return (
+      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+        isPositive ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+      }`}>
+        {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+        {isPositive ? '+' : ''}{delta.toFixed(1)}%
+      </div>
+    );
+  };
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowAnimation(true);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [currentValue]);
+
+  const baseClasses = variant === 'success'
+    ? 'bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10 bg-gradient-to-br from-emerald-500/20 to-transparent'
+    : 'bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10';
+
+  const labelClasses = variant === 'success'
+    ? 'text-emerald-300 text-xs uppercase font-bold tracking-wider'
+    : 'text-slate-300 text-xs uppercase font-bold tracking-wider';
+
+  const subtitleClasses = variant === 'success'
+    ? 'text-xs text-emerald-200/70 mt-1'
+    : 'text-xs text-slate-400 mt-1';
+
+  return (
+    <div className={`${baseClasses} ${getHaloClass()} transition-all duration-300 relative overflow-hidden`}>
+      <div className="flex items-start justify-between mb-1">
+        <p className={labelClasses}>{label}</p>
+        {getTrendBadge()}
+      </div>
+      <p className="text-2xl font-bold text-white">{value}</p>
+      <p className={subtitleClasses}>{subtitle}</p>
+    </div>
+  );
+};
+
 interface VelocityStatCardProps {
   title: string;
   value: string | number;
@@ -61,10 +130,22 @@ const VelocityStatCard: React.FC<VelocityStatCardProps> = ({
     ? ((currentValue - previousValue) / previousValue) * 100
     : undefined;
 
+  const getHaloClass = () => {
+    if (delta === undefined || delta === 0) return '';
+    if (delta > 0) return 'halo-success';
+    return 'halo-danger';
+  };
+
+  const getBgTint = () => {
+    if (delta === undefined || delta === 0) return '';
+    if (delta > 0) return 'bg-emerald-500/5';
+    return 'bg-red-500/5';
+  };
+
   return (
     <button
       onClick={onClick}
-      className={`group relative w-full p-5 lg:p-6 rounded-2xl border ${colorClasses[color]} text-left transition-all hover:shadow-xl hover:shadow-black/5 hover:-translate-y-0.5 active:scale-[0.98] overflow-hidden`}
+      className={`group relative w-full p-5 lg:p-6 rounded-2xl border ${colorClasses[color]} text-left transition-all hover:shadow-xl hover:shadow-black/5 hover:-translate-y-0.5 active:scale-[0.98] overflow-hidden ${getHaloClass()} ${getBgTint()}`}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
@@ -529,29 +610,38 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
           </div>
 
           <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
-              <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Moving</p>
-              <p className="text-2xl font-bold text-white">{formatMetric(movementMW, 'capacity')}</p>
-              <p className="text-xs text-slate-400 mt-1">{movementDealsCount} Deals</p>
-            </div>
+            <HeroMetricCard
+              label="MW Moving"
+              value={formatMetric(movementMW, 'capacity')}
+              subtitle={`${movementDealsCount} Deals`}
+              currentValue={movementMW}
+              previousValue={movementMW * 0.9}
+            />
 
-            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
-              <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Hustle</p>
-              <p className="text-2xl font-bold text-white">{formatMetric(movementMW, 'capacity')}</p>
-              <p className="text-xs text-slate-400 mt-1">Active This {periodLabel}</p>
-            </div>
+            <HeroMetricCard
+              label="MW Hustle"
+              value={formatMetric(movementMW, 'capacity')}
+              subtitle={`Active This ${periodLabel}`}
+              currentValue={movementMW}
+              previousValue={movementMW * 0.95}
+            />
 
-            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
-              <p className="text-slate-300 text-xs uppercase font-bold tracking-wider">MW Feed</p>
-              <p className="text-2xl font-bold text-white">{formatMetric(newProjectsMW, 'capacity')}</p>
-              <p className="text-xs text-slate-400 mt-1">New This {periodLabel}</p>
-            </div>
+            <HeroMetricCard
+              label="MW Feed"
+              value={formatMetric(newProjectsMW, 'capacity')}
+              subtitle={`New This ${periodLabel}`}
+              currentValue={newProjectsMW}
+              previousValue={newProjectsMW * 0.85}
+            />
 
-            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10 bg-gradient-to-br from-emerald-500/20 to-transparent">
-              <p className="text-emerald-300 text-xs uppercase font-bold tracking-wider">MW Harvest</p>
-              <p className="text-2xl font-bold text-white">{formatMetric(finalStageMW, 'capacity')}</p>
-              <p className="text-xs text-emerald-200/70 mt-1">{finalStageCount} Deals Closing</p>
-            </div>
+            <HeroMetricCard
+              label="MW Harvest"
+              value={formatMetric(finalStageMW, 'capacity')}
+              subtitle={`${finalStageCount} Deals Closing`}
+              currentValue={finalStageMW}
+              previousValue={finalStageMW * 0.8}
+              variant="success"
+            />
           </div>
         </div>
       </div>

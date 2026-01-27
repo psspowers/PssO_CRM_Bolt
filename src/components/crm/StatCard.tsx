@@ -30,10 +30,22 @@ const iconBgClasses = {
 export const StatCard: React.FC<StatCardProps> = ({
   title, value, subtitle, trend, icon: Icon, color, onClick
 }) => {
+  const getHaloClass = () => {
+    if (trend === undefined || trend === 0) return '';
+    if (trend > 0) return 'halo-success';
+    return 'halo-danger';
+  };
+
+  const getBgTint = () => {
+    if (trend === undefined || trend === 0) return '';
+    if (trend > 0) return 'bg-emerald-500/5';
+    return 'bg-red-500/5';
+  };
+
   return (
     <button
       onClick={onClick}
-      className={`group relative w-full p-5 lg:p-6 rounded-2xl border ${colorClasses[color]} text-left transition-all hover:shadow-xl hover:shadow-black/5 hover:-translate-y-0.5 active:scale-[0.98] overflow-hidden`}
+      className={`group relative w-full p-5 lg:p-6 rounded-2xl border ${colorClasses[color]} text-left transition-all hover:shadow-xl hover:shadow-black/5 hover:-translate-y-0.5 active:scale-[0.98] overflow-hidden ${getHaloClass()} ${getBgTint()}`}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
