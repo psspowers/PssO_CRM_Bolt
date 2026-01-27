@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CircleCheck as CheckCircle2, TrendingUp, TrendingDown, Minus, Phone, Users, FileText, Mail, ArrowRight, ArrowLeft, Settings, Zap, MapPin, Star, BrainCircuit, Trash2, Search } from 'lucide-react';
+import { Activity, Newspaper, Upload, Download, Plus, ExternalLink, Network, CircleCheck as CheckCircle2, TrendingUp, TrendingDown, Minus, Phone, Users, FileText, Mail, ArrowRight, ArrowLeft, Settings, Zap, MapPin, Star, BrainCircuit, Trash2, Search, Target, Calculator, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,45 +17,63 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import Papa from 'papaparse';
 
-const ANALYST_PROMPT_TEMPLATE = `**Role:** Elite Investment Analyst (Southeast Asia).
-**Mission:** Filter noise. Hunt for **HARD ASSETS** and **CAPITAL FLOW** in Thailand/SEA.
-**Language:** Search in **English** and **Thai**.
+const ANALYST_PROMPT_TEMPLATE = `**SYSTEM:** Elite Energy Strategist (Thailand/SEA).
+**MISSION:** Hunt for Deals. Infer Solar Potential. Show Your Work.
 
-**CRITICAL INSTRUCTION: THE "IS IT WORTHY?" TEST**
-Before outputting ANY row, ask yourself:
-1. Does it mention a **Number**? (Currency, Capacity MW, Date, Percentage).
-2. Does it mention a **Specific Action**? (Signed, Started, Invested, Defaulted).
-3. Is it **News** (Last 6 months) or just **History** (Company Profile)?
+**SEARCH LOGIC:**
+- **Languages:** English + Thai (ขยาย, งบลงทุน, โครงการ, โรงงาน)
+- **Signals:** Expansion, CapEx, Distress, Restructuring, Energy Costs
+- **Quality Gate:** ONLY output if there's a number (MW, THB, sqm, employees) AND a specific action (invested, signed, halted, opened)
+
+**SHADOW MATH (Infer Solar Potential):**
+- Cold Storage: 100W/sqm rooftop
+- General Warehouse: 40W/sqm rooftop
+- Hospital: 1.5kW per bed
+- Factory (Heavy): 2MW per 10,000sqm
+- Office Building: 50W/sqm rooftop
+- *ALWAYS cite your logic in calculation_logic field*
 
 **❌ REJECT (OUTPUT NOTHING):**
-- "Company X operates in healthcare..." (Profile = TRASH)
-- "No public information available..." (Failure = TRASH)
-- "Strategy is unclear..." (Vague = TRASH)
-- "Duplicate entry..." (Duplicate = TRASH)
+- Generic company profiles ("operates in healthcare...")
+- "No data available" or "unclear strategy"
+- Historical facts with no recent action
+- Duplicate entries
 
-**✅ ACCEPT (ADD TO CSV):**
-- "Company X **invests 500MB** in solar roof." (Money + Tech)
-- "Factory Y **halts production** due to energy costs." (Distress Signal)
-- "CEO Z **resigns** amid restructuring." (Strategic Shift)
-- "Company declares wants to improves sustainability initiative by investing in renewables"
-- "Company X declare they won the tender"
+**✅ ACCEPT (High Confidence):**
+- "Company invests 500M THB in new 20,000sqm cold storage" → Infer ~2MW solar potential
+- "Factory halts production due to energy costs" → Distress signal
+- "Hospital opens 300-bed wing" → Infer ~450kW solar potential
 
-**Output Format (Strict CSV):**
-Company Name,Headline,Summary,Impact,URL,Date
+**OUTPUT FORMAT (Strict JSON Array):**
+[
+  {
+    "company": "Company Name",
+    "headline": "Actionable Title (max 100 chars)",
+    "summary": "Context (max 300 chars)",
+    "url": "Source URL",
+    "date": "YYYY-MM-DD",
+    "confidence_score": 85,
+    "inferred_mw": 1.2,
+    "calculation_logic": "20,000sqm cold storage × 100W/sqm = 2MW potential",
+    "rapport_hook": "Soft opener: 'Saw your expansion news—congrats on the new facility!'",
+    "sales_script": "Hard pitch: 'With 20,000sqm of roof space, you could cut 3M THB/year in energy costs with solar. Want a 15-min ROI preview?'"
+  }
+]
+
 **THE TARGET LIST:**`;
 
 const ANALYST_INSTRUCTIONS_ADDENDUM = `
 
 **After copying this prompt:**
-1. Go to ChatGPT (GPT-4 or higher)
+1. Go to ChatGPT (GPT-4 or higher recommended)
 2. Paste this entire prompt
-3. Wait for the CSV output
-4. Copy the CSV results
+3. Wait for JSON array output
+4. Copy the JSON results (the entire array)
 5. Return to Pulse > Market Intel tab
-6. Click the Settings icon (gear) > Import CSV
-7. Upload the CSV file or paste the results
+6. Click the Settings icon (gear) > Import JSON/CSV
+7. Paste the JSON results or upload as file
 
-The system will automatically parse and import all intelligence items.`;
+The system will automatically parse confidence scores, inferred MW, calculation logic, and sales tactics.`;
 
 interface MarketNews {
   id: string;
@@ -72,6 +90,21 @@ interface MarketNews {
   account_name?: string;
   creator_name?: string;
   is_favorite?: boolean;
+  confidence_score?: number;
+  inferred_mw?: number;
+  calculation_logic?: string;
+  rapport_hook?: string;
+  sales_script?: string;
+}
+
+interface ClaimInfo {
+  news_id: string;
+  claimed_by: string;
+  claimed_by_name: string;
+  claimed_by_avatar?: string;
+  assigned_to?: string;
+  assigned_to_name?: string;
+  status: string;
 }
 
 interface Activity {
@@ -480,6 +513,7 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [taskInitialData, setTaskInitialData] = useState<any>(null);
+  const [claims, setClaims] = useState<Map<string, ClaimInfo>>(new Map());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
@@ -1014,6 +1048,23 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
       newHidden.delete(forcedOpenId);
     }
 
+    const { data: claimsData } = await supabase.rpc('get_claimed_news');
+    const newClaims = new Map<string, ClaimInfo>();
+    if (claimsData) {
+      claimsData.forEach((claim: any) => {
+        newClaims.set(claim.news_id, {
+          news_id: claim.news_id,
+          claimed_by: claim.claimed_by,
+          claimed_by_name: claim.claimed_by_name,
+          claimed_by_avatar: claim.claimed_by_avatar,
+          assigned_to: claim.assigned_to,
+          assigned_to_name: claim.assigned_to_name,
+          status: claim.status
+        });
+      });
+    }
+    setClaims(newClaims);
+
     setMarketNews(formattedNews);
     setFavorites(newFavorites);
     setHiddenNews(newHidden);
@@ -1078,6 +1129,58 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
       });
       toast.error('Failed to update favorite status');
     }
+  };
+
+  const handleClaimIntel = async (newsId: string) => {
+    if (!user?.id) return;
+
+    if (claims.has(newsId)) {
+      toast.error('This intel is already claimed');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('nexus_claims')
+        .insert({
+          news_id: newsId,
+          claimed_by: user.id,
+          status: 'ACTIVE'
+        });
+
+      if (error) {
+        toast.error('Failed to claim intel');
+        return;
+      }
+
+      toast.success('Intel claimed! +15 Watts earned');
+      await loadMarketNews();
+    } catch (err) {
+      console.error('Error claiming intel:', err);
+      toast.error('Failed to claim intel');
+    }
+  };
+
+  const handleStartChain = (news: MarketNews) => {
+    if (!news.inferred_mw || news.inferred_mw === 0) {
+      toast.error('No MW potential calculated for this intel');
+      return;
+    }
+
+    const estimatedValue = news.inferred_mw * 20000000;
+
+    setTaskInitialData({
+      mode: 'opportunity',
+      name: `${news.account_name || news.title.split(' ')[0]} Solar Project`,
+      value: estimatedValue,
+      probability: 20,
+      stage: 'Lead',
+      notes: `Generated from Market Intel:\n\n${news.summary || ''}\n\nEstimated Potential: ${news.inferred_mw.toFixed(2)} MW\n\nCalculation: ${news.calculation_logic || 'N/A'}\n\nSource: ${news.url || 'N/A'}`,
+      relateToType: news.related_account_id ? 'Account' : undefined,
+      relateToId: news.related_account_id || undefined
+    });
+    setShowQuickAdd(true);
+    toast.success('Opening Quick Add with pre-filled opportunity data');
   };
 
   const handleOpenTaskModal = (news: MarketNews) => {
@@ -1251,11 +1354,43 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
     const file = event.target.files?.[0];
     if (!file) return;
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (results) => {
-        const rows = results.data as any[];
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const content = e.target?.result as string;
+
+      let rows: any[] = [];
+      let isJSON = false;
+
+      try {
+        const jsonData = JSON.parse(content);
+        if (Array.isArray(jsonData)) {
+          rows = jsonData;
+          isJSON = true;
+          console.log('✅ Detected JSON format');
+        }
+      } catch {
+        console.log('📄 Not JSON, attempting CSV parse');
+      }
+
+      if (!isJSON) {
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          complete: async (results) => {
+            rows = results.data as any[];
+            await processImportData(rows, false);
+          }
+        });
+        return;
+      }
+
+      await processImportData(rows, true);
+    };
+
+    reader.readAsText(file);
+  };
+
+  const processImportData = async (rows: any[], isJSON: boolean) => {
         let successCount = 0;
         let failCount = 0;
         let skippedCount = 0;
@@ -1329,12 +1464,18 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
           const rowNumber = i + 2;
 
           try {
-            const companyName = row['Company Name'] || row['company name'] || row['Company'] || row['Account Name'];
+            const companyName = row['Company Name'] || row['company name'] || row['Company'] || row['Account Name'] || row['company'];
             const title = row['Headline'] || row['headline'] || row['Title'] || row['title'];
             const summary = row['Summary'] || row['summary'] || row['Summary (Analysis)'] || row['Description'];
             const impactRaw = (row['Impact'] || row['impact'] || row['Type'] || '').toLowerCase().trim();
             const url = row['URL'] || row['url'] || row['Link'] || row['Source'];
             const dateRaw = row['Date'] || row['date'] || row['News Date'] || row['Published Date'];
+
+            const confidenceScore = isJSON ? (row['confidence_score'] || 0) : 0;
+            const inferredMw = isJSON ? (row['inferred_mw'] || null) : null;
+            const calculationLogic = isJSON ? (row['calculation_logic'] || null) : null;
+            const rapportHook = isJSON ? (row['rapport_hook'] || null) : null;
+            const salesScript = isJSON ? (row['sales_script'] || null) : null;
 
             if (!title || title.trim() === '') {
               skippedCount++;
@@ -1402,7 +1543,12 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
               created_by: user?.id,
               source_type: 'Analyst',
               news_date: newsDate.toISOString().split('T')[0],
-              published_at: scheduledTime.toISOString()
+              published_at: scheduledTime.toISOString(),
+              confidence_score: confidenceScore,
+              inferred_mw: inferredMw,
+              calculation_logic: calculationLogic,
+              rapport_hook: rapportHook,
+              sales_script: salesScript
             });
 
             if (error) throw error;
@@ -1456,14 +1602,6 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
         const message = `Imported ${successCount} items. They will drip-feed over the next ${dripFeedHours} hours.${linkInfo}${duplicateInfo}${skippedCount > duplicateCount ? ` (${skippedCount - duplicateCount} other skipped)` : ''}${failCount > 0 ? ` (${failCount} failed)` : ''}`;
         toast.success(message, { duration: 5000 });
         loadMarketNews();
-      },
-      error: (error) => {
-        toast.error('Failed to parse CSV file: ' + error.message);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-      }
-    });
   };
 
   const handlePostIntel = async () => {
@@ -1937,6 +2075,30 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
                         >
                           {news.impact_type}
                         </Badge>
+                        {news.confidence_score !== undefined && news.confidence_score > 0 && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge
+                                  variant="outline"
+                                  className={`text-xs font-bold ${
+                                    news.confidence_score >= 80
+                                      ? 'bg-emerald-100 text-emerald-700 border-emerald-400 dark:bg-emerald-950/30 dark:text-emerald-400'
+                                      : news.confidence_score >= 50
+                                      ? 'bg-yellow-100 text-yellow-700 border-yellow-400 dark:bg-yellow-950/30 dark:text-yellow-400'
+                                      : 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400'
+                                  }`}
+                                >
+                                  {news.confidence_score}% Confidence
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-semibold">AI Confidence Score</p>
+                                <p className="text-xs">High scores indicate hard data</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                       </div>
                     </div>
 
@@ -1966,6 +2128,70 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
                           Related: <span className="font-semibold">{news.account_name}</span>
                         </div>
                       )}
+
+                      {news.inferred_mw !== undefined && news.inferred_mw > 0 && (
+                        <div className="mt-3 p-2 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <Zap className="w-4 h-4 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-bold text-orange-900 dark:text-orange-200">
+                                Solar Potential: ~{news.inferred_mw.toFixed(2)} MW
+                              </div>
+                              {news.calculation_logic && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="text-xs text-orange-700 dark:text-orange-400 mt-1 cursor-help flex items-center gap-1">
+                                        <Calculator className="w-3 h-3" />
+                                        Show Math
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="bottom" className="max-w-xs">
+                                      <p className="text-xs">{news.calculation_logic}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {(news.rapport_hook || news.sales_script) && (
+                        <div className="mt-3">
+                          <button
+                            onClick={() => {
+                              setExpandedIds(prev => {
+                                const next = new Set(prev);
+                                const key = `tactics-${news.id}`;
+                                if (next.has(key)) next.delete(key);
+                                else next.add(key);
+                                return next;
+                              });
+                            }}
+                            className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+                          >
+                            {expandedIds.has(`tactics-${news.id}`) ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            Reveal Tactics
+                          </button>
+                          {expandedIds.has(`tactics-${news.id}`) && (
+                            <div className="mt-2 space-y-2">
+                              {news.rapport_hook && (
+                                <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                  <div className="text-xs font-bold text-blue-900 dark:text-blue-200 mb-1">🤝 Rapport Hook</div>
+                                  <p className="text-xs text-blue-800 dark:text-blue-300">{news.rapport_hook}</p>
+                                </div>
+                              )}
+                              {news.sales_script && (
+                                <div className="p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg">
+                                  <div className="text-xs font-bold text-purple-900 dark:text-purple-200 mb-1">🎯 Sales Script</div>
+                                  <p className="text-xs text-purple-800 dark:text-purple-300">{news.sales_script}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/50">
@@ -1992,6 +2218,40 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
                           )}
                           Source
                         </button>
+
+                        {claims.has(news.id) ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1 px-2 py-1.5 bg-orange-50 dark:bg-orange-950/30 border border-orange-300 dark:border-orange-700 rounded-lg text-xs font-semibold text-orange-800 dark:text-orange-300">
+                                  <Target className="w-3 h-3" />
+                                  Claimed
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-semibold">Claimed by {claims.get(news.id)?.claimed_by_name}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <button
+                            onClick={() => handleClaimIntel(news.id)}
+                            className="flex items-center gap-1 text-xs font-medium text-orange-700 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 bg-orange-50 dark:bg-orange-950/30 hover:bg-orange-100 dark:hover:bg-orange-900/40 px-2.5 py-1.5 rounded-lg transition-colors border border-orange-300 dark:border-orange-700"
+                          >
+                            <Target className="w-3 h-3" />
+                            Claim (+15⚡)
+                          </button>
+                        )}
+
+                        {news.inferred_mw && news.inferred_mw > 0 && (
+                          <button
+                            onClick={() => handleStartChain(news)}
+                            className="flex items-center gap-1 text-xs font-medium text-purple-700 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 bg-purple-50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/40 px-2.5 py-1.5 rounded-lg transition-colors border border-purple-300 dark:border-purple-700"
+                          >
+                            <Zap className="w-3 h-3" />
+                            Start Chain
+                          </button>
+                        )}
 
                         <TooltipProvider>
                           <Tooltip>
