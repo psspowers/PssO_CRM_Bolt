@@ -10,7 +10,20 @@ export const seedPartners = async () => {
     { id: PARTNER_IDS.p5, name: 'Thai Solar Energy', region: 'Southeast Asia', country: 'Thailand', pss_orange_owner: USER_IDS.u5, partner_owner: USER_IDS.u2, email: 'contact@thaisolar.co.th', phone: '+66 2 123 4567', notes: 'Industrial focus' },
     { id: PARTNER_IDS.p6, name: 'BDx Data Centers', region: 'Asia Pacific', country: 'Singapore', pss_orange_owner: USER_IDS.u1, partner_owner: USER_IDS.u6, email: 'energy@bdx.sg', phone: '+65 6789 0123', clickup_link: 'https://app.clickup.com/t/jkl012', notes: 'Key data center client' },
   ];
-  const { error } = await supabase.from('partners').upsert(partners, { onConflict: 'id' });
+  const partnersAsAccounts = partners.map(p => ({
+    id: p.id,
+    name: p.name,
+    type: 'Partner',
+    state: p.region,
+    country: p.country,
+    owner_id: p.pss_orange_owner || p.partner_owner,
+    email: p.email,
+    phone: p.phone,
+    clickup_link: p.clickup_link,
+    notes: p.notes,
+  }));
+
+  const { error } = await supabase.from('accounts').upsert(partnersAsAccounts, { onConflict: 'id' });
   if (error) throw error;
   return partners.length;
 };
