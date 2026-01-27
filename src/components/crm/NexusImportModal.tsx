@@ -3,6 +3,9 @@ import { supabase } from '@/lib/supabase';
 import { X, Copy, Check, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import Papa from 'papaparse';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+
+const INTERNAL_DOMAINS = ['onepss.com', 'psspowers.com', 'isquaredcapital.com', 'berderenewables.com'];
 
 interface NexusImportModalProps {
   isOpen: boolean;
@@ -34,6 +37,7 @@ export const NexusImportModal: React.FC<NexusImportModalProps> = ({
   accountName,
   onImport
 }) => {
+  const { user } = useAuth();
   const [step, setStep] = useState<Step>('prompt');
   const [csvInput, setCsvInput] = useState('');
   const [parsedLinks, setParsedLinks] = useState<ParsedLink[]>([]);
@@ -137,6 +141,20 @@ analyst@client.com,manager@client.com,Works With,Medium
         if (row.length < 4) continue;
 
         const [sourceEmail, targetEmail, type, strength] = row.map(cell => cell.trim());
+
+        // Auto-Exclude Internal Domains
+        const sourceDomain = sourceEmail.split('@')[1]?.toLowerCase();
+        const targetDomain = targetEmail.split('@')[1]?.toLowerCase();
+
+        if (INTERNAL_DOMAINS.some(d => sourceDomain?.includes(d) || targetDomain?.includes(d))) {
+          continue; // Skip this row
+        }
+
+        // Auto-Exclude Current User
+        if (sourceEmail.toLowerCase() === user?.email?.toLowerCase() ||
+            targetEmail.toLowerCase() === user?.email?.toLowerCase()) {
+          continue; // Skip self
+        }
 
         const link: ParsedLink = {
           sourceEmail,
