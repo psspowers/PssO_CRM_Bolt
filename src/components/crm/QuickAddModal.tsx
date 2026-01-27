@@ -27,6 +27,7 @@ interface QuickAddModalProps {
   users?: User[];
   initialData?: {
     mode?: 'activity' | 'entity';
+    entityType?: 'Contact' | 'Account' | 'Opportunity';
     isTask?: boolean;
     summary?: string;
     details?: string;
@@ -147,6 +148,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isOpen, onClose, o
       if (initialData) {
         // Pre-fill from props
         setMode(initialData.mode || 'activity');
+        if (initialData.entityType) setEntityType(initialData.entityType);
         setIsTask(initialData.isTask || false);
         setSummary(initialData.summary || '');
         setDetails(initialData.details || '');
