@@ -1,33 +1,27 @@
 import React from 'react';
-import { Home, Target, Activity, Sparkles, UserCircle } from 'lucide-react';
+import { Home, Target, Activity, FolderKanban, Sparkles, Search } from 'lucide-react';
 import { MagicMenu } from './MagicMenu';
 
-type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'projects' | 'search' | 'timeline' | 'tasks' | 'pulse' | 'me';
+type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'projects' | 'search' | 'timeline' | 'tasks' | 'pulse';
 
 interface BottomNavProps {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
-  onOpenQuickAdd?: () => void;
 }
 
 const tabs: { id: Tab; icon: React.ElementType; label: string }[] = [
   { id: 'home', icon: Home, label: 'Home' },
-  { id: 'opportunities', icon: Target, label: 'Pipeline' },
+  { id: 'opportunities', icon: Target, label: 'Deals' },
+  { id: 'projects', icon: FolderKanban, label: 'Projects' },
   { id: 'pulse', icon: Activity, label: 'Pulse' },
-  { id: 'me', icon: UserCircle, label: 'Me' },
 ];
 
-export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, onOpenQuickAdd }) => {
+export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) => {
   const [isMagicOpen, setIsMagicOpen] = React.useState(false);
 
   return (
     <>
-      <MagicMenu
-        isOpen={isMagicOpen}
-        onClose={() => setIsMagicOpen(false)}
-        onNavigate={onTabChange}
-        onOpenQuickAdd={onOpenQuickAdd}
-      />
+      <MagicMenu isOpen={isMagicOpen} onClose={() => setIsMagicOpen(false)} onNavigate={onTabChange} />
 
       <nav
         className="lg:hidden fixed bottom-0 left-0 right-0 grid grid-cols-5 h-16 bg-white border-t border-slate-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] pb-safe z-50"
@@ -57,11 +51,22 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, on
 
         <div className="relative flex items-center justify-center -top-3">
           <button
-            onClick={() => setIsMagicOpen(!isMagicOpen)}
+            onClick={() => {
+              if (isMagicOpen) {
+                onTabChange('search');
+                setIsMagicOpen(false);
+              } else {
+                setIsMagicOpen(true);
+              }
+            }}
             className="w-14 h-14 rounded-full bg-gradient-to-tr from-orange-500 to-orange-400 text-white flex items-center justify-center shadow-lg shadow-orange-500/40 ring-4 ring-white transition-transform active:scale-95"
-            aria-label="Magic Menu"
+            aria-label={isMagicOpen ? "Search" : "Magic Menu"}
           >
-            <Sparkles className="w-7 h-7" aria-hidden="true" />
+            {isMagicOpen ? (
+              <Search className="w-7 h-7" aria-hidden="true" />
+            ) : (
+              <Sparkles className="w-7 h-7" aria-hidden="true" />
+            )}
           </button>
         </div>
 

@@ -44,5 +44,3 @@ export { NexusTab } from './NexusTab';
 export { NexusOrbitGraph } from './NexusOrbitGraph';
 export { NewsItemCard } from './NewsItemCard';
 export { GeminiImportModal } from './GeminiImportModal';
-export { TaskMasterModal } from './TaskMasterModal';
-export { MagicMenu } from './MagicMenu';
