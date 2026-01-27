@@ -4,6 +4,7 @@ import { Header, BottomNav, Sidebar, QuickAddModal, OnboardingModal, VelocityDas
 import type { EntityType as BulkEntityType } from './crm';
 import {
   OpportunitiesScreen,
+  PipelineScreen,
   AccountsScreen,
   PartnersScreen,
   ContactsScreen,
@@ -441,7 +442,7 @@ export default function AppLayout() {
             onOpportunityClick={(id) => handleDeepLink('opportunities', id)}
           />
         );
-      case 'opportunities': return <OpportunitiesScreen forcedOpenId={autoOpenId} forcedStageFilter={stageFilter} />;
+      case 'opportunities': return <PipelineScreen forcedOpenId={autoOpenId} forcedStageFilter={stageFilter} />;
       case 'accounts': return <AccountsScreen forcedOpenId={autoOpenId} />;
       case 'partners': return <PartnersScreen forcedOpenId={autoOpenId} />;
       case 'contacts': return <ContactsScreen forcedOpenId={autoOpenId} />;
@@ -554,7 +555,7 @@ export default function AppLayout() {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} onOpenQuickAdd={() => setShowQuickAdd(true)} />
       
       {/* Quick Add Modal */}
       <QuickAddModal
