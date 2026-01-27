@@ -29,6 +29,8 @@ import {
   DollarSign,
   Minus,
   Plus,
+  Network,
+  Radar,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, isPast, isToday, isTomorrow, getQuarter } from "date-fns";
@@ -70,6 +72,15 @@ interface Project {
     expected_close_date: string | null;
   } | null;
 }
+
+const getBadgeStyle = (name: string) => {
+  const n = name.toLowerCase();
+  if (n.includes('rainmaker')) return { icon: Trophy, color: 'bg-yellow-100 text-yellow-700 border-yellow-200', iconColor: 'text-yellow-600' };
+  if (n.includes('connector')) return { icon: Network, color: 'bg-blue-100 text-blue-700 border-blue-200', iconColor: 'text-blue-600' };
+  if (n.includes('scout')) return { icon: Radar, color: 'bg-purple-100 text-purple-700 border-purple-200', iconColor: 'text-purple-600' };
+  if (n.includes('speed')) return { icon: Zap, color: 'bg-red-100 text-red-700 border-red-200', iconColor: 'text-red-600' };
+  return { icon: Award, color: 'bg-slate-100 text-slate-700 border-slate-200', iconColor: 'text-slate-600' };
+};
 
 export function MeScreen() {
   const { profile } = useAuth();
@@ -386,15 +397,33 @@ export function MeScreen() {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-lg font-bold text-slate-900 dark:text-white">
-                Good morning, {profile?.name.split(' ')[0]}!
-              </h1>
+              <div className="flex items-center gap-2 mb-1">
+                <h1 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Good morning, {profile?.name.split(' ')[0]}!
+                </h1>
+                <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 tracking-wide">LIVE</span>
+                </div>
+              </div>
               <div className="text-xs text-slate-500">Let's close some deals.</div>
             </div>
           </div>
-          <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50">
-            Rainmaker
-          </Badge>
+          <div className="flex flex-wrap gap-1.5 justify-end">
+            {(profile?.badges || ['Rainmaker']).map(badge => {
+              const style = getBadgeStyle(badge);
+              const Icon = style.icon;
+              return (
+                <Badge key={badge} variant="outline" className={`gap-1.5 py-1 px-3 ${style.color}`}>
+                  <Icon className={`w-3.5 h-3.5 ${style.iconColor}`} />
+                  {badge}
+                </Badge>
+              );
+            })}
+          </div>
         </div>
         <div className="grid grid-cols-3 gap-4 divide-x divide-slate-100 dark:divide-slate-700">
           <div className="text-center">
