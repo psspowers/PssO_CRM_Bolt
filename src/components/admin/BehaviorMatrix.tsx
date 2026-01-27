@@ -8,7 +8,7 @@ import { Loader2, TrendingUp, Users, Zap } from 'lucide-react';
 
 interface User {
   id: string;
-  full_name: string;
+  name: string;
   avatar_url: string | null;
   role: string;
 }
@@ -196,11 +196,11 @@ export const BehaviorMatrix: React.FC = () => {
                       <Avatar className="w-8 h-8 border-2 border-white shadow-sm">
                         <AvatarImage src={user.avatar_url || undefined} />
                         <AvatarFallback className="bg-emerald-500 text-white text-xs">
-                          {user.full_name?.substring(0, 2).toUpperCase() || 'U'}
+                          {user.name?.substring(0, 2).toUpperCase() || 'U'}
                         </AvatarFallback>
                       </Avatar>
                       <div className="text-[10px] font-semibold text-slate-700 truncate max-w-[70px]">
-                        {user.full_name}
+                        {user.name}
                       </div>
                       <Badge
                         variant="outline"
