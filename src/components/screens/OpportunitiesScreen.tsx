@@ -78,6 +78,11 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   const [isDeleting, setIsDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [stagnationFilter, setStagnationFilter] = useState<'all' | '15' | '30' | '60'>('all');
+
+  // Tactical Filter States
+  const [stageGroup, setStageGroup] = useState<'all' | 'early' | 'late' | 'won'>('all');
+  const [partnerId, setPartnerId] = useState<string>('all');
+  const [partnerViewMode, setPartnerViewMode] = useState(false);
   
   // NEW: Hierarchy View Filter State
   // 'mine' = Only deals owned by the current user
@@ -200,13 +205,30 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     const matchesSearch = o.name.toLowerCase().includes((search || '').toLowerCase()) ||
                           accounts.find(a => a.id === o.accountId)?.name.toLowerCase().includes((search || '').toLowerCase());
 
-    // 3. STAGE FILTER
+    // 3. TACTICAL STAGE GROUP FILTER
+    if (stageGroup !== 'all') {
+      const earlyStages = ['Prospect', 'Qualified', 'Proposal'];
+      const lateStages = ['Negotiation', 'Term Sheet'];
+      const wonStages = ['Won'];
+
+      if (stageGroup === 'early' && !earlyStages.includes(o.stage)) return false;
+      if (stageGroup === 'late' && !lateStages.includes(o.stage)) return false;
+      if (stageGroup === 'won' && !wonStages.includes(o.stage)) return false;
+    }
+
+    // 4. LEGACY STAGE FILTER (backwards compatibility)
     const matchesStage = stageFilter === 'all' || o.stage === stageFilter;
 
-    // 4. PRIORITY FILTER
+    // 5. PRIORITY FILTER
     const matchesPriority = priorityFilter === 'all' || o.priority === priorityFilter;
 
-    // 5. STAGNATION FILTER - Check days since last update
+    // 6. PARTNER FILTER
+    const matchesPartner = partnerId === 'all' || o.primaryPartnerId === partnerId;
+
+    // 7. PARTNER VIEW MODE - Only show deals with partners
+    if (partnerViewMode && !o.primaryPartnerId) return false;
+
+    // 8. STAGNATION FILTER - Check days since last update
     if (stagnationFilter !== 'all') {
       const daysSinceUpdate = (new Date().getTime() - new Date(o.updatedAt).getTime()) / (1000 * 3600 * 24);
       if (stagnationFilter === '15' && daysSinceUpdate < 15) return false;
@@ -214,9 +236,9 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
       if (stagnationFilter === '60' && daysSinceUpdate < 60) return false;
     }
 
-    return matchesSearch && matchesStage && matchesPriority;
+    return matchesSearch && matchesStage && matchesPriority && matchesPartner;
   });
-  }, [opportunities, accounts, search, stageFilter, priorityFilter, hierarchyView, user?.id, subordinateIds, selectedMemberId, profile, stagnationFilter]);
+  }, [opportunities, accounts, search, stageFilter, priorityFilter, hierarchyView, user?.id, subordinateIds, selectedMemberId, profile, stagnationFilter, stageGroup, partnerId, partnerViewMode]);
 
   // Calculate stats for the header (only count pre-win opportunities)
   const preWinStages = ['Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Lost'];
@@ -240,6 +262,16 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
       critical: myDeals.filter(o => (now - new Date(o.updatedAt).getTime()) / 86400000 > 60).length
     };
   }, [opportunities, user?.id]);
+
+  // Calculate summary stats for filtered opportunities
+  const filteredStats = useMemo(() => {
+    const totalMW = filtered.reduce((sum, o) => sum + (o.targetCapacity || 0), 0);
+    const totalValue = filtered.reduce((sum, o) => sum + (o.value || 0), 0);
+    const avgEPC = filtered.length > 0
+      ? filtered.reduce((sum, o) => sum + (o.epcCost || 0), 0) / filtered.length
+      : 0;
+    return { totalMW, totalValue, avgEPC };
+  }, [filtered]);
 
   const deletableOpps = filtered.filter(o => canDelete(o.ownerId));
   const allSelected = deletableOpps.length > 0 && deletableOpps.every(o => selectedIds.has(o.id));
@@ -489,52 +521,73 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </div>
       )}
 
-      {/* Stage Filter Grid - Responsive Layout */}
-      <div className="flex gap-1.5 sm:gap-2 w-full mb-3">
-        {/* LEFT: 'ALL' BUTTON (Square, spans height) */}
-        <button
-          onClick={() => setStageFilter('all')}
-          className={`w-12 sm:w-14 flex flex-col items-center justify-center rounded-lg text-[9px] sm:text-[10px] font-bold border transition-all flex-shrink-0 ${
-            stageFilter === 'all'
-              ? 'bg-slate-800 text-white border-slate-900 shadow-md'
-              : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
-          }`}
-        >
-          <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5 sm:mb-1" />
-          <span className="leading-none">All</span>
-        </button>
+      {/* Tactical Filter Bar */}
+      <div className="bg-white rounded-lg border border-slate-200 p-3 mb-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Stage Group Dropdown */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-slate-600 whitespace-nowrap">Pipeline Stage:</label>
+            <select
+              value={stageGroup}
+              onChange={(e) => setStageGroup(e.target.value as 'all' | 'early' | 'late' | 'won')}
+              className="bg-white border border-slate-200 text-xs font-semibold pl-3 pr-8 py-2 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none appearance-none"
+            >
+              <option value="all">All Stages</option>
+              <option value="early">Early Stage (Prospect-Proposal)</option>
+              <option value="late">Late Stage (Neg-Term Sheet)</option>
+              <option value="won">Won</option>
+            </select>
+          </div>
 
-        {/* RIGHT: 6 STAGES (3x2 Grid) */}
-        <div className="grid grid-cols-3 grid-rows-2 gap-1 sm:gap-1.5 flex-1 min-w-0">
-          {/* Top Row */}
-          {['Prospect', 'Qualified', 'Proposal'].map(stage => (
+          {/* Vertical Divider */}
+          <div className="w-px h-6 bg-slate-200" />
+
+          {/* Partner Dropdown */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-slate-600 whitespace-nowrap">Partner:</label>
+            <select
+              value={partnerId}
+              onChange={(e) => setPartnerId(e.target.value)}
+              className="bg-white border border-slate-200 text-xs font-semibold pl-3 pr-8 py-2 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none appearance-none min-w-[140px]"
+            >
+              <option value="all">All Partners</option>
+              {partners.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Vertical Divider */}
+          <div className="w-px h-6 bg-slate-200" />
+
+          {/* Partner View Toggle */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-slate-600 whitespace-nowrap">Partner Deals Only:</label>
             <button
-              key={stage}
-              onClick={() => setStageFilter(stage)}
-              className={`h-7 sm:h-8 flex items-center justify-center rounded-md text-[9px] sm:text-xs font-bold border px-1 min-w-0 transition-all ${
-                stageFilter === stage
-                  ? 'bg-orange-100 text-orange-800 border-orange-200 ring-1 ring-orange-300'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              onClick={() => setPartnerViewMode(!partnerViewMode)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                partnerViewMode ? 'bg-orange-500' : 'bg-slate-300'
               }`}
             >
-              <span className="truncate leading-none">{stage}</span>
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  partnerViewMode ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
             </button>
-          ))}
+          </div>
 
-          {/* Bottom Row */}
-          {['Negotiation', 'Term Sheet', 'Won'].map(stage => (
-            <button
-              key={stage}
-              onClick={() => setStageFilter(stage)}
-              className={`h-7 sm:h-8 flex items-center justify-center rounded-md text-[9px] sm:text-xs font-bold border px-1 min-w-0 transition-all ${
-                stageFilter === stage
-                  ? 'bg-orange-100 text-orange-800 border-orange-200 ring-1 ring-orange-300'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <span className="truncate leading-none">{stage === 'Negotiation' ? 'Negotiat...' : stage === 'Term Sheet' ? 'Term Sheet' : stage}</span>
-            </button>
-          ))}
+          {/* Summary Stats */}
+          <div className="ml-auto flex items-center gap-4 pl-3 border-l border-slate-200">
+            <div className="text-xs">
+              <span className="font-bold text-slate-900">{filteredStats.totalMW.toFixed(1)} MW</span>
+              <span className="text-slate-400 ml-1">Total</span>
+            </div>
+            <div className="text-xs">
+              <span className="font-bold text-slate-900">฿{(filteredStats.avgEPC / 1000000).toFixed(1)}M</span>
+              <span className="text-slate-400 ml-1">Avg EPC</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -887,7 +940,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </AlertDialogContent>
       </AlertDialog>
 
-      <FilterModal isOpen={showFilter} onClose={() => setShowFilter(false)} title="Pipeline Filters" filters={[{ name: 'Priority', options: [{ label: 'All', value: 'all' }, { label: 'High', value: 'High' }, { label: 'Medium', value: 'Medium' }, { label: 'Low', value: 'Low' }], selected: priorityFilter, onChange: setPriorityFilter }]} onReset={() => { setStageFilter('all'); setPriorityFilter('all'); }} />
+      <FilterModal isOpen={showFilter} onClose={() => setShowFilter(false)} title="Pipeline Filters" filters={[{ name: 'Priority', options: [{ label: 'All', value: 'all' }, { label: 'High', value: 'High' }, { label: 'Medium', value: 'Medium' }, { label: 'Low', value: 'Low' }], selected: priorityFilter, onChange: setPriorityFilter }]} onReset={() => { setStageFilter('all'); setPriorityFilter('all'); setStageGroup('all'); setPartnerId('all'); setPartnerViewMode(false); }} />
     </div>
   );
 };
