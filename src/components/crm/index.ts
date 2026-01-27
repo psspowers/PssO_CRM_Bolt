@@ -43,3 +43,4 @@ export type { EntityType } from './BulkImportWizard';
 export { NexusTab } from './NexusTab';
 export { NexusOrbitGraph } from './NexusOrbitGraph';
 export { NewsItemCard } from './NewsItemCard';
+export { GeminiImportModal } from './GeminiImportModal';
