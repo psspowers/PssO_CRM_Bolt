@@ -27,7 +27,7 @@ const AdminStats: React.FC<AdminStatsProps> = ({ totalUsers, activeUsers, adminU
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       {stats.map(stat => (
         <div key={stat.label} className="bg-white rounded-lg border p-4">
           <div className="flex items-center gap-3">
@@ -105,23 +105,23 @@ const Admin: React.FC = () => {
           />
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="bg-emerald-50/50 border-none p-2 ring-2 ring-orange-500 ring-inset rounded-xl">
-              <TabsTrigger value="users" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
+            <TabsList className="flex flex-wrap gap-2 bg-transparent p-0 h-auto w-full mb-6">
+              <TabsTrigger value="users" className="px-4 py-2 rounded-lg border border-slate-200 bg-white font-medium text-slate-600 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md flex-1 min-w-[120px]">
                 <Users className="w-4 h-4 mr-2" />Users
               </TabsTrigger>
-              <TabsTrigger value="org-chart" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
+              <TabsTrigger value="org-chart" className="px-4 py-2 rounded-lg border border-slate-200 bg-white font-medium text-slate-600 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md flex-1 min-w-[120px]">
                 <Network className="w-4 h-4 mr-2" />Org Chart
               </TabsTrigger>
-              <TabsTrigger value="gamification" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
+              <TabsTrigger value="gamification" className="px-4 py-2 rounded-lg border border-slate-200 bg-white font-medium text-slate-600 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md flex-1 min-w-[120px]">
                 <Zap className="w-4 h-4 mr-2" />Rewards System
               </TabsTrigger>
-              <TabsTrigger value="analytics" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
+              <TabsTrigger value="analytics" className="px-4 py-2 rounded-lg border border-slate-200 bg-white font-medium text-slate-600 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md flex-1 min-w-[120px]">
                 <TrendingUp className="w-4 h-4 mr-2" />Analytics
               </TabsTrigger>
-              <TabsTrigger value="activity" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
+              <TabsTrigger value="activity" className="px-4 py-2 rounded-lg border border-slate-200 bg-white font-medium text-slate-600 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md flex-1 min-w-[120px]">
                 <Activity className="w-4 h-4 mr-2" />Activity Logs
               </TabsTrigger>
-              <TabsTrigger value="settings" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
+              <TabsTrigger value="settings" className="px-4 py-2 rounded-lg border border-slate-200 bg-white font-medium text-slate-600 data-[state=active]:bg-orange-500 data-[state=active]:text-white data-[state=active]:shadow-md flex-1 min-w-[120px]">
                 <Settings className="w-4 h-4 mr-2" />Settings
               </TabsTrigger>
             </TabsList>
