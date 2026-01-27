@@ -1,7 +1,7 @@
 # Master Architecture Document
 
-**Version:** 2.0
-**Last Updated:** January 23, 2026
+**Version:** 2.1
+**Last Updated:** January 27, 2026
 **System Name:** PSS Orange - Enterprise CRM for Renewable Energy Investment
 **Status:** Production
 **Document Type:** Master Reference
@@ -427,6 +427,11 @@ React Re-render with New Data
 | `opportunity_stage_history` | Stage transition audit | 5,000-20,000 |
 | `market_news` | Market intelligence feed | 500-2,000 |
 | `user_hierarchy` | Flattened org chart | 200-500 |
+| `watts_ledger` | Gamification transaction log | 1,000-10,000 |
+| `gamification_rules` | Dynamic reward configuration | 4-10 |
+| `market_news_interactions` | User interactions with news | 2,000-10,000 |
+| `feed_interactions` | Activity feed interactions | 5,000-20,000 |
+| `db_identity` | Database identity and kill switch | 1 (singleton) |
 
 ### 6.3 Data Types and Enums
 
@@ -895,6 +900,53 @@ Rollback available (instant)
 - Attachment support
 - Task creation from activities
 
+### 11.6 Gamification System (Watts)
+
+**Watts Ledger:**
+- Internal points system for user engagement
+- Transaction ledger (earning and spending)
+- Category tracking (Deal, Bonus, Redemption, Adjustment)
+- User balance calculation from transaction history
+
+**Gamification Rules Engine:**
+- Dynamic reward configuration
+- Admin-controlled point values
+- Rule activation/deactivation
+- Multiplier types (fixed or per-MW)
+
+**Automatic Reward Triggers:**
+- **Task Completion**: 10 Watts (fixed)
+- **Pulse Intel Scout**: 20 Watts for non-neutral market news
+- **Rainmaker (Deal Won)**: 100 Watts per MW (up to 5000 cap)
+- Database triggers automatically award points
+
+**Why Gamification?**
+- Encourages market intelligence gathering
+- Rewards proactive deal ownership
+- Increases task completion rates
+- Creates healthy competition among team members
+
+### 11.7 Commission Tracking System
+
+**Volume-Based Compensation:**
+- Commission rate (THB per MW) stored per user
+- Annual quota targets (MW)
+- Automatic calculation of earned commissions
+- Progress tracking against quota
+
+**Personal Performance Dashboard:**
+- Won MW (current year)
+- Estimated commission earnings (THB)
+- Quota progress percentage
+- Watts balance
+- Pending tasks count
+
+**get_my_stats() RPC Function:**
+- Real-time performance metrics
+- Secure user-specific data access
+- Single endpoint for ME screen
+- Calculated server-side (no client manipulation)
+
 ---
 
 ## 12. Critical Workflows
@@ -1080,6 +1132,10 @@ Approve/Reject → Update opportunity stage
 | **Nexus** | Relationship path finder feature |
 | **Quality Gate** | Checklist before stage advancement |
 | **The Pulse** | Activity feed + market intelligence module |
+| **Watts** | Internal gamification points system |
+| **Rainmaker** | User who closes deals (earns Watts per MW) |
+| **Intel Scout** | User who contributes market intelligence |
+| **ME Screen** | Personal performance dashboard |
 
 ---
 
@@ -1098,6 +1154,7 @@ Approve/Reject → Update opportunity stage
 
 | Version | Date | Changes | Author |
 |---------|------|---------|--------|
+| 2.1 | 2026-01-27 | Added gamification system, commission tracking, feed interactions | System Auditor |
 | 2.0 | 2026-01-23 | Initial comprehensive master architecture | System Auditor |
 | 1.2 | 2026-01-14 | Session management update (ClickUp-style) | - |
 | 1.1 | 2026-01-10 | Added Pulse and Nexus features | - |

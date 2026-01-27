@@ -1,7 +1,7 @@
 # CRM Operating and Systems Manual
 
-**Version:** 1.2
-**Last Updated:** January 10, 2026
+**Version:** 1.3
+**Last Updated:** January 27, 2026
 **System Name:** Enterprise CRM for Renewable Energy Investment
 **Target Industry:** Solar PV / Renewable Energy Project Finance
 
@@ -22,10 +22,13 @@ This manual includes ASCII diagrams for key workflows and system architecture. F
 - Section 5.7.1: Screenshot of The Pulse "For You" feed
 - Section 5.7.2: Screenshot of Market Intel tab with news cards
 - Section 5.7.3: Screenshot of Analyst Console modal
+- Section 6.3: Screenshot of ME Screen with performance metrics
+- Section 6.4: Screenshot of Watts transaction history
 - Section 7.1: Screenshot of Media Vault file browser
 - Section 7.2: Screenshot of Network Graph visualization
 - Section 7.4: Screenshots of each Bulk Import Wizard step
 - Section 8.1.5: Screenshot of interactive Org Chart
+- Section 8.1.6: Screenshot of Commission Rate dialog
 
 ---
 
@@ -2112,6 +2115,134 @@ Term Sheet → Won: 80% (high confidence at this stage)
 
 ---
 
+## 6.3 Personal Performance Dashboard (ME Screen)
+
+**Purpose**: Track your individual performance, earnings, and engagement metrics in real-time.
+
+**Access**: Click your profile icon → "ME" screen OR use bottom navigation "ME" tab (mobile)
+
+### 6.3.1 Performance Metrics
+
+**Won MW (Current Year)**:
+- Total megawatts from deals marked "Won" this calendar year
+- Only counts deals where you are the owner
+- Resets January 1st each year
+
+**Commission Earnings**:
+- Calculated as: Won MW × Your Commission Rate (THB/MW)
+- Commission rate set by administrator
+- Example: 5 MW won × 50,000 THB/MW = 250,000 THB earned
+
+**Quota Progress**:
+- Annual MW target assigned by management
+- Progress bar shows % completion
+- Color-coded: Red (<50%), Yellow (50-80%), Green (>80%)
+
+**Watts Balance**:
+- Your total gamification points
+- Earn Watts through tasks, intel, and closing deals
+- See transaction history by tapping balance
+
+**Pending Tasks**:
+- Count of tasks assigned to you with status ≠ "Completed"
+- Quick link to Tasks screen
+
+### 6.3.2 How to Use ME Screen
+
+**Checking Your Progress**:
+1. Open ME screen daily/weekly
+2. Review quota progress
+3. Identify gaps (e.g., need 2 more MW this quarter)
+4. Take action (move deals forward, create opportunities)
+
+**Understanding Commission**:
+- Commission shown is estimated earnings (not guaranteed)
+- Final commission subject to payment terms and company policy
+- Talk to your manager for payment schedule
+
+**Watts Leaderboard** (if enabled):
+- See how your Watts compare to team
+- Healthy competition encouraged
+- Top earners may receive recognition/rewards
+
+---
+
+## 6.4 Gamification System (Watts)
+
+**Purpose**: Reward proactive behaviors and create a culture of engagement through an internal points system called "Watts."
+
+### 6.4.1 What Are Watts?
+
+Watts are virtual points earned by completing valuable activities in the CRM. Think of them like frequent flyer miles or credit card points.
+
+**Watts Are:**
+- Recognition for your contributions
+- A measure of activity and engagement
+- Potentially redeemable for rewards (company policy)
+
+**Watts Are NOT:**
+- Real money (not exchangeable for cash)
+- Part of your compensation package
+- Guaranteed to have monetary value
+
+### 6.4.2 How to Earn Watts
+
+**Task Completion (+10 Watts)**:
+- Every time you complete a task
+- Mark task status as "Completed"
+- Automatic (instant credit)
+
+**Intel Scout (+20 Watts)**:
+- Post non-neutral market news to The Pulse
+- News must be marked "Opportunity" or "Threat" (not "Neutral")
+- Encourages proactive market intelligence gathering
+
+**Rainmaker - Deal Won (+100 Watts per MW, cap 5,000)**:
+- When your opportunity moves to "Won" stage
+- Calculated as: MW × 100 (e.g., 5 MW = 500 Watts)
+- Capped at 5,000 Watts per deal to prevent inflation
+- Biggest reward for closing business
+
+### 6.4.3 Viewing Your Watts
+
+**Check Balance**:
+1. Go to ME screen
+2. See "Watts Balance" card
+3. Tap to view transaction history
+
+**Transaction History**:
+- Date, amount (+/-), description
+- Categories: Deal, Bonus, Redemption, Adjustment
+- Sorted newest first
+
+### 6.4.4 Spending/Redeeming Watts
+
+**Redemption Options** (if enabled by company):
+- Gift cards
+- Extra PTO days
+- Parking spots
+- Team lunch credits
+- Office perks
+
+**How to Redeem**:
+- Contact administrator or HR
+- Redemptions may be manually processed
+- Balance will show negative transaction
+
+### 6.4.5 Watts Strategy Tips
+
+**Maximize Your Earnings**:
+- Complete tasks promptly (don't let them linger)
+- Contribute market intel daily (scan 1-2 accounts/day)
+- Focus on closing deals (highest reward)
+
+**Quality Over Quantity**:
+- Don't spam low-value intel just for points
+- Focus on actionable, high-impact news
+- Build a reputation for quality contributions
+
+---
+
 ## 7. Advanced Features
 
 ### 7.1 Media Vault
@@ -2650,6 +2781,8 @@ When creating Accounts or Opportunities, "Industry" field uses Thai taxonomy:
 - Status (Active, Inactive, Suspended)
 - 2FA enabled (can disable if user locked out)
 - Password change required (can force password reset)
+- Commission rate (THB/MW)
+- Annual quota (MW)
 
 **Actions**:
 - **Reset Password**: Generates new temporary password, sends email, sets `password_change_required` to TRUE
@@ -2716,6 +2849,83 @@ When creating Accounts or Opportunities, "Industry" field uses Thai taxonomy:
 - Onboard new team members (visualize org structure)
 - Visibility and permissions planning
 - Identify reporting gaps
+
+#### 8.1.6 Commission Management
+
+**Access**: Admin Panel → User Management → Edit User → Commission tab
+
+**Purpose**: Configure volume-based compensation for sales team members.
+
+**Fields**:
+
+**Commission Rate (THB/MW)**:
+- Amount earned per megawatt of closed deals
+- Example: 50,000 = user earns 50,000 THB per MW won
+- Set to 0 for non-sales roles
+- Typical range: 20,000 - 100,000 THB/MW
+
+**Annual Quota (MW)**:
+- Target capacity for the calendar year
+- Used for progress tracking on ME screen
+- Example: 10 MW = user expected to close 10 MW/year
+- Resets January 1st each year
+
+**Best Practices**:
+- Review commissions quarterly
+- Align rates with market standards
+- Adjust quotas based on market conditions
+- Document commission policy separately (HR)
+
+**Important Notes**:
+- Commission shown in CRM is estimated (not guaranteed payment)
+- Actual payment subject to company policy and payment terms
+- Only Won deals count toward commission calculation
+- Year-to-date calculation (January 1 - December 31)
+
+#### 8.1.7 Gamification Management
+
+**Access**: Admin Panel → Settings → Gamification Rules
+
+**Purpose**: Configure the Watts reward system and adjust point values.
+
+**Available Rules**:
+
+1. **Task Completion**
+   - Default: 10 Watts (fixed)
+   - Multiplier type: Fixed
+   - Status: Active
+
+2. **Pulse Intel Scout**
+   - Default: 20 Watts (fixed)
+   - Multiplier type: Fixed
+   - Status: Active
+   - Only awards for non-neutral news (Opportunity/Threat)
+
+3. **Rainmaker (Deal Won)**
+   - Default: 100 Watts per MW
+   - Multiplier type: Per MW
+   - Status: Active
+   - Cap: 5,000 Watts per deal
+
+**Editing Rules**:
+1. Click rule to edit
+2. Modify point value
+3. Change active status (enable/disable)
+4. Save changes
+5. Changes apply immediately to new transactions
+
+**Manual Watts Adjustments**:
+- Access: Admin Panel → User Management → Select User → Watts tab
+- Actions:
+  - **Add Watts**: Bonus reward (category: Bonus)
+  - **Deduct Watts**: Correction or penalty (category: Adjustment)
+  - **View History**: See all transactions
+- Requires Super Admin role
+
+**Use Cases**:
+- Seasonal promotions (2x Watts for Q4 deals)
+- Special recognition (500 Watts bonus for exceptional work)
+- Corrections (deduct incorrectly awarded points)
 
 ---
 
@@ -3633,7 +3843,19 @@ const VelocityDashboard = lazy(() => import('./components/crm/VelocityDashboard'
 
 **Velocity**: Speed of deal progression through pipeline (measured in days per stage, conversion rates).
 
+**Watts**: Internal gamification points system used to reward user engagement and activity.
+
 **Win Probability**: Estimated likelihood of closing a deal (percentage, used for weighted pipeline forecasting).
+
+**Rainmaker**: A user who successfully closes deals and earns Watts based on MW volume.
+
+**Intel Scout**: A user who actively contributes valuable market intelligence to The Pulse.
+
+**ME Screen**: Personal performance dashboard showing your Won MW, commission earnings, Watts balance, and pending tasks.
+
+**Commission Rate**: Amount earned per megawatt of closed deals (typically denominated in THB/MW).
+
+**Annual Quota**: Target MW volume assigned to each user for the calendar year.
 
 ---
 
