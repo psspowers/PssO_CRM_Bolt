@@ -7,8 +7,9 @@ import { ActivityLogs } from '@/components/admin/ActivityLogs';
 import { SettingsPanel } from '@/components/admin/SettingsPanel';
 import { OrgChart } from '@/components/admin/OrgChart';
 import { GamificationConsole } from '@/components/admin/GamificationConsole';
+import { BehaviorMatrix } from '@/components/admin/BehaviorMatrix';
 import { UserDropdown } from '@/components/crm/UserDropdown';
-import { Users, Activity, Settings, Shield, ArrowLeft, Network, Zap } from 'lucide-react';
+import { Users, Activity, Settings, Shield, ArrowLeft, Network, Zap, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 
@@ -114,6 +115,9 @@ const Admin: React.FC = () => {
               <TabsTrigger value="gamification" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
                 <Zap className="w-4 h-4 mr-2" />Rewards System
               </TabsTrigger>
+              <TabsTrigger value="analytics" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
+                <TrendingUp className="w-4 h-4 mr-2" />Analytics
+              </TabsTrigger>
               <TabsTrigger value="activity" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
                 <Activity className="w-4 h-4 mr-2" />Activity Logs
               </TabsTrigger>
@@ -125,6 +129,7 @@ const Admin: React.FC = () => {
             <TabsContent value="users"><UserManagement /></TabsContent>
             <TabsContent value="org-chart"><OrgChart /></TabsContent>
             <TabsContent value="gamification"><GamificationConsole /></TabsContent>
+            <TabsContent value="analytics"><BehaviorMatrix /></TabsContent>
             <TabsContent value="activity"><ActivityLogs /></TabsContent>
             <TabsContent value="settings"><SettingsPanel /></TabsContent>
           </Tabs>
