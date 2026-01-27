@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Zap, Check, Loader2, Activity } from 'lucide-react';
+import { Zap, Loader2, Activity } from 'lucide-react';
 
 interface GamificationRule {
   id: string;
@@ -24,7 +21,6 @@ export const GamificationConsole: React.FC = () => {
   const [rules, setRules] = useState<GamificationRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
-  const [editedRules, setEditedRules] = useState<Record<string, { points: number; is_active: boolean }>>({});
 
   useEffect(() => {
     fetchRules();
@@ -46,37 +42,18 @@ export const GamificationConsole: React.FC = () => {
     setLoading(false);
   };
 
-  const handlePointsChange = (ruleId: string, newPoints: string) => {
-    const points = parseInt(newPoints) || 0;
-    setEditedRules(prev => ({
-      ...prev,
-      [ruleId]: {
-        points,
-        is_active: prev[ruleId]?.is_active ?? rules.find(r => r.id === ruleId)?.is_active ?? true
-      }
-    }));
+  const handlePointsChange = (ruleId: string, newPoints: number) => {
+    setRules(prev => prev.map(r =>
+      r.id === ruleId ? { ...r, points: newPoints } : r
+    ));
   };
 
-  const handleToggleActive = (ruleId: string, isActive: boolean) => {
-    setEditedRules(prev => ({
-      ...prev,
-      [ruleId]: {
-        points: prev[ruleId]?.points ?? rules.find(r => r.id === ruleId)?.points ?? 0,
-        is_active: isActive
-      }
-    }));
-  };
-
-  const handleSave = async (ruleId: string) => {
-    const edited = editedRules[ruleId];
-    if (!edited) return;
-
+  const handleToggleActive = async (ruleId: string, isActive: boolean) => {
     setSaving(ruleId);
     const { error } = await supabase
       .from('gamification_rules')
       .update({
-        points: edited.points,
-        is_active: edited.is_active,
+        is_active: isActive,
         updated_at: new Date().toISOString()
       })
       .eq('id', ruleId);
@@ -85,31 +62,34 @@ export const GamificationConsole: React.FC = () => {
       toast.error('Failed to update rule');
       console.error(error);
     } else {
-      toast.success('Rule updated successfully');
+      toast.success(isActive ? 'Rule activated' : 'Rule deactivated');
       setRules(prev => prev.map(r =>
         r.id === ruleId
-          ? { ...r, points: edited.points, is_active: edited.is_active, updated_at: new Date().toISOString() }
+          ? { ...r, is_active: isActive, updated_at: new Date().toISOString() }
           : r
       ));
-      setEditedRules(prev => {
-        const updated = { ...prev };
-        delete updated[ruleId];
-        return updated;
-      });
     }
     setSaving(null);
   };
 
-  const getCurrentPoints = (rule: GamificationRule) => {
-    return editedRules[rule.id]?.points ?? rule.points;
-  };
+  const handleSavePoints = async (rule: GamificationRule) => {
+    setSaving(rule.id);
+    const { error } = await supabase
+      .from('gamification_rules')
+      .update({
+        points: rule.points,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', rule.id);
 
-  const getCurrentActive = (rule: GamificationRule) => {
-    return editedRules[rule.id]?.is_active ?? rule.is_active;
-  };
-
-  const hasChanges = (ruleId: string) => {
-    return !!editedRules[ruleId];
+    if (error) {
+      toast.error('Failed to update points');
+      console.error(error);
+      await fetchRules();
+    } else {
+      toast.success('Points updated');
+    }
+    setSaving(null);
   };
 
   if (loading) {
@@ -124,105 +104,83 @@ export const GamificationConsole: React.FC = () => {
   const totalRulesCount = rules.length;
 
   return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl p-6 text-white shadow-lg">
+    <div className="space-y-4">
+      <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl p-4 text-white shadow-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
-              <Zap className="w-6 h-6" />
+            <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center">
+              <Zap className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold">Mission Control</h2>
-              <p className="text-sm text-white/80">Gamification Rule Configuration</p>
+              <h2 className="text-xl font-bold">Mission Control</h2>
+              <p className="text-xs text-white/80">Gamification Rule Configuration</p>
             </div>
           </div>
           <div className="text-right">
             <div className="flex items-center gap-2 justify-end mb-1">
-              <Activity className="w-5 h-5" />
-              <span className="text-3xl font-black">{activeRulesCount}</span>
+              <Activity className="w-4 h-4" />
+              <span className="text-2xl font-black">{activeRulesCount}</span>
               <span className="text-white/70">/</span>
-              <span className="text-xl font-semibold text-white/70">{totalRulesCount}</span>
+              <span className="text-lg font-semibold text-white/70">{totalRulesCount}</span>
             </div>
-            <p className="text-xs text-white/70">Active Rules</p>
+            <p className="text-[10px] text-white/70">Active Rules</p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {rules.map(rule => {
-          const isActive = getCurrentActive(rule);
-          const points = getCurrentPoints(rule);
-          const changed = hasChanges(rule.id);
-
-          return (
-            <div
-              key={rule.id}
-              className={`rounded-xl border-2 p-5 transition-all ${
-                isActive
-                  ? 'border-orange-500 bg-white shadow-md'
-                  : 'border-slate-200 bg-slate-50 opacity-75 grayscale-[0.5]'
-              }`}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="font-bold text-slate-900 leading-tight flex-1 pr-2">{rule.name}</h3>
-                <Switch
-                  id={`active-${rule.id}`}
-                  checked={isActive}
-                  onCheckedChange={(checked) => handleToggleActive(rule.id, checked)}
-                  className="flex-shrink-0"
-                />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {rules.map(rule => (
+          <div
+            key={rule.id}
+            className={`p-4 rounded-xl border transition-all ${
+              rule.is_active
+                ? 'bg-white border-orange-200 shadow-sm'
+                : 'bg-slate-50 border-slate-100 opacity-75'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 flex-1">
+                <div className="font-bold text-sm text-slate-700">{rule.name}</div>
+                {rule.multiplier_type && (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300 text-[9px] px-1 py-0">
+                    {rule.multiplier_type === 'per_mw' ? 'Per MW' : 'Fixed'}
+                  </Badge>
+                )}
               </div>
+              <Switch
+                checked={rule.is_active}
+                onCheckedChange={(val) => handleToggleActive(rule.id, val)}
+                disabled={saving === rule.id}
+                className="data-[state=checked]:bg-orange-500 flex-shrink-0"
+              />
+            </div>
 
-              <div className="h-10 mb-4">
-                <p className="text-xs text-slate-500 line-clamp-2">
-                  {rule.description || 'No description available'}
-                </p>
+            <div className="flex items-center justify-between gap-4">
+              <div className="text-xs text-slate-500 leading-tight line-clamp-2 flex-1">
+                {rule.description || 'Award for this action'}
               </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs text-slate-600 font-semibold uppercase tracking-wide">Points</Label>
-                  {rule.multiplier_type && (
-                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300 text-[10px]">
-                      {rule.multiplier_type === 'per_mw' ? 'Per MW' : 'Fixed'}
-                    </Badge>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="relative">
                   <Input
-                    id={`points-${rule.id}`}
                     type="number"
-                    value={points}
-                    onChange={(e) => handlePointsChange(rule.id, e.target.value)}
-                    className="flex-1 text-2xl font-black text-center border-2 h-14"
+                    className="w-20 h-8 text-right font-bold text-slate-900 border-slate-200 focus:border-orange-500 pr-1"
+                    value={rule.points}
+                    onChange={(e) => handlePointsChange(rule.id, parseInt(e.target.value) || 0)}
+                    onBlur={() => handleSavePoints(rule)}
+                    disabled={saving === rule.id}
                     min="0"
                   />
-                  <button
-                    onClick={() => handleSave(rule.id)}
-                    disabled={!changed || saving === rule.id}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
-                      changed
-                        ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-lg'
-                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                    }`}
-                    title="Save changes"
-                  >
-                    {saving === rule.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Check className="w-5 h-5" />
-                    )}
-                  </button>
+                  {saving === rule.id && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/50 rounded">
+                      <Loader2 className="w-3 h-3 animate-spin text-orange-500" />
+                    </div>
+                  )}
                 </div>
-
-                <p className="text-[10px] text-slate-400 font-mono truncate">
-                  {rule.event_key}
-                </p>
+                <span className="text-xs font-semibold text-orange-600">Watts</span>
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </div>
   );

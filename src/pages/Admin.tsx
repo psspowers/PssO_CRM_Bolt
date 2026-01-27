@@ -95,8 +95,8 @@ const Admin: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll">
-        <div className="max-w-7xl mx-auto px-4 py-6">
+      <main className="flex-1 h-full overflow-y-auto p-4 pb-20">
+        <div className="max-w-7xl mx-auto">
           <AdminStats
             totalUsers={stats.totalUsers}
             activeUsers={stats.activeUsers}
