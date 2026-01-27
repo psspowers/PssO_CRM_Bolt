@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Building2, Check, Zap } from 'lucide-react';
+import { MapPin, Building2, Check, Zap, FileText, Users, DollarSign } from 'lucide-react';
 import { Account } from '../../types/crm';
 import { SECTOR_ICONS } from '../../data/thaiTaxonomy';
 
@@ -26,6 +26,19 @@ export const AccountCard: React.FC<AccountCardProps> = ({
   };
 
   const sectorIcon = account.sector ? SECTOR_ICONS[account.sector] : '🏢';
+
+  const formatMW = (mw: number) => {
+    if (mw >= 1) return `${mw.toFixed(1)} MW`;
+    return `${(mw * 1000).toFixed(0)} kW`;
+  };
+
+  const formatValue = (value: number) => {
+    if (value >= 1000000) return `฿${(value / 1000000).toFixed(0)}M`;
+    if (value >= 1000) return `฿${(value / 1000).toFixed(0)}K`;
+    return `฿${value.toFixed(0)}`;
+  };
+
+  const hasMetrics = (account.totalDeals ?? 0) > 0 || (account.totalMW ?? 0) > 0 || (account.totalValue ?? 0) > 0 || (account.teamSize ?? 0) > 0;
 
   return (
     <div className="relative">
@@ -61,12 +74,33 @@ export const AccountCard: React.FC<AccountCardProps> = ({
                 <span className="truncate">{account.country}</span>
               </div>
             )}
-            {opportunityCount > 0 && (
-              <div className="flex items-center gap-1 mt-1">
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">
-                  <Zap className="w-2.5 h-2.5" />
-                  {opportunityCount} Active Deal{opportunityCount !== 1 ? 's' : ''}
-                </span>
+
+            {hasMetrics && (
+              <div className="flex items-center gap-2 mt-2 px-2 py-1 bg-slate-50 rounded text-[10px] font-semibold text-slate-600">
+                {(account.totalDeals ?? 0) > 0 && (
+                  <span className="flex items-center gap-0.5">
+                    <FileText className="w-3 h-3" />
+                    {account.totalDeals}
+                  </span>
+                )}
+                {(account.totalMW ?? 0) > 0 && (
+                  <span className="flex items-center gap-0.5">
+                    <Zap className="w-3 h-3" />
+                    {formatMW(account.totalMW ?? 0)}
+                  </span>
+                )}
+                {(account.totalValue ?? 0) > 0 && (
+                  <span className="flex items-center gap-0.5">
+                    <DollarSign className="w-3 h-3" />
+                    {formatValue(account.totalValue ?? 0)}
+                  </span>
+                )}
+                {(account.teamSize ?? 0) > 0 && (
+                  <span className="flex items-center gap-0.5">
+                    <Users className="w-3 h-3" />
+                    {account.teamSize}
+                  </span>
+                )}
               </div>
             )}
           </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Phone, Check } from 'lucide-react';
+import { Mail, Phone, Check, Zap, FileText, Users, DollarSign } from 'lucide-react';
 import { Contact } from '../../types/crm';
 
 interface ContactCardProps {
@@ -16,6 +16,19 @@ export const ContactCard: React.FC<ContactCardProps> = ({ contact, organizationN
     e.stopPropagation();
     onSelect?.(contact.id, !isSelected);
   };
+
+  const formatMW = (mw: number) => {
+    if (mw >= 1) return `${mw.toFixed(1)} MW`;
+    return `${(mw * 1000).toFixed(0)} kW`;
+  };
+
+  const formatValue = (value: number) => {
+    if (value >= 1000000) return `฿${(value / 1000000).toFixed(0)}M`;
+    if (value >= 1000) return `฿${(value / 1000).toFixed(0)}K`;
+    return `฿${value.toFixed(0)}`;
+  };
+
+  const hasOrgMetrics = (contact.orgTotalDeals ?? 0) > 0 || (contact.orgTotalMW ?? 0) > 0 || (contact.orgTotalValue ?? 0) > 0 || (contact.orgTeamSize ?? 0) > 0;
 
   return (
     <div className="relative">
@@ -42,6 +55,36 @@ export const ContactCard: React.FC<ContactCardProps> = ({ contact, organizationN
             <p className="text-xs text-slate-500 truncate">{contact.role}</p>
             {organizationName && (
               <p className="text-xs text-slate-400 truncate mt-0.5">{organizationName}</p>
+            )}
+
+            {hasOrgMetrics && (
+              <div className="flex items-center gap-2 mt-2 px-2 py-1 bg-blue-50 rounded text-[10px] font-semibold text-blue-700">
+                <span className="text-[9px] uppercase tracking-wide opacity-70">Org:</span>
+                {(contact.orgTotalDeals ?? 0) > 0 && (
+                  <span className="flex items-center gap-0.5">
+                    <FileText className="w-3 h-3" />
+                    {contact.orgTotalDeals}
+                  </span>
+                )}
+                {(contact.orgTotalMW ?? 0) > 0 && (
+                  <span className="flex items-center gap-0.5">
+                    <Zap className="w-3 h-3" />
+                    {formatMW(contact.orgTotalMW ?? 0)}
+                  </span>
+                )}
+                {(contact.orgTotalValue ?? 0) > 0 && (
+                  <span className="flex items-center gap-0.5">
+                    <DollarSign className="w-3 h-3" />
+                    {formatValue(contact.orgTotalValue ?? 0)}
+                  </span>
+                )}
+                {(contact.orgTeamSize ?? 0) > 0 && (
+                  <span className="flex items-center gap-0.5">
+                    <Users className="w-3 h-3" />
+                    {contact.orgTeamSize}
+                  </span>
+                )}
+              </div>
             )}
           </div>
 

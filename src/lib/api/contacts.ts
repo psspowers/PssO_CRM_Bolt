@@ -2,19 +2,60 @@ import { supabase } from '../supabase';
 import { Contact, ContactTag } from '../../types/crm';
 import { DbContact } from './types';
 
-const toContact = (db: DbContact): Contact => ({
+const toContact = (db: any): Contact => ({
   id: db.id, fullName: db.full_name, role: db.role,
   accountId: db.account_id, partnerId: db.partner_id,
   email: db.email, phone: db.phone, country: db.country, city: db.city,
   tags: (db.tags || []) as ContactTag[], relationshipNotes: db.relationship_notes,
   clickupLink: db.clickup_link, avatar: db.avatar,
   createdAt: new Date(db.created_at), updatedAt: new Date(db.updated_at),
+  ownerId: db.owner_id,
+  orgTotalDeals: db.orgTotalDeals,
+  orgTotalMW: db.orgTotalMW,
+  orgTotalValue: db.orgTotalValue,
+  orgTeamSize: db.orgTeamSize,
 });
 
 export const fetchContacts = async (): Promise<Contact[]> => {
-  const { data, error } = await supabase.from('contacts').select('*').order('full_name');
+  const { data, error } = await supabase
+    .from('contacts')
+    .select(`
+      *,
+      accounts!contacts_account_id_fkey(
+        id,
+        name,
+        opportunities(value, target_capacity, stage),
+        contacts(count)
+      )
+    `)
+    .order('full_name');
   if (error) throw error;
-  return (data || []).map(toContact);
+
+  return (data || []).map(c => {
+    const account = c.accounts;
+    let orgTotalDeals = 0;
+    let orgTotalMW = 0;
+    let orgTotalValue = 0;
+    let orgTeamSize = 0;
+
+    if (account) {
+      const opportunities = account.opportunities || [];
+      const activeOpps = opportunities.filter((o: any) => !['Lost'].includes(o.stage));
+
+      orgTotalDeals = activeOpps.length;
+      orgTotalMW = activeOpps.reduce((sum: number, o: any) => sum + (Number(o.target_capacity) || 0), 0);
+      orgTotalValue = activeOpps.reduce((sum: number, o: any) => sum + (Number(o.value) || 0), 0);
+      orgTeamSize = account.contacts?.[0]?.count || 0;
+    }
+
+    return toContact({
+      ...c,
+      orgTotalDeals,
+      orgTotalMW,
+      orgTotalValue,
+      orgTeamSize
+    });
+  });
 };
 
 export const createContact = async (contact: Omit<Contact, 'id' | 'createdAt' | 'updatedAt'>): Promise<Contact> => {
