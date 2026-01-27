@@ -1,66 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Copy, X, UserSearch, Save, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Rocket, X, UserSearch, Save, Copy } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-
-const DUAL_VECTOR_PROMPT = `**MISSION: DEEP TARGET PROFILING**
-
-You are an elite intelligence analyst tasked with creating a comprehensive strategic dossier.
-
-**SUBJECT:** [NAME] at [COMPANY]
-
-**YOUR MISSION:**
-Use TWO intelligence vectors to build a complete profile:
-
-**VECTOR 1: WEB INTELLIGENCE**
-- Search: "[NAME] + [COMPANY]" + LinkedIn, press releases, conference talks
-- Extract: Role, tenure, past companies, education, public statements
-- Look for: Career trajectory, strategic priorities, public persona
-
-**VECTOR 2: GMAIL INTELLIGENCE** (If user has authorized Gmail API)
-- Analyze: Email communication patterns, meeting frequencies, response times
-- Identify: Decision-making style, priorities, pain points mentioned
-- Note: Stakeholder relationships, project involvement
-
-**OUTPUT FORMAT:**
-
-### EXECUTIVE SUMMARY
-[2-3 sentence strategic overview]
-
-### PROFESSIONAL PROFILE
-- Current Role & Tenure:
-- Career Background:
-- Education:
-- Key Achievements:
-
-### PERSONALITY ASSESSMENT
-Choose ONE: Visionary / Analytical / Skeptic / Driver / Supporter
-[Justify the classification with specific evidence]
-
-### STRATEGIC INTELLIGENCE
-- Decision-Making Style:
-- Known Pain Points:
-- Strategic Priorities:
-- Influence Network:
-
-### ENGAGEMENT STRATEGY
-- Best Approach:
-- Topics of Interest:
-- Red Flags to Avoid:
-- Optimal Communication Channel:
-
-### RELATIONSHIP MAP
-- Reports To:
-- Key Allies:
-- Budget Authority: [Estimated]
-
-**CRITICAL:** Base everything on verifiable data. Flag assumptions clearly.`;
 
 interface DossierModalProps {
   isOpen: boolean;
@@ -81,27 +27,68 @@ export const DossierModal: React.FC<DossierModalProps> = ({
   contact,
   onSave
 }) => {
+  const [step, setStep] = useState<'launch' | 'input'>('launch');
   const [personalityType, setPersonalityType] = useState<string>(contact.personality_type || '');
   const [dossier, setDossier] = useState<string>(contact.intelligence_dossier || '');
   const [saving, setSaving] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const prompt = `I am preparing for a high-stakes meeting with ${contact.name}${contact.company ? ` at ${contact.company}` : ''}.
+
+Step 1: Public Forensic Search (LinkedIn/News). Find their 'North Star'.
+Step 2: Private Context. Reference my Gmail. Summarize last 3 interactions & vibe.
+
+Step 3: The Battle Plan.
+- The Hook (Rapport Starter)
+- The Defense (Objection Handling)
+- The Script (Closing Line)
+
+Output concise, actionable bullet points.`;
 
   useEffect(() => {
     if (isOpen) {
+      if (contact.intelligence_dossier) {
+        setStep('input');
+      } else {
+        setStep('launch');
+      }
       setPersonalityType(contact.personality_type || '');
       setDossier(contact.intelligence_dossier || '');
     }
   }, [isOpen, contact]);
 
-  const handleCopyPrompt = () => {
-    const customizedPrompt = DUAL_VECTOR_PROMPT
-      .replace('[NAME]', contact.name)
-      .replace('[COMPANY]', contact.company || 'Unknown Company');
+  useEffect(() => {
+    if (step === 'input' && textareaRef.current) {
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
+    }
+  }, [step]);
 
-    navigator.clipboard.writeText(customizedPrompt);
-    toast.success('Intelligence prompt copied! Paste into Gemini or ChatGPT.', {
-      description: 'Personal intelligence enabled? Review Gmail access.',
-      duration: 5000
-    });
+  const startResearch = () => {
+    navigator.clipboard.writeText(prompt)
+      .then(() => {
+        window.open('https://gemini.google.com/app', '_blank');
+        setStep('input');
+        toast.success('Prompt copied to clipboard!', {
+          description: 'Paste into Gemini for AI-powered intelligence',
+          duration: 4000
+        });
+      })
+      .catch(() => {
+        toast.error('Failed to copy prompt. Click "Re-copy Prompt" below.');
+        setStep('input');
+      });
+  };
+
+  const handleRecopy = () => {
+    navigator.clipboard.writeText(prompt)
+      .then(() => {
+        toast.success('Prompt re-copied to clipboard!');
+      })
+      .catch(() => {
+        toast.error('Clipboard access failed. Please copy manually.');
+      });
   };
 
   const handleSave = async () => {
@@ -146,60 +133,91 @@ export const DossierModal: React.FC<DossierModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <UserSearch className="w-6 h-6 text-orange-600" />
-            Target Intelligence: {contact.name}
+            {step === 'launch' ? 'Target Intelligence Research' : 'Intelligence Capture'}
           </DialogTitle>
-          {contact.company && (
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              {contact.company}
-            </p>
-          )}
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            {contact.name}{contact.company && ` • ${contact.company}`}
+          </p>
         </DialogHeader>
 
-        <div className="space-y-6">
-          <div className="space-y-3">
-            <div className="flex items-start justify-between">
+        {step === 'launch' ? (
+          <div className="py-12">
+            <div className="max-w-md mx-auto text-center space-y-6">
+              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center shadow-2xl">
+                <Rocket className="w-10 h-10 text-white" />
+              </div>
+
               <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">
-                  SECTION 1: THE TRIGGER
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                  Launch AI Intelligence Gathering
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400">
-                  Dual-Vector Intelligence Prompt (Web + Gmail)
+                <p className="text-slate-600 dark:text-slate-400">
+                  We'll copy a strategic prompt and open Gemini automatically.
+                  Paste the prompt and let AI analyze public data + your Gmail history.
                 </p>
               </div>
+
+              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                <div className="text-sm text-slate-700 dark:text-slate-300 space-y-2">
+                  <p className="font-semibold text-orange-900 dark:text-orange-400">What happens next:</p>
+                  <ol className="text-left list-decimal list-inside space-y-1 text-xs">
+                    <li>Prompt auto-copied to clipboard</li>
+                    <li>Gemini opens in new tab</li>
+                    <li>Paste prompt → AI analyzes web + Gmail</li>
+                    <li>Return here to save intelligence</li>
+                  </ol>
+                </div>
+              </div>
+
               <Button
-                onClick={handleCopyPrompt}
-                size="sm"
-                variant="outline"
-                className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                onClick={startResearch}
+                size="lg"
+                className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white text-lg py-6 shadow-lg"
               >
-                <Copy className="w-4 h-4 mr-2" />
-                Copy Prompt
+                <Rocket className="w-5 h-5 mr-2" />
+                Launch Gemini Research
               </Button>
-            </div>
 
-            <Alert className="bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-xs">
-                <strong>Instructions:</strong> Copy the prompt above, paste into Gemini or ChatGPT-4, and wait for comprehensive intelligence.
-                If you've authorized Gmail API access, the AI will analyze email patterns for deeper insights.
-              </AlertDescription>
-            </Alert>
-
-            <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg border border-slate-300 dark:border-slate-600 max-h-48 overflow-y-auto">
-              <pre className="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-mono">
-                {DUAL_VECTOR_PROMPT.replace('[NAME]', contact.name).replace('[COMPANY]', contact.company || 'Unknown Company')}
-              </pre>
+              <button
+                onClick={() => setStep('input')}
+                className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline"
+              >
+                Skip to manual input
+              </button>
             </div>
           </div>
-
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              SECTION 2: THE CAPTURE
-            </h3>
+        ) : (
+          <div className="space-y-5">
+            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+              <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">
+                <strong>Step 1:</strong> Paste the prompt into Gemini.
+              </p>
+              <p className="text-sm text-slate-700 dark:text-slate-300">
+                <strong>Step 2:</strong> Copy the AI analysis and paste it below.
+              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  onClick={handleRecopy}
+                  className="text-xs text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 flex items-center gap-1 font-medium"
+                >
+                  <Copy className="w-3 h-3" />
+                  Re-copy Prompt
+                </button>
+                <span className="text-xs text-slate-400">|</span>
+                <a
+                  href="https://gemini.google.com/app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                >
+                  Open Gemini
+                </a>
+              </div>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="personality-type" className="text-sm font-semibold">
@@ -249,19 +267,21 @@ export const DossierModal: React.FC<DossierModalProps> = ({
                 Intelligence Dossier
               </Label>
               <Textarea
+                ref={textareaRef}
                 id="dossier"
                 value={dossier}
                 onChange={(e) => setDossier(e.target.value)}
-                placeholder="Paste Gemini Intelligence Here...&#10;&#10;Include:&#10;- Executive Summary&#10;- Professional Profile&#10;- Strategic Intelligence&#10;- Engagement Strategy&#10;- Relationship Map"
-                rows={12}
-                className="font-mono text-sm"
+                placeholder="Paste Gemini's analysis here...&#10;&#10;Include:&#10;• The Hook (Rapport Starter)&#10;• The Defense (Objection Handling)&#10;• The Script (Closing Line)&#10;• North Star & Communication Patterns"
+                rows={14}
+                className="font-mono text-sm resize-none"
               />
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {dossier.length} characters | Last updated: {contact.intelligence_dossier ? 'Previously saved' : 'Never'}
+                {dossier.length} characters
+                {contact.intelligence_dossier && ' • Previously saved'}
               </p>
             </div>
           </div>
-        </div>
+        )}
 
         <DialogFooter className="gap-2">
           <Button
@@ -272,14 +292,17 @@ export const DossierModal: React.FC<DossierModalProps> = ({
             <X className="w-4 h-4 mr-2" />
             Cancel
           </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saving || !dossier.trim() || !personalityType}
-            className="bg-orange-600 hover:bg-orange-700 text-white"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            {saving ? 'Saving...' : 'Save to Nexus'}
-          </Button>
+
+          {step === 'input' && (
+            <Button
+              onClick={handleSave}
+              disabled={saving || !dossier.trim() || !personalityType}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {saving ? 'Saving...' : 'Save Intelligence'}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
