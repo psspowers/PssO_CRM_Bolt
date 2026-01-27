@@ -74,6 +74,11 @@
     -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   }
+
+  .touch-scroll {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
 }
 
 /* Mobile-first touch optimizations */

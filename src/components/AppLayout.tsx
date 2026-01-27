@@ -514,7 +514,7 @@ export default function AppLayout() {
       />
 
       {/* Main Content Area - THIS CONTAINER SCROLLS */}
-      <div className="flex-1 flex flex-col h-screen max-w-full min-w-0 overflow-y-auto overflow-x-hidden">
+      <div className="flex-1 flex flex-col h-screen max-w-full min-w-0 overflow-y-auto overflow-x-hidden touch-scroll">
         {/* Header - STICKY WITHIN THIS SCROLLING CONTAINER */}
         <Header
           onQuickAdd={() => setShowQuickAdd(true)}
