@@ -1,19 +1,18 @@
 import React from 'react';
-import { Building2, UserPlus, ClipboardCheck } from 'lucide-react';
+import { Building2, Handshake, IdCard, User, Network } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MagicMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  onQuickAdd: (mode: 'activity' | 'entity', entityType?: 'Contact' | 'Account') => void;
+  onNavigate: (tab: string) => void;
 }
 
-export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onQuickAdd }) => {
-  if (!isOpen) return null;
+export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigate }) => {
+  const { profile } = useAuth();
+  const isAdmin = profile?.role === 'super_admin' || profile?.role === 'admin';
 
-  const handleAction = (mode: 'activity' | 'entity', entityType?: 'Contact' | 'Account') => {
-    onQuickAdd(mode, entityType);
-    onClose();
-  };
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end pb-24 pointer-events-none">
@@ -25,32 +24,52 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onQuickAd
       <div className="relative z-10 flex justify-center mb-4 pointer-events-none">
         <div className="relative w-64 h-48 pointer-events-auto">
 
-          {/* Add Contact - Top Position */}
+          {/* Me Button - Center Top */}
           <button
-            onClick={() => handleAction('entity', 'Contact')}
-            className="absolute left-1/2 top-0 -translate-x-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white shadow-xl shadow-emerald-500/50 flex items-center justify-center transition-all hover:scale-110 hover:shadow-2xl hover:shadow-emerald-500/70 animate-in zoom-in duration-300"
-            aria-label="Add Contact"
+            onClick={() => { onNavigate('me'); onClose(); }}
+            className="absolute left-1/2 top-0 -translate-x-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white shadow-xl shadow-orange-500/50 flex items-center justify-center transition-all hover:scale-110 hover:shadow-2xl hover:shadow-orange-500/70 animate-in zoom-in duration-300"
+            aria-label="Me"
           >
-            <UserPlus className="w-7 h-7" />
+            <User className="w-7 h-7" />
           </button>
 
-          {/* Add Account - Bottom Left */}
+          {/* Accounts Button - Left Arc Position */}
           <button
-            onClick={() => handleAction('entity', 'Account')}
-            className="absolute left-8 bottom-8 w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white shadow-lg shadow-blue-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-blue-500/60 animate-in zoom-in duration-300 delay-75"
-            aria-label="Add Account"
+            onClick={() => { onNavigate('accounts'); onClose(); }}
+            className="absolute left-4 bottom-8 w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-blue-500/50 animate-in zoom-in duration-300 delay-75"
+            aria-label="Accounts"
           >
             <Building2 className="w-6 h-6" />
           </button>
 
-          {/* Log Activity - Bottom Right */}
+          {/* Contacts Button - Center Bottom */}
           <button
-            onClick={() => handleAction('activity')}
-            className="absolute right-8 bottom-8 w-14 h-14 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white shadow-lg shadow-orange-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-orange-500/60 animate-in zoom-in duration-300 delay-150"
-            aria-label="Log Activity"
+            onClick={() => { onNavigate('contacts'); onClose(); }}
+            className="absolute left-1/2 -translate-x-1/2 bottom-0 w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-cyan-500/60 animate-in zoom-in duration-300 delay-100"
+            aria-label="Contacts"
           >
-            <ClipboardCheck className="w-6 h-6" />
+            <IdCard className="w-6 h-6" />
           </button>
+
+          {/* Partners Button - Right Arc Position */}
+          <button
+            onClick={() => { onNavigate('partners'); onClose(); }}
+            className="absolute right-4 bottom-8 w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 hover:from-purple-400 hover:to-pink-500 text-white shadow-lg shadow-purple-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-purple-500/60 animate-in zoom-in duration-300 delay-150"
+            aria-label="Partners"
+          >
+            <Handshake className="w-6 h-6" />
+          </button>
+
+          {/* Nexus Button - Top Right Arc Position (Admin Only) */}
+          {isAdmin && (
+            <button
+              onClick={() => { onNavigate('nexus'); onClose(); }}
+              className="absolute right-8 top-12 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shadow-lg shadow-indigo-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-indigo-500/60 animate-in zoom-in duration-300 delay-200"
+              aria-label="Nexus"
+            >
+              <Network className="w-6 h-6" />
+            </button>
+          )}
 
         </div>
       </div>

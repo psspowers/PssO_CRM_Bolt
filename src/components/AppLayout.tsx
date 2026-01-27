@@ -24,7 +24,7 @@ import { supabase } from '@/lib/supabase';
 
 
 type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'projects' | 'pulse' | 'me' | 'nexus';
-type EntityType = 'Account' | 'Opportunity' | 'Contact';
+type EntityType = 'Account' | 'Opportunity';
 
 export default function AppLayout() {
   const { user, loading: authLoading } = useAuth();
@@ -46,7 +46,6 @@ export default function AppLayout() {
 
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const [quickAddInitialData, setQuickAddInitialData] = useState<any>(undefined);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [autoOpenId, setAutoOpenId] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -243,38 +242,11 @@ export default function AppLayout() {
         });
         setActiveTab('opportunities');
         return newOpp;
-      } else if (entityType === 'Contact') {
-        const newContact = await createContact({
-          fullName: data.fullName,
-          role: data.role,
-          email: data.email,
-          phone: data.phone,
-          country: data.country,
-          city: data.city,
-          accountId: data.accountId,
-          tags: data.tags || [],
-          relationshipNotes: data.relationshipNotes,
-        });
-        toast({
-          title: 'Contact Created',
-          description: `${newContact.fullName} has been added successfully.`
-        });
-        setActiveTab('contacts');
-        return newContact;
       }
     } catch (error) {
       console.error('Error creating entity:', error);
       throw error;
     }
-  };
-
-  const handleMagicQuickAdd = (mode: 'activity' | 'entity', entityType?: 'Contact' | 'Account') => {
-    if (mode === 'activity') {
-      setQuickAddInitialData({ mode: 'activity' });
-    } else {
-      setQuickAddInitialData({ mode: 'entity', entityType });
-    }
-    setShowQuickAdd(true);
   };
 
   // Handle bulk import
@@ -582,20 +554,16 @@ export default function AppLayout() {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} onQuickAdd={handleMagicQuickAdd} />
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
       
       {/* Quick Add Modal */}
       <QuickAddModal
         isOpen={showQuickAdd}
-        onClose={() => {
-          setShowQuickAdd(false);
-          setQuickAddInitialData(undefined);
-        }}
+        onClose={() => setShowQuickAdd(false)}
         onAdd={handleAddActivity}
         onAddEntity={handleAddEntity}
         entities={entitiesForModal}
         users={users}
-        initialData={quickAddInitialData}
       />
 
       {/* Bulk Import Wizard */}

@@ -7,7 +7,6 @@ type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'pr
 interface BottomNavProps {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
-  onQuickAdd?: (mode: 'activity' | 'entity', entityType?: 'Contact' | 'Account') => void;
 }
 
 const tabs: { id: Tab; icon: React.ElementType; label: string }[] = [
@@ -17,22 +16,12 @@ const tabs: { id: Tab; icon: React.ElementType; label: string }[] = [
   { id: 'pulse', icon: Activity, label: 'Pulse' },
 ];
 
-export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, onQuickAdd }) => {
+export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) => {
   const [isMagicOpen, setIsMagicOpen] = React.useState(false);
-
-  const handleQuickAdd = (mode: 'activity' | 'entity', entityType?: 'Contact' | 'Account') => {
-    if (onQuickAdd) {
-      onQuickAdd(mode, entityType);
-    }
-  };
 
   return (
     <>
-      <MagicMenu
-        isOpen={isMagicOpen}
-        onClose={() => setIsMagicOpen(false)}
-        onQuickAdd={handleQuickAdd}
-      />
+      <MagicMenu isOpen={isMagicOpen} onClose={() => setIsMagicOpen(false)} onNavigate={onTabChange} />
 
       <nav
         className="lg:hidden fixed bottom-0 left-0 right-0 grid grid-cols-5 h-16 bg-white border-t border-slate-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] pb-safe z-50"
