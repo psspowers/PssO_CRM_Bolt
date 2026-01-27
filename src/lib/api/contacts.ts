@@ -19,41 +19,28 @@ const toContact = (db: any): Contact => ({
 export const fetchContacts = async (): Promise<Contact[]> => {
   const { data, error } = await supabase
     .from('contacts')
-    .select(`
-      *,
-      accounts!contacts_account_id_fkey(
-        id,
-        name,
-        opportunities(value, target_capacity, stage),
-        contacts(count)
-      )
-    `)
+    .select('*')
     .order('full_name');
   if (error) throw error;
 
+  const accountIds = [...new Set((data || []).map(c => c.account_id).filter(Boolean))];
+
+  const { data: accountMetrics } = await supabase
+    .from('account_metrics_view')
+    .select('id, deal_count, total_mw, total_value, contact_count')
+    .in('id', accountIds);
+
+  const metricsMap = new Map((accountMetrics || []).map(m => [m.id, m]));
+
   return (data || []).map(c => {
-    const account = c.accounts;
-    let orgTotalDeals = 0;
-    let orgTotalMW = 0;
-    let orgTotalValue = 0;
-    let orgTeamSize = 0;
-
-    if (account) {
-      const opportunities = account.opportunities || [];
-      const activeOpps = opportunities.filter((o: any) => !['Lost'].includes(o.stage));
-
-      orgTotalDeals = activeOpps.length;
-      orgTotalMW = activeOpps.reduce((sum: number, o: any) => sum + (Number(o.target_capacity) || 0), 0);
-      orgTotalValue = activeOpps.reduce((sum: number, o: any) => sum + (Number(o.value) || 0), 0);
-      orgTeamSize = account.contacts?.[0]?.count || 0;
-    }
+    const metrics = c.account_id ? metricsMap.get(c.account_id) : null;
 
     return toContact({
       ...c,
-      orgTotalDeals,
-      orgTotalMW,
-      orgTotalValue,
-      orgTeamSize
+      orgTotalDeals: metrics?.deal_count || 0,
+      orgTotalMW: metrics?.total_mw || 0,
+      orgTotalValue: metrics?.total_value || 0,
+      orgTeamSize: metrics?.contact_count || 0
     });
   });
 };

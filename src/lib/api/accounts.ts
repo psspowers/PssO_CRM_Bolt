@@ -16,20 +16,16 @@ const toAccount = (db: any, partnerIds: string[] = []): Account => ({
   ownerId: db.owner_id,
   createdAt: new Date(db.created_at),
   updatedAt: new Date(db.updated_at),
-  totalDeals: db.totalDeals,
-  totalMW: db.totalMW,
-  totalValue: db.totalValue,
-  teamSize: db.teamSize,
+  totalDeals: db.deal_count || 0,
+  totalMW: db.total_mw || 0,
+  totalValue: db.total_value || 0,
+  teamSize: db.contact_count || 0,
 });
 
 export const fetchAccounts = async (): Promise<Account[]> => {
   const { data: accounts, error } = await supabase
-    .from('accounts')
-    .select(`
-      *,
-      opportunities(id, value, target_capacity, stage),
-      contacts(count)
-    `)
+    .from('account_metrics_view')
+    .select('*')
     .order('name');
   if (error) throw error;
 
@@ -40,23 +36,7 @@ export const fetchAccounts = async (): Promise<Account[]> => {
     partnerMap.get(l.account_id)!.push(l.partner_id);
   });
 
-  return (accounts || []).map(a => {
-    const opportunities = a.opportunities || [];
-    const activeOpps = opportunities.filter((o: any) => !['Lost'].includes(o.stage));
-
-    const totalDeals = activeOpps.length;
-    const totalMW = activeOpps.reduce((sum: number, o: any) => sum + (Number(o.target_capacity) || 0), 0);
-    const totalValue = activeOpps.reduce((sum: number, o: any) => sum + (Number(o.value) || 0), 0);
-    const teamSize = a.contacts?.[0]?.count || 0;
-
-    return toAccount({
-      ...a,
-      totalDeals,
-      totalMW,
-      totalValue,
-      teamSize
-    }, partnerMap.get(a.id) || []);
-  });
+  return (accounts || []).map(a => toAccount(a, partnerMap.get(a.id) || []));
 };
 
 export const createAccount = async (account: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>): Promise<Account> => {
