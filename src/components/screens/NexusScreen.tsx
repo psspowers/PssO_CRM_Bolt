@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Network, Search, Loader2, ArrowLeft, X, User, Building2, Target } from 'lucide-react';
+import { Network, Search, Loader2, ArrowLeft, X, User, Building2, Target, UserSearch } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { NexusOrbitGraph } from '../crm/NexusOrbitGraph';
+import { DossierModal } from '../crm/DossierModal';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface NexusPath {
   path: Array<{
@@ -37,6 +39,8 @@ export const NexusScreen: React.FC = () => {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNodeType, setSelectedNodeType] = useState<string | null>(null);
   const [loadingEntity, setLoadingEntity] = useState(false);
+  const [showDossierModal, setShowDossierModal] = useState(false);
+  const [dossierContact, setDossierContact] = useState<any>(null);
 
   // Search for entities
   const handleSearch = async (query: string) => {
@@ -191,6 +195,33 @@ export const NexusScreen: React.FC = () => {
     setSelectedNodeId(null);
     setSelectedNodeType(null);
     setSelectedEntityData(null);
+  };
+
+  const handleOpenDossier = () => {
+    if (selectedNodeType === 'Contact' && selectedEntityData) {
+      setDossierContact({
+        id: selectedNodeId,
+        name: selectedEntityData.full_name,
+        company: selectedEntityData.company,
+        intelligence_dossier: selectedEntityData.intelligence_dossier,
+        personality_type: selectedEntityData.personality_type
+      });
+      setShowDossierModal(true);
+    }
+  };
+
+  const handleDossierSave = async () => {
+    if (selectedNodeId && selectedNodeType === 'Contact') {
+      const { data } = await supabase
+        .from('contacts')
+        .select('*')
+        .eq('id', selectedNodeId)
+        .maybeSingle();
+
+      if (data) {
+        setSelectedEntityData(data);
+      }
+    }
   };
 
   return (
@@ -398,6 +429,41 @@ export const NexusScreen: React.FC = () => {
                           <span className="text-sm text-white">{selectedEntityData.company}</span>
                         </div>
                       )}
+
+                      {selectedEntityData.personality_type && (
+                        <div className="flex items-start gap-2">
+                          <span className="text-xs font-bold text-slate-400 uppercase min-w-20">Personality:</span>
+                          <span className="text-sm text-purple-400 font-semibold">{selectedEntityData.personality_type}</span>
+                        </div>
+                      )}
+
+                      {selectedEntityData.intelligence_dossier && (
+                        <div className="mt-3 p-3 bg-orange-900/20 border border-orange-700 rounded-lg">
+                          <div className="text-xs font-bold text-orange-400 uppercase mb-2 flex items-center gap-2">
+                            <UserSearch className="w-3 h-3" />
+                            Intelligence Dossier
+                          </div>
+                          <div className="text-xs text-slate-300 whitespace-pre-wrap max-h-32 overflow-y-auto">
+                            {selectedEntityData.intelligence_dossier.slice(0, 300)}
+                            {selectedEntityData.intelligence_dossier.length > 300 && '...'}
+                          </div>
+                          {selectedEntityData.last_dossier_update && (
+                            <div className="text-[10px] text-slate-500 mt-2">
+                              Updated: {new Date(selectedEntityData.last_dossier_update).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="mt-4 pt-3 border-t border-slate-700">
+                        <Button
+                          onClick={handleOpenDossier}
+                          className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white"
+                        >
+                          <UserSearch className="w-4 h-4 mr-2" />
+                          {selectedEntityData.intelligence_dossier ? 'Update Intelligence' : 'Research Target'}
+                        </Button>
+                      </div>
                     </>
                   )}
                   {selectedNodeType === 'User' && (
@@ -453,6 +519,16 @@ export const NexusScreen: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Dossier Modal */}
+      {dossierContact && (
+        <DossierModal
+          isOpen={showDossierModal}
+          onClose={() => setShowDossierModal(false)}
+          contact={dossierContact}
+          onSave={handleDossierSave}
+        />
       )}
     </div>
   );
