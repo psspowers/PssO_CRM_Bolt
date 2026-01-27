@@ -81,8 +81,8 @@ const Admin: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b sticky top-0 z-10">
+    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+      <header className="bg-white border-b sticky top-0 z-10 flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/"><Button variant="ghost" size="icon"><ArrowLeft className="w-5 h-5" /></Button></Link>
@@ -95,38 +95,40 @@ const Admin: React.FC = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        <AdminStats
-          totalUsers={stats.totalUsers}
-          activeUsers={stats.activeUsers}
-          adminUsers={stats.adminUsers}
-        />
+      <main className="flex-1 overflow-y-auto overflow-x-hidden touch-scroll">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <AdminStats
+            totalUsers={stats.totalUsers}
+            activeUsers={stats.activeUsers}
+            adminUsers={stats.adminUsers}
+          />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="bg-emerald-50/50 border-none p-2 ring-2 ring-orange-500 ring-inset rounded-xl">
-            <TabsTrigger value="users" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
-              <Users className="w-4 h-4 mr-2" />Users
-            </TabsTrigger>
-            <TabsTrigger value="org-chart" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
-              <Network className="w-4 h-4 mr-2" />Org Chart
-            </TabsTrigger>
-            <TabsTrigger value="gamification" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
-              <Zap className="w-4 h-4 mr-2" />Rewards System
-            </TabsTrigger>
-            <TabsTrigger value="activity" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
-              <Activity className="w-4 h-4 mr-2" />Activity Logs
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
-              <Settings className="w-4 h-4 mr-2" />Settings
-            </TabsTrigger>
-          </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList className="bg-emerald-50/50 border-none p-2 ring-2 ring-orange-500 ring-inset rounded-xl">
+              <TabsTrigger value="users" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
+                <Users className="w-4 h-4 mr-2" />Users
+              </TabsTrigger>
+              <TabsTrigger value="org-chart" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
+                <Network className="w-4 h-4 mr-2" />Org Chart
+              </TabsTrigger>
+              <TabsTrigger value="gamification" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
+                <Zap className="w-4 h-4 mr-2" />Rewards System
+              </TabsTrigger>
+              <TabsTrigger value="activity" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
+                <Activity className="w-4 h-4 mr-2" />Activity Logs
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="data-[state=active]:bg-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=inactive]:text-emerald-700 font-bold">
+                <Settings className="w-4 h-4 mr-2" />Settings
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="users"><UserManagement /></TabsContent>
-          <TabsContent value="org-chart"><OrgChart /></TabsContent>
-          <TabsContent value="gamification"><GamificationConsole /></TabsContent>
-          <TabsContent value="activity"><ActivityLogs /></TabsContent>
-          <TabsContent value="settings"><SettingsPanel /></TabsContent>
-        </Tabs>
+            <TabsContent value="users"><UserManagement /></TabsContent>
+            <TabsContent value="org-chart"><OrgChart /></TabsContent>
+            <TabsContent value="gamification"><GamificationConsole /></TabsContent>
+            <TabsContent value="activity"><ActivityLogs /></TabsContent>
+            <TabsContent value="settings"><SettingsPanel /></TabsContent>
+          </Tabs>
+        </div>
       </main>
     </div>
   );
