@@ -522,9 +522,13 @@ export const VelocityDashboard: React.FC<VelocityDashboardProps> = ({
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <p className="text-slate-400 text-sm lg:text-base">{greeting},</p>
-                  <span className="px-2 py-0.5 bg-purple-500/30 text-purple-300 text-[10px] font-bold uppercase rounded-full border border-purple-400/30 flex items-center gap-1">
-                    <Rocket className="w-3 h-3" /> Beta
-                  </span>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span className="text-xs font-bold text-emerald-400 tracking-wide">LIVE</span>
+                  </div>
                 </div>
                 <h2 className="font-bold text-xl lg:text-2xl">{userName}</h2>
                 <div className="mt-1">

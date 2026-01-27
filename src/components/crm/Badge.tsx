@@ -1,49 +1,45 @@
 import React from 'react';
-import { Award, Target, Users, Zap, Star, Trophy } from 'lucide-react';
+import { Award, Target, Users, Zap, Star, Trophy, Network, Radar } from 'lucide-react';
 
 interface BadgeProps {
   name: string;
   size?: 'sm' | 'md' | 'lg';
 }
 
-const badgeConfig: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
-  'Deal Closer': { icon: Target, color: 'text-emerald-600', bg: 'bg-emerald-100' },
-  'Network Builder': { icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
-  'Activity Star': { icon: Zap, color: 'text-amber-600', bg: 'bg-amber-100' },
-  'Connector': { icon: Users, color: 'text-purple-600', bg: 'bg-purple-100' },
-  'Early Adopter': { icon: Star, color: 'text-pink-600', bg: 'bg-pink-100' },
-  'Partner Champion': { icon: Trophy, color: 'text-orange-600', bg: 'bg-orange-100' },
-};
-
-const sizeClasses = {
-  sm: 'w-6 h-6',
-  md: 'w-8 h-8',
-  lg: 'w-10 h-10',
+const getBadgeStyle = (name: string) => {
+  const n = name.toLowerCase();
+  if (n.includes('rainmaker') || n.includes('deal closer')) return { icon: Trophy, color: 'bg-yellow-100 text-yellow-700 border-yellow-200', iconColor: 'text-yellow-600' };
+  if (n.includes('connector') || n.includes('network')) return { icon: Network, color: 'bg-blue-100 text-blue-700 border-blue-200', iconColor: 'text-blue-600' };
+  if (n.includes('scout') || n.includes('early adopter')) return { icon: Radar, color: 'bg-purple-100 text-purple-700 border-purple-200', iconColor: 'text-purple-600' };
+  if (n.includes('speed') || n.includes('activity star')) return { icon: Zap, color: 'bg-red-100 text-red-700 border-red-200', iconColor: 'text-red-600' };
+  if (n.includes('partner')) return { icon: Star, color: 'bg-orange-100 text-orange-700 border-orange-200', iconColor: 'text-orange-600' };
+  return { icon: Award, color: 'bg-slate-100 text-slate-700 border-slate-200', iconColor: 'text-slate-600' };
 };
 
 const iconSizes = {
   sm: 'w-3 h-3',
-  md: 'w-4 h-4',
-  lg: 'w-5 h-5',
+  md: 'w-3.5 h-3.5',
+  lg: 'w-4 h-4',
 };
 
 export const Badge: React.FC<BadgeProps> = ({ name, size = 'md' }) => {
-  const config = badgeConfig[name] || { icon: Award, color: 'text-gray-600', bg: 'bg-gray-100' };
-  const Icon = config.icon;
+  const style = getBadgeStyle(name);
+  const Icon = style.icon;
 
   return (
-    <div
-      className={`${sizeClasses[size]} ${config.bg} rounded-full flex items-center justify-center`}
+    <span
+      className={`inline-flex items-center gap-1.5 py-1 px-3 rounded-full border ${style.color}`}
       title={name}
     >
-      <Icon className={`${iconSizes[size]} ${config.color}`} />
-    </div>
+      <Icon className={`${iconSizes[size]} ${style.iconColor}`} />
+      <span className="text-xs font-medium">{name}</span>
+    </span>
   );
 };
 
 export const BadgeList: React.FC<{ badges: string[]; size?: 'sm' | 'md' | 'lg' }> = ({ badges, size = 'sm' }) => {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center gap-1.5">
       {badges.map((badge) => (
         <Badge key={badge} name={badge} size={size} />
       ))}
