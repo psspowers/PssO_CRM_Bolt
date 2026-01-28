@@ -5,7 +5,6 @@ import { DbAccount } from './types';
 const toAccount = (db: any, partnerIds: string[] = []): Account => ({
   id: db.id,
   name: db.name,
-  type: db.type,
   country: db.country,
   sector: db.sector || '',
   industry: db.industry || '',
