@@ -79,10 +79,6 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [stagnationFilter, setStagnationFilter] = useState<'all' | '15' | '30' | '60'>('all');
 
-  // Tactical Filter States
-  const [stageGroup, setStageGroup] = useState<'all' | 'early' | 'late' | 'won'>('all');
-  const [partnerId, setPartnerId] = useState<string>('all');
-  const [partnerViewMode, setPartnerViewMode] = useState(false);
   
   // NEW: Hierarchy View Filter State
   // 'mine' = Only deals owned by the current user
@@ -205,30 +201,13 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
     const matchesSearch = o.name.toLowerCase().includes((search || '').toLowerCase()) ||
                           accounts.find(a => a.id === o.accountId)?.name.toLowerCase().includes((search || '').toLowerCase());
 
-    // 3. TACTICAL STAGE GROUP FILTER
-    if (stageGroup !== 'all') {
-      const earlyStages = ['Prospect', 'Qualified', 'Proposal'];
-      const lateStages = ['Negotiation', 'Term Sheet'];
-      const wonStages = ['Won'];
-
-      if (stageGroup === 'early' && !earlyStages.includes(o.stage)) return false;
-      if (stageGroup === 'late' && !lateStages.includes(o.stage)) return false;
-      if (stageGroup === 'won' && !wonStages.includes(o.stage)) return false;
-    }
-
-    // 4. LEGACY STAGE FILTER (backwards compatibility)
+    // 3. STAGE FILTER
     const matchesStage = stageFilter === 'all' || o.stage === stageFilter;
 
-    // 5. PRIORITY FILTER
+    // 4. PRIORITY FILTER
     const matchesPriority = priorityFilter === 'all' || o.priority === priorityFilter;
 
-    // 6. PARTNER FILTER
-    const matchesPartner = partnerId === 'all' || o.primaryPartnerId === partnerId;
-
-    // 7. PARTNER VIEW MODE - Only show deals with partners
-    if (partnerViewMode && !o.primaryPartnerId) return false;
-
-    // 8. STAGNATION FILTER - Check days since last update
+    // 5. STAGNATION FILTER - Check days since last update
     if (stagnationFilter !== 'all') {
       const daysSinceUpdate = (new Date().getTime() - new Date(o.updatedAt).getTime()) / (1000 * 3600 * 24);
       if (stagnationFilter === '15' && daysSinceUpdate < 15) return false;
@@ -236,9 +215,9 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
       if (stagnationFilter === '60' && daysSinceUpdate < 60) return false;
     }
 
-    return matchesSearch && matchesStage && matchesPriority && matchesPartner;
+    return matchesSearch && matchesStage && matchesPriority;
   });
-  }, [opportunities, accounts, search, stageFilter, priorityFilter, hierarchyView, user?.id, subordinateIds, selectedMemberId, profile, stagnationFilter, stageGroup, partnerId, partnerViewMode]);
+  }, [opportunities, accounts, search, stageFilter, priorityFilter, hierarchyView, user?.id, subordinateIds, selectedMemberId, profile, stagnationFilter]);
 
   // Calculate stats for the header (only count pre-win opportunities)
   const preWinStages = ['Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Lost'];
@@ -521,74 +500,78 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </div>
       )}
 
-      {/* Tactical Filter Bar */}
-      <div className="bg-white rounded-lg border border-slate-200 p-3 mb-3">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Stage Group Dropdown */}
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-bold text-slate-600 whitespace-nowrap">Pipeline Stage:</label>
-            <select
-              value={stageGroup}
-              onChange={(e) => setStageGroup(e.target.value as 'all' | 'early' | 'late' | 'won')}
-              className="bg-white border border-slate-200 text-xs font-semibold pl-3 pr-8 py-2 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none appearance-none"
-            >
-              <option value="all">All Stages</option>
-              <option value="early">Early Stage (Prospect-Proposal)</option>
-              <option value="late">Late Stage (Neg-Term Sheet)</option>
-              <option value="won">Won</option>
-            </select>
-          </div>
-
-          {/* Vertical Divider */}
-          <div className="w-px h-6 bg-slate-200" />
-
-          {/* Partner Dropdown */}
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-bold text-slate-600 whitespace-nowrap">Partner:</label>
-            <select
-              value={partnerId}
-              onChange={(e) => setPartnerId(e.target.value)}
-              className="bg-white border border-slate-200 text-xs font-semibold pl-3 pr-8 py-2 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none appearance-none min-w-[140px]"
-            >
-              <option value="all">All Partners</option>
-              {partners.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Vertical Divider */}
-          <div className="w-px h-6 bg-slate-200" />
-
-          {/* Partner View Toggle */}
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-bold text-slate-600 whitespace-nowrap">Partner Deals Only:</label>
-            <button
-              onClick={() => setPartnerViewMode(!partnerViewMode)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                partnerViewMode ? 'bg-orange-500' : 'bg-slate-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  partnerViewMode ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Summary Stats */}
-          <div className="ml-auto flex items-center gap-4 pl-3 border-l border-slate-200">
-            <div className="text-xs">
-              <span className="font-bold text-slate-900">{filteredStats.totalMW.toFixed(1)} MW</span>
-              <span className="text-slate-400 ml-1">Total</span>
-            </div>
-            <div className="text-xs">
-              <span className="font-bold text-slate-900">฿{(filteredStats.avgEPC / 1000000).toFixed(1)}M</span>
-              <span className="text-slate-400 ml-1">Avg EPC</span>
-            </div>
-          </div>
-        </div>
+      {/* Horizontal Stage Pills */}
+      <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
+        <button
+          onClick={() => setStageFilter('all')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+            stageFilter === 'all'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          All Stages
+        </button>
+        <button
+          onClick={() => setStageFilter('Prospect')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+            stageFilter === 'Prospect'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          Prospect
+        </button>
+        <button
+          onClick={() => setStageFilter('Qualified')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+            stageFilter === 'Qualified'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          Qualified
+        </button>
+        <button
+          onClick={() => setStageFilter('Proposal')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+            stageFilter === 'Proposal'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          Proposal
+        </button>
+        <button
+          onClick={() => setStageFilter('Negotiation')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+            stageFilter === 'Negotiation'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          Negotiation
+        </button>
+        <button
+          onClick={() => setStageFilter('Term Sheet')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+            stageFilter === 'Term Sheet'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          Term Sheet
+        </button>
+        <button
+          onClick={() => setStageFilter('Lost')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+            stageFilter === 'Lost'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          Lost
+        </button>
       </div>
 
       {/* Results Count with Stagnation Filter */}
@@ -940,7 +923,7 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </AlertDialogContent>
       </AlertDialog>
 
-      <FilterModal isOpen={showFilter} onClose={() => setShowFilter(false)} title="Pipeline Filters" filters={[{ name: 'Priority', options: [{ label: 'All', value: 'all' }, { label: 'High', value: 'High' }, { label: 'Medium', value: 'Medium' }, { label: 'Low', value: 'Low' }], selected: priorityFilter, onChange: setPriorityFilter }]} onReset={() => { setStageFilter('all'); setPriorityFilter('all'); setStageGroup('all'); setPartnerId('all'); setPartnerViewMode(false); }} />
+      <FilterModal isOpen={showFilter} onClose={() => setShowFilter(false)} title="Pipeline Filters" filters={[{ name: 'Priority', options: [{ label: 'All', value: 'all' }, { label: 'High', value: 'High' }, { label: 'Medium', value: 'Medium' }, { label: 'Low', value: 'Low' }], selected: priorityFilter, onChange: setPriorityFilter }]} onReset={() => { setStageFilter('all'); setPriorityFilter('all'); }} />
     </div>
   );
 };
