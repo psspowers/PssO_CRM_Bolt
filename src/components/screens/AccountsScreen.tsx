@@ -3,7 +3,7 @@ import { AccountCard, FilterModal, DetailModal, AccountForm, SearchBar } from '.
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Account } from '../../types/crm';
-import { MapPin, Star, Target, Users, Loader2, CheckSquare, Square, X, Trash2, Pencil, Building2, TrendingUp, Search, Filter, Handshake, User, ChevronDown } from 'lucide-react';
+import { MapPin, Star, Target, Users, Loader2, CheckSquare, Square, X, Trash2, Pencil, Building2, TrendingUp, Search, Filter, Handshake, User, ChevronDown, LayoutGrid, MessageSquare, Paperclip } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { getSectors, SECTOR_ICONS, getTaxonomyInfo, getScoreColor, getPointsColor } from '../../data/thaiTaxonomy';
 import { Input } from '../ui/input';
@@ -20,7 +20,6 @@ interface AccountsScreenProps {
 export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) => {
   const { accounts, opportunities, partners, contacts, activities, relationships, users, loading, deleteAccount, updateAccount, canDelete, canEdit } = useAppContext();
   const { profile, user } = useAuth();
-  const [viewMode, setViewMode] = useState<'customers' | 'partners'>('customers');
   const [search, setSearch] = useState('');
   const [importanceFilter, setImportanceFilter] = useState('all');
   const [showFilter, setShowFilter] = useState(false);
@@ -37,12 +36,8 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
   const [subordinateIds, setSubordinateIds] = useState<string[]>([]);
   const [loadingSubordinates, setLoadingSubordinates] = useState(false);
 
-  // Velocity filters based on active deals
-  const [filterEarlyStage, setFilterEarlyStage] = useState<string>('all');
-  const [filterLateStage, setFilterLateStage] = useState<string>('all');
-  const [filterSales, setFilterSales] = useState<string>('all');
-  const [filterPartner, setFilterPartner] = useState<string>('all');
-  const [showPartnerView, setShowPartnerView] = useState(false);
+  // Stage filter for accounts (based on their opportunities)
+  const [stageFilter, setStageFilter] = useState<string>('all');
 
   useEffect(() => {
     if (forcedOpenId && accounts.length > 0) {
@@ -108,37 +103,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
   const userCanEdit = selectedAccount ? canEdit(selectedAccount.ownerId) : false;
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
-  // Calculate counts for sales and partner filters
-  const salesCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    accounts.forEach(account => {
-      const accountOpps = opportunities.filter(o => o.accountId === account.id);
-      accountOpps.forEach(opp => {
-        if (opp.ownerId) {
-          counts.set(opp.ownerId, (counts.get(opp.ownerId) || 0) + 1);
-        }
-      });
-    });
-    return counts;
-  }, [accounts, opportunities]);
-
-  const partnerCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    accounts.forEach(account => {
-      const accountOpps = opportunities.filter(o => o.accountId === account.id);
-      accountOpps.forEach(opp => {
-        if (opp.primaryPartnerId) {
-          counts.set(opp.primaryPartnerId, (counts.get(opp.primaryPartnerId) || 0) + 1);
-        }
-      });
-    });
-    return counts;
-  }, [accounts, opportunities]);
-
   const filtered = useMemo(() => accounts.filter(a => {
-    const matchesType = viewMode === 'partners'
-      ? a.type === 'Partner'
-      : a.type !== 'Partner';
     const query = (search || '').toLowerCase();
     const matchesSearch = a.name.toLowerCase().includes(query) ||
                           a.country.toLowerCase().includes(query) ||
@@ -162,56 +127,27 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
     // Get opportunities for this account
     const accountOpps = opportunities.filter(o => o.accountId === a.id);
 
-    // Early stage filter (mutual exclusive with late stage)
-    if (filterEarlyStage !== 'all') {
-      const hasEarlyStage = accountOpps.some(o => o.stage === filterEarlyStage);
-      if (!hasEarlyStage) return false;
+    // Stage filter - Only show accounts with deals in this stage
+    if (stageFilter !== 'all') {
+      const hasStage = accountOpps.some(o => o.stage === stageFilter);
+      if (!hasStage) return false;
     }
 
-    // Late stage filter (mutual exclusive with early stage)
-    if (filterLateStage !== 'all') {
-      const hasLateStage = accountOpps.some(o => o.stage === filterLateStage);
-      if (!hasLateStage) return false;
-    }
-
-    // Sales owner filter
-    if (filterSales !== 'all') {
-      const hasSalesOwner = accountOpps.some(o => o.ownerId === filterSales);
-      if (!hasSalesOwner) return false;
-    }
-
-    // Partner filter
-    if (filterPartner !== 'all') {
-      const hasPartner = accountOpps.some(o => o.primaryPartnerId === filterPartner);
-      if (!hasPartner) return false;
-    }
-
-    // Partner view toggle
-    if (showPartnerView) {
-      const hasPartnerProjects = accountOpps.some(o => o.primaryPartnerId !== null);
-      if (!hasPartnerProjects) return false;
-    }
-
-    return matchesType && matchesSearch && matchesImportance;
-  }), [accounts, viewMode, search, importanceFilter, filterEarlyStage, filterLateStage, filterSales, filterPartner, showPartnerView, opportunities, hierarchyView, selectedMemberId, subordinateIds, isAdmin, user]);
+    return matchesSearch && matchesImportance;
+  }), [search, importanceFilter, stageFilter, opportunities, hierarchyView, selectedMemberId, subordinateIds, isAdmin, user, accounts]);
 
   // Calculate counts for Mine vs Team
   const myAccountsCount = useMemo(() => {
-    return accounts.filter(a => {
-      const matchesType = viewMode === 'partners' ? a.type === 'Partner' : a.type !== 'Partner';
-      return matchesType && a.ownerId === user?.id;
-    }).length;
-  }, [accounts, viewMode, user]);
+    return accounts.filter(a => a.ownerId === user?.id).length;
+  }, [accounts, user]);
 
   const teamAccountsCount = useMemo(() => {
     return accounts.filter(a => {
-      const matchesType = viewMode === 'partners' ? a.type === 'Partner' : a.type !== 'Partner';
-      if (!matchesType) return false;
       const isMyAccount = a.ownerId === user?.id;
       const isSubordinateAccount = subordinateIds.includes(a.ownerId);
       return isAdmin || isMyAccount || isSubordinateAccount;
     }).length;
-  }, [accounts, viewMode, subordinateIds, isAdmin, user]);
+  }, [accounts, subordinateIds, isAdmin, user]);
 
   const deletableAccounts = filtered.filter(a => canDelete(a.ownerId));
   const allSelected = deletableAccounts.length > 0 && deletableAccounts.every(a => selectedIds.has(a.id));
@@ -266,7 +202,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
               }`}
             >
               <User className="w-3.5 h-3.5" />
-              <span>Mine</span>
+              <span className="hidden sm:inline">Mine</span>
               <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                 hierarchyView === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
               }`}>
@@ -283,7 +219,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
               } ${loadingSubordinates ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Team</span>
+              <span className="hidden sm:inline">Team</span>
               <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                 hierarchyView === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
               }`}>
@@ -311,19 +247,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
             </div>
           )}
         </div>
-
-        {/* Partner Toggle Button */}
-        <button
-          onClick={() => setViewMode(viewMode === 'partners' ? 'customers' : 'partners')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-            viewMode === 'partners'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          <Handshake className="w-3.5 h-3.5" />
-          <span>{viewMode === 'partners' ? 'Partners' : 'Customers'}</span>
-        </button>
       </div>
 
       {selectionMode ? (
@@ -355,115 +278,114 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
         <SearchBar
           value={search}
           onChange={setSearch}
-          placeholder={viewMode === 'partners' ? 'Search partners...' : 'Search accounts, industries...'}
+          placeholder="Search accounts, industries..."
           onFilterClick={() => setShowFilter(true)}
         />
       )}
 
-      {/* Tactical Filter Bar - Velocity Filters */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Early Stage Filter */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">Early Stage</Label>
-            <Select
-              value={filterEarlyStage}
-              onValueChange={(value) => {
-                setFilterEarlyStage(value);
-                if (value !== 'all') setFilterLateStage('all');
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stages</SelectItem>
-                <SelectItem value="Prospect">Prospect</SelectItem>
-                <SelectItem value="Qualified">Qualified</SelectItem>
-                <SelectItem value="Proposal">Proposal</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Stage Pills Grid */}
+      <div className="flex gap-2 mb-3">
+        {/* All Button - Larger, Spans 2 Rows */}
+        <button
+          onClick={() => setStageFilter('all')}
+          className={`flex flex-col items-center justify-center w-14 h-[76px] rounded-xl text-xs font-bold transition-all ${
+            stageFilter === 'all'
+              ? 'bg-slate-800 text-white shadow-sm'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          <LayoutGrid className="w-5 h-5 mb-1" />
+          <span>All</span>
+        </button>
 
-          {/* Late Stage Filter */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">Late Stage</Label>
-            <Select
-              value={filterLateStage}
-              onValueChange={(value) => {
-                setFilterLateStage(value);
-                if (value !== 'all') setFilterEarlyStage('all');
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stages</SelectItem>
-                <SelectItem value="Negotiation">Negotiation</SelectItem>
-                <SelectItem value="Term Sheet">Term Sheet</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Sales Owner Filter */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">Sales Owner</Label>
-            <Select value={filterSales} onValueChange={setFilterSales}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sales</SelectItem>
-                {users
-                  .filter(u => salesCounts.has(u.id))
-                  .map(user => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({salesCounts.get(user.id) || 0})
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Partner Filter */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">Partner</Label>
-            <Select value={filterPartner} onValueChange={setFilterPartner}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Partners</SelectItem>
-                {partners
-                  .filter(p => partnerCounts.has(p.id))
-                  .map(partner => (
-                    <SelectItem key={partner.id} value={partner.id}>
-                      {partner.name} ({partnerCounts.get(partner.id) || 0})
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Stage Pills Grid - 2 rows x 3 columns */}
+        <div className="grid grid-cols-3 gap-2 flex-1">
+          <button
+            onClick={() => setStageFilter('Prospect')}
+            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              stageFilter === 'Prospect'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Prospect
+          </button>
+          <button
+            onClick={() => setStageFilter('Qualified')}
+            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              stageFilter === 'Qualified'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Qualified
+          </button>
+          <button
+            onClick={() => setStageFilter('Proposal')}
+            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              stageFilter === 'Proposal'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Proposal
+          </button>
+          <button
+            onClick={() => setStageFilter('Negotiation')}
+            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              stageFilter === 'Negotiation'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Negotiat...
+          </button>
+          <button
+            onClick={() => setStageFilter('Term Sheet')}
+            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              stageFilter === 'Term Sheet'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Term Sheet
+          </button>
+          <button
+            onClick={() => setStageFilter('Won')}
+            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              stageFilter === 'Won'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Won
+          </button>
         </div>
+      </div>
 
-        {/* Partner View Toggle */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-          <Label htmlFor="partner-view" className="text-sm font-semibold text-slate-700">
-            Show Partner Projects Only
-          </Label>
-          <Switch
-            id="partner-view"
-            checked={showPartnerView}
-            onCheckedChange={setShowPartnerView}
-          />
+      {/* Results Count with Stats */}
+      <div className="flex items-center gap-3 mb-4 px-1">
+        <p className="text-sm text-slate-500 font-medium">
+          Showing <span className="text-slate-900 font-bold">{filtered.length}</span> accounts
+        </p>
+        <div className="flex items-center gap-3 text-xs text-slate-400">
+          <div className="flex items-center gap-1">
+            <CheckSquare className="w-3.5 h-3.5" />
+            <span>4</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-3.5 h-3.5 flex items-center justify-center text-[10px]">💬</span>
+            <span>0</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-3.5 h-3.5 flex items-center justify-center text-[10px]">📎</span>
+            <span>0</span>
+          </div>
         </div>
       </div>
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">
-          Showing <span className="font-semibold text-slate-900">{filtered.length}</span> {viewMode === 'partners' ? 'partners' : 'accounts'}
-        </p>
+        <div></div>
         {isAdmin && !selectionMode && (
           <button
             onClick={() => setSelectionMode(true)}
