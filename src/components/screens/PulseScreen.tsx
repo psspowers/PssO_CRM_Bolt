@@ -670,7 +670,7 @@ export default function PulseScreen({ forcedOpenId, onNavigate }: PulseScreenPro
         projectIds.length > 0 ? supabase.from('projects').select('id, name').in('id', projectIds) : Promise.resolve({ data: [] }),
         accountIds.length > 0 ? supabase.from('accounts').select('id, name').in('id', accountIds) : Promise.resolve({ data: [] }),
         contactIds.length > 0 ? supabase.from('contacts').select('id, full_name').in('id', contactIds) : Promise.resolve({ data: [] }),
-        partnerIds.length > 0 ? supabase.from('partners').select('id, name').in('id', partnerIds) : Promise.resolve({ data: [] })
+        partnerIds.length > 0 ? supabase.from('accounts').select('id, name').eq('type', 'Partner').in('id', partnerIds) : Promise.resolve({ data: [] })
       ]);
       opportunitiesRes.data?.forEach((o: any) => {
         nameMap.set(o.id, o.name);
