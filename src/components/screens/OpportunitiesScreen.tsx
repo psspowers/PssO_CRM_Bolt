@@ -174,11 +174,12 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   //   In production, RLS policies would handle this at the database level
   const filtered = useMemo(() => {
     return opportunities.filter(o => {
-    // 0. OPPORTUNITY STAGE FILTER - Only show pre-win opportunities
+    // 0. OPPORTUNITY STAGE FILTER - Only show pre-win opportunities by default
     // Pre-win stages: Prospect, Qualified, Proposal, Negotiation, Term Sheet, Lost
     // Exclude Won and project stages (Engineering, Permit/EPC, Construction, Commissioning, Operational)
+    // UNLESS user explicitly selects a stage (e.g., clicks "Won" pill)
     const preWinStages = ['Prospect', 'Qualified', 'Proposal', 'Negotiation', 'Term Sheet', 'Lost'];
-    if (!preWinStages.includes(o.stage)) return false;
+    if (stageFilter === 'all' && !preWinStages.includes(o.stage)) return false;
 
     // 1. HIERARCHY FILTER - Filter based on ownership/team view
     // SMART SEARCH OVERRIDE: If user is searching, bypass "Mine" filter to show matching team deals
@@ -500,133 +501,178 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </div>
       )}
 
+      {/* Stats Row */}
+      <div className="flex items-center gap-4 mb-3">
+        <div className="flex items-center gap-1.5">
+          <User className="w-4 h-4 text-orange-500" />
+          <span className="text-sm font-bold text-slate-900">{myDealsCount}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Users className="w-4 h-4 text-slate-400" />
+          <span className="text-sm font-bold text-slate-600">{teamDealsCount}</span>
+        </div>
+      </div>
+
       {/* Horizontal Stage Pills */}
       <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
         <button
           onClick={() => setStageFilter('all')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+          className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
             stageFilter === 'all'
-              ? 'bg-orange-500 text-white shadow-sm'
+              ? 'bg-slate-800 text-white shadow-sm'
               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
           }`}
         >
-          All Stages
+          <LayoutGrid className="w-3.5 h-3.5" />
+          <span>All</span>
         </button>
         <button
           onClick={() => setStageFilter('Prospect')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
             stageFilter === 'Prospect'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              ? 'bg-slate-800 text-white shadow-sm'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
           }`}
         >
           Prospect
         </button>
         <button
           onClick={() => setStageFilter('Qualified')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
             stageFilter === 'Qualified'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              ? 'bg-slate-800 text-white shadow-sm'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
           }`}
         >
           Qualified
         </button>
         <button
           onClick={() => setStageFilter('Proposal')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
             stageFilter === 'Proposal'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              ? 'bg-slate-800 text-white shadow-sm'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
           }`}
         >
           Proposal
         </button>
         <button
           onClick={() => setStageFilter('Negotiation')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
             stageFilter === 'Negotiation'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              ? 'bg-slate-800 text-white shadow-sm'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
           }`}
         >
           Negotiation
         </button>
         <button
           onClick={() => setStageFilter('Term Sheet')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
             stageFilter === 'Term Sheet'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              ? 'bg-slate-800 text-white shadow-sm'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
           }`}
         >
           Term Sheet
         </button>
         <button
-          onClick={() => setStageFilter('Lost')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-            stageFilter === 'Lost'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          onClick={() => setStageFilter('Won')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+            stageFilter === 'Won'
+              ? 'bg-slate-800 text-white shadow-sm'
+              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
           }`}
         >
-          Lost
+          Won
         </button>
       </div>
 
-      {/* Results Count with Stagnation Filter */}
-      <div className="flex items-center mb-2 px-1">
-        {/* LEFT: Result Count */}
-        <p className="text-xs lg:text-sm text-slate-500 font-medium">
-          Showing <span className="text-slate-900 font-bold">{filtered.length}</span> {hierarchyView === 'mine' ? 'deals' : 'team deals'}
+      {/* Results Count */}
+      <div className="flex items-center gap-3 mb-4 px-1">
+        <p className="text-sm text-slate-500 font-medium">
+          Showing <span className="text-slate-900 font-bold">{filtered.length}</span> deals
         </p>
-
-        {/* RIGHT: Stagnation Controls (Moved Here) */}
-        <div className="flex items-center gap-2 ml-3">
-          {/* TEAM VIEW: Dropdown */}
-          {hierarchyView === 'team' && (
-            <div className="relative">
-              <select
-                value={stagnationFilter}
-                onChange={(e) => setStagnationFilter(e.target.value as 'all' | '15' | '30' | '60')}
-                className="appearance-none bg-white border border-slate-200 text-xs font-bold pl-2 pr-6 py-1 rounded-lg focus:ring-2 focus:ring-orange-500 outline-none w-24 truncate"
-                style={{ direction: 'ltr' }}
-              >
-                <option value="all">Any Time</option>
-                <option value="15">&gt; 15 Days</option>
-                <option value="30">&gt; 30 Days</option>
-                <option value="60">&gt; 60 Days</option>
-              </select>
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                <ChevronDown className="w-3 h-3" />
-              </div>
-            </div>
-          )}
-
-          {/* MINE VIEW: Badges */}
-          {hierarchyView === 'mine' && (
-            <div className="flex items-center gap-1">
-              <button onClick={() => setStagnationFilter(stagnationFilter === '15' ? 'all' : '15')} className={`px-2 py-1 rounded-md text-[10px] font-bold border ${stagnationFilter === '15' ? 'bg-yellow-100 border-yellow-300 text-yellow-700' : 'bg-white border-slate-200 text-slate-400'}`}>
-                <Flag className="w-3 h-3 inline mr-1" />{stagnationStats.warning}
-              </button>
-              <button onClick={() => setStagnationFilter(stagnationFilter === '30' ? 'all' : '30')} className={`px-2 py-1 rounded-md text-[10px] font-bold border ${stagnationFilter === '30' ? 'bg-orange-100 border-orange-300 text-orange-700' : 'bg-white border-slate-200 text-slate-400'}`}>
-                <Flag className="w-3 h-3 inline mr-1" />{stagnationStats.danger}
-              </button>
-              <button onClick={() => setStagnationFilter(stagnationFilter === '60' ? 'all' : '60')} className={`px-2 py-1 rounded-md text-[10px] font-bold border ${stagnationFilter === '60' ? 'bg-red-100 border-red-300 text-red-700' : 'bg-white border-slate-200 text-slate-400'}`}>
-                <Flag className="w-3 h-3 inline mr-1" />{stagnationStats.critical}
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* Velocity Heatmap */}
-      {!selectionMode && filtered.length > 0 && (
-        <VelocityHeatmap
-          opportunities={filtered}
-          onFilterChange={setStagnationFilter}
-          activeFilter={stagnationFilter}
-        />
+      {/* Pipeline Velocity Widget */}
+      {!selectionMode && (
+        <div className="bg-white rounded-xl border border-slate-200 p-4 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-slate-600" />
+              <h3 className="text-sm font-bold text-slate-900">Pipeline Velocity</h3>
+            </div>
+            <p className="text-xs text-slate-500">
+              <span className="font-bold text-emerald-600">{stagnationStats.warning > 0 ? filtered.length - stagnationStats.warning : filtered.length} Healthy</span>
+              {' / '}
+              <span className="font-bold text-slate-900">{filtered.length} Total</span>
+            </p>
+          </div>
+
+          {/* Velocity Bar */}
+          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-4 flex">
+            <div className="bg-emerald-500 h-full" style={{ width: `${filtered.length > 0 ? ((filtered.length - stagnationStats.warning) / filtered.length) * 100 : 0}%` }}></div>
+            <div className="bg-yellow-400 h-full" style={{ width: `${filtered.length > 0 ? ((stagnationStats.warning - stagnationStats.danger) / filtered.length) * 100 : 0}%` }}></div>
+            <div className="bg-orange-500 h-full" style={{ width: `${filtered.length > 0 ? ((stagnationStats.danger - stagnationStats.critical) / filtered.length) * 100 : 0}%` }}></div>
+            <div className="bg-red-500 h-full" style={{ width: `${filtered.length > 0 ? (stagnationStats.critical / filtered.length) * 100 : 0}%` }}></div>
+          </div>
+
+          {/* Metric Cards */}
+          <div className="grid grid-cols-4 gap-2">
+            <button
+              onClick={() => setStagnationFilter('all')}
+              className={`bg-emerald-50 border border-emerald-200 rounded-xl p-3 transition-all ${
+                stagnationFilter === 'all' ? 'ring-2 ring-emerald-500' : ''
+              }`}
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <Zap className="w-3 h-3 text-emerald-600" />
+                <p className="text-[10px] font-bold text-emerald-600 uppercase">Active</p>
+              </div>
+              <p className="text-2xl font-black text-emerald-700">{filtered.length - stagnationStats.warning}</p>
+            </button>
+
+            <button
+              onClick={() => setStagnationFilter('15')}
+              className={`bg-yellow-50 border border-yellow-200 rounded-xl p-3 transition-all ${
+                stagnationFilter === '15' ? 'ring-2 ring-yellow-500' : ''
+              }`}
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <Clock className="w-3 h-3 text-yellow-600" />
+                <p className="text-[10px] font-bold text-yellow-600 uppercase">&gt;15 Days</p>
+              </div>
+              <p className="text-2xl font-black text-yellow-700">{stagnationStats.warning - stagnationStats.danger}</p>
+            </button>
+
+            <button
+              onClick={() => setStagnationFilter('30')}
+              className={`bg-orange-50 border border-orange-200 rounded-xl p-3 transition-all ${
+                stagnationFilter === '30' ? 'ring-2 ring-orange-500' : ''
+              }`}
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <Flag className="w-3 h-3 text-orange-600" />
+                <p className="text-[10px] font-bold text-orange-600 uppercase">&gt;30 Days</p>
+              </div>
+              <p className="text-2xl font-black text-orange-700">{stagnationStats.danger - stagnationStats.critical}</p>
+            </button>
+
+            <button
+              onClick={() => setStagnationFilter('60')}
+              className={`bg-red-50 border border-red-200 rounded-xl p-3 transition-all ${
+                stagnationFilter === '60' ? 'ring-2 ring-red-500' : ''
+              }`}
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <Flag className="w-3 h-3 text-red-600" />
+                <p className="text-[10px] font-bold text-red-600 uppercase">&gt;60 Days</p>
+              </div>
+              <p className="text-2xl font-black text-red-700">{stagnationStats.critical}</p>
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Deals Grid/List */}
