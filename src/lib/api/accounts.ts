@@ -5,7 +5,6 @@ import { DbAccount } from './types';
 const toAccount = (db: any, partnerIds: string[] = []): Account => ({
   id: db.id,
   name: db.name,
-  type: db.type,
   country: db.country,
   sector: db.sector || '',
   industry: db.industry || '',
@@ -24,17 +23,11 @@ const toAccount = (db: any, partnerIds: string[] = []): Account => ({
 });
 
 export const fetchAccounts = async (): Promise<Account[]> => {
-  // Fetch accounts with nested opportunities for filtering
   const { data: accounts, error } = await supabase
-    .from('accounts')
-    .select('*, opportunities(id, stage, owner_id, primary_partner_id, value), contacts(count)')
+    .from('account_metrics_view')
+    .select('*')
     .order('name');
   if (error) throw error;
-
-  // Fetch metrics from the view separately
-  const { data: metrics } = await supabase.from('account_metrics_view').select('*');
-  const metricsMap = new Map();
-  (metrics || []).forEach(m => metricsMap.set(m.id, m));
 
   const { data: links } = await supabase.from('account_partners').select('account_id, partner_id');
   const partnerMap = new Map<string, string[]>();
@@ -43,10 +36,7 @@ export const fetchAccounts = async (): Promise<Account[]> => {
     partnerMap.get(l.account_id)!.push(l.partner_id);
   });
 
-  return (accounts || []).map(a => {
-    const accountMetrics = metricsMap.get(a.id) || {};
-    return toAccount({ ...a, ...accountMetrics }, partnerMap.get(a.id) || []);
-  });
+  return (accounts || []).map(a => toAccount(a, partnerMap.get(a.id) || []));
 };
 
 export const createAccount = async (account: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>): Promise<Account> => {
