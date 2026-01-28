@@ -1,6 +1,7 @@
 export { AccountsScreen } from './AccountsScreen';
 export { ContactsScreen } from './ContactsScreen';
 export { OpportunitiesScreen } from './OpportunitiesScreen';
+export { PipelineScreen } from './PipelineScreen';
 export { PartnersScreen } from './PartnersScreen';
 export { SearchScreen } from './SearchScreen';
 export { ActivityTimelineScreen } from './ActivityTimelineScreen';

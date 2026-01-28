@@ -63,7 +63,6 @@ export interface Partner {
 export interface Account {
   id: string;
   name: string;
-  type?: string;
   country: string;
   // NEW CLASSIFICATION FIELDS (Thai Taxonomy)
   sector: string;
