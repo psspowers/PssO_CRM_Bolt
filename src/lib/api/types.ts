@@ -11,16 +11,26 @@ export interface DbPartner {
 export interface DbAccount {
   id: string;
   name: string;
+  type: string;
   country: string;
+  state?: string;
+  city?: string;
+  address?: string;
+  postal_code?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+  description?: string;
   // Thai Taxonomy Classification
-  sector: string;
+  sector?: string;
   industry?: string;
   sub_industry?: string;
   // Other fields
-  strategic_importance: string;
+  strategic_importance?: string;
   clickup_link?: string;
   notes?: string;
   owner_id?: string;
+  last_market_scan_at?: string;
   created_at: string;
   updated_at: string;
 }
