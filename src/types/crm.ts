@@ -63,7 +63,6 @@ export interface Partner {
 export interface Account {
   id: string;
   name: string;
-  type?: string;
   country: string;
   // NEW CLASSIFICATION FIELDS (Thai Taxonomy)
   sector: string;
@@ -77,23 +76,12 @@ export interface Account {
   ownerId?: string;
   createdAt: Date;
   updatedAt: Date;
-  // Metrics for Asset Register display
-  totalDeals?: number;
-  totalMW?: number;
-  totalValue?: number;
-  teamSize?: number;
 }
 
 export interface Contact {
   id: string; fullName: string; role: string; accountId?: string; partnerId?: string;
   email: string; phone: string; country: string; city: string; tags: ContactTag[];
   relationshipNotes?: string; clickupLink?: string; avatar?: string; createdAt: Date; updatedAt: Date;
-  ownerId?: string;
-  // Organization metrics (from parent account)
-  orgTotalDeals?: number;
-  orgTotalMW?: number;
-  orgTotalValue?: number;
-  orgTeamSize?: number;
 }
 
 export interface Opportunity {

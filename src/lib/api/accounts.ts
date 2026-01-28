@@ -2,10 +2,9 @@ import { supabase } from '../supabase';
 import { Account, Priority } from '../../types/crm';
 import { DbAccount } from './types';
 
-const toAccount = (db: any, partnerIds: string[] = []): Account => ({
+const toAccount = (db: DbAccount, partnerIds: string[] = []): Account => ({
   id: db.id,
   name: db.name,
-  type: db.type,
   country: db.country,
   sector: db.sector || '',
   industry: db.industry || '',
@@ -17,38 +16,20 @@ const toAccount = (db: any, partnerIds: string[] = []): Account => ({
   ownerId: db.owner_id,
   createdAt: new Date(db.created_at),
   updatedAt: new Date(db.updated_at),
-  totalDeals: db.deal_count || 0,
-  totalMW: db.total_mw || 0,
-  totalValue: db.total_value || 0,
-  teamSize: db.contact_count || 0,
 });
 
 export const fetchAccounts = async (): Promise<Account[]> => {
-  // Fetch accounts with nested opportunities for filtering
-  // Use explicit foreign key hint to resolve ambiguity (account_id is the primary relationship)
-  // Note: contact_count comes from account_metrics_view, not from a direct join
-  const { data: accounts, error } = await supabase
-    .from('accounts')
-    .select('*, opportunities!opportunities_account_id_fkey(id, stage, owner_id, primary_partner_id, value)')
-    .order('name');
+  const { data: accounts, error } = await supabase.from('accounts').select('*').order('name');
   if (error) throw error;
-
-  // Fetch metrics from the view separately
-  const { data: metrics } = await supabase.from('account_metrics_view').select('*');
-  const metricsMap = new Map();
-  (metrics || []).forEach(m => metricsMap.set(m.id, m));
-
+  
   const { data: links } = await supabase.from('account_partners').select('account_id, partner_id');
   const partnerMap = new Map<string, string[]>();
   (links || []).forEach(l => {
     if (!partnerMap.has(l.account_id)) partnerMap.set(l.account_id, []);
     partnerMap.get(l.account_id)!.push(l.partner_id);
   });
-
-  return (accounts || []).map(a => {
-    const accountMetrics = metricsMap.get(a.id) || {};
-    return toAccount({ ...a, ...accountMetrics }, partnerMap.get(a.id) || []);
-  });
+  
+  return (accounts || []).map(a => toAccount(a, partnerMap.get(a.id) || []));
 };
 
 export const createAccount = async (account: Omit<Account, 'id' | 'createdAt' | 'updatedAt'>): Promise<Account> => {
