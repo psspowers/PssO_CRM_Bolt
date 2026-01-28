@@ -1,6 +1,5 @@
 import React from 'react';
-import { Building2, IdCard, User, Network } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { Building2, IdCard, User } from 'lucide-react';
 
 interface MagicMenuProps {
   isOpen: boolean;
@@ -9,9 +8,6 @@ interface MagicMenuProps {
 }
 
 export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigate }) => {
-  const { profile } = useAuth();
-  const isAdmin = profile?.role === 'super_admin' || profile?.role === 'admin';
-
   if (!isOpen) return null;
 
   return (
@@ -50,17 +46,6 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
           >
             <IdCard className="w-6 h-6" />
           </button>
-
-          {/* Nexus Button - Right Arc Position (Admin Only) */}
-          {isAdmin && (
-            <button
-              onClick={() => { onNavigate('nexus'); onClose(); }}
-              className="absolute right-4 bottom-8 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white shadow-lg shadow-indigo-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-indigo-500/60 animate-in zoom-in duration-300 delay-150"
-              aria-label="Nexus"
-            >
-              <Network className="w-6 h-6" />
-            </button>
-          )}
 
         </div>
       </div>
