@@ -3,10 +3,11 @@ import { AccountCard, FilterModal, DetailModal, AccountForm, SearchBar } from '.
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Account } from '../../types/crm';
-import { MapPin, Star, Target, Users, Loader2, CheckSquare, Square, X, Trash2, Pencil, Building2, TrendingUp, Search, Filter } from 'lucide-react';
+import { MapPin, Star, Target, Users, Loader2, CheckSquare, Square, X, Trash2, Pencil, Building2, TrendingUp, Search, Filter, Handshake } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { getSectors, SECTOR_ICONS, getTaxonomyInfo, getScoreColor, getPointsColor } from '../../data/thaiTaxonomy';
 import { Input } from '../ui/input';
+import { SegmentedControl } from '../ui/segmented-control';
 
 interface AccountsScreenProps {
   forcedOpenId?: string | null;
@@ -15,6 +16,7 @@ interface AccountsScreenProps {
 export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) => {
   const { accounts, opportunities, partners, contacts, activities, relationships, users, loading, deleteAccount, updateAccount, canDelete, canEdit } = useAppContext();
   const { profile } = useAuth();
+  const [viewMode, setViewMode] = useState<'customers' | 'partners'>('customers');
   const [search, setSearch] = useState('');
   const [sectorFilter, setSectorFilter] = useState('all');
   const [importanceFilter, setImportanceFilter] = useState('all');
@@ -47,6 +49,9 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
   }, [accounts]);
 
   const filtered = useMemo(() => accounts.filter(a => {
+    const matchesType = viewMode === 'partners'
+      ? a.type === 'Partner'
+      : a.type !== 'Partner';
     const query = (search || '').toLowerCase();
     const matchesSearch = a.name.toLowerCase().includes(query) ||
                           a.country.toLowerCase().includes(query) ||
@@ -54,8 +59,8 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
                           (a.subIndustry || '').toLowerCase().includes(query);
     const matchesSector = sectorFilter === 'all' || a.sector === sectorFilter;
     const matchesImportance = importanceFilter === 'all' || a.strategicImportance === importanceFilter;
-    return matchesSearch && matchesSector && matchesImportance;
-  }), [accounts, search, sectorFilter, importanceFilter]);
+    return matchesType && matchesSearch && matchesSector && matchesImportance;
+  }), [accounts, viewMode, search, sectorFilter, importanceFilter]);
 
   const deletableAccounts = filtered.filter(a => canDelete(a.ownerId));
   const allSelected = deletableAccounts.length > 0 && deletableAccounts.every(a => selectedIds.has(a.id));
@@ -96,6 +101,18 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-center">
+        <SegmentedControl
+          value={viewMode}
+          onChange={setViewMode}
+          options={[
+            { value: 'customers', label: 'Customers', icon: Building2 },
+            { value: 'partners', label: 'Partners', icon: Handshake },
+          ]}
+          size="md"
+        />
+      </div>
+
       {selectionMode ? (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-orange-50 rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-orange-200 gap-3">
           <div className="flex items-center gap-2 lg:gap-3">
@@ -122,7 +139,12 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
           </div>
         </div>
       ) : (
-        <SearchBar value={search} onChange={setSearch} placeholder="Search accounts, industries..." onFilterClick={() => setShowFilter(true)} />
+        <SearchBar
+          value={search}
+          onChange={setSearch}
+          placeholder={viewMode === 'partners' ? 'Search partners...' : 'Search accounts, industries...'}
+          onFilterClick={() => setShowFilter(true)}
+        />
       )}
 
       <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
@@ -154,7 +176,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-500">
-          Showing <span className="font-semibold text-slate-900">{filtered.length}</span> accounts
+          Showing <span className="font-semibold text-slate-900">{filtered.length}</span> {viewMode === 'partners' ? 'partners' : 'accounts'}
         </p>
         {isAdmin && !selectionMode && (
           <button
@@ -185,9 +207,15 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
       {filtered.length === 0 && (
         <div className="text-center py-12">
           <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Building2 className="w-8 h-8 text-slate-400" />
+            {viewMode === 'partners' ? (
+              <Handshake className="w-8 h-8 text-slate-400" />
+            ) : (
+              <Building2 className="w-8 h-8 text-slate-400" />
+            )}
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">No accounts found</h3>
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">
+            No {viewMode === 'partners' ? 'partners' : 'accounts'} found
+          </h3>
           <p className="text-slate-500">Try adjusting your filters or search query</p>
         </div>
       )}
