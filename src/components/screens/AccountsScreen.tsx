@@ -1,16 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { AccountCard, FilterModal, DetailModal, AccountForm, SearchBar } from '../crm';
+import { AccountCard, FilterModal, DetailModal, AccountForm } from '../crm';
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Account } from '../../types/crm';
-import { MapPin, Star, Target, Users, Loader2, CheckSquare, Square, X, Trash2, Pencil, Building2, TrendingUp, Search, Filter, Handshake, User, ChevronDown, LayoutGrid, MessageSquare, Paperclip } from 'lucide-react';
+import { MapPin, Star, Target, Users, Loader2, CheckSquare, Square, X, Trash2, Pencil, Building2, TrendingUp, Search, Filter, User, ChevronDown, LayoutGrid, Info } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { getSectors, SECTOR_ICONS, getTaxonomyInfo, getScoreColor, getPointsColor } from '../../data/thaiTaxonomy';
-import { Input } from '../ui/input';
-import { SegmentedControl } from '../ui/segmented-control';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Switch } from '../ui/switch';
-import { Label } from '../ui/label';
 import { supabase } from '../../lib/supabase';
 
 interface AccountsScreenProps {
@@ -188,99 +184,116 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
 
   return (
     <div className="space-y-6">
-      {/* Header: Mine/Team Toggle + Partner Toggle */}
-      <div className="flex items-center justify-between gap-3">
-        {/* Mine/Team Toggle */}
-        <div className="flex items-center gap-1.5">
-          <div className="flex items-center bg-slate-100 rounded-lg p-1">
-            <button
-              onClick={() => setHierarchyView('mine')}
-              className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                hierarchyView === 'mine'
-                  ? 'bg-white shadow-sm text-orange-600'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              <User className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Mine</span>
-              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                hierarchyView === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
-              }`}>
-                {myAccountsCount}
-              </span>
-            </button>
-            <button
-              onClick={() => setHierarchyView('team')}
-              disabled={loadingSubordinates}
-              className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                hierarchyView === 'team'
-                  ? 'bg-white shadow-sm text-orange-600'
-                  : 'text-slate-500 hover:text-slate-700'
-              } ${loadingSubordinates ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Team</span>
-              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                hierarchyView === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
-              }`}>
-                {loadingSubordinates ? '...' : teamAccountsCount}
-              </span>
-            </button>
-          </div>
-
-          {/* Team Member Dropdown */}
-          {hierarchyView === 'team' && (
-            <div className="relative animate-in fade-in slide-in-from-left-2">
-              <select
-                value={selectedMemberId}
-                onChange={(e) => setSelectedMemberId(e.target.value)}
-                className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-2 pr-6 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-28 truncate"
-              >
-                <option value="all">All Team</option>
-                {teamMembers.map(m => (
-                  <option key={m.id} value={m.id}>{formatShortName(m.name)}</option>
-                ))}
-              </select>
-              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                <ChevronDown className="w-3 h-3" />
-              </div>
+      {/* Header Row */}
+      {!selectionMode && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
+                      <Info className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <p className="text-xs">
+                      <strong>Mine:</strong> Your accounts<br />
+                      <strong>Team:</strong> Your accounts + subordinates' accounts
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <h1 className="text-2xl font-bold text-slate-900">Accounts</h1>
             </div>
-          )}
-        </div>
-      </div>
 
-      {selectionMode ? (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-orange-50 rounded-xl lg:rounded-2xl p-3 lg:p-4 border border-orange-200 gap-3">
-          <div className="flex items-center gap-2 lg:gap-3">
-            <button onClick={exitSelectionMode} className="p-2 hover:bg-orange-100 rounded-lg transition-colors flex-shrink-0" aria-label="Exit selection mode">
-              <X className="w-4 h-4 lg:w-5 lg:h-5 text-gray-600" />
-            </button>
-            <span className="font-bold text-sm lg:text-base text-orange-800">{selectedIds.size} Selected</span>
+            {/* Search & Filter - Moved to Header Row */}
+            <div className="flex items-center gap-2 flex-1 max-w-md ml-auto">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search accounts, industries..."
+                  className="w-full pl-9 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => setShowFilter(true)}
+                className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors flex-shrink-0"
+              >
+                <Filter className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2 lg:gap-3 w-full sm:w-auto">
-            <button onClick={handleSelectAll} className="flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 text-xs lg:text-sm font-semibold text-orange-700 hover:bg-orange-100 rounded-lg lg:rounded-xl transition-colors flex-1 sm:flex-initial justify-center">
-              {allSelected ? <CheckSquare className="w-3.5 h-3.5 lg:w-4 lg:h-4" /> : <Square className="w-3.5 h-3.5 lg:w-4 lg:h-4" />}
-              <span className="hidden sm:inline">{allSelected ? 'Deselect All' : 'Select All'}</span>
-              <span className="sm:hidden">{allSelected ? 'Deselect' : 'Select All'}</span>
-            </button>
-            <button
-              onClick={() => setShowBulkDeleteDialog(true)}
-              disabled={selectedIds.size === 0}
-              className="flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 text-xs lg:text-sm font-bold text-white bg-red-500 rounded-lg lg:rounded-xl hover:bg-red-600 disabled:opacity-50 transition-colors flex-1 sm:flex-initial justify-center"
-            >
-              <Trash2 className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
-              <span className="hidden sm:inline">Delete ({selectedIds.size})</span>
-              <span className="sm:hidden">Delete</span>
-            </button>
+
+          {/* Hierarchy View Toggle - My Accounts vs Team Accounts */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
+              <button
+                onClick={() => setHierarchyView('mine')}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  hierarchyView === 'mine'
+                    ? 'bg-white shadow-sm text-orange-600'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Mine</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  hierarchyView === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {myAccountsCount}
+                </span>
+              </button>
+              <button
+                onClick={() => setHierarchyView('team')}
+                disabled={loadingSubordinates}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  hierarchyView === 'team'
+                    ? 'bg-white shadow-sm text-orange-600'
+                    : 'text-slate-500 hover:text-slate-700'
+                } ${loadingSubordinates ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Team</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  hierarchyView === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {loadingSubordinates ? '...' : teamAccountsCount}
+                </span>
+              </button>
+            </div>
+
+            {/* Team Member Drill-Down Filter */}
+            {hierarchyView === 'team' && (
+              <div className="relative flex-shrink-0 animate-in fade-in slide-in-from-left-2">
+                <select
+                  value={selectedMemberId}
+                  onChange={(e) => setSelectedMemberId(e.target.value)}
+                  className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-2 pr-6 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-28 truncate"
+                >
+                  <option value="all">All Team</option>
+                  {teamMembers.map(m => (
+                    <option key={m.id} value={m.id}>{formatShortName(m.name)}</option>
+                  ))}
+                </select>
+                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                  <ChevronDown className="w-3 h-3" />
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      ) : (
-        <SearchBar
-          value={search}
-          onChange={setSearch}
-          placeholder="Search accounts, industries..."
-          onFilterClick={() => setShowFilter(true)}
-        />
       )}
 
       {/* Stage Pills Grid */}
@@ -382,20 +395,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
             <span>0</span>
           </div>
         </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div></div>
-        {isAdmin && !selectionMode && (
-          <button
-            onClick={() => setSelectionMode(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:text-orange-600 hover:border-orange-300 transition-colors"
-            aria-label="Bulk select"
-          >
-            <CheckSquare className="w-3.5 h-3.5" />
-            <span>Bulk Select</span>
-          </button>
-        )}
       </div>
 
       <div className="flex flex-col gap-2 lg:gap-3">
