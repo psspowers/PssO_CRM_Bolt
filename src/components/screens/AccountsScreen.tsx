@@ -210,8 +210,8 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
         />
       )}
 
-      {/* Tactical Filter Bar - Horizontal Toolbar (wraps to 2 rows on mobile) */}
-      <div className="flex flex-wrap gap-2 items-center">
+      {/* Tactical Filter Bar - Horizontal Toolbar */}
+      <div className="flex overflow-x-auto pb-2 gap-2 scrollbar-hide items-center -mx-4 px-4 lg:mx-0 lg:px-0">
         {/* Early Stage Filter */}
         <Select
           value={filterEarlyStage}
@@ -220,7 +220,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
             if (value !== 'all') setFilterLateStage('all');
           }}
         >
-          <SelectTrigger className="w-[calc(50%-0.25rem)] sm:w-auto sm:min-w-[140px]">
+          <SelectTrigger className="min-w-[140px] flex-shrink-0">
             <SelectValue placeholder="Early Stage">
               {filterEarlyStage === 'all' ? 'Early Stage' : filterEarlyStage}
             </SelectValue>
@@ -241,7 +241,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
             if (value !== 'all') setFilterEarlyStage('all');
           }}
         >
-          <SelectTrigger className="w-[calc(50%-0.25rem)] sm:w-auto sm:min-w-[140px]">
+          <SelectTrigger className="min-w-[140px] flex-shrink-0">
             <SelectValue placeholder="Late Stage">
               {filterLateStage === 'all' ? 'Late Stage' : filterLateStage}
             </SelectValue>
@@ -255,7 +255,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
 
         {/* Sales Owner Filter */}
         <Select value={filterSales} onValueChange={setFilterSales}>
-          <SelectTrigger className="w-[calc(50%-0.25rem)] sm:w-auto sm:min-w-[140px]">
+          <SelectTrigger className="min-w-[140px] flex-shrink-0">
             <SelectValue placeholder="Sales Owner">
               {filterSales === 'all'
                 ? 'All Sales'
@@ -277,7 +277,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
 
         {/* Partner Filter */}
         <Select value={filterPartner} onValueChange={setFilterPartner}>
-          <SelectTrigger className="w-[calc(50%-0.25rem)] sm:w-auto sm:min-w-[140px]">
+          <SelectTrigger className="min-w-[140px] flex-shrink-0">
             <SelectValue placeholder="Partner">
               {filterPartner === 'all'
                 ? 'All Partners'
@@ -300,7 +300,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
         {/* Partner View Toggle Button */}
         <button
           onClick={() => setShowPartnerView(!showPartnerView)}
-          className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-semibold text-xs sm:text-sm whitespace-nowrap transition-all border w-full sm:w-auto ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-xs lg:text-sm whitespace-nowrap transition-all flex-shrink-0 border ${
             showPartnerView
               ? 'bg-orange-100 text-orange-700 border-orange-200'
               : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
