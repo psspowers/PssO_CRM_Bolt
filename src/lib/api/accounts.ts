@@ -25,9 +25,11 @@ const toAccount = (db: any, partnerIds: string[] = []): Account => ({
 
 export const fetchAccounts = async (): Promise<Account[]> => {
   // Fetch accounts with nested opportunities for filtering
+  // Use explicit foreign key hint to resolve ambiguity (account_id is the primary relationship)
+  // Note: contact_count comes from account_metrics_view, not from a direct join
   const { data: accounts, error } = await supabase
     .from('accounts')
-    .select('*, opportunities(id, stage, owner_id, primary_partner_id, value), contacts(count)')
+    .select('*, opportunities!opportunities_account_id_fkey(id, stage, owner_id, primary_partner_id, value)')
     .order('name');
   if (error) throw error;
 
