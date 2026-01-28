@@ -3,7 +3,7 @@ import { AccountCard, FilterModal, DetailModal, AccountForm, SearchBar } from '.
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Account } from '../../types/crm';
-import { MapPin, Star, Target, Users, Loader2, CheckSquare, Square, X, Trash2, Pencil, Building2, TrendingUp, Search, Filter, Handshake } from 'lucide-react';
+import { MapPin, Star, Target, Users, Loader2, CheckSquare, Square, X, Trash2, Pencil, Building2, TrendingUp, Search, Filter, Handshake, Zap } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { getSectors, SECTOR_ICONS, getTaxonomyInfo, getScoreColor, getPointsColor } from '../../data/thaiTaxonomy';
 import { Input } from '../ui/input';
@@ -210,104 +210,105 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
         />
       )}
 
-      {/* Tactical Filter Bar - Velocity Filters */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Early Stage Filter */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">Early Stage</Label>
-            <Select
-              value={filterEarlyStage}
-              onValueChange={(value) => {
-                setFilterEarlyStage(value);
-                if (value !== 'all') setFilterLateStage('all');
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stages</SelectItem>
-                <SelectItem value="Prospect">Prospect</SelectItem>
-                <SelectItem value="Qualified">Qualified</SelectItem>
-                <SelectItem value="Proposal">Proposal</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Tactical Filter Bar - Horizontal Toolbar */}
+      <div className="flex overflow-x-auto pb-2 gap-2 scrollbar-hide items-center -mx-4 px-4 lg:mx-0 lg:px-0">
+        {/* Early Stage Filter */}
+        <Select
+          value={filterEarlyStage}
+          onValueChange={(value) => {
+            setFilterEarlyStage(value);
+            if (value !== 'all') setFilterLateStage('all');
+          }}
+        >
+          <SelectTrigger className="min-w-[140px] flex-shrink-0">
+            <SelectValue placeholder="Early Stage">
+              {filterEarlyStage === 'all' ? 'Early Stage' : filterEarlyStage}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Stages</SelectItem>
+            <SelectItem value="Prospect">Prospect</SelectItem>
+            <SelectItem value="Qualified">Qualified</SelectItem>
+            <SelectItem value="Proposal">Proposal</SelectItem>
+          </SelectContent>
+        </Select>
 
-          {/* Late Stage Filter */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">Late Stage</Label>
-            <Select
-              value={filterLateStage}
-              onValueChange={(value) => {
-                setFilterLateStage(value);
-                if (value !== 'all') setFilterEarlyStage('all');
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stages</SelectItem>
-                <SelectItem value="Negotiation">Negotiation</SelectItem>
-                <SelectItem value="Term Sheet">Term Sheet</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Late Stage Filter */}
+        <Select
+          value={filterLateStage}
+          onValueChange={(value) => {
+            setFilterLateStage(value);
+            if (value !== 'all') setFilterEarlyStage('all');
+          }}
+        >
+          <SelectTrigger className="min-w-[140px] flex-shrink-0">
+            <SelectValue placeholder="Late Stage">
+              {filterLateStage === 'all' ? 'Late Stage' : filterLateStage}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Stages</SelectItem>
+            <SelectItem value="Negotiation">Negotiation</SelectItem>
+            <SelectItem value="Term Sheet">Term Sheet</SelectItem>
+          </SelectContent>
+        </Select>
 
-          {/* Sales Owner Filter */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">Sales Owner</Label>
-            <Select value={filterSales} onValueChange={setFilterSales}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sales</SelectItem>
-                {users
-                  .filter(u => salesCounts.has(u.id))
-                  .map(user => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({salesCounts.get(user.id) || 0})
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Sales Owner Filter */}
+        <Select value={filterSales} onValueChange={setFilterSales}>
+          <SelectTrigger className="min-w-[140px] flex-shrink-0">
+            <SelectValue placeholder="Sales Owner">
+              {filterSales === 'all'
+                ? 'All Sales'
+                : `${users.find(u => u.id === filterSales)?.name || 'Sales'} (${salesCounts.get(filterSales) || 0})`
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Sales</SelectItem>
+            {users
+              .filter(u => salesCounts.has(u.id))
+              .map(user => (
+                <SelectItem key={user.id} value={user.id}>
+                  {user.name} ({salesCounts.get(user.id) || 0})
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
 
-          {/* Partner Filter */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">Partner</Label>
-            <Select value={filterPartner} onValueChange={setFilterPartner}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Partners</SelectItem>
-                {partners
-                  .filter(p => partnerCounts.has(p.id))
-                  .map(partner => (
-                    <SelectItem key={partner.id} value={partner.id}>
-                      {partner.name} ({partnerCounts.get(partner.id) || 0})
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        {/* Partner Filter */}
+        <Select value={filterPartner} onValueChange={setFilterPartner}>
+          <SelectTrigger className="min-w-[140px] flex-shrink-0">
+            <SelectValue placeholder="Partner">
+              {filterPartner === 'all'
+                ? 'All Partners'
+                : `${partners.find(p => p.id === filterPartner)?.name || 'Partner'} (${partnerCounts.get(filterPartner) || 0})`
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Partners</SelectItem>
+            {partners
+              .filter(p => partnerCounts.has(p.id))
+              .map(partner => (
+                <SelectItem key={partner.id} value={partner.id}>
+                  {partner.name} ({partnerCounts.get(partner.id) || 0})
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
 
-        {/* Partner View Toggle */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-          <Label htmlFor="partner-view" className="text-sm font-semibold text-slate-700">
-            Show Partner Projects Only
-          </Label>
-          <Switch
-            id="partner-view"
-            checked={showPartnerView}
-            onCheckedChange={setShowPartnerView}
-          />
-        </div>
+        {/* Partner View Toggle Button */}
+        <button
+          onClick={() => setShowPartnerView(!showPartnerView)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-xs lg:text-sm whitespace-nowrap transition-all flex-shrink-0 border ${
+            showPartnerView
+              ? 'bg-orange-100 text-orange-700 border-orange-200'
+              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          <Handshake className="w-4 h-4" />
+          Partner Projects
+        </button>
       </div>
 
       <div className="flex items-center justify-between">
