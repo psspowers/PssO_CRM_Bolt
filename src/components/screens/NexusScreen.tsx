@@ -64,9 +64,8 @@ export const NexusScreen: React.FC = () => {
         .limit(10);
 
       const partnersPromise = supabase
-        .from('accounts')
-        .select('id, name, industry')
-        .eq('type', 'Partner')
+        .from('partners')
+        .select('id, name, partner_type')
         .ilike('name', `%${query}%`)
         .limit(10);
 
@@ -101,7 +100,7 @@ export const NexusScreen: React.FC = () => {
           id: p.id,
           name: p.name,
           type: 'Partner' as const,
-          subtitle: p.industry
+          subtitle: p.partner_type
         })));
       }
 
@@ -170,22 +169,17 @@ export const NexusScreen: React.FC = () => {
           tableName = 'accounts';
           break;
         case 'Partner':
-          tableName = 'accounts';
+          tableName = 'partners';
           break;
         default:
           return;
       }
 
-      let query = supabase
+      const { data, error } = await supabase
         .from(tableName)
         .select('*')
-        .eq('id', nodeEntityId);
-
-      if (nodeEntityType === 'Partner') {
-        query = query.eq('type', 'Partner');
-      }
-
-      const { data, error } = await query.single();
+        .eq('id', nodeEntityId)
+        .single();
 
       if (!error && data) {
         setSelectedEntityData(data);
@@ -490,10 +484,10 @@ export const NexusScreen: React.FC = () => {
                   )}
                   {selectedNodeType === 'Partner' && (
                     <>
-                      {selectedEntityData.industry && (
+                      {selectedEntityData.partner_type && (
                         <div className="flex items-start gap-2">
                           <span className="text-xs font-bold text-slate-400 uppercase min-w-20">Type:</span>
-                          <span className="text-sm text-white">{selectedEntityData.industry}</span>
+                          <span className="text-sm text-white">{selectedEntityData.partner_type}</span>
                         </div>
                       )}
                       {selectedEntityData.description && (

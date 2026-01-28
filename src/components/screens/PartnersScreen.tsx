@@ -5,7 +5,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Partner } from '../../types/crm';
 import { MapPin, Globe, Mail, Phone, Building2, Loader2, CheckSquare, Square, X, Trash2, Pencil, Users, LayoutGrid, List } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
-import { toast } from 'sonner';
 
 interface PartnersScreenProps {
   forcedOpenId?: string | null;
@@ -89,15 +88,6 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
       await updatePartner(selectedPartner.id, updates);
       setSelectedPartner({ ...selectedPartner, ...updates });
       setIsEditing(false);
-    }
-  };
-
-  const handleDeletePartner = async () => {
-    if (selectedPartner) {
-      await deletePartner(selectedPartner.id);
-      setSelectedPartner(null);
-      setIsEditing(false);
-      toast.success('Partner deleted successfully');
     }
   };
 
@@ -247,7 +237,7 @@ export const PartnersScreen: React.FC<PartnersScreenProps> = ({ forcedOpenId }) 
 
       <DetailModal isOpen={!!selectedPartner} onClose={handleCloseModal} title={selectedPartner?.name || ''} subtitle={`${selectedPartner?.region} • ${selectedPartner?.country}`} entityId={selectedPartner?.id || ''} entityType="Partner" clickupLink={selectedPartner?.clickupLink} activities={activities} users={users} contacts={contacts} accounts={accounts} partners={partners} relationships={relationships}>
         {selectedPartner && (isEditing ? (
-          <PartnerForm partner={selectedPartner} onSave={handleSavePartner} onCancel={() => setIsEditing(false)} onDelete={userCanEdit && userCanDelete ? handleDeletePartner : undefined} />
+          <PartnerForm partner={selectedPartner} onSave={handleSavePartner} onCancel={() => setIsEditing(false)} />
         ) : (
           <div className="space-y-4">
             {userCanEdit && (

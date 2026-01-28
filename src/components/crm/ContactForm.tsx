@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Save, X, Loader2, Building2, Plus, Lock, Trash2 } from 'lucide-react';
+import { Save, X, Loader2, Building2, Plus, Lock } from 'lucide-react';
 import { Contact } from '../../types/crm';
 import { useAppContext } from '../../contexts/AppContext';
 import { getSectors } from '../../data/thaiTaxonomy';
@@ -10,7 +10,6 @@ interface ContactFormProps {
   defaultAccountId?: string;
   onSave: (data: Partial<Contact>) => Promise<void>;
   onCancel: () => void;
-  onDelete?: () => Promise<void>;
 }
 
 export const ContactForm: React.FC<ContactFormProps> = ({
@@ -18,8 +17,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   initialData,
   defaultAccountId,
   onSave,
-  onCancel,
-  onDelete
+  onCancel
 }) => {
   const { accounts, createAccount } = useAppContext();
 
@@ -41,8 +39,6 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [newAccountData, setNewAccountData] = useState({ name: '', sector: '' });
   const [saving, setSaving] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   const isAccountLocked = Boolean(defaultAccountId);
   const lockedAccount = useMemo(() =>
@@ -92,19 +88,6 @@ export const ContactForm: React.FC<ContactFormProps> = ({
       alert('Failed to save contact');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!onDelete) return;
-    setDeleting(true);
-    try {
-      await onDelete();
-      setShowDeleteConfirm(false);
-    } catch (err) {
-      console.error(err);
-      alert('Failed to delete contact');
-      setDeleting(false);
     }
   };
 
@@ -236,16 +219,6 @@ export const ContactForm: React.FC<ContactFormProps> = ({
       </div>
 
       <div className="flex gap-2 pt-2 border-t border-slate-100 mt-4">
-        {contact && onDelete && (
-          <button
-            type="button"
-            onClick={() => setShowDeleteConfirm(true)}
-            className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 font-medium flex items-center gap-2"
-          >
-            <Trash2 className="w-4 h-4" />
-            Delete
-          </button>
-        )}
         <button type="button" onClick={onCancel} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
           Cancel
         </button>
@@ -254,54 +227,6 @@ export const ContactForm: React.FC<ContactFormProps> = ({
           Save Contact
         </button>
       </div>
-
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Delete Contact</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">This action cannot be undone</p>
-              </div>
-            </div>
-            <p className="text-slate-700 dark:text-slate-300 mb-6">
-              Are you sure you want to delete <span className="font-bold">{form.fullName}</span>?
-              This will permanently remove this contact and all associated data.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={deleting}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {deleting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Deleting...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="w-4 h-4" />
-                    Delete Contact
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </form>
   );
 };

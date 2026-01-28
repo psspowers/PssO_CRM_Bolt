@@ -78,7 +78,6 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   const [isDeleting, setIsDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [stagnationFilter, setStagnationFilter] = useState<'all' | '15' | '30' | '60'>('all');
-
   
   // NEW: Hierarchy View Filter State
   // 'mine' = Only deals owned by the current user
@@ -241,16 +240,6 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
       critical: myDeals.filter(o => (now - new Date(o.updatedAt).getTime()) / 86400000 > 60).length
     };
   }, [opportunities, user?.id]);
-
-  // Calculate summary stats for filtered opportunities
-  const filteredStats = useMemo(() => {
-    const totalMW = filtered.reduce((sum, o) => sum + (o.targetCapacity || 0), 0);
-    const totalValue = filtered.reduce((sum, o) => sum + (o.value || 0), 0);
-    const avgEPC = filtered.length > 0
-      ? filtered.reduce((sum, o) => sum + (o.epcCost || 0), 0) / filtered.length
-      : 0;
-    return { totalMW, totalValue, avgEPC };
-  }, [filtered]);
 
   const deletableOpps = filtered.filter(o => canDelete(o.ownerId));
   const allSelected = deletableOpps.length > 0 && deletableOpps.every(o => selectedIds.has(o.id));
@@ -500,78 +489,53 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </div>
       )}
 
-      {/* Horizontal Stage Pills */}
-      <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
+      {/* Stage Filter Grid - Responsive Layout */}
+      <div className="flex gap-1.5 sm:gap-2 w-full mb-3">
+        {/* LEFT: 'ALL' BUTTON (Square, spans height) */}
         <button
           onClick={() => setStageFilter('all')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+          className={`w-12 sm:w-14 flex flex-col items-center justify-center rounded-lg text-[9px] sm:text-[10px] font-bold border transition-all flex-shrink-0 ${
             stageFilter === 'all'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              ? 'bg-slate-800 text-white border-slate-900 shadow-md'
+              : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
           }`}
         >
-          All Stages
+          <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5 sm:mb-1" />
+          <span className="leading-none">All</span>
         </button>
-        <button
-          onClick={() => setStageFilter('Prospect')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-            stageFilter === 'Prospect'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          Prospect
-        </button>
-        <button
-          onClick={() => setStageFilter('Qualified')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-            stageFilter === 'Qualified'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          Qualified
-        </button>
-        <button
-          onClick={() => setStageFilter('Proposal')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-            stageFilter === 'Proposal'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          Proposal
-        </button>
-        <button
-          onClick={() => setStageFilter('Negotiation')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-            stageFilter === 'Negotiation'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          Negotiation
-        </button>
-        <button
-          onClick={() => setStageFilter('Term Sheet')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-            stageFilter === 'Term Sheet'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          Term Sheet
-        </button>
-        <button
-          onClick={() => setStageFilter('Lost')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-            stageFilter === 'Lost'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          Lost
-        </button>
+
+        {/* RIGHT: 6 STAGES (3x2 Grid) */}
+        <div className="grid grid-cols-3 grid-rows-2 gap-1 sm:gap-1.5 flex-1 min-w-0">
+          {/* Top Row */}
+          {['Prospect', 'Qualified', 'Proposal'].map(stage => (
+            <button
+              key={stage}
+              onClick={() => setStageFilter(stage)}
+              className={`h-7 sm:h-8 flex items-center justify-center rounded-md text-[9px] sm:text-xs font-bold border px-1 min-w-0 transition-all ${
+                stageFilter === stage
+                  ? 'bg-orange-100 text-orange-800 border-orange-200 ring-1 ring-orange-300'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <span className="truncate leading-none">{stage}</span>
+            </button>
+          ))}
+
+          {/* Bottom Row */}
+          {['Negotiation', 'Term Sheet', 'Won'].map(stage => (
+            <button
+              key={stage}
+              onClick={() => setStageFilter(stage)}
+              className={`h-7 sm:h-8 flex items-center justify-center rounded-md text-[9px] sm:text-xs font-bold border px-1 min-w-0 transition-all ${
+                stageFilter === stage
+                  ? 'bg-orange-100 text-orange-800 border-orange-200 ring-1 ring-orange-300'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <span className="truncate leading-none">{stage === 'Negotiation' ? 'Negotiat...' : stage === 'Term Sheet' ? 'Term Sheet' : stage}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Results Count with Stagnation Filter */}

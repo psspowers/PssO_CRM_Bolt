@@ -84,15 +84,6 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
     }
   };
 
-  const handleDeleteContact = async () => {
-    if (selectedContact) {
-      await deleteContact(selectedContact.id);
-      setSelectedContact(null);
-      setIsEditing(false);
-      toast.success('Contact deleted successfully');
-    }
-  };
-
   const handleImportFromPhone = async () => {
     if (!isContactPickerSupported()) {
       toast.error('Contact Picker API not available', {
@@ -258,7 +249,7 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
 
       <DetailModal isOpen={!!selectedContact} onClose={handleCloseModal} title={selectedContact?.fullName || ''} subtitle={selectedContact?.role} entityId={selectedContact?.id || ''} entityType="Contact" clickupLink={selectedContact?.clickupLink} activities={activities} users={users} contacts={contacts} accounts={accounts} partners={partners} relationships={relationships}>
         {selectedContact && (isEditing ? (
-          <ContactForm contact={selectedContact} onSave={handleSaveContact} onCancel={() => setIsEditing(false)} onDelete={userCanEdit && userCanDelete ? handleDeleteContact : undefined} />
+          <ContactForm contact={selectedContact} onSave={handleSaveContact} onCancel={() => setIsEditing(false)} />
         ) : (
           <div className="space-y-4">
             {userCanEdit && (

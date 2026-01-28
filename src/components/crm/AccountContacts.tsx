@@ -81,14 +81,6 @@ export const AccountContacts: React.FC<AccountContactsProps> = ({ accountId, acc
     }
   };
 
-  const handleDeleteSelectedContact = async () => {
-    if (selectedContact) {
-      await deleteContact(selectedContact.id);
-      setSelectedContact(null);
-      toast.success('Contact deleted successfully');
-    }
-  };
-
   const handleDeleteContact = async (contactId: string) => {
     if (canDelete() && confirm('Delete this contact?')) {
       await deleteContact(contactId);
@@ -384,7 +376,6 @@ Jane Smith,jane@supplier.com,,Technical Lead
           defaultAccountId={accountId}
           onSave={handleUpdateContact}
           onCancel={() => setSelectedContact(null)}
-          onDelete={canDelete() ? handleDeleteSelectedContact : undefined}
         />
       </div>
     );
