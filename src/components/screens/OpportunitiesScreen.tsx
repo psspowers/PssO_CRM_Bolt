@@ -501,18 +501,6 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </div>
       )}
 
-      {/* Stats Row */}
-      <div className="flex items-center gap-4 mb-3">
-        <div className="flex items-center gap-1.5">
-          <User className="w-4 h-4 text-orange-500" />
-          <span className="text-sm font-bold text-slate-900">{myDealsCount}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Users className="w-4 h-4 text-slate-400" />
-          <span className="text-sm font-bold text-slate-600">{teamDealsCount}</span>
-        </div>
-      </div>
-
       {/* Stage Pills Grid */}
       <div className="flex gap-2 mb-3">
         {/* All Button - Larger, Spans 2 Rows */}
