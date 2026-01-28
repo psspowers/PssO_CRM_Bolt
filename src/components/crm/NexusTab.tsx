@@ -107,9 +107,8 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
         .limit(5);
 
       const partnersPromise = supabase
-        .from('accounts')
-        .select('id, name, industry')
-        .eq('type', 'Partner')
+        .from('partners')
+        .select('id, name, partner_type')
         .ilike('name', `%${query}%`)
         .limit(5);
 
@@ -147,7 +146,7 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
           name: p.name,
           type: 'Partner' as const,
           avatar: undefined,
-          role: p.industry
+          role: p.partner_type
         })));
       }
 
@@ -227,22 +226,17 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
           tableName = 'accounts';
           break;
         case 'Partner':
-          tableName = 'accounts';
+          tableName = 'partners';
           break;
         default:
           return;
       }
 
-      let query = supabase
+      const { data, error } = await supabase
         .from(tableName)
         .select(selectFields)
-        .eq('id', nodeEntityId);
-
-      if (nodeEntityType === 'Partner') {
-        query = query.eq('type', 'Partner');
-      }
-
-      const { data, error } = await query.single();
+        .eq('id', nodeEntityId)
+        .single();
 
       if (!error && data) {
         setSelectedEntityData(data);
@@ -745,10 +739,10 @@ export const NexusTab: React.FC<NexusTabProps> = ({ entityId, entityType }) => {
                       )}
                       {selectedEntityType === 'Partner' && (
                         <>
-                          {selectedEntityData.industry && (
+                          {selectedEntityData.partner_type && (
                             <div className="flex items-start gap-2">
                               <span className="text-xs font-bold text-slate-600 uppercase min-w-20">Type:</span>
-                              <span className="text-sm text-slate-900">{selectedEntityData.industry}</span>
+                              <span className="text-sm text-slate-900">{selectedEntityData.partner_type}</span>
                             </div>
                           )}
                           {selectedEntityData.description && (
