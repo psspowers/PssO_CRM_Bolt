@@ -513,86 +513,105 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </div>
       </div>
 
-      {/* Horizontal Stage Pills */}
-      <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
+      {/* Stage Pills Grid */}
+      <div className="flex gap-2 mb-3">
+        {/* All Button - Larger, Spans 2 Rows */}
         <button
           onClick={() => setStageFilter('all')}
-          className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+          className={`flex flex-col items-center justify-center w-14 h-[76px] rounded-xl text-xs font-bold transition-all ${
             stageFilter === 'all'
               ? 'bg-slate-800 text-white shadow-sm'
               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
           }`}
         >
-          <LayoutGrid className="w-3.5 h-3.5" />
+          <LayoutGrid className="w-5 h-5 mb-1" />
           <span>All</span>
         </button>
-        <button
-          onClick={() => setStageFilter('Prospect')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-            stageFilter === 'Prospect'
-              ? 'bg-slate-800 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-          }`}
-        >
-          Prospect
-        </button>
-        <button
-          onClick={() => setStageFilter('Qualified')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-            stageFilter === 'Qualified'
-              ? 'bg-slate-800 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-          }`}
-        >
-          Qualified
-        </button>
-        <button
-          onClick={() => setStageFilter('Proposal')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-            stageFilter === 'Proposal'
-              ? 'bg-slate-800 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-          }`}
-        >
-          Proposal
-        </button>
-        <button
-          onClick={() => setStageFilter('Negotiation')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-            stageFilter === 'Negotiation'
-              ? 'bg-slate-800 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-          }`}
-        >
-          Negotiation
-        </button>
-        <button
-          onClick={() => setStageFilter('Term Sheet')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-            stageFilter === 'Term Sheet'
-              ? 'bg-slate-800 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-          }`}
-        >
-          Term Sheet
-        </button>
-        <button
-          onClick={() => setStageFilter('Won')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
-            stageFilter === 'Won'
-              ? 'bg-slate-800 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-          }`}
-        >
-          Won
-        </button>
+
+        {/* Stage Pills Grid - 2 rows x 3 columns */}
+        <div className="grid grid-cols-3 gap-2 flex-1">
+          <button
+            onClick={() => setStageFilter('Prospect')}
+            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              stageFilter === 'Prospect'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Prospect
+          </button>
+          <button
+            onClick={() => setStageFilter('Qualified')}
+            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              stageFilter === 'Qualified'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Qualified
+          </button>
+          <button
+            onClick={() => setStageFilter('Proposal')}
+            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              stageFilter === 'Proposal'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Proposal
+          </button>
+          <button
+            onClick={() => setStageFilter('Negotiation')}
+            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              stageFilter === 'Negotiation'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Negotiat...
+          </button>
+          <button
+            onClick={() => setStageFilter('Term Sheet')}
+            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              stageFilter === 'Term Sheet'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Term Sheet
+          </button>
+          <button
+            onClick={() => setStageFilter('Won')}
+            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+              stageFilter === 'Won'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+            }`}
+          >
+            Won
+          </button>
+        </div>
       </div>
 
-      {/* Results Count */}
+      {/* Results Count with Stats */}
       <div className="flex items-center gap-3 mb-4 px-1">
         <p className="text-sm text-slate-500 font-medium">
           Showing <span className="text-slate-900 font-bold">{filtered.length}</span> deals
         </p>
+        <div className="flex items-center gap-3 text-xs text-slate-400">
+          <div className="flex items-center gap-1">
+            <CheckSquare className="w-3.5 h-3.5" />
+            <span>{filtered.filter(o => o.completedMilestones && o.completedMilestones.length > 0).length}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-3.5 h-3.5 flex items-center justify-center text-[10px]">💬</span>
+            <span>0</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-3.5 h-3.5 flex items-center justify-center text-[10px]">📎</span>
+            <span>0</span>
+          </div>
+        </div>
       </div>
 
       {/* Pipeline Velocity Widget */}
