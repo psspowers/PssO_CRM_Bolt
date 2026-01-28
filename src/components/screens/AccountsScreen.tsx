@@ -8,9 +8,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { getSectors, SECTOR_ICONS, getTaxonomyInfo, getScoreColor, getPointsColor } from '../../data/thaiTaxonomy';
 import { Input } from '../ui/input';
 import { SegmentedControl } from '../ui/segmented-control';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Switch } from '../ui/switch';
-import { Label } from '../ui/label';
 
 interface AccountsScreenProps {
   forcedOpenId?: string | null;
@@ -21,6 +18,7 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
   const { profile } = useAuth();
   const [viewMode, setViewMode] = useState<'customers' | 'partners'>('customers');
   const [search, setSearch] = useState('');
+  const [sectorFilter, setSectorFilter] = useState('all');
   const [importanceFilter, setImportanceFilter] = useState('all');
   const [showFilter, setShowFilter] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
@@ -29,13 +27,6 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // Velocity filters based on active deals
-  const [filterEarlyStage, setFilterEarlyStage] = useState<string>('all');
-  const [filterLateStage, setFilterLateStage] = useState<string>('all');
-  const [filterSales, setFilterSales] = useState<string>('all');
-  const [filterPartner, setFilterPartner] = useState<string>('all');
-  const [showPartnerView, setShowPartnerView] = useState(false);
 
   useEffect(() => {
     if (forcedOpenId && accounts.length > 0) {
@@ -51,32 +42,11 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
   const userCanEdit = selectedAccount ? canEdit(selectedAccount.ownerId) : false;
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
-  // Calculate counts for sales and partner filters
-  const salesCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    accounts.forEach(account => {
-      const accountOpps = opportunities.filter(o => o.accountId === account.id);
-      accountOpps.forEach(opp => {
-        if (opp.ownerId) {
-          counts.set(opp.ownerId, (counts.get(opp.ownerId) || 0) + 1);
-        }
-      });
-    });
-    return counts;
-  }, [accounts, opportunities]);
-
-  const partnerCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    accounts.forEach(account => {
-      const accountOpps = opportunities.filter(o => o.accountId === account.id);
-      accountOpps.forEach(opp => {
-        if (opp.primaryPartnerId) {
-          counts.set(opp.primaryPartnerId, (counts.get(opp.primaryPartnerId) || 0) + 1);
-        }
-      });
-    });
-    return counts;
-  }, [accounts, opportunities]);
+  const availableSectors = useMemo(() => {
+    const accountSectors = new Set(accounts.map(a => a.sector).filter(Boolean));
+    const taxonomySectors = getSectors();
+    return Array.from(new Set([...accountSectors, ...taxonomySectors.slice(0, 10)])).sort();
+  }, [accounts]);
 
   const filtered = useMemo(() => accounts.filter(a => {
     const matchesType = viewMode === 'partners'
@@ -87,43 +57,10 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
                           a.country.toLowerCase().includes(query) ||
                           (a.industry || '').toLowerCase().includes(query) ||
                           (a.subIndustry || '').toLowerCase().includes(query);
+    const matchesSector = sectorFilter === 'all' || a.sector === sectorFilter;
     const matchesImportance = importanceFilter === 'all' || a.strategicImportance === importanceFilter;
-
-    // Get opportunities for this account
-    const accountOpps = opportunities.filter(o => o.accountId === a.id);
-
-    // Early stage filter (mutual exclusive with late stage)
-    if (filterEarlyStage !== 'all') {
-      const hasEarlyStage = accountOpps.some(o => o.stage === filterEarlyStage);
-      if (!hasEarlyStage) return false;
-    }
-
-    // Late stage filter (mutual exclusive with early stage)
-    if (filterLateStage !== 'all') {
-      const hasLateStage = accountOpps.some(o => o.stage === filterLateStage);
-      if (!hasLateStage) return false;
-    }
-
-    // Sales owner filter
-    if (filterSales !== 'all') {
-      const hasSalesOwner = accountOpps.some(o => o.ownerId === filterSales);
-      if (!hasSalesOwner) return false;
-    }
-
-    // Partner filter
-    if (filterPartner !== 'all') {
-      const hasPartner = accountOpps.some(o => o.primaryPartnerId === filterPartner);
-      if (!hasPartner) return false;
-    }
-
-    // Partner view toggle
-    if (showPartnerView) {
-      const hasPartnerProjects = accountOpps.some(o => o.primaryPartnerId !== null);
-      if (!hasPartnerProjects) return false;
-    }
-
-    return matchesType && matchesSearch && matchesImportance;
-  }), [accounts, viewMode, search, importanceFilter, filterEarlyStage, filterLateStage, filterSales, filterPartner, showPartnerView, opportunities]);
+    return matchesType && matchesSearch && matchesSector && matchesImportance;
+  }), [accounts, viewMode, search, sectorFilter, importanceFilter]);
 
   const deletableAccounts = filtered.filter(a => canDelete(a.ownerId));
   const allSelected = deletableAccounts.length > 0 && deletableAccounts.every(a => selectedIds.has(a.id));
@@ -210,104 +147,31 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
         />
       )}
 
-      {/* Tactical Filter Bar - Velocity Filters */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Early Stage Filter */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">Early Stage</Label>
-            <Select
-              value={filterEarlyStage}
-              onValueChange={(value) => {
-                setFilterEarlyStage(value);
-                if (value !== 'all') setFilterLateStage('all');
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stages</SelectItem>
-                <SelectItem value="Prospect">Prospect</SelectItem>
-                <SelectItem value="Qualified">Qualified</SelectItem>
-                <SelectItem value="Proposal">Proposal</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Late Stage Filter */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">Late Stage</Label>
-            <Select
-              value={filterLateStage}
-              onValueChange={(value) => {
-                setFilterLateStage(value);
-                if (value !== 'all') setFilterEarlyStage('all');
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stages</SelectItem>
-                <SelectItem value="Negotiation">Negotiation</SelectItem>
-                <SelectItem value="Term Sheet">Term Sheet</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Sales Owner Filter */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">Sales Owner</Label>
-            <Select value={filterSales} onValueChange={setFilterSales}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sales</SelectItem>
-                {users
-                  .filter(u => salesCounts.has(u.id))
-                  .map(user => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({salesCounts.get(user.id) || 0})
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Partner Filter */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">Partner</Label>
-            <Select value={filterPartner} onValueChange={setFilterPartner}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Partners</SelectItem>
-                {partners
-                  .filter(p => partnerCounts.has(p.id))
-                  .map(partner => (
-                    <SelectItem key={partner.id} value={partner.id}>
-                      {partner.name} ({partnerCounts.get(partner.id) || 0})
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Partner View Toggle */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-          <Label htmlFor="partner-view" className="text-sm font-semibold text-slate-700">
-            Show Partner Projects Only
-          </Label>
-          <Switch
-            id="partner-view"
-            checked={showPartnerView}
-            onCheckedChange={setShowPartnerView}
-          />
-        </div>
+      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
+        <button
+          onClick={() => setSectorFilter('all')}
+          className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
+            sectorFilter === 'all'
+              ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+          }`}
+        >
+          All Sectors
+        </button>
+        {availableSectors.slice(0, 6).map(sector => (
+          <button
+            key={sector}
+            onClick={() => setSectorFilter(sector)}
+            className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 flex-shrink-0 ${
+              sectorFilter === sector
+                ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+            }`}
+          >
+            <span className="text-base">{SECTOR_ICONS[sector] || '📁'}</span>
+            <span className="max-w-[80px] truncate">{sector.split(' & ')[0]}</span>
+          </button>
+        ))}
       </div>
 
       <div className="flex items-center justify-between">
@@ -371,16 +235,18 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
             ],
             selected: importanceFilter,
             onChange: setImportanceFilter
+          },
+          {
+            name: 'Sector',
+            options: [
+              { label: 'All Sectors', value: 'all' },
+              ...availableSectors.map(s => ({ label: s, value: s }))
+            ],
+            selected: sectorFilter,
+            onChange: setSectorFilter
           }
         ]}
-        onReset={() => {
-          setImportanceFilter('all');
-          setFilterEarlyStage('all');
-          setFilterLateStage('all');
-          setFilterSales('all');
-          setFilterPartner('all');
-          setShowPartnerView(false);
-        }}
+        onReset={() => { setSectorFilter('all'); setImportanceFilter('all'); }}
       />
 
       <DetailModal
