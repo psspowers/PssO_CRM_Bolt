@@ -3,7 +3,7 @@ import { AccountCard, FilterModal, DetailModal, AccountForm, SearchBar } from '.
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Account } from '../../types/crm';
-import { MapPin, Star, Target, Users, Loader2, CheckSquare, Square, X, Trash2, Pencil, Building2, TrendingUp, Search, Filter, Handshake } from 'lucide-react';
+import { MapPin, Star, Target, Users, Loader2, CheckSquare, Square, X, Trash2, Pencil, Building2, TrendingUp, Search, Filter, Handshake, User, ChevronDown } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { getSectors, SECTOR_ICONS, getTaxonomyInfo, getScoreColor, getPointsColor } from '../../data/thaiTaxonomy';
 import { Input } from '../ui/input';
@@ -11,6 +11,7 @@ import { SegmentedControl } from '../ui/segmented-control';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
+import { supabase } from '../../lib/supabase';
 
 interface AccountsScreenProps {
   forcedOpenId?: string | null;
@@ -18,7 +19,7 @@ interface AccountsScreenProps {
 
 export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) => {
   const { accounts, opportunities, partners, contacts, activities, relationships, users, loading, deleteAccount, updateAccount, canDelete, canEdit } = useAppContext();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [viewMode, setViewMode] = useState<'customers' | 'partners'>('customers');
   const [search, setSearch] = useState('');
   const [importanceFilter, setImportanceFilter] = useState('all');
@@ -29,6 +30,12 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Hierarchy and team view
+  const [hierarchyView, setHierarchyView] = useState<'mine' | 'team'>('mine');
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
+  const [subordinateIds, setSubordinateIds] = useState<string[]>([]);
+  const [loadingSubordinates, setLoadingSubordinates] = useState(false);
 
   // Velocity filters based on active deals
   const [filterEarlyStage, setFilterEarlyStage] = useState<string>('all');
@@ -46,6 +53,56 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
       }
     }
   }, [forcedOpenId, accounts]);
+
+  // Fetch subordinates for hierarchy view
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchSubordinates = async () => {
+      setLoadingSubordinates(true);
+      try {
+        const { data, error } = await supabase
+          .from('user_hierarchy')
+          .select('subordinate_id')
+          .eq('manager_id', user.id);
+
+        if (error) {
+          console.error('Error fetching subordinates:', error);
+          setSubordinateIds([]);
+        } else {
+          const ids = data?.map(row => row.subordinate_id) || [];
+          setSubordinateIds(ids);
+        }
+      } catch (err) {
+        console.error('Failed to fetch subordinates:', err);
+        setSubordinateIds([]);
+      } finally {
+        setLoadingSubordinates(false);
+      }
+    };
+
+    fetchSubordinates();
+  }, [user?.id]);
+
+  // Reset member filter when switching back to "Mine"
+  useEffect(() => {
+    if (hierarchyView === 'mine') setSelectedMemberId('all');
+  }, [hierarchyView]);
+
+  // Calculate team members list for dropdown
+  const teamMembers = useMemo(() => {
+    if (profile?.role === 'admin' || profile?.role === 'super_admin') {
+      return users.filter(u => ['internal', 'admin', 'super_admin'].includes(u.role));
+    } else {
+      return users.filter(u => subordinateIds.includes(u.id) || u.id === user?.id);
+    }
+  }, [users, subordinateIds, profile, user]);
+
+  const formatShortName = (fullName: string) => {
+    const parts = fullName.split(' ');
+    if (parts.length === 1) return fullName;
+    return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+  };
 
   const userCanDelete = canDelete();
   const userCanEdit = selectedAccount ? canEdit(selectedAccount.ownerId) : false;
@@ -89,6 +146,19 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
                           (a.subIndustry || '').toLowerCase().includes(query);
     const matchesImportance = importanceFilter === 'all' || a.strategicImportance === importanceFilter;
 
+    // Hierarchy Filter - Filter based on ownership/team view
+    const isSearching = search.trim().length > 0;
+    if (!isSearching && hierarchyView === 'mine') {
+      if (a.ownerId !== user?.id) return false;
+    } else if (hierarchyView === 'team' || isSearching) {
+      const isMyAccount = a.ownerId === user?.id;
+      const isSubordinateAccount = subordinateIds.includes(a.ownerId);
+      if (!isAdmin && !isMyAccount && !isSubordinateAccount) return false;
+    }
+
+    // Team Member Filter (drill-down within team view)
+    if (selectedMemberId !== 'all' && a.ownerId !== selectedMemberId) return false;
+
     // Get opportunities for this account
     const accountOpps = opportunities.filter(o => o.accountId === a.id);
 
@@ -123,7 +193,25 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
     }
 
     return matchesType && matchesSearch && matchesImportance;
-  }), [accounts, viewMode, search, importanceFilter, filterEarlyStage, filterLateStage, filterSales, filterPartner, showPartnerView, opportunities]);
+  }), [accounts, viewMode, search, importanceFilter, filterEarlyStage, filterLateStage, filterSales, filterPartner, showPartnerView, opportunities, hierarchyView, selectedMemberId, subordinateIds, isAdmin, user]);
+
+  // Calculate counts for Mine vs Team
+  const myAccountsCount = useMemo(() => {
+    return accounts.filter(a => {
+      const matchesType = viewMode === 'partners' ? a.type === 'Partner' : a.type !== 'Partner';
+      return matchesType && a.ownerId === user?.id;
+    }).length;
+  }, [accounts, viewMode, user]);
+
+  const teamAccountsCount = useMemo(() => {
+    return accounts.filter(a => {
+      const matchesType = viewMode === 'partners' ? a.type === 'Partner' : a.type !== 'Partner';
+      if (!matchesType) return false;
+      const isMyAccount = a.ownerId === user?.id;
+      const isSubordinateAccount = subordinateIds.includes(a.ownerId);
+      return isAdmin || isMyAccount || isSubordinateAccount;
+    }).length;
+  }, [accounts, viewMode, subordinateIds, isAdmin, user]);
 
   const deletableAccounts = filtered.filter(a => canDelete(a.ownerId));
   const allSelected = deletableAccounts.length > 0 && deletableAccounts.every(a => selectedIds.has(a.id));
@@ -164,16 +252,78 @@ export const AccountsScreen: React.FC<AccountsScreenProps> = ({ forcedOpenId }) 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-center">
-        <SegmentedControl
-          value={viewMode}
-          onChange={setViewMode}
-          options={[
-            { value: 'customers', label: 'Customers', icon: Building2 },
-            { value: 'partners', label: 'Partners', icon: Handshake },
-          ]}
-          size="md"
-        />
+      {/* Header: Mine/Team Toggle + Partner Toggle */}
+      <div className="flex items-center justify-between gap-3">
+        {/* Mine/Team Toggle */}
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center bg-slate-100 rounded-lg p-1">
+            <button
+              onClick={() => setHierarchyView('mine')}
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                hierarchyView === 'mine'
+                  ? 'bg-white shadow-sm text-orange-600'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>Mine</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                hierarchyView === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
+              }`}>
+                {myAccountsCount}
+              </span>
+            </button>
+            <button
+              onClick={() => setHierarchyView('team')}
+              disabled={loadingSubordinates}
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                hierarchyView === 'team'
+                  ? 'bg-white shadow-sm text-orange-600'
+                  : 'text-slate-500 hover:text-slate-700'
+              } ${loadingSubordinates ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Team</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                hierarchyView === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
+              }`}>
+                {loadingSubordinates ? '...' : teamAccountsCount}
+              </span>
+            </button>
+          </div>
+
+          {/* Team Member Dropdown */}
+          {hierarchyView === 'team' && (
+            <div className="relative animate-in fade-in slide-in-from-left-2">
+              <select
+                value={selectedMemberId}
+                onChange={(e) => setSelectedMemberId(e.target.value)}
+                className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-2 pr-6 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-28 truncate"
+              >
+                <option value="all">All Team</option>
+                {teamMembers.map(m => (
+                  <option key={m.id} value={m.id}>{formatShortName(m.name)}</option>
+                ))}
+              </select>
+              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                <ChevronDown className="w-3 h-3" />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Partner Toggle Button */}
+        <button
+          onClick={() => setViewMode(viewMode === 'partners' ? 'customers' : 'partners')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            viewMode === 'partners'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          <Handshake className="w-3.5 h-3.5" />
+          <span>{viewMode === 'partners' ? 'Partners' : 'Customers'}</span>
+        </button>
       </div>
 
       {selectionMode ? (
