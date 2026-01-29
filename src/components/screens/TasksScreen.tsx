@@ -347,6 +347,40 @@ export const TasksScreen: React.FC = () => {
     return roots;
   };
 
+  interface FlatTask extends TaskThread {
+    depth: number;
+    isLast: boolean;
+    hasChildren: boolean;
+    parentDepth: number;
+  }
+
+  const flattenTaskTree = (tasks: TaskThread[]): FlatTask[] => {
+    const result: FlatTask[] = [];
+
+    const traverse = (nodes: (TaskThread & { children?: TaskThread[] })[], depth: number, parentDepth: number = -1) => {
+      nodes.forEach((node, idx) => {
+        const isLast = idx === nodes.length - 1;
+        const hasChildren = node.children && node.children.length > 0;
+        const isExpanded = expandedTasks.has(node.id);
+
+        result.push({
+          ...node,
+          depth,
+          isLast,
+          hasChildren: !!hasChildren,
+          parentDepth
+        });
+
+        if (hasChildren && isExpanded) {
+          traverse(node.children!, depth + 1, depth);
+        }
+      });
+    };
+
+    traverse(tasks, 0);
+    return result;
+  };
+
   const toggleExpanded = (taskId: string) => {
     setExpandedTasks(prev => {
       const next = new Set(prev);
@@ -379,27 +413,12 @@ export const TasksScreen: React.FC = () => {
     return name.substring(0, 2).toUpperCase();
   };
 
-  const renderTask = (task: TaskThread & { children?: TaskThread[] }, dealId: string, depth: number = 0, isLast: boolean = false): React.ReactNode => {
-    const isCompleted = task.status === 'Completed';
-    const isMine = task.assignedToId === user?.id;
-    const isExpanded = expandedTasks.has(task.id);
-    const hasChildren = task.children && task.children.length > 0;
-    const isUnassigned = !task.assignedToId;
-
-    const truncateText = (text: string, maxLines: number = 2) => {
-      const words = text.split(' ');
-      const estimatedCharsPerLine = 80;
-      const maxChars = estimatedCharsPerLine * maxLines;
-
-      if (text.length <= maxChars) return text;
-
-      let truncated = text.substring(0, maxChars);
-      const lastSpace = truncated.lastIndexOf(' ');
-      if (lastSpace > 0) {
-        truncated = truncated.substring(0, lastSpace);
-      }
-      return truncated + '...';
-    };
+  const renderTask = (flatTask: FlatTask, dealId: string): React.ReactNode => {
+    const { depth, isLast, hasChildren } = flatTask;
+    const isCompleted = flatTask.status === 'Completed';
+    const isMine = flatTask.assignedToId === user?.id;
+    const isExpanded = expandedTasks.has(flatTask.id);
+    const isUnassigned = !flatTask.assignedToId;
 
     const taskRowStyle = depth > 0 ? {
       '--line-left': `${(depth - 1) * 24 + 16}px`,
@@ -409,7 +428,7 @@ export const TasksScreen: React.FC = () => {
 
     return (
       <div
-        key={task.id}
+        key={flatTask.id}
         className={`task-row ${depth > 0 ? 'task-row-nested' : ''}`}
         style={taskRowStyle}
       >
@@ -429,7 +448,7 @@ export const TasksScreen: React.FC = () => {
         >
           {hasChildren && (
             <button
-              onClick={() => toggleExpanded(task.id)}
+              onClick={() => toggleExpanded(flatTask.id)}
               className="flex-shrink-0 w-4 h-4 mt-0.5 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
             >
               {isExpanded ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
@@ -438,7 +457,7 @@ export const TasksScreen: React.FC = () => {
 
           {isUnassigned ? (
             <button
-              onClick={() => pickupTask(task.id, task.summary)}
+              onClick={() => pickupTask(flatTask.id, flatTask.summary)}
               className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-amber-100 hover:bg-amber-200 rounded-full transition-colors border border-amber-300"
             >
               <Hand className="w-4 h-4 text-amber-700" />
@@ -449,15 +468,15 @@ export const TasksScreen: React.FC = () => {
                 <TooltipTrigger asChild>
                   <div className="flex-shrink-0">
                     <Avatar className="w-8 h-8">
-                      <AvatarImage src={task.assigneeAvatar} />
+                      <AvatarImage src={flatTask.assigneeAvatar} />
                       <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
-                        {task.assigneeName ? getInitials(task.assigneeName) : '?'}
+                        {flatTask.assigneeName ? getInitials(flatTask.assigneeName) : '?'}
                       </AvatarFallback>
                     </Avatar>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="text-xs">{task.assigneeName || 'Unassigned'}</p>
+                  <p className="text-xs">{flatTask.assigneeName || 'Unassigned'}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -476,16 +495,16 @@ export const TasksScreen: React.FC = () => {
                 wordBreak: 'break-word'
               }}
             >
-              {task.summary}
+              {flatTask.summary}
             </p>
           </div>
 
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            {task.dueDate && (
+            {flatTask.dueDate && (
               <div className="flex items-center gap-1 text-xs text-slate-500">
                 <Clock className="w-3.5 h-3.5" />
                 <span className="font-medium">
-                  {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {new Date(flatTask.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
               </div>
             )}
@@ -493,7 +512,7 @@ export const TasksScreen: React.FC = () => {
             <div className="flex items-center gap-2">
               {hasChildren && (
                 <button
-                  onClick={() => addSubtask(task.id, dealId)}
+                  onClick={() => addSubtask(flatTask.id, dealId)}
                   className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-orange-500 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -501,7 +520,7 @@ export const TasksScreen: React.FC = () => {
               )}
 
               <button
-                onClick={() => toggleTask(task.id, task.status)}
+                onClick={() => toggleTask(flatTask.id, flatTask.status)}
                 className="flex-shrink-0"
               >
                 {isCompleted ? (
@@ -513,14 +532,6 @@ export const TasksScreen: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {isExpanded && hasChildren && (
-          <div>
-            {task.children!.map((child, idx) =>
-              renderTask(child, dealId, depth + 1, idx === task.children!.length - 1)
-            )}
-          </div>
-        )}
       </div>
     );
   };
@@ -648,6 +659,7 @@ export const TasksScreen: React.FC = () => {
           {filteredDealGroups.map(group => {
             const stageConfig = getStageConfig(group.deal.stage);
             const taskTree = buildTaskTree(group.tasks);
+            const flatTasks = flattenTaskTree(taskTree);
             const isDealExpanded = expandedDeals.has(group.deal.id);
 
             return (
@@ -683,10 +695,10 @@ export const TasksScreen: React.FC = () => {
 
                 {isDealExpanded && (
                   <div className="px-4 pb-2">
-                    {taskTree.length > 0 && (
+                    {flatTasks.length > 0 && (
                       <div className="space-y-0">
-                        {taskTree.map((task, idx) =>
-                          renderTask(task, group.deal.id, 0, idx === taskTree.length - 1)
+                        {flatTasks.map(flatTask =>
+                          renderTask(flatTask, group.deal.id)
                         )}
                       </div>
                     )}
