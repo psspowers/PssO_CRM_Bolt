@@ -402,33 +402,51 @@ export const TasksScreen: React.FC = () => {
     };
 
     return (
-      <div key={task.id} className="relative isolate">
+      <div key={task.id} style={{ position: 'relative' }}>
         {depth > 0 && (
-          <>
-            <div
-              className="absolute w-px bg-slate-400 pointer-events-none"
-              style={{
-                left: `${(depth - 1) * 24 + 16}px`,
-                top: 0,
-                bottom: isLast ? '50%' : 0,
-                zIndex: 9999
-              }}
+          <svg
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              width: '100%',
+              height: '100%',
+              pointerEvents: 'none',
+              zIndex: 999
+            }}
+          >
+            <line
+              x1={(depth - 1) * 24 + 16}
+              y1={0}
+              x2={(depth - 1) * 24 + 16}
+              y2={isLast ? '50%' : '100%'}
+              stroke="#94a3b8"
+              strokeWidth="1.5"
             />
-            <div
-              className="absolute h-px bg-slate-400 pointer-events-none"
-              style={{
-                left: `${(depth - 1) * 24 + 16}px`,
-                width: '12px',
-                top: '20px',
-                zIndex: 9999
-              }}
+            <line
+              x1={(depth - 1) * 24 + 16}
+              y1={20}
+              x2={(depth - 1) * 24 + 28}
+              y2={20}
+              stroke="#94a3b8"
+              strokeWidth="1.5"
             />
-          </>
+          </svg>
         )}
 
         <div
-          className="flex items-start gap-2.5 py-2 hover:bg-slate-50/50 transition-colors border-b border-slate-100"
-          style={{ paddingLeft: `${depth * 24}px` }}
+          style={{
+            display: 'flex',
+            alignItems: 'start',
+            gap: '0.625rem',
+            paddingTop: '0.5rem',
+            paddingBottom: '0.5rem',
+            paddingLeft: `${depth * 24}px`,
+            borderBottom: '1px solid rgb(241 245 249)',
+            position: 'relative',
+            zIndex: 1
+          }}
+          className="hover:bg-slate-50/50 transition-colors"
         >
           {hasChildren && (
             <button
