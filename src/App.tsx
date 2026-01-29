@@ -23,7 +23,7 @@ import Admin from "./pages/Admin";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
-import { ZaapScreen } from "./components/screens";
+import Zaap from "./pages/Zaap";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 import { Loader2 } from "lucide-react";
@@ -105,7 +105,7 @@ const AppRoutes = () => (
     <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
     <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
     <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-    <Route path="/zaap" element={<ProtectedRoute><ZaapScreen /></ProtectedRoute>} />
+    <Route path="/zaap" element={<ProtectedRoute><Zaap /></ProtectedRoute>} />
     <Route path="/" element={<Index />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
