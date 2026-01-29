@@ -355,15 +355,23 @@ function DealThreadItem({ thread, userId, onComplete, onPickup, buildTaskTree, c
             </div>
           </div>
 
-          <button
+          <div
             onClick={(e) => {
               e.stopPropagation();
               toast.info('AI Suggest', { description: 'Coming soon: AI will suggest task chains' });
             }}
-            className="flex-shrink-0 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-400 hover:text-orange-500 dark:hover:text-orange-400"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.stopPropagation();
+                toast.info('AI Suggest', { description: 'Coming soon: AI will suggest task chains' });
+              }
+            }}
+            className="flex-shrink-0 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-400 hover:text-orange-500 dark:hover:text-orange-400 cursor-pointer"
           >
             <Sparkles className="w-4 h-4" />
-          </button>
+          </div>
         </div>
       </AccordionTrigger>
 
