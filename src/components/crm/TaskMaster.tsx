@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
-import { X, Sparkles, Trophy, Zap, Hand, Clock, Circle, CheckCircle2 } from 'lucide-react';
+import { Trophy, Zap, Hand, Clock, Circle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { SegmentedControl } from '@/components/ui/segmented-control';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { toast } from 'sonner';
 import { isPast, parseISO, format, isToday } from 'date-fns';
 import confetti from 'canvas-confetti';
@@ -187,106 +184,103 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 animate-in slide-in-from-bottom-10 fade-in duration-300">
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-[60] bg-white dark:bg-slate-950 flex flex-col animate-in fade-in duration-200">
 
-        {/* Compact Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-700">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Velocity Command</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {dealGroups.reduce((sum, g) => sum + g.completed_tasks, 0)}/{dealGroups.reduce((sum, g) => sum + g.total_tasks, 0)} complete
-            </p>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between px-4 h-14">
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white">Velocity Command</h1>
+          <button
             onClick={onClose}
-            className="h-8 w-8 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors"
           >
-            <X className="w-4 h-4" />
-          </Button>
+            Done
+          </button>
         </div>
 
-        {/* Segmented Control Ribbon */}
-        <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-          <div className="flex items-center justify-center">
-            <div className="inline-flex gap-1 p-1 bg-slate-200 dark:bg-slate-800 rounded-lg">
-              <button
-                onClick={() => setFilter('all')}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${
-                  filter === 'all'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setFilter('mine')}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${
-                  filter === 'mine'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                Mine
-              </button>
-              <button
-                onClick={() => setFilter('delegated')}
-                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${
-                  filter === 'delegated'
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-              >
-                Delegated
-              </button>
+        {/* Filter Tabs */}
+        <div className="flex items-center border-b border-slate-200 dark:border-slate-800">
+          <button
+            onClick={() => setFilter('all')}
+            className={`flex-1 px-4 py-3 text-sm font-semibold transition-colors relative ${
+              filter === 'all'
+                ? 'text-slate-900 dark:text-white'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            All
+            {filter === 'all' && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 rounded-t-full" />
+            )}
+          </button>
+          <button
+            onClick={() => setFilter('mine')}
+            className={`flex-1 px-4 py-3 text-sm font-semibold transition-colors relative ${
+              filter === 'mine'
+                ? 'text-slate-900 dark:text-white'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            Mine
+            {filter === 'mine' && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 rounded-t-full" />
+            )}
+          </button>
+          <button
+            onClick={() => setFilter('delegated')}
+            className={`flex-1 px-4 py-3 text-sm font-semibold transition-colors relative ${
+              filter === 'delegated'
+                ? 'text-slate-900 dark:text-white'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            Delegated
+            {filter === 'delegated' && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 rounded-t-full" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Thread Stream */}
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-orange-500 border-t-transparent" />
+              <p className="text-slate-500 dark:text-slate-400 text-sm">Loading threads...</p>
             </div>
           </div>
-        </div>
-
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-5 bg-slate-50 dark:bg-slate-900">
-          {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="flex flex-col items-center gap-3">
-                <div className="animate-spin rounded-full h-10 w-10 border-3 border-orange-500 border-t-transparent" />
-                <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Loading deal stream...</p>
+        ) : dealGroups.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle2 className="w-9 h-9 text-green-600 dark:text-green-400" />
               </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">All Clear!</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">No tasks for this view</p>
             </div>
-          ) : dealGroups.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-3">
-                  <CheckCircle2 className="w-9 h-9 text-green-600 dark:text-green-400" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">All Clear!</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">No tasks for this view</p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {dealGroups.map((group) => (
-                <DealCard
-                  key={group.deal.id}
-                  group={group}
-                  userId={user?.id || ''}
-                  onComplete={completeTask}
-                  onPickup={pickupTask}
-                  buildTaskTree={buildTaskTree}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div>
+            {dealGroups.map((group) => (
+              <DealThread
+                key={group.deal.id}
+                group={group}
+                userId={user?.id || ''}
+                onComplete={completeTask}
+                onPickup={pickupTask}
+                buildTaskTree={buildTaskTree}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-interface DealCardProps {
+interface DealThreadProps {
   group: DealGroup;
   userId: string;
   onComplete: (taskId: string, summary: string) => void;
@@ -294,218 +288,246 @@ interface DealCardProps {
   buildTaskTree: (tasks: Task[]) => Task[];
 }
 
-function DealCard({ group, userId, onComplete, onPickup, buildTaskTree }: DealCardProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+function DealThread({ group, userId, onComplete, onPickup, buildTaskTree }: DealThreadProps) {
   const taskTree = buildTaskTree(group.tasks);
-
-  const getStageColor = (stage: string) => {
-    const colors: Record<string, string> = {
-      'Prospecting': 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
-      'Qualification': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
-      'Proposal': 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300',
-      'Negotiation': 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
-      'Closing': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
-      'Won': 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300',
-    };
-    return colors[stage] || 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300';
-  };
+  const flatTasks = group.tasks;
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-      {/* Card Header */}
-      <div
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 flex-1">
-            <h3 className="font-bold text-slate-900 dark:text-white text-sm">{group.deal.name}</h3>
-            <Badge className={`text-[10px] px-2 py-0.5 font-bold ${getStageColor(group.deal.stage)}`}>
+    <div className="border-b border-slate-200 dark:border-slate-800">
+      {/* Deal Header - The "Original Post" */}
+      <div className="flex gap-3 px-4 py-4 hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
+        {/* Left Column - Icon/Avatar */}
+        <div className="flex flex-col items-center pt-1">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center flex-shrink-0">
+            <Trophy className="w-5 h-5 text-white" />
+          </div>
+          {/* Vertical Line */}
+          {flatTasks.length > 0 && (
+            <div className="w-0.5 bg-slate-200 dark:bg-slate-800 flex-1 mt-2" />
+          )}
+        </div>
+
+        {/* Right Column - Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-bold text-slate-900 dark:text-white">{group.deal.name}</span>
+            <span className="text-slate-500 dark:text-slate-400 text-sm">·</span>
+            <span className="text-slate-500 dark:text-slate-400 text-sm">{group.deal.account_name}</span>
+          </div>
+
+          <div className="flex items-center gap-2 mb-2">
+            <Badge className={`text-xs px-2 py-0.5 font-semibold ${getStageColor(group.deal.stage)}`}>
               {group.deal.stage}
             </Badge>
             <span className="text-xs text-slate-500 dark:text-slate-400">
-              {group.deal.account_name}
+              {group.completed_tasks}/{group.total_tasks} complete
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Progress Bar */}
+          <div className="flex items-center gap-2">
             <Progress
               value={group.progress}
-              className="w-24 h-2 bg-slate-200 dark:bg-slate-700"
-              indicatorClassName="bg-gradient-to-r from-green-500 to-emerald-500"
+              className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-800"
+              indicatorClassName="bg-green-500"
             />
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 min-w-[32px] text-right">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
               {group.progress}%
             </span>
           </div>
         </div>
       </div>
 
-      {/* Task List Body */}
-      {isExpanded && (
-        <div className="p-4 space-y-2">
-          {taskTree.length > 0 ? (
-            taskTree.map(task => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                depth={0}
-                userId={userId}
-                onComplete={onComplete}
-                onPickup={onPickup}
-              />
-            ))
-          ) : (
-            <p className="text-center text-slate-400 dark:text-slate-500 text-xs py-6">No tasks in this deal</p>
-          )}
+      {/* Task Replies */}
+      {flatTasks.length > 0 && (
+        <div>
+          {flatTasks.map((task, index) => (
+            <TaskReply
+              key={task.id}
+              task={task}
+              isLast={index === flatTasks.length - 1}
+              userId={userId}
+              onComplete={onComplete}
+              onPickup={onPickup}
+              allTasks={flatTasks}
+            />
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-interface TaskRowProps {
+function getStageColor(stage: string) {
+  const colors: Record<string, string> = {
+    'Prospecting': 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
+    'Qualification': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+    'Proposal': 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300',
+    'Negotiation': 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
+    'Closing': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+    'Won': 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300',
+  };
+  return colors[stage] || 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300';
+}
+
+interface TaskReplyProps {
   task: Task;
-  depth: number;
+  isLast: boolean;
   userId: string;
   onComplete: (taskId: string, summary: string) => void;
   onPickup: (taskId: string, summary: string) => void;
+  allTasks: Task[];
 }
 
-function TaskRow({ task, depth, userId, onComplete, onPickup }: TaskRowProps) {
+function TaskReply({ task, isLast, userId, onComplete, onPickup, allTasks }: TaskReplyProps) {
   const isCompleted = task.status === 'Completed';
   const isMine = task.assignedToId === userId;
   const isUnassigned = !task.assignedToId;
   const isOverdue = task.dueDate && isPast(parseISO(task.dueDate)) && !isCompleted;
 
-  const getBackgroundStyle = () => {
-    if (isCompleted) return 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 opacity-70';
-    if (isUnassigned) return 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800';
-    if (isMine) return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800';
-    return 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700';
-  };
-
-  const getStatusPillStyle = () => {
-    const statusStyles: Record<string, string> = {
-      'Pending': 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700',
-      'In Progress': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50',
-      'Completed': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50',
-      'Cancelled': 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50',
-    };
-    return statusStyles[task.status] || statusStyles['Pending'];
-  };
+  const parentTask = task.parentTaskId ? allTasks.find(t => t.id === task.parentTaskId) : null;
 
   return (
-    <div className="relative">
-      <div className={`${depth > 0 ? 'border-l-2 border-slate-300 dark:border-slate-600 pl-4 ml-4' : ''}`}>
-        <div className={`flex items-start gap-2 p-3 rounded-lg border transition-all ${getBackgroundStyle()}`}>
-          <button
-            onClick={() => !isCompleted && isMine && onComplete(task.id, task.summary)}
-            disabled={isCompleted || !isMine}
-            className={`flex-shrink-0 mt-0.5 ${isMine && !isCompleted ? 'cursor-pointer hover:scale-110' : 'cursor-default'}`}
-          >
-            {!isCompleted ? (
-              <Circle className={`w-4 h-4 ${isMine ? 'text-orange-500' : 'text-slate-300 dark:text-slate-600'}`} />
-            ) : (
-              <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-            )}
-          </button>
-
-          <div className="flex-1 min-w-0">
-            <h4 className={`text-xs font-semibold ${
-              isCompleted
-                ? 'line-through text-slate-400 dark:text-slate-500'
-                : isMine
-                  ? 'text-slate-900 dark:text-white'
-                  : 'text-slate-700 dark:text-slate-300'
-            }`}>
-              {task.summary}
-            </h4>
-
-            {task.details && (
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{task.details}</p>
-            )}
-
-            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-              <button
-                onClick={() => toast.info('Status change', { description: 'Coming soon' })}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold transition-colors ${getStatusPillStyle()}`}
-              >
-                {task.status}
-              </button>
-
-              {isUnassigned && !isCompleted && (
-                <button
-                  onClick={() => onPickup(task.id, task.summary)}
-                  className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:text-amber-200 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-900/50 rounded-md border border-amber-300 dark:border-amber-700 transition-all"
-                >
-                  <Hand className="w-3 h-3" />
-                  Pickup +5⚡
-                </button>
-              )}
-
-              {task.assigneeName && (
-                <div className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md">
-                  <Avatar className="w-3 h-3">
-                    <AvatarImage src={task.assigneeAvatar || undefined} />
-                    <AvatarFallback className="text-[8px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                      {task.assigneeName?.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-[10px] text-slate-700 dark:text-slate-300">{task.assigneeName.split(' ')[0]}</span>
-                </div>
-              )}
-
-              {task.dueDate && (
-                <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
-                  isOverdue
-                    ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-800'
-                    : isToday(parseISO(task.dueDate))
-                      ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-300 dark:border-orange-800'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
-                }`}>
-                  <Clock className="w-2.5 h-2.5" />
-                  {format(parseISO(task.dueDate), 'MMM d')}
-                </div>
-              )}
-
-              {task.priority && task.priority !== 'Low' && (
-                <div className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
-                  task.priority === 'High'
-                    ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                    : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
-                }`}>
-                  {task.priority}
-                </div>
-              )}
-            </div>
+    <div className="flex gap-3 px-4 py-3 hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors border-l-2 border-transparent hover:border-l-slate-200 dark:hover:border-l-slate-800">
+      {/* Left Column - Avatar + Line */}
+      <div className="flex flex-col items-center pt-1">
+        {task.assigneeAvatar || task.assigneeName ? (
+          <Avatar className="w-10 h-10 flex-shrink-0 ring-2 ring-white dark:ring-slate-950">
+            <AvatarImage src={task.assigneeAvatar || undefined} />
+            <AvatarFallback className="text-sm font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+              {task.assigneeName?.charAt(0) || '?'}
+            </AvatarFallback>
+          </Avatar>
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
+            <Circle className="w-5 h-5 text-slate-400 dark:text-slate-600" />
           </div>
+        )}
+
+        {/* Vertical Line */}
+        {!isLast && (
+          <div className="w-0.5 bg-slate-200 dark:bg-slate-800 flex-1 mt-2" />
+        )}
+      </div>
+
+      {/* Right Column - Content */}
+      <div className="flex-1 min-w-0 pt-0.5">
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-1">
+          <span className="font-bold text-slate-900 dark:text-white text-sm">
+            {task.assigneeName || 'Unassigned'}
+          </span>
+          {task.assigneeName && (
+            <>
+              <span className="text-slate-500 dark:text-slate-400 text-sm">·</span>
+              <span className="text-slate-500 dark:text-slate-400 text-sm">
+                {format(parseISO(task.createdAt), 'MMM d')}
+              </span>
+            </>
+          )}
+        </div>
+
+        {/* In Reply To */}
+        {parentTask && (
+          <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+            Replying to <span className="text-blue-500 dark:text-blue-400">@{parentTask.assigneeName || 'parent'}</span>
+          </div>
+        )}
+
+        {/* Task Content */}
+        <div className="mb-2">
+          <p className={`text-sm leading-relaxed ${
+            isCompleted
+              ? 'line-through text-slate-400 dark:text-slate-600'
+              : 'text-slate-900 dark:text-white'
+          }`}>
+            {task.summary}
+          </p>
+          {task.details && (
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              {task.details}
+            </p>
+          )}
+        </div>
+
+        {/* Metadata Row */}
+        <div className="flex items-center gap-2 flex-wrap mb-2">
+          {/* Status */}
+          <div className={`inline-flex items-center gap-1 text-xs ${
+            isCompleted
+              ? 'text-green-600 dark:text-green-400'
+              : task.status === 'In Progress'
+                ? 'text-blue-600 dark:text-blue-400'
+                : 'text-slate-500 dark:text-slate-400'
+          }`}>
+            {isCompleted ? (
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            ) : (
+              <Circle className="w-3.5 h-3.5" />
+            )}
+            <span className="font-medium">{task.status}</span>
+          </div>
+
+          {/* Due Date */}
+          {task.dueDate && (
+            <>
+              <span className="text-slate-300 dark:text-slate-700">·</span>
+              <div className={`inline-flex items-center gap-1 text-xs font-medium ${
+                isOverdue
+                  ? 'text-red-600 dark:text-red-400'
+                  : isToday(parseISO(task.dueDate))
+                    ? 'text-orange-600 dark:text-orange-400'
+                    : 'text-slate-500 dark:text-slate-400'
+              }`}>
+                <Clock className="w-3.5 h-3.5" />
+                {format(parseISO(task.dueDate), 'MMM d, h:mm a')}
+              </div>
+            </>
+          )}
+
+          {/* Priority */}
+          {task.priority && task.priority !== 'Low' && (
+            <>
+              <span className="text-slate-300 dark:text-slate-700">·</span>
+              <span className={`text-xs font-semibold ${
+                task.priority === 'High'
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-yellow-600 dark:text-yellow-400'
+              }`}>
+                {task.priority} Priority
+              </span>
+            </>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 pt-1">
+          {isUnassigned && !isCompleted && (
+            <button
+              onClick={() => onPickup(task.id, task.summary)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-full border border-amber-200 dark:border-amber-800 transition-all"
+            >
+              <Hand className="w-3.5 h-3.5" />
+              Pick up task
+              <span className="flex items-center gap-0.5 ml-0.5 text-amber-700 dark:text-amber-300">
+                +5 <Zap className="w-3 h-3" />
+              </span>
+            </button>
+          )}
 
           {isMine && !isCompleted && (
             <button
               onClick={() => onComplete(task.id, task.summary)}
-              className="px-2 py-1 bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700 text-white text-[10px] font-bold rounded-md transition-colors shadow-sm flex items-center gap-1 flex-shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700 rounded-full transition-all"
             >
-              Done
-              <Zap className="w-3 h-3" />
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Complete task
+              <span className="flex items-center gap-0.5">
+                +10 <Zap className="w-3 h-3" />
+              </span>
             </button>
           )}
         </div>
-
-        {task.children && task.children.length > 0 && (
-          <div className="mt-2 space-y-2">
-            {task.children.map(child => (
-              <TaskRow
-                key={child.id}
-                task={child}
-                depth={depth + 1}
-                userId={userId}
-                onComplete={onComplete}
-                onPickup={onPickup}
-              />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
