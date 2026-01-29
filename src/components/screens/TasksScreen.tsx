@@ -413,7 +413,7 @@ export const TasksScreen: React.FC = () => {
     return (
       <div
         key={flatTask.id}
-        className={`task-row ${depth > 0 ? 'task-row-nested' : ''}`}
+        className={`task-row ${depth > 0 ? 'task-row-nested' : ''} transition-colors hover:bg-slate-50/50`}
         style={taskRowStyle}
       >
         <div
@@ -426,10 +426,9 @@ export const TasksScreen: React.FC = () => {
             paddingLeft: `${depth * 24}px`,
             borderBottom: '1px solid rgb(241 245 249)',
             position: 'relative',
-            backgroundColor: 'inherit',
-            zIndex: 0
+            backgroundColor: 'transparent',
+            zIndex: 2
           }}
-          className="hover:bg-slate-50/50 transition-colors"
         >
           {hasChildren && (
             <button
