@@ -405,26 +405,25 @@ export const TasksScreen: React.FC = () => {
     const isUnassigned = !flatTask.assignedToId;
 
     const taskRowStyle = depth > 0 ? {
-      '--line-left': `${(depth - 1) * 24 + 16}px`,
-      '--line-height': isLast ? '24px' : '100%',
-      '--elbow-width': `${depth * 24 - 2 - ((depth - 1) * 24 + 16)}px`,
+      '--line-left': `${(depth - 1) * 32 + 20}px`,
+      '--line-height': isLast ? '20px' : '100%',
+      '--elbow-width': `${depth * 32 - 4 - ((depth - 1) * 32 + 20)}px`,
     } as React.CSSProperties : {};
 
     return (
       <div
         key={flatTask.id}
-        className={`task-row ${depth > 0 ? 'task-row-nested' : ''} transition-colors hover:bg-slate-50/50`}
+        className={`task-row group ${depth > 0 ? 'task-row-nested' : ''} transition-colors`}
         style={taskRowStyle}
       >
         <div
           style={{
             display: 'flex',
             alignItems: 'start',
-            gap: '0.625rem',
-            paddingTop: '0.5rem',
-            paddingBottom: '0.5rem',
-            paddingLeft: `${depth * 24}px`,
-            borderBottom: '1px solid rgb(241 245 249)',
+            gap: '0.75rem',
+            paddingTop: '0.375rem',
+            paddingBottom: '0.375rem',
+            paddingLeft: `${depth * 32}px`,
             position: 'relative',
             backgroundColor: 'transparent',
             zIndex: 2
@@ -433,16 +432,36 @@ export const TasksScreen: React.FC = () => {
           {hasChildren && (
             <button
               onClick={() => toggleExpanded(flatTask.id)}
-              className="flex-shrink-0 w-4 h-4 mt-0.5 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
+              className="task-toggle flex-shrink-0 w-4 h-4 mt-0.5 flex items-center justify-center text-slate-300 hover:text-orange-500 hover:bg-orange-50 rounded transition-colors border border-slate-200 bg-white"
+              style={{
+                position: 'absolute',
+                left: `${(depth - 1) * 32 + 12}px`,
+                top: '14px',
+                zIndex: 10
+              }}
             >
-              {isExpanded ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+              {isExpanded ? <Minus className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
             </button>
+          )}
+
+          {depth > 0 && hasChildren && (
+            <div
+              onClick={() => toggleExpanded(flatTask.id)}
+              className="absolute cursor-pointer"
+              style={{
+                left: `${(depth - 1) * 32 + 20}px`,
+                top: 0,
+                width: '2px',
+                height: '100%',
+                zIndex: 1
+              }}
+            />
           )}
 
           {isUnassigned ? (
             <button
               onClick={() => pickupTask(flatTask.id, flatTask.summary)}
-              className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-amber-100 hover:bg-amber-200 rounded-full transition-colors border border-amber-300"
+              className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-amber-100 hover:bg-amber-200 rounded-full transition-colors border border-amber-300 ring-4 ring-white"
             >
               <Hand className="w-4 h-4 text-amber-700" />
             </button>
@@ -451,7 +470,7 @@ export const TasksScreen: React.FC = () => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex-shrink-0">
-                    <Avatar className="w-8 h-8">
+                    <Avatar className="w-8 h-8 ring-4 ring-white">
                       <AvatarImage src={flatTask.assigneeAvatar} />
                       <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
                         {flatTask.assigneeName ? getInitials(flatTask.assigneeName) : '?'}
@@ -468,7 +487,7 @@ export const TasksScreen: React.FC = () => {
 
           <div className="flex-1 min-w-0 pr-2">
             <p
-              className={`text-[15px] leading-snug ${
+              className={`text-[14px] leading-relaxed ${
                 isCompleted ? 'line-through text-slate-400' : 'text-slate-900'
               } ${isMine && !isCompleted ? 'font-medium' : ''}`}
               style={{
@@ -483,17 +502,17 @@ export const TasksScreen: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+          <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
             {flatTask.dueDate && (
-              <div className="flex items-center gap-1 text-xs text-slate-500">
-                <Clock className="w-3.5 h-3.5" />
-                <span className="font-medium">
+              <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                <Clock className="w-3 h-3" />
+                <span>
                   {new Date(flatTask.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
               </div>
             )}
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
               {hasChildren && (
                 <button
                   onClick={() => addSubtask(flatTask.id, dealId)}

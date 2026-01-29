@@ -156,9 +156,9 @@
     position: absolute;
     left: var(--line-left);
     top: 0;
-    width: 2px;
+    width: 1.5px;
     height: var(--line-height);
-    background-color: #cbd5e1;
+    background-color: #e2e8f0;
     pointer-events: none;
     z-index: 1;
   }
@@ -167,12 +167,16 @@
     content: '';
     position: absolute;
     left: var(--line-left);
-    top: 24px;
+    top: 20px;
     width: var(--elbow-width);
-    height: 2px;
-    background-color: #cbd5e1;
+    height: 1.5px;
+    background-color: #e2e8f0;
     pointer-events: none;
     z-index: 1;
+  }
+
+  .task-toggle {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
 }
 
