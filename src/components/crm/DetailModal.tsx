@@ -177,7 +177,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
             )}
           </TooltipProvider>
         </div>
-        <div className="flex-1 overflow-auto pb-32 isolate">
+        <div className="flex-1 overflow-auto pb-32">
           {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className="p-4">{children}</div>

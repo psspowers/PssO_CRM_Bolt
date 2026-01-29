@@ -412,23 +412,25 @@ export const TasksScreen: React.FC = () => {
               width: '100%',
               height: '100%',
               pointerEvents: 'none',
-              zIndex: 999
+              zIndex: 0
             }}
           >
+            {/* Vertical line connecting parent to children */}
             <line
               x1={(depth - 1) * 24 + 16}
               y1={0}
               x2={(depth - 1) * 24 + 16}
-              y2={isLast ? '50%' : '100%'}
-              stroke="#94a3b8"
+              y2={isLast ? 24 : '100%'}
+              stroke="#cbd5e1"
               strokeWidth="1.5"
             />
+            {/* Horizontal elbow line pointing to avatar center */}
             <line
               x1={(depth - 1) * 24 + 16}
-              y1={20}
-              x2={(depth - 1) * 24 + 28}
-              y2={20}
-              stroke="#94a3b8"
+              y1={24}
+              x2={depth * 24 - 2}
+              y2={24}
+              stroke="#cbd5e1"
               strokeWidth="1.5"
             />
           </svg>
@@ -444,7 +446,7 @@ export const TasksScreen: React.FC = () => {
             paddingLeft: `${depth * 24}px`,
             borderBottom: '1px solid rgb(241 245 249)',
             position: 'relative',
-            zIndex: 1
+            zIndex: 10
           }}
           className="hover:bg-slate-50/50 transition-colors"
         >
