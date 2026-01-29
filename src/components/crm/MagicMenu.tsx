@@ -11,27 +11,33 @@ interface MagicMenuProps {
 export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigate }) => {
   const [showTaskMaster, setShowTaskMaster] = useState(false);
 
-  if (!isOpen) return null;
+  const handleOpenTaskMaster = () => {
+    setShowTaskMaster(true);
+    onClose();
+  };
+
+  if (!isOpen && !showTaskMaster) return null;
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex flex-col justify-end pb-24 pointer-events-none">
-        <div
-          className="absolute inset-0 bg-black/20 backdrop-blur-sm pointer-events-auto transition-opacity duration-300"
-          onClick={onClose}
-        />
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end pb-24 pointer-events-none">
+          <div
+            className="absolute inset-0 bg-black/20 backdrop-blur-sm pointer-events-auto transition-opacity duration-300"
+            onClick={onClose}
+          />
 
-        <div className="relative z-10 flex justify-center mb-3 pointer-events-none">
-          <div className="relative w-48 h-32 pointer-events-auto">
+          <div className="relative z-10 flex justify-center mb-3 pointer-events-none">
+            <div className="relative w-48 h-32 pointer-events-auto">
 
-            {/* Task Master Button - Center Top */}
-            <button
-              onClick={() => { setShowTaskMaster(true); onClose(); }}
-              className="absolute left-1/2 top-0 -translate-x-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white shadow-xl shadow-orange-500/50 flex items-center justify-center transition-all hover:scale-110 hover:shadow-2xl hover:shadow-orange-500/70 animate-in zoom-in duration-300"
-              aria-label="Task Master"
-            >
-              <ListChecks className="w-7 h-7 text-white" />
-            </button>
+              {/* Task Master Button - Center Top */}
+              <button
+                onClick={handleOpenTaskMaster}
+                className="absolute left-1/2 top-0 -translate-x-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white shadow-xl shadow-orange-500/50 flex items-center justify-center transition-all hover:scale-110 hover:shadow-2xl hover:shadow-orange-500/70 animate-in zoom-in duration-300"
+                aria-label="Task Master"
+              >
+                <ListChecks className="w-7 h-7 text-white" />
+              </button>
 
             {/* Add Account Button - Left Arc Position */}
             <button
@@ -51,9 +57,10 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
               <UserPlus className="w-6 h-6 text-white" />
             </button>
 
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Task Master Modal */}
       {showTaskMaster && <TaskMaster onClose={() => setShowTaskMaster(false)} />}

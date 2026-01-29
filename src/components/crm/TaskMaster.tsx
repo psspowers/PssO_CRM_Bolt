@@ -64,7 +64,9 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
       });
 
       if (error) throw error;
-      setDealGroups(data || []);
+
+      const dealGroups = Array.isArray(data) ? data : (data ? [data] : []);
+      setDealGroups(dealGroups);
     } catch (error) {
       console.error('Error fetching deal threads:', error);
       toast.error('Failed to load task stream');
@@ -184,7 +186,7 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
 
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-white">
