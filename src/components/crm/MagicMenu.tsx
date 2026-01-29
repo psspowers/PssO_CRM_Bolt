@@ -17,8 +17,8 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
         onClick={onClose}
       />
 
-      <div className="relative z-10 flex justify-center mb-4 pointer-events-none">
-        <div className="relative w-64 h-48 pointer-events-auto">
+      <div className="relative z-10 flex justify-center mb-3 pointer-events-none">
+        <div className="relative w-48 h-32 pointer-events-auto">
 
           {/* Task Master Button - Center Top */}
           <button
@@ -32,7 +32,7 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
           {/* Add Account Button - Left Arc Position */}
           <button
             onClick={() => { onNavigate('accounts'); onClose(); }}
-            className="absolute left-4 bottom-8 w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-blue-500/50 animate-in zoom-in duration-300 delay-75"
+            className="absolute left-2 bottom-2 w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-blue-500/50 animate-in zoom-in duration-300 delay-75"
             aria-label="Add Account"
           >
             <Building2 className="w-6 h-6 text-white" />
@@ -41,7 +41,7 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
           {/* Add Contact Button - Right Arc Position */}
           <button
             onClick={() => { onNavigate('contacts'); onClose(); }}
-            className="absolute right-4 bottom-8 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-emerald-500/60 animate-in zoom-in duration-300 delay-100"
+            className="absolute right-2 bottom-2 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-emerald-500/60 animate-in zoom-in duration-300 delay-100"
             aria-label="Add Contact"
           >
             <UserPlus className="w-6 h-6 text-white" />
