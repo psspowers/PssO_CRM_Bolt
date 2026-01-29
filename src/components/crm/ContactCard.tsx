@@ -28,6 +28,8 @@ export const ContactCard: React.FC<ContactCardProps> = ({ contact, organizationN
   const totalValue = contact.orgTotalValue ?? 0;
   const teamSize = contact.orgTeamSize ?? 0;
 
+  const hasActivity = dealCount > 0 || totalMW > 0 || totalValue > 0;
+
   return (
     <div className="relative">
       {showCheckbox && (
@@ -90,30 +92,32 @@ export const ContactCard: React.FC<ContactCardProps> = ({ contact, organizationN
           </div>
         </div>
 
-        <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-4 gap-1.5">
-          <div className="flex flex-col items-center justify-center p-1.5 bg-slate-50 rounded-lg">
-            <FileText className="w-3.5 h-3.5 text-slate-500 mb-0.5" />
-            <span className="text-xs font-bold text-slate-900">{dealCount}</span>
-            <span className="text-[9px] text-slate-500">Deals</span>
+        {hasActivity && (
+          <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-4 gap-1.5">
+            <div className="flex flex-col items-center justify-center p-1.5 bg-slate-50 rounded-lg">
+              <FileText className="w-3.5 h-3.5 text-slate-500 mb-0.5" />
+              <span className="text-xs font-bold text-slate-900">{dealCount}</span>
+              <span className="text-[9px] text-slate-500">Deals</span>
+            </div>
+            <div className="flex flex-col items-center justify-center p-1.5 bg-amber-50 rounded-lg">
+              <Zap className="w-3.5 h-3.5 text-amber-500 mb-0.5" />
+              <span className="text-xs font-bold text-slate-900">
+                {totalMW >= 1 ? `${totalMW.toFixed(1)}` : totalMW > 0 ? `${(totalMW * 1000).toFixed(0)}k` : '0'}
+              </span>
+              <span className="text-[9px] text-slate-500">MW</span>
+            </div>
+            <div className="flex flex-col items-center justify-center p-1.5 bg-emerald-50 rounded-lg">
+              <DollarSign className="w-3.5 h-3.5 text-emerald-500 mb-0.5" />
+              <span className="text-xs font-bold text-slate-900">{formatValue(totalValue)}</span>
+              <span className="text-[9px] text-slate-500">Value</span>
+            </div>
+            <div className="flex flex-col items-center justify-center p-1.5 bg-blue-50 rounded-lg">
+              <Users className="w-3.5 h-3.5 text-blue-500 mb-0.5" />
+              <span className="text-xs font-bold text-slate-900">{teamSize}</span>
+              <span className="text-[9px] text-slate-500">Team</span>
+            </div>
           </div>
-          <div className="flex flex-col items-center justify-center p-1.5 bg-amber-50 rounded-lg">
-            <Zap className="w-3.5 h-3.5 text-amber-500 mb-0.5" />
-            <span className="text-xs font-bold text-slate-900">
-              {totalMW >= 1 ? `${totalMW.toFixed(1)}` : totalMW > 0 ? `${(totalMW * 1000).toFixed(0)}k` : '0'}
-            </span>
-            <span className="text-[9px] text-slate-500">MW</span>
-          </div>
-          <div className="flex flex-col items-center justify-center p-1.5 bg-emerald-50 rounded-lg">
-            <DollarSign className="w-3.5 h-3.5 text-emerald-500 mb-0.5" />
-            <span className="text-xs font-bold text-slate-900">{formatValue(totalValue)}</span>
-            <span className="text-[9px] text-slate-500">Value</span>
-          </div>
-          <div className="flex flex-col items-center justify-center p-1.5 bg-blue-50 rounded-lg">
-            <Users className="w-3.5 h-3.5 text-blue-500 mb-0.5" />
-            <span className="text-xs font-bold text-slate-900">{teamSize}</span>
-            <span className="text-[9px] text-slate-500">Team</span>
-          </div>
-        </div>
+        )}
       </button>
     </div>
   );
