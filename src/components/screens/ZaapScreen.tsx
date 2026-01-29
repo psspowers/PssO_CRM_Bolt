@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { toast } from 'sonner';
 import { isPast, parseISO, format, isToday, addDays, startOfWeek, addWeeks } from 'date-fns';
 import confetti from 'canvas-confetti';
+import { StatusCurrencyCard } from '@/components/crm/StatusCurrencyCard';
 
 type ViewMode = 'mine' | 'team';
 
@@ -387,6 +388,9 @@ export function ZaapScreen() {
           )}
         </div>
       </div>
+
+      {/* Status Currency Card */}
+      <StatusCurrencyCard />
 
       {/* Deal Threads List */}
       {loading ? (
