@@ -1,41 +1,42 @@
 import { useState, useEffect } from 'react';
-import { X, CheckCircle2, Circle, Clock, AlertCircle, User, Calendar } from 'lucide-react';
+import { X, CheckCircle2, Circle, Zap, Target, Hand, User, Calendar, Clock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
+import confetti from 'canvas-confetti';
 
-type ViewMode = 'my' | 'delegated' | 'all';
-type TaskStatus = 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
+type ViewMode = 'all' | 'mine' | 'delegated';
 
 interface Task {
   id: string;
   summary: string;
-  task_status: TaskStatus;
-  due_date: string | null;
-  assigned_to_id: string;
-  assigned_to_name: string | null;
-  assigned_to_avatar: string | null;
-  parent_task_id: string | null;
-  thread_depth: number;
-  created_at: string;
+  details?: string;
+  status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
+  priority?: 'Low' | 'Medium' | 'High';
+  dueDate?: string;
+  assignedToId?: string;
+  assigneeName?: string;
+  assigneeAvatar?: string;
+  parentTaskId?: string;
+  depth: number;
+  createdAt: string;
 }
 
-interface DealThread {
-  id: string;
-  name: string;
-  stage: string;
-  value: number | null;
-  probability: number | null;
+interface DealGroup {
+  deal: {
+    id: string;
+    name: string;
+    stage: string;
+    value: number;
+    account_name: string;
+  };
+  progress: number;
+  total_tasks: number;
+  completed_tasks: number;
   tasks: Task[];
 }
 
@@ -45,8 +46,8 @@ interface TaskMasterProps {
 
 export function TaskMaster({ onClose }: TaskMasterProps) {
   const { user } = useAuth();
-  const [viewMode, setViewMode] = useState<ViewMode>('my');
-  const [threads, setThreads] = useState<DealThread[]>([]);
+  const [viewMode, setViewMode] = useState<ViewMode>('all');
+  const [dealGroups, setDealGroups] = useState<DealGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchThreads = async () => {
@@ -54,15 +55,16 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase.rpc('get_deal_threads_view', {
-        p_view_mode: viewMode,
+      const { data, error } = await supabase.rpc('get_task_threads', {
+        p_user_id: user.id,
+        p_filter: viewMode,
       });
 
       if (error) throw error;
 
-      setThreads(data || []);
+      setDealGroups(data || []);
     } catch (error) {
-      console.error('Error fetching deal threads:', error);
+      console.error('Error fetching task threads:', error);
       toast.error('Failed to load tasks');
     } finally {
       setLoading(false);
@@ -73,46 +75,93 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
     fetchThreads();
   }, [viewMode, user]);
 
-  const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
+  const toggleTaskComplete = async (taskId: string, currentStatus: string, taskSummary: string) => {
+    const newStatus = currentStatus === 'Completed' ? 'Pending' : 'Completed';
+
     try {
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('activities')
         .update({ task_status: newStatus })
         .eq('id', taskId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      toast.success('Task updated');
+      if (newStatus === 'Completed' && user?.id) {
+        const { error: wattsError } = await supabase
+          .from('watts_ledger')
+          .insert({
+            user_id: user.id,
+            amount: 10,
+            type: 'complete_task',
+            description: `Completed task: ${taskSummary}`,
+            related_entity_id: taskId,
+            related_entity_type: 'Activity'
+          });
+
+        if (wattsError) console.error('Watts error:', wattsError);
+
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.6 },
+          colors: ['#f97316', '#fb923c', '#fdba74']
+        });
+
+        toast.success('+10 Watts Earned!', {
+          description: 'Great work completing that task',
+          duration: 3000
+        });
+      } else {
+        toast.success('Task reopened');
+      }
+
       fetchThreads();
     } catch (error) {
-      console.error('Error updating task:', error);
+      console.error('Error toggling task:', error);
       toast.error('Failed to update task');
     }
   };
 
-  const getStatusIcon = (status: TaskStatus) => {
-    switch (status) {
-      case 'Completed':
-        return <CheckCircle2 className="w-4 h-4 text-green-600" />;
-      case 'In Progress':
-        return <Clock className="w-4 h-4 text-blue-600" />;
-      case 'Cancelled':
-        return <AlertCircle className="w-4 h-4 text-gray-400" />;
-      default:
-        return <Circle className="w-4 h-4 text-gray-400" />;
-    }
-  };
+  const pickupTask = async (taskId: string, taskSummary: string) => {
+    if (!user?.id) return;
 
-  const getStatusColor = (status: TaskStatus) => {
-    switch (status) {
-      case 'Completed':
-        return 'bg-green-100 text-green-800 hover:bg-green-200';
-      case 'In Progress':
-        return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
-      case 'Cancelled':
-        return 'bg-gray-100 text-gray-600 hover:bg-gray-200';
-      default:
-        return 'bg-orange-100 text-orange-800 hover:bg-orange-200';
+    try {
+      const { error: updateError } = await supabase
+        .from('activities')
+        .update({ assigned_to_id: user.id })
+        .eq('id', taskId);
+
+      if (updateError) throw updateError;
+
+      const { error: wattsError } = await supabase
+        .from('watts_ledger')
+        .insert({
+          user_id: user.id,
+          amount: 5,
+          type: 'pickup_task',
+          description: `Picked up task: ${taskSummary}`,
+          related_entity_id: taskId,
+          related_entity_type: 'Activity'
+        });
+
+      if (wattsError) console.error('Watts error:', wattsError);
+
+      confetti({
+        particleCount: 30,
+        spread: 50,
+        origin: { y: 0.6 },
+        colors: ['#f59e0b', '#fbbf24', '#fde047']
+      });
+
+      toast.success('+5 Watts Earned!', {
+        description: 'Thanks for taking the initiative',
+        duration: 3000
+      });
+
+      fetchThreads();
+    } catch (error) {
+      console.error('Error picking up task:', error);
+      toast.error('Failed to pickup task');
     }
   };
 
@@ -124,7 +173,7 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
       if (isToday(date)) return 'Today';
       if (isTomorrow(date)) return 'Tomorrow';
       if (isPast(date)) return `Overdue (${format(date, 'MMM d')})`;
-      return format(date, 'MMM d, yyyy');
+      return format(date, 'MMM d');
     } catch {
       return null;
     }
@@ -135,8 +184,8 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
 
     try {
       const date = parseISO(dateStr);
-      if (isPast(date) && !isToday(date)) return 'text-red-600 font-semibold';
-      if (isToday(date)) return 'text-orange-600 font-semibold';
+      if (isPast(date) && !isToday(date)) return 'text-red-600';
+      if (isToday(date)) return 'text-orange-600';
       if (isTomorrow(date)) return 'text-blue-600';
       return 'text-gray-600';
     } catch {
@@ -144,28 +193,149 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
     }
   };
 
-  const cycleTaskStatus = (currentStatus: TaskStatus): TaskStatus => {
-    const cycle: TaskStatus[] = ['Pending', 'In Progress', 'Completed', 'Pending'];
-    const currentIndex = cycle.indexOf(currentStatus);
-    return cycle[currentIndex + 1];
+  const isMyTask = (task: Task) => task.assignedToId === user?.id;
+  const isUnassigned = (task: Task) => !task.assignedToId;
+
+  const buildTaskTree = (tasks: Task[]): Task[] => {
+    const taskMap = new Map<string, Task & { children: Task[] }>();
+    const roots: (Task & { children: Task[] })[] = [];
+
+    tasks.forEach(task => {
+      taskMap.set(task.id, { ...task, children: [] });
+    });
+
+    tasks.forEach(task => {
+      const node = taskMap.get(task.id)!;
+      if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
+        taskMap.get(task.parentTaskId)!.children.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+
+    return roots;
   };
 
-  const totalTasks = threads.reduce((sum, deal) => sum + (deal.tasks?.length || 0), 0);
+  const renderTask = (task: Task & { children?: Task[] }, depth: number = 0) => {
+    const isCompleted = task.status === 'Completed';
+    const isMine = isMyTask(task);
+    const needsPickup = isUnassigned(task);
+    const isOverdue = task.dueDate && isPast(parseISO(task.dueDate)) && !isCompleted;
+
+    return (
+      <div key={task.id} className="space-y-2">
+        <div
+          className={`
+            relative flex items-start gap-3 p-3 rounded-lg border-l-4 transition-all
+            ${needsPickup ? 'bg-amber-50 border-amber-400' : 'bg-white border-gray-200'}
+            ${isMine && !isCompleted ? 'ring-2 ring-blue-200' : ''}
+            ${isCompleted ? 'opacity-60' : ''}
+            hover:shadow-md
+          `}
+          style={{ marginLeft: `${depth * 24}px` }}
+        >
+          <button
+            onClick={() => toggleTaskComplete(task.id, task.status, task.summary)}
+            className="mt-0.5 flex-shrink-0 transition-transform active:scale-95"
+          >
+            {isCompleted ? (
+              <CheckCircle2 className="w-5 h-5 text-green-500" />
+            ) : (
+              <Circle className="w-5 h-5 text-gray-300 hover:text-orange-500" />
+            )}
+          </button>
+
+          <div className="flex-1 min-w-0">
+            <h4 className={`text-sm ${isMine && !isCompleted ? 'font-bold text-gray-900' : 'font-medium text-gray-700'} ${isCompleted ? 'line-through' : ''}`}>
+              {task.summary}
+            </h4>
+
+            {task.details && (
+              <p className="text-xs text-gray-500 mt-1">{task.details}</p>
+            )}
+
+            <div className="flex items-center gap-3 mt-2 flex-wrap">
+              {needsPickup && !isCompleted && (
+                <button
+                  onClick={() => pickupTask(task.id, task.summary)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 rounded-md border border-amber-300 transition-colors"
+                >
+                  <Hand className="w-3 h-3" />
+                  Pickup
+                  <Zap className="w-3 h-3 text-amber-500" />
+                  +5
+                </button>
+              )}
+
+              {task.assigneeName && (
+                <div className="flex items-center gap-1.5">
+                  <Avatar className="w-5 h-5">
+                    <AvatarImage src={task.assigneeAvatar || undefined} />
+                    <AvatarFallback className="text-[10px] bg-blue-100 text-blue-700">
+                      {task.assigneeName?.charAt(0) || <User className="w-3 h-3" />}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs text-gray-600">{task.assigneeName}</span>
+                </div>
+              )}
+
+              {task.dueDate && (
+                <div className={`flex items-center gap-1 text-xs font-medium ${getDueDateColor(task.dueDate)}`}>
+                  <Clock className="w-3 h-3" />
+                  {formatDueDate(task.dueDate)}
+                  {isOverdue && <span className="text-red-600 font-bold">!</span>}
+                </div>
+              )}
+
+              {task.priority && (
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                  task.priority === 'High' ? 'bg-red-100 text-red-700' :
+                  task.priority === 'Medium' ? 'bg-orange-100 text-orange-700' :
+                  'bg-blue-100 text-blue-700'
+                }`}>
+                  {task.priority}
+                </span>
+              )}
+
+              {depth > 0 && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold">
+                  L{depth + 1}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {isMine && !isCompleted && (
+            <div className="px-2 py-1 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full self-start">
+              MINE
+            </div>
+          )}
+        </div>
+
+        {task.children && task.children.length > 0 && (
+          <div className="space-y-2">
+            {task.children.map(child => renderTask(child, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const totalTasks = dealGroups.reduce((sum, group) => sum + group.total_tasks, 0);
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col animate-in zoom-in-95 duration-200">
 
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-800">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
-              <CheckCircle2 className="w-6 h-6 text-white" />
+              <Zap className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Task Master</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {totalTasks} {totalTasks === 1 ? 'task' : 'tasks'} across {threads.length} {threads.length === 1 ? 'deal' : 'deals'}
+              <h2 className="text-2xl font-bold text-gray-900">Velocity Command</h2>
+              <p className="text-sm text-gray-500">
+                {totalTasks} {totalTasks === 1 ? 'task' : 'tasks'} across {dealGroups.length} {dealGroups.length === 1 ? 'deal' : 'deals'}
               </p>
             </div>
           </div>
@@ -174,142 +344,103 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="rounded-full hover:bg-gray-100"
           >
             <X className="w-5 h-5" />
           </Button>
         </div>
 
-        {/* View Mode Toggle */}
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-          <div className="flex gap-2">
-            <Button
-              variant={viewMode === 'my' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('my')}
-              className="rounded-full"
-            >
-              My Tasks
-            </Button>
-            <Button
-              variant={viewMode === 'delegated' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('delegated')}
-              className="rounded-full"
-            >
-              Delegated
-            </Button>
-            <Button
-              variant={viewMode === 'all' ? 'default' : 'outline'}
-              size="sm"
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <div className="flex gap-2 p-1 bg-white rounded-lg shadow-sm border border-gray-200">
+            <button
               onClick={() => setViewMode('all')}
-              className="rounded-full"
+              className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${
+                viewMode === 'all' ? 'bg-orange-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'
+              }`}
             >
               All Tasks
-            </Button>
+            </button>
+            <button
+              onClick={() => setViewMode('mine')}
+              className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${
+                viewMode === 'mine' ? 'bg-blue-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Mine
+            </button>
+            <button
+              onClick={() => setViewMode('delegated')}
+              className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all ${
+                viewMode === 'delegated' ? 'bg-emerald-500 text-white shadow-md' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              Delegated
+            </button>
           </div>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="flex flex-col items-center gap-3">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent" />
-                <p className="text-gray-500 dark:text-gray-400">Loading tasks...</p>
+                <p className="text-gray-500">Loading velocity stream...</p>
               </div>
             </div>
-          ) : threads.length === 0 ? (
+          ) : dealGroups.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  All Clear!
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  No tasks found for this view.
-                </p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">All Clear!</h3>
+                <p className="text-gray-500">No tasks found for this view.</p>
               </div>
             </div>
           ) : (
-            <Accordion type="multiple" className="space-y-3">
-              {threads.map((deal) => (
-                <AccordionItem
-                  key={deal.id}
-                  value={deal.id}
-                  className="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-800/50"
-                >
-                  <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-gray-100 dark:hover:bg-gray-800">
-                    <div className="flex items-center justify-between w-full pr-4">
-                      <div className="flex items-center gap-3">
-                        <span className="font-semibold text-gray-900 dark:text-white">
-                          {deal.name}
-                        </span>
-                        <Badge variant="secondary" className="rounded-full">
-                          {deal.tasks?.length || 0}
-                        </Badge>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className="text-xs font-medium"
-                      >
-                        {deal.stage}
-                      </Badge>
-                    </div>
-                  </AccordionTrigger>
+            <div className="space-y-6">
+              {dealGroups.map((group) => {
+                const taskTree = buildTaskTree(group.tasks);
 
-                  <AccordionContent className="px-4 pb-3">
-                    <div className="space-y-2 mt-2">
-                      {deal.tasks?.map((task) => (
-                        <div
-                          key={task.id}
-                          className="flex items-center gap-3 p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
-                          style={{ marginLeft: `${(task.thread_depth - 1) * 20}px` }}
-                        >
-                          {/* Status Pill (Clickable) */}
-                          <button
-                            onClick={() => updateTaskStatus(task.id, cycleTaskStatus(task.task_status))}
-                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${getStatusColor(
-                              task.task_status
-                            )}`}
-                          >
-                            {getStatusIcon(task.task_status)}
-                            <span className="hidden sm:inline">{task.task_status}</span>
-                          </button>
-
-                          {/* Task Summary */}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                              {task.summary}
+                return (
+                  <div
+                    key={group.deal.id}
+                    className="bg-gradient-to-br from-white to-gray-50 border-2 border-gray-200 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+                  >
+                    <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          <Target className="w-5 h-5 text-white" />
+                          <div className="flex-1">
+                            <h3 className="font-bold text-white text-lg">{group.deal.name}</h3>
+                            <p className="text-orange-100 text-xs">
+                              {group.deal.account_name} • {group.deal.stage}
                             </p>
                           </div>
-
-                          {/* Assignee Avatar */}
-                          {task.assigned_to_name && (
-                            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-                              <Avatar className="w-6 h-6">
-                                <AvatarImage src={task.assigned_to_avatar || undefined} />
-                                <AvatarFallback className="text-xs">
-                                  {task.assigned_to_name?.charAt(0) || <User className="w-3 h-3" />}
-                                </AvatarFallback>
-                              </Avatar>
-                            </div>
-                          )}
-
-                          {/* Due Date */}
-                          {task.due_date && (
-                            <div className={`flex items-center gap-1.5 text-xs ${getDueDateColor(task.due_date)}`}>
-                              <Calendar className="w-3.5 h-3.5" />
-                              <span className="hidden sm:inline">{formatDueDate(task.due_date)}</span>
-                            </div>
-                          )}
                         </div>
-                      ))}
+                        <div className="text-right">
+                          <div className="text-xs font-medium text-orange-100">
+                            {group.completed_tasks}/{group.total_tasks} Complete
+                          </div>
+                          <div className="w-32 mt-1 bg-orange-400/30 rounded-full h-2">
+                            <div
+                              className="h-full bg-white rounded-full transition-all duration-500"
+                              style={{ width: `${group.progress}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+
+                    <div className="p-4 space-y-3">
+                      {taskTree.length > 0 ? (
+                        taskTree.map(task => renderTask(task))
+                      ) : (
+                        <p className="text-center text-gray-500 text-sm py-4">No tasks in this deal</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>
