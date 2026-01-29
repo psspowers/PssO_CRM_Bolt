@@ -24,6 +24,7 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Zaap from "./pages/Zaap";
+import { ZaapScreenTwo } from "@/components/screens/ZaapScreenTwo";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { SplashScreen } from "@/components/ui/SplashScreen";
 import { Loader2 } from "lucide-react";
@@ -106,6 +107,7 @@ const AppRoutes = () => (
     <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
     <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
     <Route path="/zaap" element={<ProtectedRoute><Zaap /></ProtectedRoute>} />
+    <Route path="/zaap2" element={<ProtectedRoute><div className="p-6"><ZaapScreenTwo /></div></ProtectedRoute>} />
     <Route path="/" element={<Index />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
