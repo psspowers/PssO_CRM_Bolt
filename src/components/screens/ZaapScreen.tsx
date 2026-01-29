@@ -417,7 +417,7 @@ export function ZaapScreen() {
           </div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
+        <div className="bg-white dark:bg-slate-900">
           {filteredThreads.map((thread) => (
             <DealThreadItem
               key={thread.id}
@@ -478,11 +478,11 @@ function DealThreadItem({
   const stageAvatar = getStageAvatar(thread.stage);
 
   return (
-    <div>
+    <div className="w-full border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
       {/* Lean Deal Header */}
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors"
+        className="relative w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors"
       >
         {/* Compact Stage Avatar */}
         <div className={`w-7 h-7 rounded-full ${stageAvatar.color} flex items-center justify-center flex-shrink-0 text-xs font-bold`}>
@@ -497,22 +497,12 @@ function DealThreadItem({
                 e.stopPropagation();
                 navigate(`/?view=opportunities&id=${thread.id}`);
               }}
-              className="text-sm font-semibold text-slate-900 dark:text-white truncate hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+              className="text-sm font-bold text-slate-900 dark:text-white truncate hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
             >
               {thread.name}
             </h3>
             <span className="text-[10px] h-4 px-1.5 flex items-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold rounded whitespace-nowrap">
               {thread.mw} MW
-            </span>
-          </div>
-          <div className="flex items-center gap-2 mt-1">
-            <Progress
-              value={progress}
-              className="h-0.5 bg-slate-100 dark:bg-slate-800 flex-1"
-              indicatorClassName="bg-orange-500"
-            />
-            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
-              {progress}%
             </span>
           </div>
         </div>
@@ -523,11 +513,19 @@ function DealThreadItem({
         ) : (
           <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
         )}
+
+        {/* Progress Bar - Thin line at very bottom, overlapping border */}
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-100 dark:bg-slate-800">
+          <div
+            className="h-full bg-orange-500 transition-all"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
       </button>
 
       {/* Task List */}
       {isExpanded && (
-        <div className="border-t border-slate-100 dark:border-slate-800">
+        <div>
           {taskTree.length > 0 ? (
             <>
               {taskTree.map(task => (
@@ -627,21 +625,21 @@ function TaskRow({ task, dealId, depth, userId, users, onComplete, onPickup, onU
     <>
       {/* Task Row */}
       <div
-        className={`group relative flex items-start gap-3 py-2 px-3 min-h-[48px] transition-all hover:bg-slate-50/50 dark:hover:bg-slate-900/20 ${
+        className={`group relative flex items-start gap-3 py-3 px-4 min-h-[48px] transition-all border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/30 dark:hover:bg-slate-900/10 ${
           isCompleted ? 'opacity-40' : 'opacity-100'
-        } ${isUnassigned && !isCompleted ? 'bg-yellow-50/20 dark:bg-yellow-900/5' : ''}`}
+        } ${isUnassigned && !isCompleted ? 'bg-amber-50/30 dark:bg-amber-900/10' : 'bg-white dark:bg-slate-900'}`}
         style={{ paddingLeft: `${paddingLeft}px` }}
       >
-        {/* Vertical Thread Spine (from parent) */}
+        {/* Vertical Thread Spine (from parent) - Thin */}
         {depth > 0 && (
           <>
             <div
-              className="absolute top-0 bottom-0 w-px bg-slate-300 dark:bg-slate-600"
+              className="absolute top-0 bottom-0 w-px bg-slate-300 dark:bg-slate-700"
               style={{ left: `${spineLeft + 11}px` }}
             />
-            {/* Horizontal Connector (L-shape) */}
+            {/* Horizontal Connector (L-shape) - Thin */}
             <div
-              className="absolute top-6 h-px bg-slate-300 dark:bg-slate-600"
+              className="absolute top-6 h-px bg-slate-300 dark:bg-slate-700"
               style={{
                 left: `${connectorLeft + 11}px`,
                 width: `${avatarLeft - connectorLeft - 11}px`
@@ -650,11 +648,11 @@ function TaskRow({ task, dealId, depth, userId, users, onComplete, onPickup, onU
           </>
         )}
 
-        {/* Tree Control: Black +/- Toggle (on the spine, if has children) */}
+        {/* Tree Control: +/- Toggle (on the spine, if has children) */}
         {hasChildren && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="absolute top-6 -translate-y-1/2 w-4 h-4 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-600 rounded-sm flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-900 hover:border-slate-400 dark:hover:border-slate-500 transition-all z-10 shadow-sm"
+            className="absolute top-6 -translate-y-1/2 w-4 h-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-400 dark:hover:border-slate-600 transition-all z-10"
             style={{ left: `${spineLeft + 9}px` }}
           >
             {isExpanded ? (
@@ -665,11 +663,8 @@ function TaskRow({ task, dealId, depth, userId, users, onComplete, onPickup, onU
           </button>
         )}
 
-        {/* Assignee Avatar with "Mine" Indicator */}
+        {/* Assignee Avatar */}
         <div className="relative flex-shrink-0">
-          {isMine && !isCompleted && (
-            <div className="absolute -left-1 top-0 w-1.5 h-1.5 rounded-full bg-orange-500 z-10" />
-          )}
           <Popover>
             <PopoverTrigger asChild>
               <button className="flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded-full">
@@ -721,18 +716,18 @@ function TaskRow({ task, dealId, depth, userId, users, onComplete, onPickup, onU
           </Popover>
         </div>
 
-        {/* Task Summary - Typographic Emphasis */}
+        {/* Task Summary - Typography Emphasis (Bold for Mine, Medium for Team) */}
         <div className="flex-1 min-w-0 flex items-center gap-2">
           <p className={`text-sm leading-snug transition-all ${
             isCompleted
               ? 'line-through text-slate-400 dark:text-slate-500'
               : isMine
-                ? 'font-bold text-slate-900 dark:text-white'
-                : 'font-normal text-slate-600 dark:text-slate-400'
+                ? 'font-black text-slate-900 dark:text-white'
+                : 'font-medium text-slate-500 dark:text-slate-400'
           }`}>
             {task.summary}
           </p>
-          {/* Red + (Add Sub-Task) - Inline with Title */}
+          {/* + (Add Sub-Task) - Inline with Title */}
           <button
             onClick={() => setIsAdding(!isAdding)}
             className="flex-shrink-0 w-4 h-4 rounded hover:bg-orange-100 dark:hover:bg-orange-900/20 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
@@ -825,10 +820,10 @@ function TaskRow({ task, dealId, depth, userId, users, onComplete, onPickup, onU
       {/* Inline Add Sub-Task Input */}
       {isAdding && (
         <div
-          className="relative flex items-center gap-2 px-3 py-3 bg-orange-50/30 dark:bg-orange-900/10"
+          className="relative flex items-center gap-2 px-4 py-3 bg-orange-50/30 dark:bg-orange-900/10 border-b border-slate-100 dark:border-slate-800"
           style={{ paddingLeft: `${paddingLeft + 32}px` }}
         >
-          {/* Thread continuation */}
+          {/* Thread continuation - Thin */}
           {depth >= 0 && (
             <div
               className="absolute top-0 bottom-0 w-px bg-orange-300 dark:bg-orange-700"
@@ -842,11 +837,11 @@ function TaskRow({ task, dealId, depth, userId, users, onComplete, onPickup, onU
             onKeyDown={handleKeyDown}
             placeholder="New sub-task..."
             autoFocus
-            className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-slate-900 border border-orange-300 dark:border-orange-700 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
+            className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-slate-900 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
           />
           <button
             onClick={handleAddSubTask}
-            className="px-3 py-1.5 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded-md transition-colors"
+            className="px-3 py-1.5 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded transition-colors"
           >
             Add
           </button>
@@ -855,7 +850,7 @@ function TaskRow({ task, dealId, depth, userId, users, onComplete, onPickup, onU
               setIsAdding(false);
               setNewTaskSummary('');
             }}
-            className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
+            className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
           >
             Cancel
           </button>
