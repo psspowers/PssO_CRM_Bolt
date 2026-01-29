@@ -8,11 +8,13 @@ import {
   MediaVault,
   QualityGate,
   InvestmentModeler,
-  CreditRiskHub
+  CreditRiskHub,
+  ProjectCard
 } from '../crm';
 import { VelocityHeatmap } from '../crm/VelocityHeatmap';
 import { useAppContext } from '../../contexts/AppContext';
-import { Opportunity } from '../../types/crm';
+import { Opportunity, Project } from '../../types/crm';
+import { fetchProjects } from '@/lib/api/projects';
 import {
   DollarSign,
   Zap,
@@ -35,7 +37,8 @@ import {
   Clock,
   Flag,
   Calendar,
-  ExternalLink
+  ExternalLink,
+  FolderKanban
 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
@@ -79,7 +82,12 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [stagnationFilter, setStagnationFilter] = useState<'all' | '15' | '30' | '60'>('all');
 
-  
+  // Pipeline mode toggle state
+  const [pipelineMode, setPipelineMode] = useState<'deals' | 'projects'>('deals');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+
+
   // NEW: Hierarchy View Filter State
   // 'mine' = Only deals owned by the current user
   // 'team' = All deals visible to the user (includes subordinates' deals via RLS)
@@ -159,6 +167,24 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
       setStageFilter(forcedStageFilter);
     }
   }, [forcedStageFilter]);
+
+  // Fetch projects when switching to projects view
+  useEffect(() => {
+    const loadProjects = async () => {
+      if (pipelineMode === 'projects' && projects.length === 0) {
+        setLoadingProjects(true);
+        try {
+          const data = await fetchProjects();
+          setProjects(data);
+        } catch (error) {
+          console.error('Failed to fetch projects:', error);
+        } finally {
+          setLoadingProjects(false);
+        }
+      }
+    };
+    loadProjects();
+  }, [pipelineMode, projects.length]);
 
   const userCanDelete = canDelete();
   const userCanEdit = selectedOpp ? canEdit(selectedOpp.ownerId) : false;
@@ -441,169 +467,202 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
             </div>
           </div>
 
-          {/* Hierarchy View Toggle - My Deals vs Team Deals */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
-              <button
-                onClick={() => setHierarchyView('mine')}
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                  hierarchyView === 'mine'
-                    ? 'bg-white shadow-sm text-orange-600'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                <User className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Mine</span>
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  hierarchyView === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
-                }`}>
-                  {myDealsCount}
-                </span>
-              </button>
-              <button
-                onClick={() => setHierarchyView('team')}
-                disabled={loadingSubordinates}
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                  hierarchyView === 'team'
-                    ? 'bg-white shadow-sm text-orange-600'
-                    : 'text-slate-500 hover:text-slate-700'
-                } ${loadingSubordinates ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Team</span>
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  hierarchyView === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
-                }`}>
-                  {loadingSubordinates ? '...' : teamDealsCount}
-                </span>
-              </button>
+          {/* Hierarchy View Toggle & Pipeline Switcher */}
+          <div className="flex items-center justify-between gap-3">
+            {/* Left: Hierarchy View Toggle - My Deals vs Team Deals */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
+                <button
+                  onClick={() => setHierarchyView('mine')}
+                  className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    hierarchyView === 'mine'
+                      ? 'bg-white shadow-sm text-orange-600'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Mine</span>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    hierarchyView === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
+                  }`}>
+                    {myDealsCount}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setHierarchyView('team')}
+                  disabled={loadingSubordinates}
+                  className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    hierarchyView === 'team'
+                      ? 'bg-white shadow-sm text-orange-600'
+                      : 'text-slate-500 hover:text-slate-700'
+                  } ${loadingSubordinates ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Team</span>
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    hierarchyView === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
+                  }`}>
+                    {loadingSubordinates ? '...' : teamDealsCount}
+                  </span>
+                </button>
+              </div>
+
+              {/* Team Member Drill-Down Filter */}
+              {hierarchyView === 'team' && (
+                <div className="relative flex-shrink-0 animate-in fade-in slide-in-from-left-2">
+                  <select
+                    value={selectedMemberId}
+                    onChange={(e) => setSelectedMemberId(e.target.value)}
+                    className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-2 pr-6 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-28 truncate"
+                  >
+                    <option value="all">All Team</option>
+                    {teamMembers.map(m => (
+                      <option key={m.id} value={m.id}>{formatShortName(m.name)}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                    <ChevronDown className="w-3 h-3" />
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Team Member Drill-Down Filter */}
-            {hierarchyView === 'team' && (
-              <div className="relative flex-shrink-0 animate-in fade-in slide-in-from-left-2">
-                <select
-                  value={selectedMemberId}
-                  onChange={(e) => setSelectedMemberId(e.target.value)}
-                  className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-2 pr-6 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-28 truncate"
-                >
-                  <option value="all">All Team</option>
-                  {teamMembers.map(m => (
-                    <option key={m.id} value={m.id}>{formatShortName(m.name)}</option>
-                  ))}
-                </select>
-                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                  <ChevronDown className="w-3 h-3" />
-                </div>
-              </div>
-            )}
+            {/* Right: Pipeline Switcher */}
+            <div className="bg-slate-100 p-1 rounded-lg flex items-center">
+              <button
+                onClick={() => setPipelineMode('deals')}
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                  pipelineMode === 'deals'
+                    ? 'bg-white text-orange-600 shadow-sm'
+                    : 'text-slate-500'
+                }`}
+              >
+                Deals
+              </button>
+              <button
+                onClick={() => setPipelineMode('projects')}
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                  pipelineMode === 'projects'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-slate-500'
+                }`}
+              >
+                Projects
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Stage Pills Grid */}
-      <div className="flex gap-2 mb-3">
-        {/* All Button - Larger, Spans 2 Rows */}
-        <button
-          onClick={() => setStageFilter('all')}
-          className={`flex flex-col items-center justify-center w-14 h-[76px] rounded-xl text-xs font-bold transition-all ${
-            stageFilter === 'all'
-              ? 'bg-slate-800 text-white shadow-sm'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          <LayoutGrid className="w-5 h-5 mb-1" />
-          <span>All</span>
-        </button>
+      {/* Stage Pills Grid - Only for Deals */}
+      {pipelineMode === 'deals' && (
+        <div className="flex gap-2 mb-3">
+          {/* All Button - Larger, Spans 2 Rows */}
+          <button
+            onClick={() => setStageFilter('all')}
+            className={`flex flex-col items-center justify-center w-14 h-[76px] rounded-xl text-xs font-bold transition-all ${
+              stageFilter === 'all'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <LayoutGrid className="w-5 h-5 mb-1" />
+            <span>All</span>
+          </button>
 
-        {/* Stage Pills Grid - 2 rows x 3 columns */}
-        <div className="grid grid-cols-3 gap-2 flex-1">
-          <button
-            onClick={() => setStageFilter('Prospect')}
-            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-              stageFilter === 'Prospect'
-                ? 'bg-slate-800 text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            Prospect
-          </button>
-          <button
-            onClick={() => setStageFilter('Qualified')}
-            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-              stageFilter === 'Qualified'
-                ? 'bg-slate-800 text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            Qualified
-          </button>
-          <button
-            onClick={() => setStageFilter('Proposal')}
-            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-              stageFilter === 'Proposal'
-                ? 'bg-slate-800 text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            Proposal
-          </button>
-          <button
-            onClick={() => setStageFilter('Negotiation')}
-            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-              stageFilter === 'Negotiation'
-                ? 'bg-slate-800 text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            Negotiat...
-          </button>
-          <button
-            onClick={() => setStageFilter('Term Sheet')}
-            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-              stageFilter === 'Term Sheet'
-                ? 'bg-slate-800 text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            Term Sheet
-          </button>
-          <button
-            onClick={() => setStageFilter('Won')}
-            className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-              stageFilter === 'Won'
-                ? 'bg-slate-800 text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
-          >
-            Won
-          </button>
+          {/* Stage Pills Grid - 2 rows x 3 columns */}
+          <div className="grid grid-cols-3 gap-2 flex-1">
+            <button
+              onClick={() => setStageFilter('Prospect')}
+              className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                stageFilter === 'Prospect'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              Prospect
+            </button>
+            <button
+              onClick={() => setStageFilter('Qualified')}
+              className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                stageFilter === 'Qualified'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              Qualified
+            </button>
+            <button
+              onClick={() => setStageFilter('Proposal')}
+              className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                stageFilter === 'Proposal'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              Proposal
+            </button>
+            <button
+              onClick={() => setStageFilter('Negotiation')}
+              className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                stageFilter === 'Negotiation'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              Negotiat...
+            </button>
+            <button
+              onClick={() => setStageFilter('Term Sheet')}
+              className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                stageFilter === 'Term Sheet'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              Term Sheet
+            </button>
+            <button
+              onClick={() => setStageFilter('Won')}
+              className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                stageFilter === 'Won'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              Won
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Results Count with Stats */}
       <div className="flex items-center gap-3 mb-4 px-1">
         <p className="text-sm text-slate-500 font-medium">
-          Showing <span className="text-slate-900 font-bold">{filtered.length}</span> deals
+          Showing <span className="text-slate-900 font-bold">
+            {pipelineMode === 'deals' ? filtered.length : projects.length}
+          </span> {pipelineMode === 'deals' ? 'deals' : 'projects'}
         </p>
-        <div className="flex items-center gap-3 text-xs text-slate-400">
-          <div className="flex items-center gap-1">
-            <CheckSquare className="w-3.5 h-3.5" />
-            <span>{filtered.filter(o => o.completedMilestones && o.completedMilestones.length > 0).length}</span>
+        {pipelineMode === 'deals' && (
+          <div className="flex items-center gap-3 text-xs text-slate-400">
+            <div className="flex items-center gap-1">
+              <CheckSquare className="w-3.5 h-3.5" />
+              <span>{filtered.filter(o => o.completedMilestones && o.completedMilestones.length > 0).length}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-3.5 h-3.5 flex items-center justify-center text-[10px]">💬</span>
+              <span>0</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="w-3.5 h-3.5 flex items-center justify-center text-[10px]">📎</span>
+              <span>0</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="w-3.5 h-3.5 flex items-center justify-center text-[10px]">💬</span>
-            <span>0</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="w-3.5 h-3.5 flex items-center justify-center text-[10px]">📎</span>
-            <span>0</span>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Pipeline Velocity Widget */}
-      {!selectionMode && (
+      {/* Pipeline Velocity Widget - Only for Deals */}
+      {!selectionMode && pipelineMode === 'deals' && (
         <div className="bg-white rounded-xl border border-slate-200 p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -682,41 +741,83 @@ export const OpportunitiesScreen: React.FC<OpportunitiesScreenProps> = ({ forced
         </div>
       )}
 
-      {/* Deals Grid/List */}
-      <div className={`w-full max-w-full overflow-hidden ${viewMode === 'grid' && !selectionMode ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4' : 'flex flex-col gap-3'}`}>
-        {filtered.map(opp => {
-          const isSearching = search.trim().length > 0;
-          const isTeamDeal = opp.ownerId !== user?.id && isSearching && hierarchyView === 'mine';
-          return (
-            <OpportunityCard
-              key={opp.id}
-              opportunity={opp}
-              accountName={accounts.find(a => a.id === opp.accountId)?.name}
-              ownerName={getOwnerName(opp.ownerId)}
-              onClick={() => !selectionMode && setSelectedOpp(opp)}
-              onPriorityChange={handlePriorityChange}
-              showTeamBadge={isTeamDeal}
-            />
-          );
-        })}
-      </div>
-
-      {filtered.length === 0 && (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <DollarSign className="w-8 h-8 text-slate-400" />
+      {/* Conditional Rendering: Deals or Projects */}
+      {pipelineMode === 'deals' ? (
+        <>
+          {/* Deals Grid/List */}
+          <div className={`w-full max-w-full overflow-hidden ${viewMode === 'grid' && !selectionMode ? 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4' : 'flex flex-col gap-3'}`}>
+            {filtered.map(opp => {
+              const isSearching = search.trim().length > 0;
+              const isTeamDeal = opp.ownerId !== user?.id && isSearching && hierarchyView === 'mine';
+              return (
+                <OpportunityCard
+                  key={opp.id}
+                  opportunity={opp}
+                  accountName={accounts.find(a => a.id === opp.accountId)?.name}
+                  ownerName={getOwnerName(opp.ownerId)}
+                  onClick={() => !selectionMode && setSelectedOpp(opp)}
+                  onPriorityChange={handlePriorityChange}
+                  showTeamBadge={isTeamDeal}
+                />
+              );
+            })}
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">
-            {hierarchyView === 'mine' ? 'No deals found' : 'No team deals found'}
-          </h3>
-          <p className="text-slate-500">
-            {hierarchyView === 'mine' 
-              ? 'Try adjusting your filters or search query' 
-              : subordinateIds.length === 0 
-                ? 'You have no subordinates in the org hierarchy yet'
-                : 'Try adjusting your filters or search query'}
-          </p>
-        </div>
+
+          {filtered.length === 0 && (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <DollarSign className="w-8 h-8 text-slate-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                {hierarchyView === 'mine' ? 'No deals found' : 'No team deals found'}
+              </h3>
+              <p className="text-slate-500">
+                {hierarchyView === 'mine'
+                  ? 'Try adjusting your filters or search query'
+                  : subordinateIds.length === 0
+                    ? 'You have no subordinates in the org hierarchy yet'
+                    : 'Try adjusting your filters or search query'}
+              </p>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {/* Projects Grid/List */}
+          {loadingProjects ? (
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
+            </div>
+          ) : (
+            <>
+              <div className="w-full max-w-full overflow-hidden flex flex-col gap-3">
+                {projects.map(project => {
+                  const partnerCount = project.linkedPartnerIds?.length || 0;
+                  const accountName = accounts.find(a => a.id === project.linkedAccountId)?.name;
+                  return (
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                      accountName={accountName}
+                      partnerCount={partnerCount}
+                      onClick={() => {}}
+                    />
+                  );
+                })}
+              </div>
+
+              {projects.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <FolderKanban className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">No projects found</h3>
+                  <p className="text-slate-500">Projects will appear here once deals are won</p>
+                </div>
+              )}
+            </>
+          )}
+        </>
       )}
 
       {/* INVESTOR DETAIL MODAL */}
