@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { ChevronRight, ChevronDown, Clock, Circle, CheckCircle2, Radar, Hand, LayoutDashboard, Search, Filter, X, Users, User, ChevronDown as ChevronDownIcon, Calendar } from 'lucide-react';
+import { ChevronRight, ChevronDown, Clock, Square, CheckSquare, Radar, Hand, LayoutDashboard, Search, Filter, X, Users, User, ChevronDown as ChevronDownIcon, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppContext } from '@/contexts/AppContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -280,7 +279,7 @@ export function ZaapScreen() {
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Zaap</h1>
           </div>
 
-          {/* Search & Filter - Moved to Header Row */}
+          {/* Search & Filter */}
           <div className="flex items-center gap-2 flex-1 max-w-md ml-auto">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -309,7 +308,7 @@ export function ZaapScreen() {
           </div>
         </div>
 
-        {/* Hierarchy View Toggle - Mine vs Team */}
+        {/* Hierarchy View Toggle */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1 flex-shrink-0">
             <button
@@ -346,7 +345,7 @@ export function ZaapScreen() {
             </button>
           </div>
 
-          {/* Team Member Drill-Down Filter */}
+          {/* Team Member Filter */}
           {viewMode === 'team' && (
             <div className="relative flex-shrink-0 animate-in fade-in slide-in-from-left-2">
               <select
@@ -391,7 +390,7 @@ export function ZaapScreen() {
           </div>
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
           {filteredThreads.map((thread) => (
             <DealThreadItem
               key={thread.id}
@@ -418,7 +417,7 @@ export function ZaapScreen() {
 interface DealThreadItemProps {
   thread: DealThread;
   userId: string;
-  users: Array<{ id: string; name: string; avatar_url?: string }>;
+  users: Array<{ id: string; name: string; avatar_url?: string; role?: string }>;
   onComplete: (taskId: string, summary: string) => void;
   onPickup: (taskId: string, summary: string) => void;
   onUpdateAssignee: (taskId: string, userId: string | null) => void;
@@ -449,60 +448,58 @@ function DealThreadItem({
   const stageAvatar = getStageAvatar(thread.stage);
 
   return (
-    <div className="bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-      {/* Deal Header (Level 0) */}
-      <div className="flex items-center gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
-        {/* Large Stage Avatar */}
-        <div className={`w-14 h-14 rounded-full ${stageAvatar.color} flex items-center justify-center flex-shrink-0 font-bold text-2xl shadow-lg`}>
+    <div className="border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+      {/* Lean Deal Header */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors"
+      >
+        {/* Compact Stage Avatar */}
+        <div className={`w-8 h-8 rounded-full ${stageAvatar.color} flex items-center justify-center flex-shrink-0 text-xs font-bold`}>
           {stageAvatar.char}
         </div>
 
         {/* Deal Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
+        <div className="flex-1 min-w-0 text-left">
+          <div className="flex items-center gap-2">
             <h3
               onClick={(e) => {
                 e.stopPropagation();
                 navigate(`/?view=opportunities&id=${thread.id}`);
               }}
-              className="font-bold text-slate-900 dark:text-white text-lg truncate cursor-pointer hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+              className="text-sm font-semibold text-slate-900 dark:text-white truncate hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
             >
               {thread.name}
             </h3>
-            <Badge className="whitespace-nowrap bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs">
+            <span className="text-[10px] h-5 px-2 flex items-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold rounded-full whitespace-nowrap">
               {thread.mw} MW
-            </Badge>
+            </span>
           </div>
           <Progress
             value={progress}
-            className="h-2 bg-slate-100 dark:bg-slate-800"
+            className="h-1 bg-slate-100 dark:bg-slate-800 mt-1.5"
             indicatorClassName="bg-orange-500"
           />
         </div>
 
-        {/* Expand Icon */}
-        <button
-          onClick={onToggle}
-          className="flex-shrink-0 p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-        >
-          {isExpanded ? (
-            <ChevronDown className="w-6 h-6 text-slate-400" />
-          ) : (
-            <ChevronRight className="w-6 h-6 text-slate-400" />
-          )}
-        </button>
-      </div>
+        {/* Chevron */}
+        {isExpanded ? (
+          <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
+        ) : (
+          <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+        )}
+      </button>
 
-      {/* Task List with L-Shape Connectors */}
+      {/* Task List */}
       {isExpanded && (
-        <div className="border-t border-slate-200 dark:border-slate-800 py-2">
+        <div className="bg-slate-50/30 dark:bg-slate-900/10">
           {taskTree.length > 0 ? (
             <>
               {taskTree.map(task => (
                 <TaskRow
                   key={task.id}
                   task={task}
-                  depth={1}
+                  depth={0}
                   userId={userId}
                   users={users}
                   onComplete={onComplete}
@@ -513,7 +510,7 @@ function DealThreadItem({
               ))}
             </>
           ) : (
-            <p className="text-center text-slate-400 dark:text-slate-500 text-sm py-6">No tasks in this deal</p>
+            <p className="text-center text-slate-400 dark:text-slate-500 text-xs py-4">No tasks</p>
           )}
         </div>
       )}
@@ -525,7 +522,7 @@ interface TaskRowProps {
   task: Task;
   depth: number;
   userId: string;
-  users: Array<{ id: string; name: string; avatar_url?: string }>;
+  users: Array<{ id: string; name: string; avatar_url?: string; role?: string }>;
   onComplete: (taskId: string, summary: string) => void;
   onPickup: (taskId: string, summary: string) => void;
   onUpdateAssignee: (taskId: string, userId: string | null) => void;
@@ -559,198 +556,173 @@ function TaskRow({ task, depth, userId, users, onComplete, onPickup, onUpdateAss
     onUpdateDueDate(task.id, newDate);
   };
 
+  const paddingLeft = 12 + depth * 20;
+
   return (
     <>
-      {/* Task Node with L-Shape Connector */}
+      {/* Lean Task Row */}
       <div
-        className="relative pl-8 py-3"
-        style={{ paddingLeft: `${depth * 32}px` }}
+        className={`relative flex items-center gap-3 px-3 py-2 border-l-2 transition-colors ${
+          isUnassigned && !isCompleted
+            ? 'bg-yellow-50/30 dark:bg-yellow-900/5 border-l-yellow-400'
+            : isCompleted
+              ? 'bg-transparent opacity-50 border-l-transparent'
+              : isMine
+                ? 'bg-orange-50/30 dark:bg-orange-900/5 border-l-orange-500'
+                : 'bg-transparent border-l-transparent'
+        }`}
+        style={{ paddingLeft: `${paddingLeft}px` }}
       >
-        {/* Vertical Line (Left Border) */}
-        <div className="absolute left-6 top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700" />
+        {/* Thread Line */}
+        {depth > 0 && (
+          <div className="absolute left-3 top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700" />
+        )}
 
-        {/* Horizontal Connector Line */}
-        <div className="absolute left-6 top-8 w-4 h-px bg-slate-200 dark:bg-slate-700" />
-
-        {/* Task Content */}
-        <div
-          className={`relative ml-6 flex items-start gap-3 py-3 px-4 rounded-lg transition-all ${
-            isUnassigned && !isCompleted
-              ? 'bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-400'
-              : isCompleted
-                ? 'bg-slate-50 dark:bg-slate-900/30 opacity-60'
-                : isMine
-                  ? 'bg-orange-50/50 dark:bg-orange-900/10 border-l-4 border-orange-500'
-                  : 'bg-slate-50 dark:bg-slate-900/20'
-          }`}
-        >
-          {/* Status Icon & Assignee Avatar with Dropdown */}
-          <div className="flex flex-col items-center gap-1 flex-shrink-0">
-            <button
-              onClick={() => !isCompleted && isMine && onComplete(task.id, task.summary)}
-              disabled={isCompleted || !isMine}
-              className={`transition-transform ${isMine && !isCompleted ? 'cursor-pointer hover:scale-110' : 'cursor-default'}`}
-            >
-              {!isCompleted ? (
-                <Circle className={`w-5 h-5 ${isMine ? 'text-orange-500' : 'text-slate-300 dark:text-slate-600'}`} />
+        {/* Assignee Avatar */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded-full">
+              {task.assignee_avatar || task.assignee_name ? (
+                <Avatar className="w-6 h-6 cursor-pointer hover:ring-2 hover:ring-orange-400 transition-all">
+                  <AvatarImage src={task.assignee_avatar || undefined} />
+                  <AvatarFallback className="text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                    {task.assignee_name?.charAt(0) || '?'}
+                  </AvatarFallback>
+                </Avatar>
               ) : (
-                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-orange-400 transition-all">
+                  <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500" />
+                </div>
               )}
             </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-2" align="start">
+            <div className="space-y-1">
+              <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                Assign to:
+              </div>
+              <button
+                onClick={() => onUpdateAssignee(task.id, null)}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
+              >
+                <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-full bg-slate-400" />
+                </div>
+                <span className="text-sm text-slate-700 dark:text-slate-300">Unassigned</span>
+              </button>
+              {users.filter(u => u.role && ['internal', 'admin', 'super_admin'].includes(u.role)).map((u) => (
+                <button
+                  key={u.id}
+                  onClick={() => onUpdateAssignee(task.id, u.id)}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
+                >
+                  <Avatar className="w-6 h-6">
+                    <AvatarImage src={u.avatar_url} />
+                    <AvatarFallback className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                      {u.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm text-slate-700 dark:text-slate-300">{u.name}</span>
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
 
-            {/* Assignee Avatar with Popover */}
+        {/* Task Summary */}
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm line-clamp-2 ${
+            isCompleted
+              ? 'line-through text-slate-400 dark:text-slate-500'
+              : isMine
+                ? 'font-bold text-slate-900 dark:text-white'
+                : 'font-normal text-slate-600 dark:text-slate-400'
+          }`}>
+            {task.summary}
+          </p>
+        </div>
+
+        {/* Right Column: Due Date + Checkbox */}
+        <div className="flex flex-col items-end gap-1 flex-shrink-0 w-20">
+          {/* Due Date */}
+          {task.due_date && (
             <Popover>
               <PopoverTrigger asChild>
-                <button className="focus:outline-none focus:ring-2 focus:ring-orange-500 rounded-full">
-                  {task.assignee_avatar || task.assignee_name ? (
-                    <Avatar className="w-7 h-7 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-orange-500 transition-all">
-                      <AvatarImage src={task.assignee_avatar || undefined} />
-                      <AvatarFallback className="text-xs font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                        {task.assignee_name?.charAt(0) || '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                  ) : (
-                    <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-orange-500 transition-all">
-                      <Circle className="w-3 h-3 text-slate-400 dark:text-slate-600" />
-                    </div>
-                  )}
+                <button className={`text-[10px] font-medium hover:bg-slate-100 dark:hover:bg-slate-800 px-1.5 py-0.5 rounded transition-colors ${
+                  isOverdue
+                    ? 'text-red-600 dark:text-red-400'
+                    : isToday(parseISO(task.due_date))
+                      ? 'text-orange-600 dark:text-orange-400'
+                      : 'text-slate-400 dark:text-slate-500'
+                }`}>
+                  {format(parseISO(task.due_date), 'MMM d')}
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-64 p-2" align="start">
+              <PopoverContent className="w-56 p-2" align="end">
                 <div className="space-y-1">
                   <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    Assign to:
+                    Change due date:
                   </div>
                   <button
-                    onClick={() => onUpdateAssignee(task.id, null)}
+                    onClick={() => handleDateShortcut('tomorrow')}
                     className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
                   >
-                    <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                      <Circle className="w-3 h-3 text-slate-400" />
-                    </div>
-                    <span className="text-sm text-slate-700 dark:text-slate-300">Unassigned</span>
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Tomorrow</span>
                   </button>
-                  {users.filter(u => u.role && ['internal', 'admin', 'super_admin'].includes(u.role)).map((u) => (
-                    <button
-                      key={u.id}
-                      onClick={() => onUpdateAssignee(task.id, u.id)}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
-                    >
-                      <Avatar className="w-6 h-6">
-                        <AvatarImage src={u.avatar_url} />
-                        <AvatarFallback className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                          {u.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm text-slate-700 dark:text-slate-300">{u.name}</span>
-                    </button>
-                  ))}
+                  <button
+                    onClick={() => handleDateShortcut('nextWeek')}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
+                  >
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">Next Week</span>
+                  </button>
+                  <button
+                    onClick={() => handleDateShortcut('nextMonth')}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
+                  >
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">30 Days</span>
+                  </button>
+                  <div className="border-t border-slate-200 dark:border-slate-700 my-1" />
+                  <button
+                    onClick={() => handleDateShortcut('clear')}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
+                  >
+                    <X className="w-4 h-4 text-red-500" />
+                    <span className="text-sm text-red-600 dark:text-red-400">Clear Date</span>
+                  </button>
                 </div>
               </PopoverContent>
             </Popover>
-          </div>
+          )}
 
-          {/* Task Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <p className={`text-sm ${
-                isCompleted
-                  ? 'line-through text-slate-400 dark:text-slate-500'
-                  : isMine
-                    ? 'font-bold text-slate-900 dark:text-white'
-                    : isUnassigned
-                      ? 'font-semibold text-yellow-900 dark:text-yellow-200'
-                      : 'text-slate-700 dark:text-slate-300'
-              }`}>
-                {task.summary}
-              </p>
-              {isMine && !isCompleted && (
-                <Badge className="text-[10px] px-1.5 py-0.5 font-bold bg-orange-500 text-white">
-                  YOUR MOVE
-                </Badge>
+          {/* Checkbox (Square) */}
+          {isUnassigned && !isCompleted ? (
+            <button
+              onClick={() => onPickup(task.id, task.summary)}
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold text-yellow-900 dark:text-yellow-100 bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 rounded transition-all"
+            >
+              <Hand className="w-3 h-3" />
+              +5⚡
+            </button>
+          ) : (
+            <button
+              onClick={() => !isCompleted && isMine && onComplete(task.id, task.summary)}
+              disabled={isCompleted || !isMine}
+              className={`flex-shrink-0 ${isMine && !isCompleted ? 'cursor-pointer hover:scale-110' : 'cursor-default'} transition-transform`}
+            >
+              {isCompleted ? (
+                <CheckSquare className="w-5 h-5 text-green-600 dark:text-green-400" />
+              ) : (
+                <Square className={`w-5 h-5 ${isMine ? 'text-orange-500' : 'text-slate-300 dark:text-slate-600'}`} />
               )}
-            </div>
-
-            {/* Due Date with Popover */}
-            {task.due_date && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button className={`flex items-center gap-1 text-xs font-medium mt-1 hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1 rounded-md transition-colors ${
-                    isOverdue
-                      ? 'text-red-600 dark:text-red-400'
-                      : isToday(parseISO(task.due_date))
-                        ? 'text-orange-600 dark:text-orange-400'
-                        : 'text-slate-500 dark:text-slate-400'
-                  }`}>
-                    <Clock className="w-3 h-3" />
-                    {format(parseISO(task.due_date), 'MMM d')}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-56 p-2" align="start">
-                  <div className="space-y-1">
-                    <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                      Change due date:
-                    </div>
-                    <button
-                      onClick={() => handleDateShortcut('tomorrow')}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
-                    >
-                      <Calendar className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm text-slate-700 dark:text-slate-300">Tomorrow</span>
-                    </button>
-                    <button
-                      onClick={() => handleDateShortcut('nextWeek')}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
-                    >
-                      <Calendar className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm text-slate-700 dark:text-slate-300">Next Week</span>
-                    </button>
-                    <button
-                      onClick={() => handleDateShortcut('nextMonth')}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
-                    >
-                      <Calendar className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm text-slate-700 dark:text-slate-300">30 Days</span>
-                    </button>
-                    <div className="border-t border-slate-200 dark:border-slate-700 my-1" />
-                    <button
-                      onClick={() => handleDateShortcut('clear')}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left"
-                    >
-                      <X className="w-4 h-4 text-red-500" />
-                      <span className="text-sm text-red-600 dark:text-red-400">Clear Date</span>
-                    </button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {isUnassigned && !isCompleted && (
-              <button
-                onClick={() => onPickup(task.id, task.summary)}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-yellow-900 dark:text-yellow-100 bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 rounded-full border border-yellow-300 dark:border-yellow-600 transition-all"
-              >
-                <Hand className="w-3 h-3" />
-                +5⚡
-              </button>
-            )}
-
-            {isMine && !isCompleted && (
-              <button
-                onClick={() => onComplete(task.id, task.summary)}
-                className="w-5 h-5 rounded-full bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 flex items-center justify-center transition-all shadow-sm"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-              </button>
-            )}
-          </div>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Render Children with Increased Depth */}
+      {/* Render Children */}
       {task.children && task.children.length > 0 && (
         <>
           {task.children.map(child => (
