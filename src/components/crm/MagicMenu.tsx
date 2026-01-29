@@ -12,7 +12,7 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
   const navigate = useNavigate();
 
   const handleOpenZaap = () => {
-    navigate('/zaap');
+    navigate('/zaap2');
     onClose();
   };
 
