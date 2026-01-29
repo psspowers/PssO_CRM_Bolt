@@ -4,16 +4,18 @@ import { Header, BottomNav } from '@/components/crm';
 
 const Zaap: React.FC = () => {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col overflow-y-auto">
       <Header
         onQuickAdd={() => {}}
         activeTab="tasks"
         onSearchClick={() => {}}
       />
 
-      <div className="flex-1 overflow-y-auto">
-        <ZaapScreen />
-      </div>
+      <main className="flex-1 p-4 lg:p-8 pb-24 lg:pb-8">
+        <div className="max-w-7xl mx-auto w-full">
+          <ZaapScreen />
+        </div>
+      </main>
 
       <BottomNav activeTab="tasks" onTabChange={() => {}} />
     </div>
