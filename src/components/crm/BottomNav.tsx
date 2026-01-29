@@ -1,8 +1,8 @@
 import React from 'react';
-import { Home, Target, Activity, FolderKanban, Sparkles, Search } from 'lucide-react';
+import { Home, Target, Activity, UserCircle, Sparkles, Search } from 'lucide-react';
 import { MagicMenu } from './MagicMenu';
 
-type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'projects' | 'search' | 'timeline' | 'tasks' | 'pulse';
+type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'pulse' | 'me';
 
 interface BottomNavProps {
   activeTab: Tab;
@@ -12,8 +12,8 @@ interface BottomNavProps {
 const tabs: { id: Tab; icon: React.ElementType; label: string }[] = [
   { id: 'home', icon: Home, label: 'Home' },
   { id: 'opportunities', icon: Target, label: 'Deals' },
-  { id: 'projects', icon: FolderKanban, label: 'Projects' },
   { id: 'pulse', icon: Activity, label: 'Pulse' },
+  { id: 'me', icon: UserCircle, label: 'Me' },
 ];
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange }) => {
