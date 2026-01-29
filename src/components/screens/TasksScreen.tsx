@@ -56,7 +56,6 @@ export const TasksScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
-  const [expandedDeals, setExpandedDeals] = useState<Set<string>>(new Set());
 
   const [hierarchyView, setHierarchyView] = useState<'mine' | 'team'>('mine');
   const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
@@ -393,18 +392,6 @@ export const TasksScreen: React.FC = () => {
     });
   };
 
-  const toggleDealExpanded = (dealId: string) => {
-    setExpandedDeals(prev => {
-      const next = new Set(prev);
-      if (next.has(dealId)) {
-        next.delete(dealId);
-      } else {
-        next.add(dealId);
-      }
-      return next;
-    });
-  };
-
   const getInitials = (name: string) => {
     const parts = name.split(' ');
     if (parts.length >= 2) {
@@ -660,21 +647,17 @@ export const TasksScreen: React.FC = () => {
             const stageConfig = getStageConfig(group.deal.stage);
             const taskTree = buildTaskTree(group.tasks);
             const flatTasks = flattenTaskTree(taskTree);
-            const isDealExpanded = expandedDeals.has(group.deal.id);
 
             return (
-              <div key={group.deal.id} className="border-b border-slate-200 last:border-b-0">
-                <button
-                  onClick={() => toggleDealExpanded(group.deal.id)}
-                  className="w-full flex items-center gap-3 px-4 py-4 hover:bg-slate-50 transition-colors"
-                >
+              <div key={group.deal.id}>
+                <div className="flex items-center gap-3 px-4 py-3 bg-slate-50/80 sticky top-0 z-10 border-b border-slate-200">
                   <div
-                    className={`w-11 h-11 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-sm`}
+                    className={`w-9 h-9 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm`}
                   >
                     {stageConfig.char}
                   </div>
 
-                  <div className="flex-1 min-w-0 text-left">
+                  <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-[15px] text-slate-900 truncate">{group.deal.name}</h3>
                   </div>
 
@@ -685,22 +668,12 @@ export const TasksScreen: React.FC = () => {
                   <div className="text-xs font-medium text-slate-400 flex-shrink-0 min-w-[40px] text-right">
                     {group.completed_tasks}/{group.total_tasks}
                   </div>
+                </div>
 
-                  <ChevronDown
-                    className={`w-5 h-5 text-slate-400 transition-transform flex-shrink-0 ${
-                      isDealExpanded ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
-
-                {isDealExpanded && (
-                  <div className="px-4 pb-2">
-                    {flatTasks.length > 0 && (
-                      <div className="space-y-0">
-                        {flatTasks.map(flatTask =>
-                          renderTask(flatTask, group.deal.id)
-                        )}
-                      </div>
+                {flatTasks.length > 0 && (
+                  <div className="space-y-0">
+                    {flatTasks.map(flatTask =>
+                      renderTask(flatTask, group.deal.id)
                     )}
                   </div>
                 )}
