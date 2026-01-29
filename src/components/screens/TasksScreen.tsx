@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { CheckSquare, Square, Clock, Loader2, User, Target, ChevronDown, ChevronRight, Hand, Zap, Users, Search, X, Filter } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { CheckSquare, Square, Clock, Loader2, User, Target, ChevronDown, ChevronRight, Hand, Zap, Users, Search, X, Filter, Info } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAppContext } from '../../contexts/AppContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TaskThread {
   id: string;
@@ -36,21 +38,129 @@ interface DealGroup {
 }
 
 export const TasksScreen: React.FC = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { users } = useAppContext();
   const [filter, setFilter] = useState<'all' | 'mine'>('all');
   const [dealGroups, setDealGroups] = useState<DealGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [showFilter, setShowFilter] = useState(false);
+
+  // Hierarchy and team view
+  const [hierarchyView, setHierarchyView] = useState<'mine' | 'team'>('mine');
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
+  const [subordinateIds, setSubordinateIds] = useState<string[]>([]);
+  const [loadingSubordinates, setLoadingSubordinates] = useState(false);
+
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+
+  // Fetch subordinates for hierarchy view
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchSubordinates = async () => {
+      setLoadingSubordinates(true);
+      try {
+        const { data, error } = await supabase
+          .from('user_hierarchy')
+          .select('subordinate_id')
+          .eq('manager_id', user.id);
+
+        if (error) {
+          console.error('Error fetching subordinates:', error);
+          setSubordinateIds([]);
+        } else {
+          const ids = data?.map(row => row.subordinate_id) || [];
+          setSubordinateIds(ids);
+        }
+      } catch (err) {
+        console.error('Failed to fetch subordinates:', err);
+        setSubordinateIds([]);
+      } finally {
+        setLoadingSubordinates(false);
+      }
+    };
+
+    fetchSubordinates();
+  }, [user?.id]);
+
+  // Reset member filter when switching back to "Mine"
+  useEffect(() => {
+    if (hierarchyView === 'mine') setSelectedMemberId('all');
+  }, [hierarchyView]);
+
+  // Calculate team members list for dropdown
+  const teamMembers = useMemo(() => {
+    if (isAdmin) {
+      return users.filter(u => ['internal', 'admin', 'super_admin'].includes(u.role));
+    } else {
+      return users.filter(u => subordinateIds.includes(u.id) || u.id === user?.id);
+    }
+  }, [users, subordinateIds, isAdmin, user]);
+
+  const formatShortName = (fullName: string) => {
+    const parts = fullName.split(' ');
+    if (parts.length === 1) return fullName;
+    return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+  };
+
+  // Calculate counts for Mine vs Team
+  const myTasksCount = useMemo(() => {
+    return dealGroups.reduce((sum, group) => {
+      const myTasks = group.tasks.filter(t => t.assignedToId === user?.id);
+      return sum + myTasks.length;
+    }, 0);
+  }, [dealGroups, user]);
+
+  const teamTasksCount = useMemo(() => {
+    return dealGroups.reduce((sum, group) => sum + group.total_tasks, 0);
+  }, [dealGroups]);
+
+  // Filter deal groups based on search
+  const filteredDealGroups = useMemo(() => {
+    if (!search.trim()) return dealGroups;
+
+    const searchLower = search.toLowerCase();
+    return dealGroups
+      .map(group => ({
+        ...group,
+        tasks: group.tasks.filter(task =>
+          task.summary.toLowerCase().includes(searchLower) ||
+          task.details?.toLowerCase().includes(searchLower) ||
+          task.assigneeName?.toLowerCase().includes(searchLower) ||
+          group.deal.name.toLowerCase().includes(searchLower) ||
+          group.deal.account_name.toLowerCase().includes(searchLower)
+        )
+      }))
+      .filter(group => group.tasks.length > 0);
+  }, [dealGroups, search]);
 
   const fetchTaskThreads = async () => {
     setLoading(true);
     try {
+      const filterParam = hierarchyView === 'mine' ? 'mine' : 'all';
       const { data, error } = await supabase.rpc('get_task_threads', {
         p_user_id: user?.id || null,
-        p_filter: filter
+        p_filter: filterParam
       });
 
       if (error) throw error;
-      setDealGroups(data || []);
+
+      let filteredData = data || [];
+
+      // Apply team member filter if in team view
+      if (hierarchyView === 'team' && selectedMemberId !== 'all') {
+        filteredData = filteredData.map(group => ({
+          ...group,
+          tasks: group.tasks.filter((t: TaskThread) => t.assignedToId === selectedMemberId),
+          completed_tasks: group.tasks.filter((t: TaskThread) =>
+            t.assignedToId === selectedMemberId && t.status === 'Completed'
+          ).length,
+          total_tasks: group.tasks.filter((t: TaskThread) => t.assignedToId === selectedMemberId).length
+        })).filter(group => group.total_tasks > 0);
+      }
+
+      setDealGroups(filteredData);
     } catch (error: any) {
       console.error('Error fetching task threads:', error);
       toast({
@@ -65,7 +175,7 @@ export const TasksScreen: React.FC = () => {
 
   useEffect(() => {
     fetchTaskThreads();
-  }, [filter, user?.id]);
+  }, [hierarchyView, selectedMemberId, user?.id]);
 
   const toggleTask = async (taskId: string, currentStatus?: string) => {
     try {
@@ -245,49 +355,125 @@ export const TasksScreen: React.FC = () => {
     <div className="space-y-6 pb-24">
       {/* Header Section */}
       <div className="space-y-3">
-        {/* Title Row */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-900">Tasks</h1>
-          </div>
-        </div>
+        <div>
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
+                      <Info className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <p className="text-xs">
+                      <strong>Mine:</strong> Your tasks<br />
+                      <strong>Team:</strong> Your tasks + subordinates' tasks
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <h1 className="text-2xl font-bold text-slate-900">Tasks</h1>
+            </div>
 
-        {/* Filter Toggle */}
-        <div className="flex items-center bg-slate-100 rounded-lg p-1">
-          <button
-            onClick={() => setFilter('mine')}
-            className={`flex items-center gap-1 px-3 py-2 rounded-md text-xs font-semibold transition-all flex-1 justify-center ${
-              filter === 'mine'
-                ? 'bg-white shadow-sm text-orange-600'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <User className="w-3.5 h-3.5" />
-            <span>My Tasks</span>
-          </button>
-          <button
-            onClick={() => setFilter('all')}
-            className={`flex items-center gap-1 px-3 py-2 rounded-md text-xs font-semibold transition-all flex-1 justify-center ${
-              filter === 'all'
-                ? 'bg-white shadow-sm text-orange-600'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>Team Tasks</span>
-          </button>
+            {/* Search & Filter - Moved to Header Row */}
+            <div className="flex items-center gap-2 flex-1 max-w-md ml-auto">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search tasks..."
+                  className="w-full pl-9 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => setShowFilter(true)}
+                className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors flex-shrink-0"
+              >
+                <Filter className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
+          </div>
+
+          {/* Hierarchy View Toggle - My Tasks vs Team Tasks */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
+              <button
+                onClick={() => setHierarchyView('mine')}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  hierarchyView === 'mine'
+                    ? 'bg-white shadow-sm text-orange-600'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Mine</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  hierarchyView === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {myTasksCount}
+                </span>
+              </button>
+              <button
+                onClick={() => setHierarchyView('team')}
+                disabled={loadingSubordinates}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  hierarchyView === 'team'
+                    ? 'bg-white shadow-sm text-orange-600'
+                    : 'text-slate-500 hover:text-slate-700'
+                } ${loadingSubordinates ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Team</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  hierarchyView === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {loadingSubordinates ? '...' : teamTasksCount}
+                </span>
+              </button>
+            </div>
+
+            {/* Team Member Drill-Down Filter */}
+            {hierarchyView === 'team' && (
+              <div className="relative flex-shrink-0 animate-in fade-in slide-in-from-left-2">
+                <select
+                  value={selectedMemberId}
+                  onChange={(e) => setSelectedMemberId(e.target.value)}
+                  className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-2 pr-6 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-28 truncate"
+                >
+                  <option value="all">All Team</option>
+                  {teamMembers.map(m => (
+                    <option key={m.id} value={m.id}>{formatShortName(m.name)}</option>
+                  ))}
+                </select>
+                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                  <ChevronDown className="w-3 h-3" />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {dealGroups.length === 0 ? (
+      {filteredDealGroups.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           <CheckSquare className="w-12 h-12 mx-auto mb-3 opacity-20" />
           <p>No tasks found</p>
-          <p className="text-xs mt-1">Create tasks from the Deals screen</p>
+          <p className="text-xs mt-1">{search ? 'Try a different search' : 'Create tasks from the Deals screen'}</p>
         </div>
       ) : (
         <Accordion type="multiple" className="space-y-4">
-          {dealGroups.map((group, idx) => {
+          {filteredDealGroups.map((group, idx) => {
             const taskTree = buildTaskTree(group.tasks);
 
             return (
