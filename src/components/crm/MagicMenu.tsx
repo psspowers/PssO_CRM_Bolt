@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Building2, UserPlus, ListChecks } from 'lucide-react';
-import { TaskMaster } from './TaskMaster';
 
 interface MagicMenuProps {
   isOpen: boolean;
@@ -9,8 +8,6 @@ interface MagicMenuProps {
 }
 
 export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigate }) => {
-  const [showTaskMaster, setShowTaskMaster] = useState(false);
-
   if (!isOpen) return null;
 
   return (
@@ -26,7 +23,7 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
 
             {/* Task Master Button - Center Top */}
             <button
-              onClick={() => { setShowTaskMaster(true); onClose(); }}
+              onClick={() => { onNavigate('tasks'); onClose(); }}
               className="absolute left-1/2 top-0 -translate-x-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white shadow-xl shadow-orange-500/50 flex items-center justify-center transition-all hover:scale-110 hover:shadow-2xl hover:shadow-orange-500/70 animate-in zoom-in duration-300"
               aria-label="Task Master"
             >
@@ -54,9 +51,6 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
           </div>
         </div>
       </div>
-
-      {/* Task Master Modal */}
-      {showTaskMaster && <TaskMaster onClose={() => setShowTaskMaster(false)} />}
     </>
   );
 };
