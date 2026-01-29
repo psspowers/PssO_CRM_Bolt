@@ -199,6 +199,30 @@ export const TasksScreen: React.FC = () => {
     fetchTaskThreads();
   }, [hierarchyView, selectedMemberId, user?.id]);
 
+  // Auto-expand all deals and parent tasks when data loads
+  useEffect(() => {
+    if (dealGroups.length > 0) {
+      const allDealIds = dealGroups.map(g => g.deal.id);
+      setExpandedDeals(new Set(allDealIds));
+
+      // Also expand all tasks that have children
+      const tasksWithChildren: string[] = [];
+      dealGroups.forEach(group => {
+        const taskMap = new Map<string, TaskThread>();
+        group.tasks.forEach(task => taskMap.set(task.id, task));
+
+        group.tasks.forEach(task => {
+          if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
+            if (!tasksWithChildren.includes(task.parentTaskId)) {
+              tasksWithChildren.push(task.parentTaskId);
+            }
+          }
+        });
+      });
+      setExpandedTasks(new Set(tasksWithChildren));
+    }
+  }, [dealGroups]);
+
   const toggleTask = async (taskId: string, currentStatus?: string) => {
     try {
       const newStatus = currentStatus === 'Completed' ? 'Pending' : 'Completed';
