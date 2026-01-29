@@ -35,12 +35,12 @@ export const fetchContacts = async (): Promise<Contact[]> => {
     .from('contacts')
     .select(`
       *,
-      account:accounts!inner(
+      account:accounts!contacts_account_id_fkey(
         id,
         name,
         type,
         owner_id,
-        opportunities(
+        opportunities!opportunities_account_id_fkey(
           id,
           stage,
           owner_id,
