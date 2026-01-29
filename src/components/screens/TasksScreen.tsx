@@ -296,7 +296,7 @@ export const TasksScreen: React.FC = () => {
     return (
       <div key={task.id} className="space-y-2">
         <div
-          className={`p-3 bg-white border rounded-lg shadow-sm flex gap-3 items-start ${isCompleted ? 'opacity-60' : ''} ${indentClass}`}
+          className={`py-2 flex gap-3 items-start ${isCompleted ? 'opacity-60' : ''} ${indentClass}`}
           style={{ marginLeft: `${depth * 24}px` }}
         >
           <button onClick={() => toggleTask(task.id, task.status)} className="mt-0.5 flex-shrink-0">
@@ -503,9 +503,9 @@ export const TasksScreen: React.FC = () => {
               <AccordionItem
                 key={group.deal.id}
                 value={group.deal.id}
-                className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden"
+                className="border-b border-gray-100 last:border-0"
               >
-                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-gray-50">
+                <AccordionTrigger className="px-0 py-3 hover:no-underline">
                   <div className="flex items-center justify-between w-full pr-2">
                     <div className="flex items-center gap-3 text-left">
                       <Target className="w-5 h-5 text-orange-500 flex-shrink-0" />
@@ -531,8 +531,8 @@ export const TasksScreen: React.FC = () => {
                     </div>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4 pt-2">
-                  <div className="space-y-2">
+                <AccordionContent className="px-0 pb-3 pt-1">
+                  <div className="space-y-1">
                     {taskTree.map(task => renderTask(task))}
                   </div>
                 </AccordionContent>
