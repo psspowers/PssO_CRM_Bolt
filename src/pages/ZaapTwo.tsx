@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ZaapScreenTwo } from '@/components/screens/ZaapScreenTwo';
-import { Header, BottomNav } from '@/components/crm';
+import { Header, BottomNav, QuickAddModal } from '@/components/crm';
+import { useAppContext } from '@/contexts/AppContext';
 
 const ZaapTwo: React.FC = () => {
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const { createAccount, createOpportunity, createContact, createPartner } = useAppContext();
+
   return (
     <div className="h-screen bg-slate-50 dark:bg-slate-900 flex flex-col overflow-hidden">
       <Header
-        onQuickAdd={() => {}}
+        onQuickAdd={() => setShowQuickAdd(true)}
         activeTab="tasks"
         onSearchClick={() => {}}
       />
@@ -18,6 +22,15 @@ const ZaapTwo: React.FC = () => {
       </main>
 
       <BottomNav activeTab="tasks" onTabChange={() => {}} />
+
+      <QuickAddModal
+        isOpen={showQuickAdd}
+        onClose={() => setShowQuickAdd(false)}
+        onAddAccount={createAccount}
+        onAddOpportunity={createOpportunity}
+        onAddContact={createContact}
+        onAddPartner={createPartner}
+      />
     </div>
   );
 };
