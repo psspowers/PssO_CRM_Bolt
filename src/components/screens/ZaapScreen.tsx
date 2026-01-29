@@ -417,7 +417,7 @@ export function ZaapScreen() {
           </div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
+        <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
           {filteredThreads.map((thread) => (
             <DealThreadItem
               key={thread.id}
@@ -478,14 +478,14 @@ function DealThreadItem({
   const stageAvatar = getStageAvatar(thread.stage);
 
   return (
-    <div className="border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+    <div>
       {/* Lean Deal Header */}
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors"
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors"
       >
         {/* Compact Stage Avatar */}
-        <div className={`w-8 h-8 rounded-full ${stageAvatar.color} flex items-center justify-center flex-shrink-0 text-xs font-bold`}>
+        <div className={`w-7 h-7 rounded-full ${stageAvatar.color} flex items-center justify-center flex-shrink-0 text-xs font-bold`}>
           {stageAvatar.char}
         </div>
 
@@ -501,15 +501,20 @@ function DealThreadItem({
             >
               {thread.name}
             </h3>
-            <span className="text-[10px] h-5 px-2 flex items-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold rounded-full whitespace-nowrap">
+            <span className="text-[10px] h-4 px-1.5 flex items-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold rounded whitespace-nowrap">
               {thread.mw} MW
             </span>
           </div>
-          <Progress
-            value={progress}
-            className="h-1 bg-slate-100 dark:bg-slate-800 mt-1.5"
-            indicatorClassName="bg-orange-500"
-          />
+          <div className="flex items-center gap-2 mt-1">
+            <Progress
+              value={progress}
+              className="h-0.5 bg-slate-100 dark:bg-slate-800 flex-1"
+              indicatorClassName="bg-orange-500"
+            />
+            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+              {progress}%
+            </span>
+          </div>
         </div>
 
         {/* Chevron */}
@@ -522,7 +527,7 @@ function DealThreadItem({
 
       {/* Task List */}
       {isExpanded && (
-        <div className="bg-slate-50/30 dark:bg-slate-900/10">
+        <div className="border-t border-slate-100 dark:border-slate-800">
           {taskTree.length > 0 ? (
             <>
               {taskTree.map(task => (
@@ -542,7 +547,7 @@ function DealThreadItem({
               ))}
             </>
           ) : (
-            <p className="text-center text-slate-400 dark:text-slate-500 text-xs py-4">No tasks</p>
+            <p className="text-center text-slate-400 dark:text-slate-500 text-xs py-8">No tasks</p>
           )}
         </div>
       )}
@@ -613,97 +618,112 @@ function TaskRow({ task, dealId, depth, userId, users, onComplete, onPickup, onU
     }
   };
 
-  const paddingLeft = 12 + depth * 20;
+  const paddingLeft = 16 + depth * 32;
+  const spineLeft = depth > 0 ? (16 + (depth - 1) * 32) : 0;
+  const connectorLeft = spineLeft;
+  const avatarLeft = paddingLeft;
 
   return (
     <>
       {/* Task Row */}
       <div
-        className={`relative flex items-center gap-3 px-3 py-2 border-l-2 transition-colors ${
-          isUnassigned && !isCompleted
-            ? 'bg-yellow-50/30 dark:bg-yellow-900/5 border-l-yellow-400'
-            : isCompleted
-              ? 'bg-transparent opacity-50 border-l-transparent'
-              : isMine
-                ? 'bg-orange-50/30 dark:bg-orange-900/5 border-l-orange-500'
-                : 'bg-transparent border-l-transparent'
-        }`}
+        className={`group relative flex items-start gap-3 py-2 px-3 min-h-[48px] transition-all hover:bg-slate-50/50 dark:hover:bg-slate-900/20 ${
+          isCompleted ? 'opacity-40' : 'opacity-100'
+        } ${isUnassigned && !isCompleted ? 'bg-yellow-50/20 dark:bg-yellow-900/5' : ''}`}
         style={{ paddingLeft: `${paddingLeft}px` }}
       >
-        {/* Vertical Thread Line */}
+        {/* Vertical Thread Spine (from parent) */}
         {depth > 0 && (
-          <div className="absolute left-3 top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700" />
+          <>
+            <div
+              className="absolute top-0 bottom-0 w-px bg-slate-300 dark:bg-slate-600"
+              style={{ left: `${spineLeft + 11}px` }}
+            />
+            {/* Horizontal Connector (L-shape) */}
+            <div
+              className="absolute top-6 h-px bg-slate-300 dark:bg-slate-600"
+              style={{
+                left: `${connectorLeft + 11}px`,
+                width: `${avatarLeft - connectorLeft - 11}px`
+              }}
+            />
+          </>
         )}
 
-        {/* Tree Control: Black +/- Toggle (if has children) */}
+        {/* Tree Control: Black +/- Toggle (on the spine, if has children) */}
         {hasChildren && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors z-10"
-            style={{ left: `${depth * 20 + 4}px` }}
+            className="absolute top-6 -translate-y-1/2 w-4 h-4 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-600 rounded-sm flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-900 hover:border-slate-400 dark:hover:border-slate-500 transition-all z-10 shadow-sm"
+            style={{ left: `${spineLeft + 9}px` }}
           >
             {isExpanded ? (
-              <Minus className="w-3 h-3 text-slate-600 dark:text-slate-400" />
+              <Minus className="w-2.5 h-2.5 text-slate-600 dark:text-slate-400" />
             ) : (
-              <Plus className="w-3 h-3 text-slate-600 dark:text-slate-400" />
+              <Plus className="w-2.5 h-2.5 text-slate-600 dark:text-slate-400" />
             )}
           </button>
         )}
 
-        {/* Assignee Avatar */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded-full">
-              {task.assignee_avatar || task.assignee_name ? (
-                <Avatar className="w-6 h-6 cursor-pointer hover:ring-2 hover:ring-orange-400 transition-all">
-                  <AvatarImage src={task.assignee_avatar || undefined} />
-                  <AvatarFallback className="text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                    {task.assignee_name?.charAt(0) || '?'}
-                  </AvatarFallback>
-                </Avatar>
-              ) : (
-                <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-orange-400 transition-all">
-                  <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500" />
-                </div>
-              )}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-64 p-2" align="start">
-            <div className="space-y-1">
-              <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                Assign to:
-              </div>
-              <button
-                onClick={() => onUpdateAssignee(task.id, null)}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
-              >
-                <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-slate-400" />
-                </div>
-                <span className="text-sm text-slate-700 dark:text-slate-300">Unassigned</span>
-              </button>
-              {users.filter(u => u.role && ['internal', 'admin', 'super_admin'].includes(u.role)).map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => onUpdateAssignee(task.id, u.id)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
-                >
-                  <Avatar className="w-6 h-6">
-                    <AvatarImage src={u.avatar_url} />
-                    <AvatarFallback className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                      {u.name.charAt(0)}
+        {/* Assignee Avatar with "Mine" Indicator */}
+        <div className="relative flex-shrink-0">
+          {isMine && !isCompleted && (
+            <div className="absolute -left-1 top-0 w-1.5 h-1.5 rounded-full bg-orange-500 z-10" />
+          )}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-orange-500 rounded-full">
+                {task.assignee_avatar || task.assignee_name ? (
+                  <Avatar className="w-6 h-6 cursor-pointer hover:ring-2 hover:ring-orange-400 transition-all">
+                    <AvatarImage src={task.assignee_avatar || undefined} />
+                    <AvatarFallback className="text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                      {task.assignee_name?.charAt(0) || '?'}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm text-slate-700 dark:text-slate-300">{u.name}</span>
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-orange-400 transition-all">
+                    <div className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500" />
+                  </div>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-2" align="start">
+              <div className="space-y-1">
+                <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  Assign to:
+                </div>
+                <button
+                  onClick={() => onUpdateAssignee(task.id, null)}
+                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
+                >
+                  <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-slate-400" />
+                  </div>
+                  <span className="text-sm text-slate-700 dark:text-slate-300">Unassigned</span>
                 </button>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
+                {users.filter(u => u.role && ['internal', 'admin', 'super_admin'].includes(u.role)).map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => onUpdateAssignee(task.id, u.id)}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
+                  >
+                    <Avatar className="w-6 h-6">
+                      <AvatarImage src={u.avatar_url} />
+                      <AvatarFallback className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                        {u.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm text-slate-700 dark:text-slate-300">{u.name}</span>
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
 
-        {/* Task Summary */}
-        <div className="flex-1 min-w-0">
-          <p className={`text-sm line-clamp-2 ${
+        {/* Task Summary - Typographic Emphasis */}
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <p className={`text-sm leading-snug transition-all ${
             isCompleted
               ? 'line-through text-slate-400 dark:text-slate-500'
               : isMine
@@ -712,16 +732,15 @@ function TaskRow({ task, dealId, depth, userId, users, onComplete, onPickup, onU
           }`}>
             {task.summary}
           </p>
+          {/* Red + (Add Sub-Task) - Inline with Title */}
+          <button
+            onClick={() => setIsAdding(!isAdding)}
+            className="flex-shrink-0 w-4 h-4 rounded hover:bg-orange-100 dark:hover:bg-orange-900/20 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+            title="Add sub-task"
+          >
+            <Plus className="w-3.5 h-3.5 text-orange-500" />
+          </button>
         </div>
-
-        {/* Red + (Add Sub-Task) */}
-        <button
-          onClick={() => setIsAdding(!isAdding)}
-          className="flex-shrink-0 w-5 h-5 rounded hover:bg-orange-100 dark:hover:bg-orange-900/20 flex items-center justify-center transition-colors group"
-          title="Add sub-task"
-        >
-          <Plus className="w-4 h-4 text-orange-500 group-hover:text-orange-600" />
-        </button>
 
         {/* Right Column: Due Date + Checkbox */}
         <div className="flex flex-col items-end gap-1 flex-shrink-0 w-20">
@@ -806,9 +825,16 @@ function TaskRow({ task, dealId, depth, userId, users, onComplete, onPickup, onU
       {/* Inline Add Sub-Task Input */}
       {isAdding && (
         <div
-          className="flex items-center gap-2 px-3 py-2 bg-orange-50/50 dark:bg-orange-900/10 border-l-2 border-l-orange-500"
-          style={{ paddingLeft: `${paddingLeft + 30}px` }}
+          className="relative flex items-center gap-2 px-3 py-3 bg-orange-50/30 dark:bg-orange-900/10"
+          style={{ paddingLeft: `${paddingLeft + 32}px` }}
         >
+          {/* Thread continuation */}
+          {depth >= 0 && (
+            <div
+              className="absolute top-0 bottom-0 w-px bg-orange-300 dark:bg-orange-700"
+              style={{ left: `${spineLeft + 11}px` }}
+            />
+          )}
           <input
             type="text"
             value={newTaskSummary}
@@ -816,11 +842,11 @@ function TaskRow({ task, dealId, depth, userId, users, onComplete, onPickup, onU
             onKeyDown={handleKeyDown}
             placeholder="New sub-task..."
             autoFocus
-            className="flex-1 px-2 py-1 text-sm bg-white dark:bg-slate-900 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+            className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-slate-900 border border-orange-300 dark:border-orange-700 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500"
           />
           <button
             onClick={handleAddSubTask}
-            className="px-2 py-1 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded transition-colors"
+            className="px-3 py-1.5 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded-md transition-colors"
           >
             Add
           </button>
@@ -829,7 +855,7 @@ function TaskRow({ task, dealId, depth, userId, users, onComplete, onPickup, onU
               setIsAdding(false);
               setNewTaskSummary('');
             }}
-            className="px-2 py-1 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+            className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
           >
             Cancel
           </button>
