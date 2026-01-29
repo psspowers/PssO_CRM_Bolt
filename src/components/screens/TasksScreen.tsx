@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, Square, Clock, Loader2, User, Target, ChevronDown, ChevronRight, Hand, Zap } from 'lucide-react';
+import { CheckSquare, Square, Clock, Loader2, User, Target, ChevronDown, ChevronRight, Hand, Zap, Users, Search, X, Filter } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
@@ -243,23 +243,40 @@ export const TasksScreen: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-24">
-      <div className="flex gap-2 p-1 bg-gray-100 rounded-lg">
-        <button
-          onClick={() => setFilter('all')}
-          className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-            filter === 'all' ? 'bg-white shadow text-orange-600' : 'text-gray-500'
-          }`}
-        >
-          Team Tasks
-        </button>
-        <button
-          onClick={() => setFilter('mine')}
-          className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
-            filter === 'mine' ? 'bg-white shadow text-orange-600' : 'text-gray-500'
-          }`}
-        >
-          My Tasks
-        </button>
+      {/* Header Section */}
+      <div className="space-y-3">
+        {/* Title Row */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-slate-900">Tasks</h1>
+          </div>
+        </div>
+
+        {/* Filter Toggle */}
+        <div className="flex items-center bg-slate-100 rounded-lg p-1">
+          <button
+            onClick={() => setFilter('mine')}
+            className={`flex items-center gap-1 px-3 py-2 rounded-md text-xs font-semibold transition-all flex-1 justify-center ${
+              filter === 'mine'
+                ? 'bg-white shadow-sm text-orange-600'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <User className="w-3.5 h-3.5" />
+            <span>My Tasks</span>
+          </button>
+          <button
+            onClick={() => setFilter('all')}
+            className={`flex items-center gap-1 px-3 py-2 rounded-md text-xs font-semibold transition-all flex-1 justify-center ${
+              filter === 'all'
+                ? 'bg-white shadow-sm text-orange-600'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Team Tasks</span>
+          </button>
+        </div>
       </div>
 
       {dealGroups.length === 0 ? (
