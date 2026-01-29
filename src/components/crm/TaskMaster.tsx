@@ -12,35 +12,27 @@ import { toast } from 'sonner';
 import { isPast, parseISO, format, isToday } from 'date-fns';
 import confetti from 'canvas-confetti';
 
-type FilterMode = 'all' | 'mine' | 'delegated';
+type FilterMode = 'all' | 'my' | 'delegated';
 
 interface Task {
   id: string;
   summary: string;
-  details?: string;
-  status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
-  priority?: 'Low' | 'Medium' | 'High';
-  dueDate?: string;
-  assignedToId?: string;
-  assigneeName?: string;
-  assigneeAvatar?: string;
-  parentTaskId?: string;
-  depth: number;
-  createdAt: string;
+  task_status: string;
+  due_date?: string;
+  assigned_to_id?: string;
+  assignee_name?: string;
+  assignee_avatar?: string;
+  parent_task_id?: string;
+  thread_depth: number;
   children?: Task[];
 }
 
-interface DealGroup {
-  deal: {
-    id: string;
-    name: string;
-    stage: string;
-    value: number;
-    account_name: string;
-  };
-  progress: number;
-  total_tasks: number;
-  completed_tasks: number;
+interface DealThread {
+  id: string;
+  name: string;
+  stage: string;
+  mw: number;
+  account_name: string;
   tasks: Task[];
 }
 
@@ -48,11 +40,24 @@ interface TaskMasterProps {
   onClose: () => void;
 }
 
+const getStageAvatar = (stage: string) => {
+  const stageMap: Record<string, { bg: string; text: string; letter: string }> = {
+    'Prospecting': { bg: 'bg-slate-200', text: 'text-slate-600', letter: 'P' },
+    'Qualification': { bg: 'bg-blue-500', text: 'text-white', letter: 'Q' },
+    'Proposal': { bg: 'bg-amber-500', text: 'text-white', letter: 'P' },
+    'Negotiation': { bg: 'bg-purple-500', text: 'text-white', letter: 'N' },
+    'Term Sheet': { bg: 'bg-teal-500', text: 'text-white', letter: 'T' },
+    'Won': { bg: 'bg-emerald-500', text: 'text-white', letter: 'W' },
+    'Closing': { bg: 'bg-green-500', text: 'text-white', letter: 'C' },
+  };
+  return stageMap[stage] || { bg: 'bg-slate-300', text: 'text-slate-700', letter: '?' };
+};
+
 export function TaskMaster({ onClose }: TaskMasterProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterMode>('all');
-  const [dealGroups, setDealGroups] = useState<DealGroup[]>([]);
+  const [dealThreads, setDealThreads] = useState<DealThread[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchDealThreads = async () => {
@@ -60,18 +65,17 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase.rpc('get_task_threads', {
-        p_user_id: user.id,
-        p_filter: filter,
+      const { data, error } = await supabase.rpc('get_deal_threads_view', {
+        p_view_mode: filter,
       });
 
       if (error) throw error;
 
-      const dealGroups = Array.isArray(data) ? data : (data ? [data] : []);
-      setDealGroups(dealGroups);
+      const threads = data || [];
+      setDealThreads(threads);
     } catch (error) {
       console.error('Error fetching deal threads:', error);
-      toast.error('Failed to load task stream');
+      toast.error('Failed to load deal stream');
     } finally {
       setLoading(false);
     }
@@ -82,6 +86,8 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
   }, [filter, user]);
 
   const buildTaskTree = (tasks: Task[]): Task[] => {
+    if (!tasks || tasks.length === 0) return [];
+
     const taskMap = new Map<string, Task & { children: Task[] }>();
     const roots: Task[] = [];
 
@@ -91,8 +97,8 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
 
     tasks.forEach(task => {
       const node = taskMap.get(task.id)!;
-      if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
-        taskMap.get(task.parentTaskId)!.children!.push(node);
+      if (task.parent_task_id && taskMap.has(task.parent_task_id)) {
+        taskMap.get(task.parent_task_id)!.children!.push(node);
       } else {
         roots.push(node);
       }
@@ -183,8 +189,15 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
     }
   };
 
-  const calculateWatts = (group: DealGroup): number => {
-    return group.total_tasks * 10;
+  const calculateProgress = (tasks: Task[]): number => {
+    if (!tasks || tasks.length === 0) return 0;
+    const completed = tasks.filter(t => t.task_status === 'Completed').length;
+    return Math.round((completed / tasks.length) * 100);
+  };
+
+  const calculateWatts = (tasks: Task[]): number => {
+    if (!tasks || tasks.length === 0) return 0;
+    return tasks.length * 10;
   };
 
   const goToPulse = () => {
@@ -195,7 +208,6 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
   return (
     <div className="fixed inset-0 z-50 bg-white dark:bg-slate-950 flex flex-col">
 
-      {/* Sticky Header */}
       <div className="sticky top-0 z-10 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center justify-between px-4 h-14">
           <h1 className="text-xl font-bold text-slate-900 dark:text-white">Velocity Command</h1>
@@ -207,7 +219,6 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
           </button>
         </div>
 
-        {/* Filter Pills */}
         <div className="px-4 pb-3">
           <div className="inline-flex gap-2 p-1 bg-slate-100 dark:bg-slate-900 rounded-lg">
             <button
@@ -221,9 +232,9 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
               All
             </button>
             <button
-              onClick={() => setFilter('mine')}
+              onClick={() => setFilter('my')}
               className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${
-                filter === 'mine'
+                filter === 'my'
                   ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
@@ -244,7 +255,6 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
         </div>
       </div>
 
-      {/* Feed Area */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center h-full">
@@ -253,7 +263,7 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
               <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Loading threads...</p>
             </div>
           </div>
-        ) : dealGroups.length === 0 ? (
+        ) : dealThreads.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center max-w-sm px-6">
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 flex items-center justify-center mx-auto mb-4">
@@ -273,14 +283,15 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
           </div>
         ) : (
           <Accordion type="multiple" className="w-full">
-            {dealGroups.map((group) => (
-              <DealThread
-                key={group.deal.id}
-                group={group}
+            {dealThreads.map((thread) => (
+              <DealThreadItem
+                key={thread.id}
+                thread={thread}
                 userId={user?.id || ''}
                 onComplete={completeTask}
                 onPickup={pickupTask}
                 buildTaskTree={buildTaskTree}
+                calculateProgress={calculateProgress}
                 calculateWatts={calculateWatts}
               />
             ))}
@@ -291,76 +302,59 @@ export function TaskMaster({ onClose }: TaskMasterProps) {
   );
 }
 
-interface DealThreadProps {
-  group: DealGroup;
+interface DealThreadItemProps {
+  thread: DealThread;
   userId: string;
   onComplete: (taskId: string, summary: string) => void;
   onPickup: (taskId: string, summary: string) => void;
   buildTaskTree: (tasks: Task[]) => Task[];
-  calculateWatts: (group: DealGroup) => number;
+  calculateProgress: (tasks: Task[]) => number;
+  calculateWatts: (tasks: Task[]) => number;
 }
 
-function DealThread({ group, userId, onComplete, onPickup, buildTaskTree, calculateWatts }: DealThreadProps) {
-  const taskTree = buildTaskTree(group.tasks);
-  const wattsAvailable = calculateWatts(group);
-
-  const getStageColor = (stage: string) => {
-    const colors: Record<string, string> = {
-      'Prospecting': 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
-      'Qualification': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
-      'Proposal': 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300',
-      'Negotiation': 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
-      'Closing': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
-      'Won': 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300',
-    };
-    return colors[stage] || 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300';
-  };
+function DealThreadItem({ thread, userId, onComplete, onPickup, buildTaskTree, calculateProgress, calculateWatts }: DealThreadItemProps) {
+  const taskTree = buildTaskTree(thread.tasks);
+  const progress = calculateProgress(thread.tasks);
+  const wattsAvailable = calculateWatts(thread.tasks);
+  const stageAvatar = getStageAvatar(thread.stage);
 
   return (
-    <AccordionItem value={group.deal.id} className="border-b border-slate-200 dark:border-slate-800">
+    <AccordionItem value={thread.id} className="border-b border-slate-200 dark:border-slate-800">
       <AccordionTrigger className="hover:bg-slate-50 dark:hover:bg-slate-900/50 px-4 py-4 hover:no-underline">
-        <div className="flex items-start gap-3 w-full">
-          {/* Avatar */}
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0 text-white font-bold text-sm shadow-sm">
-            {group.deal.account_name?.charAt(0) || 'D'}
+        <div className="flex items-center gap-3 w-full">
+          <div className={`w-12 h-12 rounded-full ${stageAvatar.bg} ${stageAvatar.text} flex items-center justify-center flex-shrink-0 font-bold text-lg shadow-sm`}>
+            {stageAvatar.letter}
           </div>
 
-          {/* Content */}
           <div className="flex-1 min-w-0 text-left">
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <h3 className="font-bold text-slate-900 dark:text-white text-base">{group.deal.name}</h3>
-              <Badge className={`text-xs px-2 py-0.5 font-semibold ${getStageColor(group.deal.stage)}`}>
-                {group.deal.stage}
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">{thread.name}</h3>
+              <Badge className="text-xs px-2 py-0.5 font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                {thread.mw} MW
               </Badge>
             </div>
 
             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-2">
-              <span>{group.deal.account_name}</span>
+              <span>{thread.account_name}</span>
               <span>·</span>
               <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400 font-semibold">
                 <Zap className="w-3.5 h-3.5" />
-                +{wattsAvailable} MW
+                +{wattsAvailable}
               </span>
             </div>
 
-            {/* Progress Bar */}
             <div className="flex items-center gap-2">
               <Progress
-                value={group.progress}
+                value={progress}
                 className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-800"
                 indicatorClassName="bg-orange-500"
               />
               <span className="text-xs font-bold text-slate-700 dark:text-slate-300 min-w-[36px]">
-                {group.progress}%
+                {progress}%
               </span>
-            </div>
-
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              {group.completed_tasks}/{group.total_tasks} tasks complete
             </div>
           </div>
 
-          {/* AI Suggest Button */}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -370,8 +364,6 @@ function DealThread({ group, userId, onComplete, onPickup, buildTaskTree, calcul
           >
             <Sparkles className="w-4 h-4" />
           </button>
-
-          {/* Chevron (provided by AccordionTrigger) */}
         </div>
       </AccordionTrigger>
 
@@ -406,35 +398,31 @@ interface TaskRowProps {
 }
 
 function TaskRow({ task, depth, userId, onComplete, onPickup }: TaskRowProps) {
-  const isCompleted = task.status === 'Completed';
-  const isMine = task.assignedToId === userId;
-  const isUnassigned = !task.assignedToId;
-  const isOverdue = task.dueDate && isPast(parseISO(task.dueDate)) && !isCompleted;
+  const isCompleted = task.task_status === 'Completed';
+  const isMine = task.assigned_to_id === userId;
+  const isUnassigned = !task.assigned_to_id;
+  const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isCompleted;
 
-  const indentClass = depth > 0 ? `pl-${depth * 6}` : '';
-  const avatarSize = depth === 0 ? 'w-8 h-8' : depth === 1 ? 'w-7 h-7' : 'w-6 h-6';
-  const textSize = depth === 0 ? 'text-sm' : 'text-xs';
-  const fontWeight = depth === 0 ? 'font-bold' : 'font-semibold';
+  const indentPadding = depth > 0 ? `ml-8 pl-${Math.min(depth * 4, 12)}` : '';
 
   return (
     <div className="relative">
       <div
-        className={`flex items-start gap-3 py-3 border-l-2 transition-all ${indentClass} ${
+        className={`flex items-start gap-3 py-3 border-l-4 transition-all ${indentPadding} ${
           isUnassigned && !isCompleted
-            ? 'bg-yellow-50 dark:bg-yellow-900/10 border-yellow-400 dark:border-yellow-700'
+            ? 'bg-yellow-50 dark:bg-yellow-900/10 border-yellow-300 dark:border-yellow-600'
             : isCompleted
-              ? 'bg-slate-50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800 opacity-60'
+              ? 'bg-slate-50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-700 opacity-60'
               : isMine
-                ? 'border-orange-400 dark:border-orange-600 hover:bg-orange-50/50 dark:hover:bg-orange-900/10'
-                : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50'
-        } ${depth > 0 ? 'ml-8' : ''}`}
+                ? 'bg-orange-50/60 dark:bg-orange-900/10 border-orange-500 dark:border-orange-600'
+                : 'border-slate-200 dark:border-slate-700 opacity-80 grayscale-[0.2] hover:opacity-100 hover:grayscale-0'
+        }`}
       >
-        {/* Status Icon + Avatar */}
         <div className="flex flex-col items-center gap-1 flex-shrink-0 pl-3">
           <button
             onClick={() => !isCompleted && isMine && onComplete(task.id, task.summary)}
             disabled={isCompleted || !isMine}
-            className={`${isMine && !isCompleted ? 'cursor-pointer hover:scale-110' : 'cursor-default'}`}
+            className={`transition-transform ${isMine && !isCompleted ? 'cursor-pointer hover:scale-110' : 'cursor-default'}`}
           >
             {!isCompleted ? (
               <Circle className={`w-4 h-4 ${isMine ? 'text-orange-500' : 'text-slate-300 dark:text-slate-600'}`} />
@@ -443,100 +431,76 @@ function TaskRow({ task, depth, userId, onComplete, onPickup }: TaskRowProps) {
             )}
           </button>
 
-          {task.assigneeAvatar || task.assigneeName ? (
-            <Avatar className={`${avatarSize} flex-shrink-0`}>
-              <AvatarImage src={task.assigneeAvatar || undefined} />
+          {task.assignee_avatar || task.assignee_name ? (
+            <Avatar className="w-7 h-7 flex-shrink-0">
+              <AvatarImage src={task.assignee_avatar || undefined} />
               <AvatarFallback className="text-xs font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                {task.assigneeName?.charAt(0) || '?'}
+                {task.assignee_name?.charAt(0) || '?'}
               </AvatarFallback>
             </Avatar>
           ) : (
-            <div className={`${avatarSize} rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center flex-shrink-0`}>
+            <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
               <Circle className="w-3 h-3 text-slate-400 dark:text-slate-600" />
             </div>
           )}
         </div>
 
-        {/* Content */}
         <div className="flex-1 min-w-0">
-          <p className={`${textSize} ${fontWeight} ${
-            isCompleted
-              ? 'line-through text-slate-400 dark:text-slate-500'
-              : isUnassigned
-                ? 'text-yellow-900 dark:text-yellow-200'
+          <div className="flex items-center gap-2 mb-1">
+            <p className={`text-sm ${
+              isCompleted
+                ? 'line-through text-slate-400 dark:text-slate-500'
                 : isMine
-                  ? 'text-slate-900 dark:text-white'
-                  : 'text-slate-700 dark:text-slate-300'
-          }`}>
-            {task.summary}
-          </p>
-
-          {task.details && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{task.details}</p>
-          )}
-
-          {/* Metadata */}
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            {task.assigneeName && (
-              <span className="text-xs text-slate-500 dark:text-slate-400">@{task.assigneeName.split(' ')[0]}</span>
-            )}
-
-            {task.dueDate && (
-              <>
-                <span className="text-slate-300 dark:text-slate-700">·</span>
-                <div className={`flex items-center gap-1 text-xs font-medium ${
-                  isOverdue
-                    ? 'text-red-600 dark:text-red-400'
-                    : isToday(parseISO(task.dueDate))
-                      ? 'text-orange-600 dark:text-orange-400'
-                      : 'text-slate-500 dark:text-slate-400'
-                }`}>
-                  <Clock className="w-3 h-3" />
-                  {format(parseISO(task.dueDate), 'MMM d')}
-                </div>
-              </>
-            )}
-
-            {task.priority && task.priority !== 'Low' && (
-              <>
-                <span className="text-slate-300 dark:text-slate-700">·</span>
-                <span className={`text-xs font-semibold ${
-                  task.priority === 'High'
-                    ? 'text-red-600 dark:text-red-400'
-                    : 'text-yellow-600 dark:text-yellow-400'
-                }`}>
-                  {task.priority}
-                </span>
-              </>
+                  ? 'font-bold text-slate-900 dark:text-white'
+                  : isUnassigned
+                    ? 'font-semibold text-yellow-900 dark:text-yellow-200'
+                    : 'text-slate-700 dark:text-slate-300'
+            }`}>
+              {task.summary}
+            </p>
+            {isMine && !isCompleted && (
+              <Badge className="text-[10px] px-1.5 py-0.5 font-bold bg-orange-500 text-white">
+                YOUR MOVE
+              </Badge>
             )}
           </div>
+
+          {task.due_date && (
+            <div className={`flex items-center gap-1 text-xs font-medium mt-1 ${
+              isOverdue
+                ? 'text-red-600 dark:text-red-400'
+                : isToday(parseISO(task.due_date))
+                  ? 'text-orange-600 dark:text-orange-400'
+                  : 'text-slate-500 dark:text-slate-400'
+            }`}>
+              <Clock className="w-3 h-3" />
+              {format(parseISO(task.due_date), 'MMM d')}
+            </div>
+          )}
         </div>
 
-        {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-shrink-0 pr-3">
           {isUnassigned && !isCompleted && (
             <button
               onClick={() => onPickup(task.id, task.summary)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-yellow-900 dark:text-yellow-100 bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 rounded-full border border-yellow-300 dark:border-yellow-700 transition-all"
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-yellow-900 dark:text-yellow-100 bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 rounded-full border border-yellow-300 dark:border-yellow-600 transition-all"
             >
               <Hand className="w-3 h-3" />
-              Pickup +10
+              +5⚡
             </button>
           )}
 
           {isMine && !isCompleted && (
             <button
               onClick={() => onComplete(task.id, task.summary)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 rounded-full transition-all shadow-sm"
+              className="w-5 h-5 rounded-full bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 flex items-center justify-center transition-all shadow-sm"
             >
-              Complete
-              <CheckCircle2 className="w-3 h-3" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-white" />
             </button>
           )}
         </div>
       </div>
 
-      {/* Render Children */}
       {task.children && task.children.length > 0 && (
         <div className="space-y-0">
           {task.children.map(child => (
