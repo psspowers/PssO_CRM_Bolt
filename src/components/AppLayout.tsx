@@ -13,7 +13,8 @@ import {
   ProjectsScreen,
   PulseScreen,
   MeScreen,
-  NexusScreen
+  NexusScreen,
+  ZaapScreen
 } from './screens';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppContext } from '@/contexts/AppContext';
@@ -23,7 +24,7 @@ import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import { supabase } from '@/lib/supabase';
 
 
-type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'projects' | 'pulse' | 'me' | 'nexus';
+type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'projects' | 'pulse' | 'me' | 'nexus' | 'zaap';
 type EntityType = 'Account' | 'Opportunity';
 
 export default function AppLayout() {
@@ -447,6 +448,7 @@ export default function AppLayout() {
       case 'contacts': return <ContactsScreen forcedOpenId={autoOpenId} />;
       case 'projects': return <ProjectsScreen forcedOpenId={autoOpenId} />;
       case 'tasks': return <TasksScreen />;
+      case 'zaap': return <ZaapScreen />;
       case 'pulse': return <PulseScreen forcedOpenId={autoOpenId} onNavigate={handleDeepLink} />;
       case 'timeline': return <ActivityTimelineScreen />;
       case 'search': return <SearchScreen onNavigate={handleDeepLink} />;
@@ -474,6 +476,7 @@ export default function AppLayout() {
     search: 'Search',
     timeline: 'Timeline',
     tasks: 'Tasks',
+    zaap: 'Zaap',
     pulse: 'Pulse',
     me: 'Me',
     nexus: 'Network Intelligence'
