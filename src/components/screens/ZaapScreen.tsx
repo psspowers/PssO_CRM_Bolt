@@ -271,153 +271,146 @@ export function ZaapScreen() {
   const teamThreadsCount = dealThreads.length;
 
   return (
-    <div className="pb-24 min-h-screen bg-slate-50 dark:bg-slate-900">
-      {/* Header - Clone of Accounts Screen Style */}
-      <div className="sticky top-0 z-10 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm border-b border-slate-100 dark:border-slate-800">
-        <div className="p-4">
-          <div className="flex flex-col gap-4">
-            {/* Row 1: Title & Search */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <LayoutDashboard className="w-6 h-6 text-slate-400" />
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Zaap</h1>
-              </div>
+    <div className="space-y-6">
+      {/* Header Row */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <LayoutDashboard className="w-6 h-6 text-slate-400" />
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Zaap</h1>
+          </div>
 
-              {/* Search & Filter */}
-              <div className="flex items-center gap-2 flex-1 max-w-md ml-auto">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search deals or tasks..."
-                    className="w-full pl-9 pr-10 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
-                  />
-                  {search && (
-                    <button
-                      onClick={() => setSearch('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
-                    >
-                      <X className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-                  )}
-                </div>
+          {/* Search & Filter - Moved to Header Row */}
+          <div className="flex items-center gap-2 flex-1 max-w-md ml-auto">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search deals or tasks..."
+                className="w-full pl-9 pr-10 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+              />
+              {search && (
                 <button
-                  onClick={() => toast.info('Filters', { description: 'Coming soon' })}
-                  className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-colors flex-shrink-0"
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
                 >
-                  <Filter className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                  <X className="w-3.5 h-3.5 text-slate-400" />
                 </button>
-              </div>
-            </div>
-
-            {/* Row 2: Scope Toggles */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <div className="flex items-center bg-slate-100 dark:bg-slate-900 rounded-lg p-1 flex-shrink-0">
-                <button
-                  onClick={() => setViewMode('mine')}
-                  className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                    viewMode === 'mine'
-                      ? 'bg-white dark:bg-slate-800 shadow-sm text-orange-600'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                  }`}
-                >
-                  <User className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Mine</span>
-                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    viewMode === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-                  }`}>
-                    {myThreadsCount}
-                  </span>
-                </button>
-                <button
-                  onClick={() => setViewMode('team')}
-                  className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                    viewMode === 'team'
-                      ? 'bg-white dark:bg-slate-800 shadow-sm text-orange-600'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                  }`}
-                >
-                  <Users className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Team</span>
-                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    viewMode === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-                  }`}>
-                    {teamThreadsCount}
-                  </span>
-                </button>
-              </div>
-
-              {/* Team Member Dropdown */}
-              {viewMode === 'team' && (
-                <div className="relative flex-shrink-0 animate-in fade-in slide-in-from-left-2">
-                  <select
-                    className="appearance-none bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold pl-2 pr-6 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-28 truncate"
-                  >
-                    <option value="all">All Team</option>
-                  </select>
-                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                    <ChevronDownIcon className="w-3 h-3" />
-                  </div>
-                </div>
               )}
             </div>
+            <button
+              onClick={() => toast.info('Filters', { description: 'Coming soon' })}
+              className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-colors flex-shrink-0"
+            >
+              <Filter className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+            </button>
           </div>
+        </div>
+
+        {/* Hierarchy View Toggle - Mine vs Team */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1 flex-shrink-0">
+            <button
+              onClick={() => setViewMode('mine')}
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                viewMode === 'mine'
+                  ? 'bg-white dark:bg-slate-900 shadow-sm text-orange-600'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+              }`}
+            >
+              <User className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Mine</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                viewMode === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+              }`}>
+                {myThreadsCount}
+              </span>
+            </button>
+            <button
+              onClick={() => setViewMode('team')}
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                viewMode === 'team'
+                  ? 'bg-white dark:bg-slate-900 shadow-sm text-orange-600'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Team</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                viewMode === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+              }`}>
+                {teamThreadsCount}
+              </span>
+            </button>
+          </div>
+
+          {/* Team Member Drill-Down Filter */}
+          {viewMode === 'team' && (
+            <div className="relative flex-shrink-0 animate-in fade-in slide-in-from-left-2">
+              <select
+                className="appearance-none bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold pl-2 pr-6 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-28 truncate"
+              >
+                <option value="all">All Team</option>
+              </select>
+              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 dark:text-slate-400">
+                <ChevronDownIcon className="w-3 h-3" />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="flex flex-col items-center gap-3">
-              <div className="animate-spin rounded-full h-10 w-10 border-3 border-orange-500 border-t-transparent" />
-              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Loading threads...</p>
+      {/* Deal Threads List */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-10 w-10 border-3 border-orange-500 border-t-transparent" />
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Loading threads...</p>
+          </div>
+        </div>
+      ) : filteredThreads.length === 0 ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center max-w-sm mx-auto">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 flex items-center justify-center mx-auto mb-4">
+              <Radar className="w-10 h-10 text-orange-600 dark:text-orange-400" />
             </div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">No Active Threads</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+              {search ? 'No threads match your search.' : 'No tasks match your current view. Find deals in Pulse to create new threads.'}
+            </p>
+            {!search && (
+              <Button
+                onClick={goToPulse}
+                className="bg-orange-500 hover:bg-orange-600 text-white font-semibold"
+              >
+                Go to Pulse
+              </Button>
+            )}
           </div>
-        ) : filteredThreads.length === 0 ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center max-w-sm">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 flex items-center justify-center mx-auto mb-4">
-                <Radar className="w-10 h-10 text-orange-600 dark:text-orange-400" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">No Active Threads</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                {search ? 'No threads match your search.' : 'No tasks match your current view. Find deals in Pulse to create new threads.'}
-              </p>
-              {!search && (
-                <Button
-                  onClick={goToPulse}
-                  className="bg-orange-500 hover:bg-orange-600 text-white font-semibold"
-                >
-                  Go to Pulse
-                </Button>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredThreads.map((thread) => (
-              <DealThreadItem
-                key={thread.id}
-                thread={thread}
-                userId={user?.id || ''}
-                users={users}
-                onComplete={completeTask}
-                onPickup={pickupTask}
-                onUpdateAssignee={updateTaskAssignee}
-                onUpdateDueDate={updateTaskDueDate}
-                buildTaskTree={buildTaskTree}
-                calculateProgress={calculateProgress}
-                isExpanded={expandedDeals.has(thread.id)}
-                onToggle={() => toggleDeal(thread.id)}
-                navigate={navigate}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {filteredThreads.map((thread) => (
+            <DealThreadItem
+              key={thread.id}
+              thread={thread}
+              userId={user?.id || ''}
+              users={users}
+              onComplete={completeTask}
+              onPickup={pickupTask}
+              onUpdateAssignee={updateTaskAssignee}
+              onUpdateDueDate={updateTaskDueDate}
+              buildTaskTree={buildTaskTree}
+              calculateProgress={calculateProgress}
+              isExpanded={expandedDeals.has(thread.id)}
+              onToggle={() => toggleDeal(thread.id)}
+              navigate={navigate}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -637,7 +630,7 @@ function TaskRow({ task, depth, userId, users, onComplete, onPickup, onUpdateAss
                     </div>
                     <span className="text-sm text-slate-700 dark:text-slate-300">Unassigned</span>
                   </button>
-                  {users.filter(u => ['internal', 'admin', 'super_admin'].includes(u.role || '')).map((u) => (
+                  {users.filter(u => u.role && ['internal', 'admin', 'super_admin'].includes(u.role)).map((u) => (
                     <button
                       key={u.id}
                       onClick={() => onUpdateAssignee(task.id, u.id)}
