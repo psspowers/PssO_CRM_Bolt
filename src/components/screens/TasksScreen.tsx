@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { CheckSquare, Square, Clock, Loader2, User, Target, ChevronDown, Hand, Zap, Users, Search, X, Filter, Info, Plus, Minus } from 'lucide-react';
+import { CheckSquare, Square, Clock, Loader2, User, ChevronDown, Hand, Zap, Users, Search, X, Info, Plus, Minus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TaskThread {
@@ -40,14 +39,14 @@ interface DealGroup {
 
 const getStageConfig = (stage: string) => {
   const configs: Record<string, { char: string; color: string; label: string }> = {
-    'Prospect': { char: '', color: 'bg-slate-300', label: 'Prospect' },
+    'Prospect': { char: '', color: 'bg-slate-400', label: 'Prospect' },
     'Qualified': { char: 'Q', color: 'bg-blue-500', label: 'Qualified' },
     'Proposal': { char: 'P', color: 'bg-amber-500', label: 'Proposal' },
     'Negotiation': { char: 'N', color: 'bg-purple-500', label: 'Negotiation' },
     'Term Sheet': { char: 'T', color: 'bg-teal-500', label: 'Term Sheet' },
     'Won': { char: 'W', color: 'bg-green-500', label: 'Won' }
   };
-  return configs[stage] || { char: '', color: 'bg-slate-300', label: stage };
+  return configs[stage] || { char: '', color: 'bg-slate-400', label: stage };
 };
 
 export const TasksScreen: React.FC = () => {
@@ -153,8 +152,7 @@ export const TasksScreen: React.FC = () => {
           task.summary.toLowerCase().includes(searchLower) ||
           task.details?.toLowerCase().includes(searchLower) ||
           task.assigneeName?.toLowerCase().includes(searchLower) ||
-          group.deal.name.toLowerCase().includes(searchLower) ||
-          group.deal.account_name.toLowerCase().includes(searchLower)
+          group.deal.name.toLowerCase().includes(searchLower)
         )
       }))
       .filter(group => group.tasks.length > 0);
@@ -349,6 +347,14 @@ export const TasksScreen: React.FC = () => {
     });
   };
 
+  const getInitials = (name: string) => {
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
   const renderTask = (task: TaskThread & { children?: TaskThread[] }, dealId: string, depth: number = 0, isLast: boolean = false): React.ReactNode => {
     const isCompleted = task.status === 'Completed';
     const isMine = task.assignedToId === user?.id;
@@ -363,30 +369,31 @@ export const TasksScreen: React.FC = () => {
             <div
               className="absolute left-0 top-0 w-px bg-slate-200"
               style={{
-                left: `${(depth - 1) * 24 + 12}px`,
-                height: isLast ? '24px' : '100%'
+                left: `${(depth - 1) * 28 + 18}px`,
+                height: isLast ? '28px' : '100%'
               }}
             />
             <div
-              className="absolute top-6 h-px bg-slate-200"
+              className="absolute h-px bg-slate-200"
               style={{
-                left: `${(depth - 1) * 24 + 12}px`,
-                width: '12px'
+                left: `${(depth - 1) * 28 + 18}px`,
+                width: '14px',
+                top: '28px'
               }}
             />
           </>
         )}
 
         <div
-          className="flex items-center gap-2 py-1.5"
-          style={{ paddingLeft: `${depth * 24}px` }}
+          className="flex items-center gap-3 py-2.5 hover:bg-slate-50 transition-colors"
+          style={{ paddingLeft: `${depth * 28}px` }}
         >
           {hasChildren && (
             <button
               onClick={() => toggleExpanded(task.id)}
-              className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
+              className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
             >
-              {isExpanded ? <Minus className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+              {isExpanded ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
             </button>
           )}
 
@@ -397,50 +404,61 @@ export const TasksScreen: React.FC = () => {
             className="flex-shrink-0"
           >
             {isCompleted ? (
-              <CheckSquare className="w-4 h-4 text-green-500" />
+              <CheckSquare className="w-5 h-5 text-green-500" />
             ) : (
-              <Square className="w-4 h-4 text-slate-300" />
+              <Square className="w-5 h-5 text-slate-300 hover:text-slate-400" />
             )}
           </button>
 
           <div
-            className={`flex-1 min-w-0 px-2 py-1 rounded ${
+            className={`flex-1 min-w-0 px-3 py-2 rounded-lg ${
               isMine && !isCompleted ? 'bg-yellow-100' : ''
-            } ${isCompleted ? 'opacity-60' : ''}`}
+            } ${isCompleted ? 'opacity-50' : ''}`}
           >
-            <span className={`text-sm ${isCompleted ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+            <span className={`text-[15px] ${isCompleted ? 'line-through text-slate-400' : 'text-slate-900'}`}>
               {task.summary}
             </span>
           </div>
 
           <button
             onClick={() => addSubtask(task.id, dealId)}
-            className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+            className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
           >
-            <Plus className="w-3 h-3" />
+            <Plus className="w-4 h-4" />
           </button>
 
-          {isUnassigned && (
+          {isUnassigned ? (
             <button
               onClick={() => pickupTask(task.id, task.summary)}
-              className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-md transition-colors border border-amber-200 flex-shrink-0"
+              className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-full transition-colors border border-amber-200 flex-shrink-0"
             >
-              <Hand className="w-3 h-3" />
+              <Hand className="w-3.5 h-3.5" />
               Pickup
-              <Zap className="w-3 h-3 text-amber-500" />
+              <Zap className="w-3.5 h-3.5 text-amber-500" />
             </button>
-          )}
-
-          {!isUnassigned && (
-            <div className="flex items-center gap-1 text-xs text-slate-500 flex-shrink-0">
-              <User className="w-3 h-3" />
-              {task.assigneeName || 'Unknown'}
-            </div>
+          ) : (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex-shrink-0">
+                    <Avatar className="w-7 h-7">
+                      <AvatarImage src={task.assigneeAvatar} />
+                      <AvatarFallback className="bg-slate-200 text-slate-600 text-xs font-medium">
+                        {task.assigneeName ? getInitials(task.assigneeName) : '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">{task.assigneeName || 'Unknown'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
 
           {task.dueDate && (
-            <div className="flex items-center gap-1 text-xs text-slate-500 flex-shrink-0">
-              <Clock className="w-3 h-3" />
+            <div className="flex items-center gap-1 text-xs text-slate-500 flex-shrink-0 min-w-[60px] justify-end">
+              <Clock className="w-3.5 h-3.5" />
               {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </div>
           )}
@@ -469,7 +487,7 @@ export const TasksScreen: React.FC = () => {
     <div className="space-y-4 pb-24">
       <div className="space-y-3">
         <div>
-          <div className="flex items-center justify-between gap-2 mb-1">
+          <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2 flex-shrink-0">
               <TooltipProvider>
                 <Tooltip>
@@ -583,26 +601,27 @@ export const TasksScreen: React.FC = () => {
             const isDealExpanded = expandedDeals.has(group.deal.id);
 
             return (
-              <div key={group.deal.id} className="py-4 border-b border-slate-100">
+              <div key={group.deal.id} className="border-b border-slate-200 last:border-b-0">
                 <button
                   onClick={() => toggleDealExpanded(group.deal.id)}
-                  className="w-full flex items-center gap-3 mb-2 hover:bg-slate-50 -mx-2 px-2 py-1 rounded transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-4 hover:bg-slate-50 transition-colors"
                 >
                   <div
-                    className={`w-10 h-10 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}
+                    className={`w-11 h-11 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-sm`}
                   >
                     {stageConfig.char}
                   </div>
 
                   <div className="flex-1 min-w-0 text-left">
-                    <h3 className="font-bold text-slate-900 truncate">{group.deal.name}</h3>
-                    <p className="text-xs text-slate-500">{group.deal.account_name}</p>
+                    <h3 className="font-bold text-[15px] text-slate-900 truncate">{group.deal.name}</h3>
                   </div>
 
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-xs font-medium text-slate-600">
-                      {group.completed_tasks}/{group.total_tasks}
-                    </div>
+                  <div className="text-sm font-semibold text-slate-500 flex-shrink-0">
+                    {group.deal.value ? `${group.deal.value} MW` : ''}
+                  </div>
+
+                  <div className="text-xs font-medium text-slate-400 flex-shrink-0 min-w-[40px] text-right">
+                    {group.completed_tasks}/{group.total_tasks}
                   </div>
 
                   <ChevronDown
@@ -613,13 +632,9 @@ export const TasksScreen: React.FC = () => {
                 </button>
 
                 {isDealExpanded && (
-                  <div className="pl-13 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Progress value={group.progress} className="h-1 flex-1" />
-                    </div>
-
+                  <div className="px-4 pb-2">
                     {taskTree.length > 0 && (
-                      <div className="mt-3 space-y-0">
+                      <div className="space-y-0">
                         {taskTree.map((task, idx) =>
                           renderTask(task, group.deal.id, 0, idx === taskTree.length - 1)
                         )}
