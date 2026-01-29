@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, IdCard, User } from 'lucide-react';
+import { Building2, UserPlus, ListChecks } from 'lucide-react';
 
 interface MagicMenuProps {
   isOpen: boolean;
@@ -20,31 +20,31 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
       <div className="relative z-10 flex justify-center mb-4 pointer-events-none">
         <div className="relative w-64 h-48 pointer-events-auto">
 
-          {/* Me Button - Center Top */}
+          {/* Task Master Button - Center Top */}
           <button
-            onClick={() => { onNavigate('me'); onClose(); }}
+            onClick={() => { onNavigate('tasks'); onClose(); }}
             className="absolute left-1/2 top-0 -translate-x-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white shadow-xl shadow-orange-500/50 flex items-center justify-center transition-all hover:scale-110 hover:shadow-2xl hover:shadow-orange-500/70 animate-in zoom-in duration-300"
-            aria-label="Me"
+            aria-label="Task Master"
           >
-            <User className="w-7 h-7" />
+            <ListChecks className="w-7 h-7 text-white" />
           </button>
 
-          {/* Accounts Button - Left Arc Position */}
+          {/* Add Account Button - Left Arc Position */}
           <button
             onClick={() => { onNavigate('accounts'); onClose(); }}
             className="absolute left-4 bottom-8 w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/30 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-blue-500/50 animate-in zoom-in duration-300 delay-75"
-            aria-label="Accounts"
+            aria-label="Add Account"
           >
-            <Building2 className="w-6 h-6" />
+            <Building2 className="w-6 h-6 text-white" />
           </button>
 
-          {/* Contacts Button - Center Bottom */}
+          {/* Add Contact Button - Right Arc Position */}
           <button
             onClick={() => { onNavigate('contacts'); onClose(); }}
-            className="absolute left-1/2 -translate-x-1/2 bottom-0 w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-white shadow-lg shadow-cyan-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-cyan-500/60 animate-in zoom-in duration-300 delay-100"
-            aria-label="Contacts"
+            className="absolute right-4 bottom-8 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-lg shadow-emerald-500/40 flex items-center justify-center transition-all hover:scale-110 hover:shadow-xl hover:shadow-emerald-500/60 animate-in zoom-in duration-300 delay-100"
+            aria-label="Add Contact"
           >
-            <IdCard className="w-6 h-6" />
+            <UserPlus className="w-6 h-6 text-white" />
           </button>
 
         </div>
