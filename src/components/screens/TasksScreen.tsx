@@ -198,13 +198,10 @@ export const TasksScreen: React.FC = () => {
     fetchTaskThreads();
   }, [hierarchyView, selectedMemberId, user?.id]);
 
-  // Auto-expand all deals and parent tasks when data loads
+  // Auto-expand parent tasks when data loads
   useEffect(() => {
     if (dealGroups.length > 0) {
-      const allDealIds = dealGroups.map(g => g.deal.id);
-      setExpandedDeals(new Set(allDealIds));
-
-      // Also expand all tasks that have children
+      // Expand all tasks that have children
       const tasksWithChildren: string[] = [];
       dealGroups.forEach(group => {
         const taskMap = new Map<string, TaskThread>();
