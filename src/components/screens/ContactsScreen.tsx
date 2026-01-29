@@ -3,10 +3,8 @@ import { ContactCard, DetailModal, ContactForm, FilterModal, SearchBar, SimpleMo
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Contact } from '../../types/crm';
-import { MapPin, Mail, Phone, Building2, Loader2, CheckSquare, Square, X, Trash2, Pencil, UserCircle, Search, Filter, Smartphone, LayoutGrid, ChevronDown, Info, User, Users } from 'lucide-react';
+import { MapPin, Mail, Phone, Building2, Loader2, CheckSquare, Square, X, Trash2, Pencil, UserCircle, Search, Filter, Smartphone, LayoutGrid, ChevronDown, User, Users } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { Input } from '../ui/input';
 import { isContactPickerSupported, openNativeContactPicker, mapNativeToCRM } from '../../lib/device/contacts';
 import { toast } from 'sonner';
 import { supabase } from '../../lib/supabase';
@@ -255,52 +253,32 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
-                      <Info className="w-4 h-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-xs">
-                    <p className="text-xs">
-                      <strong>Filter contacts</strong> by the deal stages of their company
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <h1 className="text-2xl font-bold text-slate-900">Contacts</h1>
+          {/* Search & Filter */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search contacts, roles, emails..."
+                className="w-full pl-9 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded transition-colors"
+                >
+                  <X className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+              )}
             </div>
-
-            {/* Search & Filter */}
-            <div className="flex items-center gap-2 flex-1 max-w-md ml-auto">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search contacts, roles, emails..."
-                  className="w-full pl-9 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5 text-slate-400" />
-                  </button>
-                )}
-              </div>
-              <button
-                onClick={() => setShowFilter(true)}
-                className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors flex-shrink-0"
-              >
-                <Filter className="w-5 h-5 text-slate-600" />
-              </button>
-            </div>
+            <button
+              onClick={() => setShowFilter(true)}
+              className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors flex-shrink-0"
+            >
+              <Filter className="w-5 h-5 text-slate-600" />
+            </button>
           </div>
 
           {/* Hierarchy View Toggle - My Contacts vs Team Contacts */}
@@ -469,16 +447,6 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
             >
               <Smartphone className="w-3.5 h-3.5" />
               <span>Import</span>
-            </button>
-          )}
-          {isAdmin && !selectionMode && (
-            <button
-              onClick={() => setSelectionMode(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:text-orange-600 hover:border-orange-300 transition-colors"
-              aria-label="Bulk select"
-            >
-              <CheckSquare className="w-3.5 h-3.5" />
-              <span>Bulk Select</span>
             </button>
           )}
         </div>
