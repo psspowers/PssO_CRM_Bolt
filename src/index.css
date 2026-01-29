@@ -160,6 +160,7 @@
     height: var(--line-height);
     background-color: #cbd5e1;
     pointer-events: none;
+    z-index: 1;
   }
 
   .task-row-nested::after {
@@ -171,6 +172,7 @@
     height: 1.5px;
     background-color: #cbd5e1;
     pointer-events: none;
+    z-index: 1;
   }
 }
 

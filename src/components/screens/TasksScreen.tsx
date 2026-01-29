@@ -426,7 +426,8 @@ export const TasksScreen: React.FC = () => {
             paddingLeft: `${depth * 24}px`,
             borderBottom: '1px solid rgb(241 245 249)',
             position: 'relative',
-            backgroundColor: 'inherit'
+            backgroundColor: 'inherit',
+            zIndex: 0
           }}
           className="hover:bg-slate-50/50 transition-colors"
         >
