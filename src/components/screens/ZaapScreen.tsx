@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronRight, ChevronDown, Clock, Square, CheckSquare, Radar, Hand, LayoutDashboard, Search, Filter, X, Users, User, ChevronDown as ChevronDownIcon, Calendar } from 'lucide-react';
+import { ChevronRight, ChevronDown, Clock, Square, CheckSquare, Radar, Hand, LayoutDashboard, Search, Filter, X, Users, User, ChevronDown as ChevronDownIcon, Calendar, Plus, Minus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,6 +26,7 @@ interface Task {
   thread_depth: number;
   created_at: string;
   children?: Task[];
+  root_deal_id?: string;
 }
 
 interface DealThread {
@@ -238,6 +239,32 @@ export function ZaapScreen() {
     }
   };
 
+  const createSubTask = async (parentTaskId: string, dealId: string, summary: string) => {
+    if (!user?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('activities')
+        .insert({
+          summary: summary,
+          activity_type: 'Task',
+          task_status: 'To Do',
+          assigned_to_id: user.id,
+          parent_task_id: parentTaskId,
+          linked_opportunity_id: dealId,
+          created_by_id: user.id
+        });
+
+      if (error) throw error;
+
+      toast.success('Sub-task created');
+      fetchDealThreads();
+    } catch (error) {
+      console.error('Error creating sub-task:', error);
+      toast.error('Failed to create sub-task');
+    }
+  };
+
   const calculateProgress = (tasks: Task[]): number => {
     if (!tasks || tasks.length === 0) return 0;
     const completed = tasks.filter(t => t.task_status === 'Completed').length;
@@ -401,6 +428,7 @@ export function ZaapScreen() {
               onPickup={pickupTask}
               onUpdateAssignee={updateTaskAssignee}
               onUpdateDueDate={updateTaskDueDate}
+              onCreateSubTask={createSubTask}
               buildTaskTree={buildTaskTree}
               calculateProgress={calculateProgress}
               isExpanded={expandedDeals.has(thread.id)}
@@ -422,6 +450,7 @@ interface DealThreadItemProps {
   onPickup: (taskId: string, summary: string) => void;
   onUpdateAssignee: (taskId: string, userId: string | null) => void;
   onUpdateDueDate: (taskId: string, date: string | null) => void;
+  onCreateSubTask: (parentTaskId: string, dealId: string, summary: string) => void;
   buildTaskTree: (tasks: Task[]) => Task[];
   calculateProgress: (tasks: Task[]) => number;
   isExpanded: boolean;
@@ -437,6 +466,7 @@ function DealThreadItem({
   onPickup,
   onUpdateAssignee,
   onUpdateDueDate,
+  onCreateSubTask,
   buildTaskTree,
   calculateProgress,
   isExpanded,
@@ -499,6 +529,7 @@ function DealThreadItem({
                 <TaskRow
                   key={task.id}
                   task={task}
+                  dealId={thread.id}
                   depth={0}
                   userId={userId}
                   users={users}
@@ -506,6 +537,7 @@ function DealThreadItem({
                   onPickup={onPickup}
                   onUpdateAssignee={onUpdateAssignee}
                   onUpdateDueDate={onUpdateDueDate}
+                  onCreateSubTask={onCreateSubTask}
                 />
               ))}
             </>
@@ -520,6 +552,7 @@ function DealThreadItem({
 
 interface TaskRowProps {
   task: Task;
+  dealId: string;
   depth: number;
   userId: string;
   users: Array<{ id: string; name: string; avatar_url?: string; role?: string }>;
@@ -527,13 +560,19 @@ interface TaskRowProps {
   onPickup: (taskId: string, summary: string) => void;
   onUpdateAssignee: (taskId: string, userId: string | null) => void;
   onUpdateDueDate: (taskId: string, date: string | null) => void;
+  onCreateSubTask: (parentTaskId: string, dealId: string, summary: string) => void;
 }
 
-function TaskRow({ task, depth, userId, users, onComplete, onPickup, onUpdateAssignee, onUpdateDueDate }: TaskRowProps) {
+function TaskRow({ task, dealId, depth, userId, users, onComplete, onPickup, onUpdateAssignee, onUpdateDueDate, onCreateSubTask }: TaskRowProps) {
+  const [isExpanded, setIsExpanded] = useState(depth === 0);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newTaskSummary, setNewTaskSummary] = useState('');
+
   const isCompleted = task.task_status === 'Completed';
   const isMine = task.assigned_to_id === userId;
   const isUnassigned = !task.assigned_to_id;
   const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isCompleted;
+  const hasChildren = task.children && task.children.length > 0;
 
   const handleDateShortcut = (type: 'tomorrow' | 'nextWeek' | 'nextMonth' | 'clear') => {
     let newDate: string | null = null;
@@ -556,11 +595,29 @@ function TaskRow({ task, depth, userId, users, onComplete, onPickup, onUpdateAss
     onUpdateDueDate(task.id, newDate);
   };
 
+  const handleAddSubTask = async () => {
+    if (!newTaskSummary.trim()) return;
+
+    await onCreateSubTask(task.id, dealId, newTaskSummary);
+    setNewTaskSummary('');
+    setIsAdding(false);
+    setIsExpanded(true);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleAddSubTask();
+    } else if (e.key === 'Escape') {
+      setIsAdding(false);
+      setNewTaskSummary('');
+    }
+  };
+
   const paddingLeft = 12 + depth * 20;
 
   return (
     <>
-      {/* Lean Task Row */}
+      {/* Task Row */}
       <div
         className={`relative flex items-center gap-3 px-3 py-2 border-l-2 transition-colors ${
           isUnassigned && !isCompleted
@@ -573,9 +630,24 @@ function TaskRow({ task, depth, userId, users, onComplete, onPickup, onUpdateAss
         }`}
         style={{ paddingLeft: `${paddingLeft}px` }}
       >
-        {/* Thread Line */}
+        {/* Vertical Thread Line */}
         {depth > 0 && (
           <div className="absolute left-3 top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700" />
+        )}
+
+        {/* Tree Control: Black +/- Toggle (if has children) */}
+        {hasChildren && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors z-10"
+            style={{ left: `${depth * 20 + 4}px` }}
+          >
+            {isExpanded ? (
+              <Minus className="w-3 h-3 text-slate-600 dark:text-slate-400" />
+            ) : (
+              <Plus className="w-3 h-3 text-slate-600 dark:text-slate-400" />
+            )}
+          </button>
         )}
 
         {/* Assignee Avatar */}
@@ -642,6 +714,15 @@ function TaskRow({ task, depth, userId, users, onComplete, onPickup, onUpdateAss
           </p>
         </div>
 
+        {/* Red + (Add Sub-Task) */}
+        <button
+          onClick={() => setIsAdding(!isAdding)}
+          className="flex-shrink-0 w-5 h-5 rounded hover:bg-orange-100 dark:hover:bg-orange-900/20 flex items-center justify-center transition-colors group"
+          title="Add sub-task"
+        >
+          <Plus className="w-4 h-4 text-orange-500 group-hover:text-orange-600" />
+        </button>
+
         {/* Right Column: Due Date + Checkbox */}
         <div className="flex flex-col items-end gap-1 flex-shrink-0 w-20">
           {/* Due Date */}
@@ -682,7 +763,7 @@ function TaskRow({ task, depth, userId, users, onComplete, onPickup, onUpdateAss
                     className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
                   >
                     <Calendar className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-700 dark:text-slate-300">30 Days</span>
+                    <span className="text-sm text-sm text-slate-700 dark:text-slate-300">30 Days</span>
                   </button>
                   <div className="border-t border-slate-200 dark:border-slate-700 my-1" />
                   <button
@@ -722,13 +803,47 @@ function TaskRow({ task, depth, userId, users, onComplete, onPickup, onUpdateAss
         </div>
       </div>
 
-      {/* Render Children */}
-      {task.children && task.children.length > 0 && (
+      {/* Inline Add Sub-Task Input */}
+      {isAdding && (
+        <div
+          className="flex items-center gap-2 px-3 py-2 bg-orange-50/50 dark:bg-orange-900/10 border-l-2 border-l-orange-500"
+          style={{ paddingLeft: `${paddingLeft + 30}px` }}
+        >
+          <input
+            type="text"
+            value={newTaskSummary}
+            onChange={(e) => setNewTaskSummary(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="New sub-task..."
+            autoFocus
+            className="flex-1 px-2 py-1 text-sm bg-white dark:bg-slate-900 border border-orange-300 dark:border-orange-700 rounded focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+          />
+          <button
+            onClick={handleAddSubTask}
+            className="px-2 py-1 text-xs font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded transition-colors"
+          >
+            Add
+          </button>
+          <button
+            onClick={() => {
+              setIsAdding(false);
+              setNewTaskSummary('');
+            }}
+            className="px-2 py-1 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {/* Render Children (only if expanded) */}
+      {hasChildren && isExpanded && (
         <>
-          {task.children.map(child => (
+          {task.children!.map(child => (
             <TaskRow
               key={child.id}
               task={child}
+              dealId={dealId}
               depth={depth + 1}
               userId={userId}
               users={users}
@@ -736,6 +851,7 @@ function TaskRow({ task, depth, userId, users, onComplete, onPickup, onUpdateAss
               onPickup={onPickup}
               onUpdateAssignee={onUpdateAssignee}
               onUpdateDueDate={onUpdateDueDate}
+              onCreateSubTask={onCreateSubTask}
             />
           ))}
         </>
