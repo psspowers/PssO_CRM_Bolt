@@ -104,17 +104,39 @@ export const TasksScreen: React.FC = () => {
     return `${parts[0]} ${parts[parts.length - 1][0]}.`;
   };
 
-  // Calculate counts for Mine vs Team
-  const myTasksCount = useMemo(() => {
-    return dealGroups.reduce((sum, group) => {
-      const myTasks = group.tasks.filter(t => t.assignedToId === user?.id);
-      return sum + myTasks.length;
-    }, 0);
-  }, [dealGroups, user]);
+  // Store separate counts for Mine and Team
+  const [myTasksCount, setMyTasksCount] = useState(0);
+  const [teamTasksCount, setTeamTasksCount] = useState(0);
 
-  const teamTasksCount = useMemo(() => {
-    return dealGroups.reduce((sum, group) => sum + group.total_tasks, 0);
-  }, [dealGroups]);
+  // Function to fetch counts
+  const fetchCounts = async () => {
+    if (!user?.id) return;
+
+    try {
+      // Fetch my tasks count
+      const { data: myData } = await supabase.rpc('get_task_threads', {
+        p_user_id: user.id,
+        p_filter: 'mine'
+      });
+      const myCount = myData?.reduce((sum: number, group: DealGroup) => sum + group.total_tasks, 0) || 0;
+      setMyTasksCount(myCount);
+
+      // Fetch team tasks count
+      const { data: teamData } = await supabase.rpc('get_task_threads', {
+        p_user_id: user.id,
+        p_filter: 'all'
+      });
+      const teamCount = teamData?.reduce((sum: number, group: DealGroup) => sum + group.total_tasks, 0) || 0;
+      setTeamTasksCount(teamCount);
+    } catch (error) {
+      console.error('Error fetching task counts:', error);
+    }
+  };
+
+  // Fetch counts on mount and when user changes
+  useEffect(() => {
+    fetchCounts();
+  }, [user?.id]);
 
   // Filter deal groups based on search
   const filteredDealGroups = useMemo(() => {
@@ -193,6 +215,7 @@ export const TasksScreen: React.FC = () => {
       });
 
       fetchTaskThreads();
+      fetchCounts();
     } catch (error: any) {
       console.error('Error toggling task:', error);
       toast({
@@ -373,7 +396,6 @@ export const TasksScreen: React.FC = () => {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <h1 className="text-2xl font-bold text-slate-900">Tasks</h1>
             </div>
 
             {/* Search & Filter - Moved to Header Row */}
