@@ -386,13 +386,28 @@ export const TasksScreen: React.FC = () => {
     const hasChildren = task.children && task.children.length > 0;
     const isUnassigned = !task.assignedToId;
 
+    const truncateText = (text: string, maxLines: number = 2) => {
+      const words = text.split(' ');
+      const estimatedCharsPerLine = 80;
+      const maxChars = estimatedCharsPerLine * maxLines;
+
+      if (text.length <= maxChars) return text;
+
+      let truncated = text.substring(0, maxChars);
+      const lastSpace = truncated.lastIndexOf(' ');
+      if (lastSpace > 0) {
+        truncated = truncated.substring(0, lastSpace);
+      }
+      return truncated + '...';
+    };
+
     return (
       <div key={task.id} className="relative">
         {depth > 0 && (
           <div
-            className="absolute w-0.5 bg-slate-300"
+            className="absolute w-px bg-slate-300"
             style={{
-              left: `${(depth - 1) * 32 + 24}px`,
+              left: `${(depth - 1) * 24 + 16}px`,
               top: 0,
               bottom: isLast ? '50%' : 0
             }}
@@ -400,93 +415,104 @@ export const TasksScreen: React.FC = () => {
         )}
         {depth > 0 && (
           <div
-            className="absolute h-0.5 bg-slate-300"
+            className="absolute h-px bg-slate-300"
             style={{
-              left: `${(depth - 1) * 32 + 24}px`,
-              width: '16px',
-              top: '50%'
+              left: `${(depth - 1) * 24 + 16}px`,
+              width: '12px',
+              top: '20px'
             }}
           />
         )}
 
         <div
-          className="flex items-center gap-3 py-2.5 hover:bg-slate-50 transition-colors relative z-10"
-          style={{ paddingLeft: `${depth * 32 + (depth > 0 ? 8 : 0)}px` }}
+          className="flex items-start gap-2.5 py-2 hover:bg-slate-50/50 transition-colors relative z-10 border-b border-slate-100"
+          style={{ paddingLeft: `${depth * 24}px` }}
         >
-          {hasChildren ? (
+          {hasChildren && (
             <button
               onClick={() => toggleExpanded(task.id)}
-              className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors bg-white border border-blue-200"
+              className="flex-shrink-0 w-4 h-4 mt-0.5 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors"
             >
               {isExpanded ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
             </button>
-          ) : (
-            depth === 0 && <div className="w-5" />
           )}
-
-          <button
-            onClick={() => toggleTask(task.id, task.status)}
-            className="flex-shrink-0"
-          >
-            {isCompleted ? (
-              <CheckSquare className="w-5 h-5 text-green-500" />
-            ) : (
-              <Square className="w-5 h-5 text-slate-300 hover:text-slate-400" />
-            )}
-          </button>
-
-          <div
-            className={`flex-1 min-w-0 px-3 py-2 rounded-lg ${
-              isMine && !isCompleted ? 'bg-yellow-100' : ''
-            } ${isCompleted ? 'opacity-50' : ''}`}
-          >
-            <span className={`text-[15px] ${isCompleted ? 'line-through text-slate-400' : 'text-slate-900'}`}>
-              {task.summary}
-            </span>
-          </div>
-
-          <button
-            onClick={() => addSubtask(task.id, dealId)}
-            className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
 
           {isUnassigned ? (
             <button
               onClick={() => pickupTask(task.id, task.summary)}
-              className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-full transition-colors border border-amber-200 flex-shrink-0"
+              className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-amber-100 hover:bg-amber-200 rounded-full transition-colors border border-amber-300"
             >
-              <Hand className="w-3.5 h-3.5" />
-              Pickup
-              <Zap className="w-3.5 h-3.5 text-amber-500" />
+              <Hand className="w-4 h-4 text-amber-700" />
             </button>
           ) : (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex-shrink-0">
-                    <Avatar className="w-7 h-7">
+                    <Avatar className="w-8 h-8">
                       <AvatarImage src={task.assigneeAvatar} />
-                      <AvatarFallback className="bg-slate-200 text-slate-600 text-xs font-medium">
+                      <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
                         {task.assigneeName ? getInitials(task.assigneeName) : '?'}
                       </AvatarFallback>
                     </Avatar>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="text-xs">{task.assigneeName || 'Unknown'}</p>
+                  <p className="text-xs">{task.assigneeName || 'Unassigned'}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
 
-          {task.dueDate && (
-            <div className="flex items-center gap-1 text-xs text-slate-500 flex-shrink-0 min-w-[60px] justify-end">
-              <Clock className="w-3.5 h-3.5" />
-              {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          <div className="flex-1 min-w-0 pr-2">
+            <p
+              className={`text-[15px] leading-snug ${
+                isCompleted ? 'line-through text-slate-400' : 'text-slate-900'
+              } ${isMine && !isCompleted ? 'font-medium' : ''}`}
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                wordBreak: 'break-word'
+              }}
+            >
+              {task.summary}
+            </p>
+          </div>
+
+          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+            {task.dueDate && (
+              <div className="flex items-center gap-1 text-xs text-slate-500">
+                <Clock className="w-3.5 h-3.5" />
+                <span className="font-medium">
+                  {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              {hasChildren && (
+                <button
+                  onClick={() => addSubtask(task.id, dealId)}
+                  className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-orange-500 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              )}
+
+              <button
+                onClick={() => toggleTask(task.id, task.status)}
+                className="flex-shrink-0"
+              >
+                {isCompleted ? (
+                  <CheckSquare className="w-5 h-5 text-green-500" />
+                ) : (
+                  <Square className="w-5 h-5 text-slate-300 hover:text-slate-500 transition-colors" />
+                )}
+              </button>
             </div>
-          )}
+          </div>
         </div>
 
         {isExpanded && hasChildren && (
