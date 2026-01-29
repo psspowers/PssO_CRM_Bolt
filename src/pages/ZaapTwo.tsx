@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { ZaapScreenTwo } from '@/components/screens/ZaapScreenTwo';
 import { OpportunitiesScreen, PulseScreen, MeScreen, AccountsScreen, ContactsScreen, SearchScreen } from '@/components/screens';
+import { TasksScreen } from '@/components/screens/TasksScreen';
 import { Header, BottomNav, QuickAddModal } from '@/components/crm';
 import { useAppContext } from '@/contexts/AppContext';
 
-type Tab = 'home' | 'opportunities' | 'pulse' | 'me' | 'accounts' | 'contacts' | 'search';
+type Tab = 'home' | 'opportunities' | 'pulse' | 'me' | 'accounts' | 'contacts' | 'search' | 'tasks';
 
 const ZaapTwo: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('home');
@@ -31,6 +32,8 @@ const ZaapTwo: React.FC = () => {
         return <ContactsScreen />;
       case 'search':
         return <SearchScreen onNavigate={handleNavigate} />;
+      case 'tasks':
+        return <TasksScreen />;
       default:
         return <ZaapScreenTwo />;
     }
