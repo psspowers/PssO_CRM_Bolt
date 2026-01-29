@@ -3,12 +3,13 @@ import { ContactCard, DetailModal, ContactForm, FilterModal, SearchBar, SimpleMo
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Contact } from '../../types/crm';
-import { MapPin, Mail, Phone, Building2, Loader2, CheckSquare, Square, X, Trash2, Pencil, UserCircle, Search, Filter, Smartphone, LayoutGrid, ChevronDown, Info } from 'lucide-react';
+import { MapPin, Mail, Phone, Building2, Loader2, CheckSquare, Square, X, Trash2, Pencil, UserCircle, Search, Filter, Smartphone, LayoutGrid, ChevronDown, Info, User, Users } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Input } from '../ui/input';
 import { isContactPickerSupported, openNativeContactPicker, mapNativeToCRM } from '../../lib/device/contacts';
 import { toast } from 'sonner';
+import { supabase } from '../../lib/supabase';
 
 interface ContactsScreenProps {
   forcedOpenId?: string | null;
@@ -16,7 +17,7 @@ interface ContactsScreenProps {
 
 export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) => {
   const { contacts, accounts, partners, activities, relationships, users, loading, deleteContact, updateContact, createContact, canDelete, canEdit } = useAppContext();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [search, setSearch] = useState('');
   const [showFilter, setShowFilter] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
@@ -27,6 +28,12 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
   const [isDeleting, setIsDeleting] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importedData, setImportedData] = useState<Partial<Contact> | null>(null);
+
+  // Hierarchy and team view
+  const [hierarchyView, setHierarchyView] = useState<'mine' | 'team'>('mine');
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
+  const [subordinateIds, setSubordinateIds] = useState<string[]>([]);
+  const [loadingSubordinates, setLoadingSubordinates] = useState(false);
 
   // Deal-based filters
   const [stageFilter, setStageFilter] = useState<string>('all');
@@ -42,6 +49,56 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
     }
   }, [forcedOpenId, contacts]);
 
+  // Fetch subordinates for hierarchy view
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchSubordinates = async () => {
+      setLoadingSubordinates(true);
+      try {
+        const { data, error } = await supabase
+          .from('user_hierarchy')
+          .select('subordinate_id')
+          .eq('manager_id', user.id);
+
+        if (error) {
+          console.error('Error fetching subordinates:', error);
+          setSubordinateIds([]);
+        } else {
+          const ids = data?.map(row => row.subordinate_id) || [];
+          setSubordinateIds(ids);
+        }
+      } catch (err) {
+        console.error('Failed to fetch subordinates:', err);
+        setSubordinateIds([]);
+      } finally {
+        setLoadingSubordinates(false);
+      }
+    };
+
+    fetchSubordinates();
+  }, [user?.id]);
+
+  // Reset member filter when switching back to "Mine"
+  useEffect(() => {
+    if (hierarchyView === 'mine') setSelectedMemberId('all');
+  }, [hierarchyView]);
+
+  // Calculate team members list for dropdown
+  const teamMembers = useMemo(() => {
+    if (profile?.role === 'admin' || profile?.role === 'super_admin') {
+      return users.filter(u => ['internal', 'admin', 'super_admin'].includes(u.role));
+    } else {
+      return users.filter(u => subordinateIds.includes(u.id) || u.id === user?.id);
+    }
+  }, [users, subordinateIds, profile, user]);
+
+  const formatShortName = (fullName: string) => {
+    const parts = fullName.split(' ');
+    if (parts.length === 1) return fullName;
+    return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+  };
+
   const userCanDelete = canDelete();
   const userCanEdit = selectedContact ? canEdit(selectedContact.ownerId) : false;
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
@@ -51,6 +108,22 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
     const matchesSearch = c.fullName.toLowerCase().includes(query) ||
                           c.role.toLowerCase().includes(query) ||
                           c.email.toLowerCase().includes(query);
+
+    // Hierarchy Filter - Filter based on account ownership/team view
+    const isSearching = search.trim().length > 0;
+
+    if (c.account) {
+      if (!isSearching && hierarchyView === 'mine') {
+        if (c.account.ownerId !== user?.id) return false;
+      } else if (hierarchyView === 'team' || isSearching) {
+        const isMyAccount = c.account.ownerId === user?.id;
+        const isSubordinateAccount = subordinateIds.includes(c.account.ownerId);
+        if (!isAdmin && !isMyAccount && !isSubordinateAccount) return false;
+      }
+
+      // Team Member Filter (drill-down within team view)
+      if (selectedMemberId !== 'all' && c.account.ownerId !== selectedMemberId) return false;
+    }
 
     // Partner view filter - Only show contacts from Partner accounts
     if (showPartnerView) {
@@ -64,7 +137,21 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
     }
 
     return matchesSearch;
-  }), [contacts, search, stageFilter, showPartnerView]);
+  }), [contacts, search, stageFilter, showPartnerView, hierarchyView, selectedMemberId, subordinateIds, profile, user]);
+
+  // Calculate counts for Mine vs Team
+  const myContactsCount = useMemo(() => {
+    return contacts.filter(c => c.account?.ownerId === user?.id).length;
+  }, [contacts, user]);
+
+  const teamContactsCount = useMemo(() => {
+    return contacts.filter(c => {
+      if (!c.account) return false;
+      const isMyAccount = c.account.ownerId === user?.id;
+      const isSubordinateAccount = subordinateIds.includes(c.account.ownerId);
+      return isAdmin || isMyAccount || isSubordinateAccount;
+    }).length;
+  }, [contacts, subordinateIds, isAdmin, user]);
 
   const deletableContacts = filtered.filter(c => canDelete());
   const allSelected = deletableContacts.length > 0 && deletableContacts.every(c => selectedIds.has(c.id));
@@ -216,16 +303,72 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
             </div>
           </div>
 
-          {/* Partner View Toggle */}
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 cursor-pointer">
+          {/* Hierarchy View Toggle - My Contacts vs Team Contacts */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
+              <button
+                onClick={() => setHierarchyView('mine')}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  hierarchyView === 'mine'
+                    ? 'bg-white shadow-sm text-orange-600'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Mine</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  hierarchyView === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {myContactsCount}
+                </span>
+              </button>
+              <button
+                onClick={() => setHierarchyView('team')}
+                disabled={loadingSubordinates}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  hierarchyView === 'team'
+                    ? 'bg-white shadow-sm text-orange-600'
+                    : 'text-slate-500 hover:text-slate-700'
+                } ${loadingSubordinates ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Team</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  hierarchyView === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {loadingSubordinates ? '...' : teamContactsCount}
+                </span>
+              </button>
+            </div>
+
+            {/* Team Member Drill-Down Filter */}
+            {hierarchyView === 'team' && (
+              <div className="relative flex-shrink-0 animate-in fade-in slide-in-from-left-2">
+                <select
+                  value={selectedMemberId}
+                  onChange={(e) => setSelectedMemberId(e.target.value)}
+                  className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-2 pr-6 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-28 truncate"
+                >
+                  <option value="all">All Team</option>
+                  {teamMembers.map(m => (
+                    <option key={m.id} value={m.id}>{formatShortName(m.name)}</option>
+                  ))}
+                </select>
+                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                  <ChevronDown className="w-3 h-3" />
+                </div>
+              </div>
+            )}
+
+            {/* Partner View Toggle */}
+            <label className="flex items-center gap-2 cursor-pointer ml-2">
               <input
                 type="checkbox"
                 checked={showPartnerView}
                 onChange={(e) => setShowPartnerView(e.target.checked)}
                 className="w-4 h-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500"
               />
-              <span className="text-sm font-medium text-slate-700">Partner Contacts Only</span>
+              <span className="text-sm font-medium text-slate-700">Partners</span>
             </label>
           </div>
         </div>

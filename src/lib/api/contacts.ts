@@ -18,6 +18,7 @@ const toContact = (db: any): Contact => ({
     id: db.account.id,
     name: db.account.name,
     type: db.account.type,
+    ownerId: db.account.owner_id,
     opportunities: (db.account.opportunities || []).map((o: any) => ({
       id: o.id,
       stage: o.stage,
@@ -34,10 +35,11 @@ export const fetchContacts = async (): Promise<Contact[]> => {
     .from('contacts')
     .select(`
       *,
-      account:accounts(
+      account:accounts!inner(
         id,
         name,
         type,
+        owner_id,
         opportunities(
           id,
           stage,

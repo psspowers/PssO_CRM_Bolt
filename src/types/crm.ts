@@ -99,6 +99,7 @@ export interface Contact {
     id: string;
     name: string;
     type: string;
+    ownerId: string;
     opportunities: Array<{
       id: string;
       stage: OpportunityStage;
