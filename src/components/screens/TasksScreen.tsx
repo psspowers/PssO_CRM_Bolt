@@ -389,39 +389,40 @@ export const TasksScreen: React.FC = () => {
     return (
       <div key={task.id} className="relative">
         {depth > 0 && (
-          <>
-            <div
-              className="absolute left-0 top-0 w-px bg-slate-200"
-              style={{
-                left: `${(depth - 1) * 28 + 18}px`,
-                height: isLast ? '28px' : '100%'
-              }}
-            />
-            <div
-              className="absolute h-px bg-slate-200"
-              style={{
-                left: `${(depth - 1) * 28 + 18}px`,
-                width: '14px',
-                top: '28px'
-              }}
-            />
-          </>
+          <div
+            className="absolute w-0.5 bg-slate-300"
+            style={{
+              left: `${(depth - 1) * 32 + 24}px`,
+              top: 0,
+              bottom: isLast ? '50%' : 0
+            }}
+          />
+        )}
+        {depth > 0 && (
+          <div
+            className="absolute h-0.5 bg-slate-300"
+            style={{
+              left: `${(depth - 1) * 32 + 24}px`,
+              width: '16px',
+              top: '50%'
+            }}
+          />
         )}
 
         <div
-          className="flex items-center gap-3 py-2.5 hover:bg-slate-50 transition-colors"
-          style={{ paddingLeft: `${depth * 28}px` }}
+          className="flex items-center gap-3 py-2.5 hover:bg-slate-50 transition-colors relative z-10"
+          style={{ paddingLeft: `${depth * 32 + (depth > 0 ? 8 : 0)}px` }}
         >
-          {hasChildren && (
+          {hasChildren ? (
             <button
               onClick={() => toggleExpanded(task.id)}
-              className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-blue-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+              className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors bg-white border border-blue-200"
             >
               {isExpanded ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
             </button>
+          ) : (
+            depth === 0 && <div className="w-5" />
           )}
-
-          {!hasChildren && depth > 0 && <div className="w-5" />}
 
           <button
             onClick={() => toggleTask(task.id, task.status)}
