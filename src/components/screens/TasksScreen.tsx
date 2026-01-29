@@ -405,7 +405,7 @@ export const TasksScreen: React.FC = () => {
       <div key={task.id} className="relative">
         {depth > 0 && (
           <div
-            className="absolute w-px bg-slate-300"
+            className="absolute w-px bg-slate-400 z-20 pointer-events-none"
             style={{
               left: `${(depth - 1) * 24 + 16}px`,
               top: 0,
@@ -415,7 +415,7 @@ export const TasksScreen: React.FC = () => {
         )}
         {depth > 0 && (
           <div
-            className="absolute h-px bg-slate-300"
+            className="absolute h-px bg-slate-400 z-20 pointer-events-none"
             style={{
               left: `${(depth - 1) * 24 + 16}px`,
               width: '12px',
@@ -425,7 +425,7 @@ export const TasksScreen: React.FC = () => {
         )}
 
         <div
-          className="flex items-start gap-2.5 py-2 hover:bg-slate-50/50 transition-colors relative z-10 border-b border-slate-100"
+          className="flex items-start gap-2.5 py-2 hover:bg-slate-50/50 transition-colors relative z-0 border-b border-slate-100"
           style={{ paddingLeft: `${depth * 24}px` }}
         >
           {hasChildren && (
