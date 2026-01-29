@@ -1,6 +1,5 @@
 import React from 'react';
 import { Building2, UserPlus, ListChecks } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 interface MagicMenuProps {
   isOpen: boolean;
@@ -9,10 +8,9 @@ interface MagicMenuProps {
 }
 
 export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigate }) => {
-  const navigate = useNavigate();
 
-  const handleOpenZaap = () => {
-    navigate('/zaap2');
+  const handleOpenTasks = () => {
+    onNavigate('tasks');
     onClose();
   };
 
@@ -30,11 +28,11 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
           <div className="relative z-10 flex justify-center mb-3 pointer-events-none">
             <div className="relative w-48 h-32 pointer-events-auto">
 
-              {/* Zaap Button - Center Top */}
+              {/* Tasks Button - Center Top */}
               <button
-                onClick={handleOpenZaap}
+                onClick={handleOpenTasks}
                 className="absolute left-1/2 top-0 -translate-x-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white shadow-xl shadow-orange-500/50 flex items-center justify-center transition-all hover:scale-110 hover:shadow-2xl hover:shadow-orange-500/70 animate-in zoom-in duration-300"
-                aria-label="Zaap"
+                aria-label="Tasks"
               >
                 <ListChecks className="w-7 h-7 text-white" />
               </button>
