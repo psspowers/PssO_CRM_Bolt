@@ -14,12 +14,40 @@ const toContact = (db: any): Contact => ({
   orgTotalMW: db.orgTotalMW,
   orgTotalValue: db.orgTotalValue,
   orgTeamSize: db.orgTeamSize,
+  account: db.account ? {
+    id: db.account.id,
+    name: db.account.name,
+    type: db.account.type,
+    opportunities: (db.account.opportunities || []).map((o: any) => ({
+      id: o.id,
+      stage: o.stage,
+      ownerId: o.owner_id,
+      primaryPartnerId: o.primary_partner_id,
+      value: o.value,
+      targetCapacity: o.target_capacity
+    }))
+  } : undefined,
 });
 
 export const fetchContacts = async (): Promise<Contact[]> => {
   const { data, error } = await supabase
     .from('contacts')
-    .select('*')
+    .select(`
+      *,
+      account:accounts(
+        id,
+        name,
+        type,
+        opportunities(
+          id,
+          stage,
+          owner_id,
+          primary_partner_id,
+          value,
+          target_capacity
+        )
+      )
+    `)
     .order('full_name');
   if (error) throw error;
 

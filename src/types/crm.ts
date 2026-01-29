@@ -94,6 +94,20 @@ export interface Contact {
   orgTotalMW?: number;
   orgTotalValue?: number;
   orgTeamSize?: number;
+  // Account data with opportunities for filtering
+  account?: {
+    id: string;
+    name: string;
+    type: string;
+    opportunities: Array<{
+      id: string;
+      stage: OpportunityStage;
+      ownerId: string;
+      primaryPartnerId?: string;
+      value: number;
+      targetCapacity: number;
+    }>;
+  };
 }
 
 export interface Opportunity {

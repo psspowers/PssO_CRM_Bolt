@@ -3,8 +3,9 @@ import { ContactCard, DetailModal, ContactForm, FilterModal, SearchBar, SimpleMo
 import { useAppContext } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { Contact } from '../../types/crm';
-import { MapPin, Mail, Phone, Building2, Loader2, CheckSquare, Square, X, Trash2, Pencil, UserCircle, Search, Filter, Smartphone } from 'lucide-react';
+import { MapPin, Mail, Phone, Building2, Loader2, CheckSquare, Square, X, Trash2, Pencil, UserCircle, Search, Filter, Smartphone, LayoutGrid, ChevronDown, Info } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Input } from '../ui/input';
 import { isContactPickerSupported, openNativeContactPicker, mapNativeToCRM } from '../../lib/device/contacts';
 import { toast } from 'sonner';
@@ -17,7 +18,6 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
   const { contacts, accounts, partners, activities, relationships, users, loading, deleteContact, updateContact, createContact, canDelete, canEdit } = useAppContext();
   const { profile } = useAuth();
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
   const [showFilter, setShowFilter] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -27,6 +27,10 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
   const [isDeleting, setIsDeleting] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importedData, setImportedData] = useState<Partial<Contact> | null>(null);
+
+  // Deal-based filters
+  const [stageFilter, setStageFilter] = useState<string>('all');
+  const [showPartnerView, setShowPartnerView] = useState(false);
 
   useEffect(() => {
     if (forcedOpenId && contacts.length > 0) {
@@ -42,19 +46,25 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
   const userCanEdit = selectedContact ? canEdit(selectedContact.ownerId) : false;
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
-  const availableRoles = useMemo(() => {
-    const roles = new Set(contacts.map(c => c.role).filter(Boolean));
-    return Array.from(roles).sort();
-  }, [contacts]);
-
   const filtered = useMemo(() => contacts.filter(c => {
     const query = (search || '').toLowerCase();
     const matchesSearch = c.fullName.toLowerCase().includes(query) ||
                           c.role.toLowerCase().includes(query) ||
                           c.email.toLowerCase().includes(query);
-    const matchesRole = roleFilter === 'all' || c.role === roleFilter;
-    return matchesSearch && matchesRole;
-  }), [contacts, search, roleFilter]);
+
+    // Partner view filter - Only show contacts from Partner accounts
+    if (showPartnerView) {
+      if (c.account?.type !== 'Partner') return false;
+    }
+
+    // Stage filter - Check if any opportunity in the contact's account matches the selected stage
+    if (stageFilter !== 'all' && c.account?.opportunities) {
+      const hasStage = c.account.opportunities.some(o => o.stage === stageFilter);
+      if (!hasStage) return false;
+    }
+
+    return matchesSearch;
+  }), [contacts, search, stageFilter, showPartnerView]);
 
   const deletableContacts = filtered.filter(c => canDelete());
   const allSelected = deletableContacts.length > 0 && deletableContacts.every(c => selectedIds.has(c.id));
@@ -157,34 +167,151 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
           </div>
         </div>
       ) : (
-        <SearchBar value={search} onChange={setSearch} placeholder="Search contacts, roles, emails..." onFilterClick={() => setShowFilter(true)} />
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
+                      <Info className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <p className="text-xs">
+                      <strong>Filter contacts</strong> by the deal stages of their company
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <h1 className="text-2xl font-bold text-slate-900">Contacts</h1>
+            </div>
+
+            {/* Search & Filter */}
+            <div className="flex items-center gap-2 flex-1 max-w-md ml-auto">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search contacts, roles, emails..."
+                  className="w-full pl-9 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => setShowFilter(true)}
+                className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors flex-shrink-0"
+              >
+                <Filter className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
+          </div>
+
+          {/* Partner View Toggle */}
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showPartnerView}
+                onChange={(e) => setShowPartnerView(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500"
+              />
+              <span className="text-sm font-medium text-slate-700">Partner Contacts Only</span>
+            </label>
+          </div>
+        </div>
       )}
 
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scrollbar-hide">
-        <button
-          onClick={() => setRoleFilter('all')}
-          className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
-            roleFilter === 'all'
-              ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
-              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-          }`}
-        >
-          All Roles
-        </button>
-        {availableRoles.slice(0, 6).map(role => (
+      {/* Stage Pills Grid */}
+      {!selectionMode && (
+        <div className="flex gap-2 mb-3">
+          {/* All Button - Larger, Spans 2 Rows */}
           <button
-            key={role}
-            onClick={() => setRoleFilter(role)}
-            className={`px-3 lg:px-4 py-2 lg:py-2.5 rounded-lg lg:rounded-xl text-xs lg:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
-              roleFilter === role
-                ? 'bg-orange-500 text-white shadow-lg shadow-orange-200'
-                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+            onClick={() => setStageFilter('all')}
+            className={`flex flex-col items-center justify-center w-14 h-[76px] rounded-xl text-xs font-bold transition-all ${
+              stageFilter === 'all'
+                ? 'bg-slate-800 text-white shadow-sm'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            {role}
+            <LayoutGrid className="w-5 h-5 mb-1" />
+            <span>All</span>
           </button>
-        ))}
-      </div>
+
+          {/* Stage Pills Grid - 2 rows x 3 columns */}
+          <div className="grid grid-cols-3 gap-2 flex-1">
+            <button
+              onClick={() => setStageFilter('Prospect')}
+              className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                stageFilter === 'Prospect'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              Prospect
+            </button>
+            <button
+              onClick={() => setStageFilter('Qualified')}
+              className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                stageFilter === 'Qualified'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              Qualified
+            </button>
+            <button
+              onClick={() => setStageFilter('Proposal')}
+              className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                stageFilter === 'Proposal'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              Proposal
+            </button>
+            <button
+              onClick={() => setStageFilter('Negotiation')}
+              className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                stageFilter === 'Negotiation'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              Negotiat...
+            </button>
+            <button
+              onClick={() => setStageFilter('Term Sheet')}
+              className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                stageFilter === 'Term Sheet'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              Term Sheet
+            </button>
+            <button
+              onClick={() => setStageFilter('Won')}
+              className={`px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                stageFilter === 'Won'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              Won
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-500">
@@ -244,16 +371,21 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
         title="Filter Contacts"
         filters={[
           {
-            name: 'Role',
+            name: 'Deal Stage',
             options: [
-              { label: 'All Roles', value: 'all' },
-              ...availableRoles.map(r => ({ label: r, value: r }))
+              { label: 'All Stages', value: 'all' },
+              { label: 'Prospect', value: 'Prospect' },
+              { label: 'Qualified', value: 'Qualified' },
+              { label: 'Proposal', value: 'Proposal' },
+              { label: 'Negotiation', value: 'Negotiation' },
+              { label: 'Term Sheet', value: 'Term Sheet' },
+              { label: 'Won', value: 'Won' }
             ],
-            selected: roleFilter,
-            onChange: setRoleFilter
+            selected: stageFilter,
+            onChange: setStageFilter
           }
         ]}
-        onReset={() => setRoleFilter('all')}
+        onReset={() => setStageFilter('all')}
       />
 
       <DetailModal isOpen={!!selectedContact} onClose={handleCloseModal} title={selectedContact?.fullName || ''} subtitle={selectedContact?.role} entityId={selectedContact?.id || ''} entityType="Contact" clickupLink={selectedContact?.clickupLink} activities={activities} users={users} contacts={contacts} accounts={accounts} partners={partners} relationships={relationships}>
