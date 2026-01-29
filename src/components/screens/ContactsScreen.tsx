@@ -253,32 +253,36 @@ export const ContactsScreen: React.FC<ContactsScreenProps> = ({ forcedOpenId }) 
         </div>
       ) : (
         <div className="space-y-3">
-          {/* Search & Filter */}
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search contacts, roles, emails..."
-                className="w-full pl-9 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
-              />
-              {search && (
-                <button
-                  onClick={() => setSearch('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded transition-colors"
-                >
-                  <X className="w-3.5 h-3.5 text-slate-400" />
-                </button>
-              )}
+          {/* Title, Search & Filter */}
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="text-2xl font-bold text-slate-900 flex-shrink-0">Contacts</h1>
+
+            <div className="flex items-center gap-2 flex-1 max-w-md ml-auto">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search contacts, roles, emails..."
+                  className="w-full pl-9 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => setShowFilter(true)}
+                className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors flex-shrink-0"
+              >
+                <Filter className="w-5 h-5 text-slate-600" />
+              </button>
             </div>
-            <button
-              onClick={() => setShowFilter(true)}
-              className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors flex-shrink-0"
-            >
-              <Filter className="w-5 h-5 text-slate-600" />
-            </button>
           </div>
 
           {/* Hierarchy View Toggle - My Contacts vs Team Contacts */}
