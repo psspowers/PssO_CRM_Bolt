@@ -1,22 +1,23 @@
 /*
-  # Task Master Unified Stream - Fix RPC Function
+  # Fix Task Master RPC - Column Name Issue
 
-  1. Changes
-    - Replace `get_task_threads` function with correct schema
-    - Remove 'probability' field references (use 'manual_probability' if needed)
-    - Return proper DealGroup structure with tasks, progress, and counts
-    - Support 'all', 'mine', and 'delegated' filter modes
-  
-  2. Return Structure
-    - Array of Deal Groups
-    - Each group contains: deal info, progress %, total_tasks, completed_tasks, tasks array
-    - Tasks include full thread hierarchy with assignee details
+  1. Problem
+    - RPC function `get_task_threads` referenced non-existent column `task_priority`
+    - Actual column name is `priority`
+    - Causing "column act.task_priority does not exist" error
+
+  2. Fix
+    - Replace function with corrected column name
+    - Change `act.task_priority` to `act.priority`
+
+  3. Impact
+    - Fixes "Failed to load task stream" error in Task Master UI
+    - No data changes, only function definition
 */
 
--- Drop existing function if exists
+-- Drop and recreate the function with correct column name
 DROP FUNCTION IF EXISTS get_task_threads(UUID, TEXT);
 
--- Create new unified stream RPC
 CREATE OR REPLACE FUNCTION get_task_threads(p_user_id UUID, p_filter TEXT DEFAULT 'all')
 RETURNS JSON
 LANGUAGE plpgsql
