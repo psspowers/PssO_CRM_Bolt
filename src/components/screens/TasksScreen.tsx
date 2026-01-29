@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { CheckSquare, Square, Clock, Loader2, User, ChevronDown, Hand, Zap, Users, Search, X, Info, Plus, Minus } from 'lucide-react';
+import { SquareCheck as CheckSquare, Square, Clock, Loader as Loader2, User, ChevronDown, Hand, Zap, Users, Search, X, Info, Plus, Minus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
 import { supabase } from '@/lib/supabase';
