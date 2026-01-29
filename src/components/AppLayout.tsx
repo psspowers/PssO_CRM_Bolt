@@ -534,13 +534,12 @@ export default function AppLayout() {
         >
           <div className={activeTab === 'pulse' ? '' : 'max-w-7xl mx-auto w-full'}>
             {/* Page Title - Desktop */}
-            {activeTab !== 'home' && activeTab !== 'search' && activeTab !== 'opportunities' && activeTab !== 'pulse' && activeTab !== 'me' && activeTab !== 'accounts' && activeTab !== 'contacts' && (
+            {activeTab !== 'home' && activeTab !== 'search' && activeTab !== 'opportunities' && activeTab !== 'pulse' && activeTab !== 'me' && activeTab !== 'accounts' && activeTab !== 'contacts' && activeTab !== 'tasks' && (
               <div className="mb-6">
                 <h1 className="text-2xl lg:text-3xl font-bold text-slate-900">{titles[activeTab]}</h1>
                 <p className="text-slate-500 mt-1 hidden lg:block">
                   {activeTab === 'partners' && 'Manage your partner network and collaborations'}
                   {activeTab === 'projects' && 'Track project development and capacity'}
-                  {activeTab === 'tasks' && 'View and manage your tasks and to-dos'}
                   {activeTab === 'timeline' && 'Activity history and timeline'}
                 </p>
               </div>
