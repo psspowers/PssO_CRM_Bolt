@@ -401,41 +401,18 @@ export const TasksScreen: React.FC = () => {
       return truncated + '...';
     };
 
-    return (
-      <div key={task.id} style={{ position: 'relative' }}>
-        {depth > 0 && (
-          <svg
-            style={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              width: '100%',
-              height: '100%',
-              pointerEvents: 'none',
-              zIndex: 0
-            }}
-          >
-            {/* Vertical line connecting parent to children */}
-            <line
-              x1={(depth - 1) * 24 + 16}
-              y1={0}
-              x2={(depth - 1) * 24 + 16}
-              y2={isLast ? 24 : '100%'}
-              stroke="#cbd5e1"
-              strokeWidth="1.5"
-            />
-            {/* Horizontal elbow line pointing to avatar center */}
-            <line
-              x1={(depth - 1) * 24 + 16}
-              y1={24}
-              x2={depth * 24 - 2}
-              y2={24}
-              stroke="#cbd5e1"
-              strokeWidth="1.5"
-            />
-          </svg>
-        )}
+    const taskRowStyle = depth > 0 ? {
+      '--line-left': `${(depth - 1) * 24 + 16}px`,
+      '--line-height': isLast ? '24px' : '100%',
+      '--elbow-width': `${depth * 24 - 2 - ((depth - 1) * 24 + 16)}px`,
+    } as React.CSSProperties : {};
 
+    return (
+      <div
+        key={task.id}
+        className={`task-row ${depth > 0 ? 'task-row-nested' : ''}`}
+        style={taskRowStyle}
+      >
         <div
           style={{
             display: 'flex',
@@ -446,7 +423,7 @@ export const TasksScreen: React.FC = () => {
             paddingLeft: `${depth * 24}px`,
             borderBottom: '1px solid rgb(241 245 249)',
             position: 'relative',
-            zIndex: 10
+            backgroundColor: 'inherit'
           }}
           className="hover:bg-slate-50/50 transition-colors"
         >

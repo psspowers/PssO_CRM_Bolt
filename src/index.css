@@ -145,6 +145,33 @@
     border: 2px solid rgba(148, 163, 184, 0.3);
     box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.1);
   }
+
+  /* Task hierarchy tree lines - using pseudo-elements for proper layering */
+  .task-row {
+    position: relative;
+  }
+
+  .task-row-nested::before {
+    content: '';
+    position: absolute;
+    left: var(--line-left);
+    top: 0;
+    width: 1.5px;
+    height: var(--line-height);
+    background-color: #cbd5e1;
+    pointer-events: none;
+  }
+
+  .task-row-nested::after {
+    content: '';
+    position: absolute;
+    left: var(--line-left);
+    top: 24px;
+    width: var(--elbow-width);
+    height: 1.5px;
+    background-color: #cbd5e1;
+    pointer-events: none;
+  }
 }
 
 /* Mobile-first touch optimizations */
