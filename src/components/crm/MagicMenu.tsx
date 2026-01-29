@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Building2, UserPlus, ListChecks } from 'lucide-react';
-import { TaskMaster } from './TaskMaster';
+import { useNavigate } from 'react-router-dom';
 
 interface MagicMenuProps {
   isOpen: boolean;
@@ -9,14 +9,14 @@ interface MagicMenuProps {
 }
 
 export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigate }) => {
-  const [showTaskMaster, setShowTaskMaster] = useState(false);
+  const navigate = useNavigate();
 
-  const handleOpenTaskMaster = () => {
-    setShowTaskMaster(true);
+  const handleOpenZaap = () => {
+    navigate('/zaap');
     onClose();
   };
 
-  if (!isOpen && !showTaskMaster) return null;
+  if (!isOpen) return null;
 
   return (
     <>
@@ -30,11 +30,11 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
           <div className="relative z-10 flex justify-center mb-3 pointer-events-none">
             <div className="relative w-48 h-32 pointer-events-auto">
 
-              {/* Task Master Button - Center Top */}
+              {/* Zaap Button - Center Top */}
               <button
-                onClick={handleOpenTaskMaster}
+                onClick={handleOpenZaap}
                 className="absolute left-1/2 top-0 -translate-x-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white shadow-xl shadow-orange-500/50 flex items-center justify-center transition-all hover:scale-110 hover:shadow-2xl hover:shadow-orange-500/70 animate-in zoom-in duration-300"
-                aria-label="Task Master"
+                aria-label="Zaap"
               >
                 <ListChecks className="w-7 h-7 text-white" />
               </button>
@@ -61,9 +61,6 @@ export const MagicMenu: React.FC<MagicMenuProps> = ({ isOpen, onClose, onNavigat
           </div>
         </div>
       )}
-
-      {/* Task Master Modal */}
-      {showTaskMaster && <TaskMaster onClose={() => setShowTaskMaster(false)} />}
     </>
   );
 };

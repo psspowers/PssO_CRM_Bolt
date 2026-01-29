@@ -9,3 +9,4 @@ export { ProjectsScreen } from './ProjectsScreen';
 export { default as PulseScreen } from './PulseScreen';
 export { MeScreen } from './MeScreen';
 export { NexusScreen } from './NexusScreen';
+export { ZaapScreen } from './ZaapScreen';
