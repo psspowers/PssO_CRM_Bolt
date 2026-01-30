@@ -8,6 +8,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FilterModal } from '../crm/FilterModal';
 
 interface TaskThread {
   id: string;
@@ -428,6 +429,10 @@ export const TasksScreen: React.FC = () => {
   const [expandedDeals, setExpandedDeals] = useState<Set<string>>(new Set());
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
 
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filterPriority, setFilterPriority] = useState<string>('all');
+  const [filterStage, setFilterStage] = useState<string>('all');
+
   const [addingRootTo, setAddingRootTo] = useState<string | null>(null);
   const [addingChildTo, setAddingChildTo] = useState<string | null>(null);
   const [addingReplyTo, setAddingReplyTo] = useState<string | null>(null);
@@ -772,6 +777,24 @@ export const TasksScreen: React.FC = () => {
       .map(group => {
         let tasks = group.tasks || [];
 
+        // Apply stage filter
+        if (filterStage !== 'all' && group.stage !== filterStage) {
+          return { ...group, tasks: [] };
+        }
+
+        // Apply priority filter
+        if (filterPriority !== 'all') {
+          const filterByPriority = (taskList: TaskThread[]): TaskThread[] => {
+            return taskList
+              .filter(t => t.priority === filterPriority)
+              .map(t => ({
+                ...t,
+                children: t.children ? filterByPriority(t.children) : []
+              }));
+          };
+          tasks = filterByPriority(tasks);
+        }
+
         // Apply hierarchy filter
         if (!isSearching && hierarchyView === 'mine') {
           // Mine: Show ONLY tasks assigned to me (recursively check all levels)
@@ -884,7 +907,7 @@ export const TasksScreen: React.FC = () => {
         if (search.trim() && g.name.toLowerCase().includes(search.toLowerCase())) return true;
         return false;
       });
-  }, [dealGroups, hideCompleted, search, hierarchyView, selectedMemberId, subordinateIds, isAdmin, user?.id]);
+  }, [dealGroups, hideCompleted, search, hierarchyView, selectedMemberId, subordinateIds, isAdmin, user?.id, filterPriority, filterStage]);
 
   const currentUser = users.find(u => u.id === user?.id);
 
@@ -917,10 +940,18 @@ export const TasksScreen: React.FC = () => {
               )}
             </div>
             <button
-              onClick={() => {}}
-              className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors flex-shrink-0"
+              onClick={() => setShowFilterModal(true)}
+              className={cn(
+                "p-2 bg-white border rounded-lg hover:bg-slate-50 transition-colors flex-shrink-0",
+                (filterPriority !== 'all' || filterStage !== 'all')
+                  ? 'border-orange-500 bg-orange-50'
+                  : 'border-slate-200 hover:border-slate-300'
+              )}
             >
-              <Filter className="w-5 h-5 text-slate-600" />
+              <Filter className={cn(
+                "w-5 h-5",
+                (filterPriority !== 'all' || filterStage !== 'all') ? 'text-orange-600' : 'text-slate-600'
+              )} />
             </button>
           </div>
         </div>
@@ -1106,6 +1137,44 @@ export const TasksScreen: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Filter Modal */}
+      <FilterModal
+        isOpen={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        title="Filter Tasks"
+        filters={[
+          {
+            name: 'Priority',
+            options: [
+              { label: 'All', value: 'all' },
+              { label: 'High', value: 'High' },
+              { label: 'Medium', value: 'Medium' },
+              { label: 'Low', value: 'Low' },
+            ],
+            selected: filterPriority,
+            onChange: setFilterPriority,
+          },
+          {
+            name: 'Deal Stage',
+            options: [
+              { label: 'All', value: 'all' },
+              { label: 'Prospect', value: 'Prospect' },
+              { label: 'Qualified', value: 'Qualified' },
+              { label: 'Proposal', value: 'Proposal' },
+              { label: 'Negotiation', value: 'Negotiation' },
+              { label: 'Term Sheet', value: 'Term Sheet' },
+              { label: 'Won', value: 'Won' },
+            ],
+            selected: filterStage,
+            onChange: setFilterStage,
+          },
+        ]}
+        onReset={() => {
+          setFilterPriority('all');
+          setFilterStage('all');
+        }}
+      />
     </div>
   );
 };
