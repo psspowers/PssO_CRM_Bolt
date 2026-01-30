@@ -420,14 +420,42 @@ export const TasksScreen: React.FC = () => {
     setLoading(true);
     try {
       const filterParam = hierarchyView === 'mine' ? 'mine' : 'all';
+      console.log('[TasksScreen] Fetching tasks with:', { userId: user?.id, filter: filterParam });
+
       const { data, error } = await supabase.rpc('get_task_threads', {
         p_user_id: user?.id || null,
         p_filter: filterParam
       });
 
-      if (error) throw error;
+      console.log('[TasksScreen] RPC Response:', { data, error });
 
-      let filteredData = data || [];
+      if (error) {
+        console.error('[TasksScreen] RPC Error:', error);
+        throw error;
+      }
+
+      // The RPC returns JSON, which Supabase automatically parses
+      let filteredData: DealGroup[] = [];
+
+      if (data !== null && data !== undefined) {
+        console.log('[TasksScreen] Data type:', typeof data, 'isArray:', Array.isArray(data));
+        console.log('[TasksScreen] Raw data:', JSON.stringify(data).substring(0, 500));
+
+        if (Array.isArray(data)) {
+          // Data is already an array
+          filteredData = data as DealGroup[];
+        } else if (typeof data === 'object') {
+          // Sometimes RPC returns wrapped data - try common patterns
+          if ('data' in data) {
+            filteredData = (data as any).data as DealGroup[];
+          } else {
+            // Treat as single object or already parsed JSON
+            filteredData = [data] as DealGroup[];
+          }
+        }
+      }
+
+      console.log('[TasksScreen] Deal groups returned:', filteredData.length, 'groups');
 
       if (hierarchyView === 'team' && selectedMemberId !== 'all') {
         filteredData = filteredData.map(group => ({
@@ -440,9 +468,10 @@ export const TasksScreen: React.FC = () => {
         })).filter(group => group.total_tasks > 0);
       }
 
+      console.log('[TasksScreen] Final deal groups to display:', filteredData.length, 'groups');
       setDealGroups(filteredData);
     } catch (error: any) {
-      console.error('Error fetching task threads:', error);
+      console.error('[TasksScreen] Error fetching task threads:', error);
       toast({
         title: 'Error',
         description: 'Failed to load task threads',
@@ -560,7 +589,8 @@ export const TasksScreen: React.FC = () => {
         summary: newTaskSummary.trim(),
         task_status: 'Pending',
         related_to_id: addingToDealId,
-        related_to_type: 'opportunity',
+        related_to_type: 'Opportunity',
+        is_task: true,
         assigned_to_id: user?.id,
         parent_task_id: addingToTaskId,
         created_by: user?.id
