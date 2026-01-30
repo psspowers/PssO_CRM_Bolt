@@ -101,9 +101,9 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
   const spineLeft = indent + 27;
 
   return (
-    <div className="relative flex items-start py-3 pr-4">
+    <div className="relative flex items-start py-1.5 pr-4">
       <div
-        className="absolute w-[2px] bg-gray-200"
+        className="absolute w-[2px] bg-slate-300"
         style={{
           left: `${spineLeft}px`,
           top: '-12px',
@@ -112,10 +112,10 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
       />
 
       <div
-        className="absolute h-[2px] bg-orange-500"
+        className="absolute h-[2px] bg-slate-300"
         style={{
           left: `${spineLeft}px`,
-          top: '24px',
+          top: '20px',
           width: '16px'
         }}
       />
@@ -150,7 +150,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
               }
             }}
             placeholder="What needs to be done?"
-            className="w-full bg-transparent border-b border-orange-500 focus:outline-none text-sm py-1 placeholder-gray-400"
+            className="w-full bg-transparent border-b-2 border-orange-500 focus:outline-none text-sm py-1 placeholder-gray-400"
           />
 
           <div className="flex items-center gap-2">
@@ -237,10 +237,10 @@ const TaskRow: React.FC<TaskRowProps> = ({
 
   return (
     <>
-      <div className="relative flex items-start py-3 pr-4">
+      <div className="relative flex items-start py-1.5 pr-4 group">
         {!isLast && !isAddingHere && (
           <div
-            className="absolute w-[2px] bg-gray-200"
+            className="absolute w-[2px] bg-slate-300"
             style={{
               left: `${spineLeft}px`,
               top: '-12px',
@@ -251,7 +251,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
 
         {isLast && !isAddingHere && (
           <div
-            className="absolute w-[2px] bg-gray-200"
+            className="absolute w-[2px] bg-slate-300"
             style={{
               left: `${spineLeft}px`,
               top: '-12px',
@@ -262,7 +262,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
 
         {isAddingHere && (
           <div
-            className="absolute w-[2px] bg-gray-200"
+            className="absolute w-[2px] bg-slate-300"
             style={{
               left: `${spineLeft}px`,
               top: '-12px',
@@ -272,10 +272,10 @@ const TaskRow: React.FC<TaskRowProps> = ({
         )}
 
         <div
-          className="absolute h-[2px] bg-gray-200"
+          className="absolute h-[2px] bg-slate-300"
           style={{
             left: `${spineLeft}px`,
-            top: '24px',
+            top: '20px',
             width: '16px'
           }}
         />
@@ -287,10 +287,10 @@ const TaskRow: React.FC<TaskRowProps> = ({
               e.preventDefault();
               onToggleExpand(task.id);
             }}
-            className="absolute z-10 w-4 h-4 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-all"
+            className="absolute z-50 w-4 h-4 bg-white border border-slate-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-all"
             style={{
               left: `${spineLeft - 8}px`,
-              top: '16px'
+              top: '12px'
             }}
             title={isExpanded ? 'Collapse' : 'Expand'}
           >
@@ -308,12 +308,15 @@ const TaskRow: React.FC<TaskRowProps> = ({
               className="flex-shrink-0 group/pickup"
               title="Pick up this task"
             >
-              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 group-hover/pickup:border-orange-500 group-hover/pickup:bg-orange-50 transition-all ring-4 ring-white z-10">
+              <div className={cn(
+                "w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 group-hover/pickup:border-orange-500 group-hover/pickup:bg-orange-50 transition-all ring-4 ring-white z-10",
+                isCompleted && "opacity-50 grayscale"
+              )}>
                 <Hand className="w-4 h-4 text-gray-400 group-hover/pickup:text-orange-500 transition-colors" />
               </div>
             </button>
           ) : (
-            <Avatar className="w-8 h-8 flex-shrink-0 ring-4 ring-white z-10">
+            <Avatar className={cn("w-8 h-8 flex-shrink-0 ring-4 ring-white z-10", isCompleted && "opacity-50 grayscale")}>
               {task.assignee_avatar && (
                 <AvatarImage src={task.assignee_avatar} alt={task.assignee_name} />
               )}
@@ -326,14 +329,14 @@ const TaskRow: React.FC<TaskRowProps> = ({
           <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               {task.due_date && (
-                <div className="text-[11px] text-gray-500 mb-1">
+                <div className={cn("text-[11px] text-gray-500 mb-1", isCompleted && "opacity-50 grayscale")}>
                   {format(new Date(task.due_date), 'MMM d')}
                 </div>
               )}
               <p className={cn(
                 "text-sm leading-snug",
-                isMine ? "font-bold text-black" : "font-normal text-gray-600",
-                isCompleted && "line-through opacity-60"
+                isMine ? "font-bold text-slate-900" : "font-normal text-gray-600",
+                isCompleted && "line-through opacity-50 grayscale"
               )}>
                 {task.summary}
               </p>
@@ -344,7 +347,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
               className="flex-shrink-0 mt-0.5"
             >
               {isCompleted ? (
-                <CheckSquare className="w-4 h-4 text-green-500" />
+                <CheckSquare className="w-4 h-4 text-green-500 opacity-50 grayscale" />
               ) : (
                 <Square className="w-4 h-4 text-gray-300 hover:text-gray-500 transition-colors" />
               )}
@@ -393,13 +396,13 @@ const TaskRow: React.FC<TaskRowProps> = ({
           )}
 
           {!isAddingHere && (
-            <div className="relative h-6 w-full flex items-center">
+            <div className="relative h-8 w-full">
               <div
-                className="absolute w-[2px] bg-gray-200"
+                className="absolute w-[2px] bg-slate-300"
                 style={{
                   left: `${indent + INDENT_PX + 27}px`,
-                  top: '-8px',
-                  height: '16px'
+                  top: '-12px',
+                  bottom: '0'
                 }}
               />
               <button
@@ -411,8 +414,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
                 className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-20 shadow-sm"
                 style={{
                   left: `${indent + INDENT_PX + 17}px`,
-                  top: '50%',
-                  transform: 'translateY(-50%)'
+                  bottom: '0'
                 }}
                 title="Add subtask"
               >
@@ -511,7 +513,7 @@ const DealThreadItem: React.FC<DealThreadProps> = ({
       {isDealExpanded && taskTree.length > 0 && (
         <div className="relative">
           <div
-            className="absolute w-[2px] bg-gray-200"
+            className="absolute w-[2px] bg-slate-300"
             style={{
               left: '27px',
               top: '0',
@@ -557,13 +559,13 @@ const DealThreadItem: React.FC<DealThreadProps> = ({
           )}
 
           {!isAddingRoot && (
-            <div className="relative h-6 w-full flex items-center">
+            <div className="relative h-8 w-full">
               <div
-                className="absolute w-[2px] bg-gray-200"
+                className="absolute w-[2px] bg-slate-300"
                 style={{
                   left: '27px',
-                  top: '-8px',
-                  height: '16px'
+                  top: '-12px',
+                  bottom: '0'
                 }}
               />
               <button
@@ -575,8 +577,7 @@ const DealThreadItem: React.FC<DealThreadProps> = ({
                 className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-20 shadow-sm"
                 style={{
                   left: '17px',
-                  top: '50%',
-                  transform: 'translateY(-50%)'
+                  bottom: '0'
                 }}
                 title="Add task"
               >
