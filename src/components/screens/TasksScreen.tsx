@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { CheckSquare, Square, Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight, Reply } from 'lucide-react';
 import { format, isPast, parseISO } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
@@ -266,42 +266,46 @@ const TaskNode = ({
         {/* Task Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 flex items-center gap-1.5 flex-wrap">
+            <div className="flex-1 min-w-0">
               <p
                 className={cn(
-                  "text-sm leading-snug transition-all",
+                  "text-sm leading-snug transition-all inline",
                   isMine ? "font-bold text-slate-900" : "font-medium text-slate-600",
                   isCompleted && "line-through decoration-slate-300"
                 )}
               >
                 {task.summary}
+                {!isCompleted && (
+                  <>
+                    {' '}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddChild(task.id);
+                      }}
+                      className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-50 border border-orange-300 text-orange-600 hover:scale-110 transition-transform ml-1"
+                      title="Add subtask"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                    {' '}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddReply(task.id);
+                      }}
+                      className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:scale-110 transition-transform ml-1"
+                      title="Reply"
+                    >
+                      <Reply className="w-2.5 h-2.5" />
+                    </button>
+                  </>
+                )}
               </p>
-
-              {/* Inline Add Child Button (+2, +3, etc) */}
-              {!isCompleted && (
-                <button
-                  onClick={() => onAddChild(task.id)}
-                  className="w-7 h-7 rounded-full bg-orange-50 border border-orange-300 flex items-center justify-center text-orange-600 hover:scale-110 transition-transform shadow-sm opacity-0 group-hover:opacity-100"
-                  title="Add subtask"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              )}
-
-              {/* Inline Reply Button (r) */}
-              {!isCompleted && (
-                <button
-                  onClick={() => onAddReply(task.id)}
-                  className="w-7 h-7 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:scale-110 transition-transform shadow-sm opacity-0 group-hover:opacity-100 text-[10px] font-bold"
-                  title="Reply"
-                >
-                  r
-                </button>
-              )}
             </div>
 
             {/* Right Side: Due Date + Checkbox */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {task.due_date && (
                 <span className={cn(
                   "text-[10px] whitespace-nowrap font-medium",
