@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { CheckSquare, Square, Clock, Loader2, User, ChevronDown, Hand, Users, Search, X, Info, Plus, Minus } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { CheckSquare, Square, Clock, Loader2, User, ChevronDown, Hand, Users, Search, X, Info, Plus, Minus, Calendar, Check } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
 import { supabase } from '@/lib/supabase';
@@ -77,6 +77,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
   onCancel
 }) => {
   const [showAssigneeMenu, setShowAssigneeMenu] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const assignedUser = users.find(u => u.id === assigneeId);
 
   const getInitials = (name: string) => {
@@ -142,7 +143,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
           )}
         </div>
 
-        <div className="flex-1 min-w-0 pr-2">
+        <div className="flex-1 min-w-0 pr-3">
           <input
             autoFocus
             type="text"
@@ -150,6 +151,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
             onChange={(e) => onSummaryChange(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && summary.trim()) {
+                e.preventDefault();
                 onSave();
               }
               if (e.key === 'Escape') {
@@ -157,33 +159,35 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
               }
             }}
             placeholder="Type task description..."
-            className="w-full text-[14px] leading-relaxed bg-white border border-orange-300 focus:border-orange-500 outline-none px-2 py-1 rounded text-slate-900 placeholder-slate-400"
+            className="w-full text-[14px] leading-relaxed bg-white border border-orange-300 focus:border-orange-500 outline-none px-3 py-2 rounded text-slate-900 placeholder-slate-400"
           />
         </div>
 
-        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+        <div className="flex flex-col items-center gap-2 flex-shrink-0 relative">
           <input
+            ref={dateInputRef}
             type="date"
             value={dueDate}
             onChange={(e) => onDueDateChange(e.target.value)}
-            className="text-[11px] text-slate-600 font-medium border border-orange-300 rounded px-2 py-1 focus:border-orange-500 outline-none cursor-pointer"
+            className="absolute opacity-0 pointer-events-none"
           />
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={onSave}
-              disabled={!summary.trim()}
-              className="text-xs px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Save
-            </button>
-            <button
-              onClick={onCancel}
-              className="text-xs px-2 py-1 bg-slate-200 text-slate-700 rounded hover:bg-slate-300"
-            >
-              Cancel
-            </button>
-          </div>
+          <button
+            onClick={() => dateInputRef.current?.showPicker()}
+            className="p-2.5 hover:bg-orange-100 rounded-lg transition-colors border border-orange-200"
+            title={dueDate ? new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Set due date'}
+          >
+            <Calendar className="w-6 h-6 text-orange-600" />
+          </button>
+
+          <button
+            onClick={onSave}
+            disabled={!summary.trim()}
+            className="p-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
+            title="Save task (Enter)"
+          >
+            <Check className="w-6 h-6" />
+          </button>
         </div>
       </div>
     </div>
@@ -800,7 +804,42 @@ export const TasksScreen: React.FC = () => {
   };
 
   const handleSaveSubtask = async () => {
-    if (!newTaskSummary.trim() || !addingToDealId || !addingToTaskId) return;
+    console.log('[TasksScreen] handleSaveSubtask called', {
+      summary: newTaskSummary,
+      dealId: addingToDealId,
+      taskId: addingToTaskId,
+      assignee: newTaskAssignee,
+      dueDate: newTaskDueDate
+    });
+
+    if (!newTaskSummary.trim()) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please enter a task description',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!addingToDealId) {
+      console.error('[TasksScreen] Missing addingToDealId');
+      toast({
+        title: 'Error',
+        description: 'Missing deal information',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!addingToTaskId) {
+      console.error('[TasksScreen] Missing addingToTaskId');
+      toast({
+        title: 'Error',
+        description: 'Missing parent task information',
+        variant: 'destructive'
+      });
+      return;
+    }
 
     try {
       const insertData: any = {
@@ -819,9 +858,16 @@ export const TasksScreen: React.FC = () => {
         insertData.due_date = new Date(newTaskDueDate).toISOString();
       }
 
-      const { error } = await supabase.from('activities').insert(insertData);
+      console.log('[TasksScreen] Inserting task:', insertData);
 
-      if (error) throw error;
+      const { error, data } = await supabase.from('activities').insert(insertData).select();
+
+      if (error) {
+        console.error('[TasksScreen] Insert error:', error);
+        throw error;
+      }
+
+      console.log('[TasksScreen] Task inserted successfully:', data);
 
       toast({
         title: 'Subtask Added',
@@ -837,10 +883,10 @@ export const TasksScreen: React.FC = () => {
       fetchTaskThreads();
       fetchCounts();
     } catch (error: any) {
-      console.error('Error adding subtask:', error);
+      console.error('[TasksScreen] Error adding subtask:', error);
       toast({
         title: 'Error',
-        description: 'Failed to add subtask',
+        description: error.message || 'Failed to add subtask',
         variant: 'destructive'
       });
     }
