@@ -53,7 +53,8 @@ const getStageAvatar = (stage: string) => {
   return configs[stage] || { char: '', color: 'bg-slate-400', label: stage };
 };
 
-const getInitials = (name: string) => {
+const getInitials = (name?: string) => {
+  if (!name) return '?';
   const parts = name.split(' ');
   if (parts.length >= 2) {
     return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
@@ -127,11 +128,11 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
             className="flex-shrink-0"
           >
             <Avatar className="w-7 h-7 border-2 border-orange-500">
-              {assignedUser?.avatar_url ? (
-                <AvatarImage src={assignedUser.avatar_url} alt={assignedUser.full_name} />
+              {assignedUser?.avatar ? (
+                <AvatarImage src={assignedUser.avatar} alt={assignedUser.name} />
               ) : null}
               <AvatarFallback className="bg-orange-100 text-orange-700 text-xs font-bold">
-                {assignedUser ? getInitials(assignedUser.full_name) : '?'}
+                {assignedUser ? getInitials(assignedUser.name) : '?'}
               </AvatarFallback>
             </Avatar>
           </button>
@@ -148,10 +149,10 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
                   className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 text-left text-sm"
                 >
                   <Avatar className="w-6 h-6">
-                    {u.avatar_url && <AvatarImage src={u.avatar_url} alt={u.full_name} />}
-                    <AvatarFallback className="text-xs bg-slate-200">{getInitials(u.full_name)}</AvatarFallback>
+                    {u.avatar && <AvatarImage src={u.avatar} alt={u.name} />}
+                    <AvatarFallback className="text-xs bg-slate-200">{getInitials(u.name)}</AvatarFallback>
                   </Avatar>
-                  <span className="truncate">{u.full_name}</span>
+                  <span className="truncate">{u.name}</span>
                 </button>
               ))}
             </div>
