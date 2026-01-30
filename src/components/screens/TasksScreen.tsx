@@ -74,6 +74,7 @@ interface InlineTaskEditorProps {
   assigneeId: string;
   summary: string;
   dueDate: string;
+  currentUser?: { id: string; name: string; avatar?: string };
   onAssigneeChange: (id: string) => void;
   onSummaryChange: (text: string) => void;
   onDueDateChange: (date: string) => void;
@@ -87,30 +88,29 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
   assigneeId,
   summary,
   dueDate,
+  currentUser,
   onAssigneeChange,
   onSummaryChange,
   onDueDateChange,
   onSave,
   onCancel
 }) => {
-  const [showAssigneeMenu, setShowAssigneeMenu] = useState(false);
   const dateInputRef = useRef<HTMLInputElement>(null);
-  const assignedUser = users.find(u => u.id === assigneeId);
   const spineLeft = (depth * INDENT_PX) + ROOT_SPINE_LEFT;
 
   return (
-    <div className="relative overflow-visible bg-orange-50/30 border-l-2 border-orange-500">
+    <div className="relative flex items-start py-3 pr-2">
       <div
         className="absolute w-[2px] bg-slate-900"
         style={{
           left: `${spineLeft}px`,
-          top: '-12px',
-          bottom: '-12px'
+          top: '-10px',
+          bottom: '0'
         }}
       />
 
       <div
-        className="absolute h-[2px] bg-slate-900"
+        className="absolute h-[2px] bg-orange-500"
         style={{
           left: `${spineLeft}px`,
           top: '24px',
@@ -119,71 +119,41 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
       />
 
       <div
-        className="flex items-start gap-3 py-3 pr-4 relative z-10"
+        className="flex items-start gap-3 relative z-10 flex-1"
         style={{ paddingLeft: `${spineLeft + 20}px` }}
       >
-        <div className="relative">
-          <button
-            onClick={() => setShowAssigneeMenu(!showAssigneeMenu)}
-            className="flex-shrink-0"
-          >
-            <Avatar className="w-7 h-7 border-2 border-orange-500">
-              {assignedUser?.avatar ? (
-                <AvatarImage src={assignedUser.avatar} alt={assignedUser.name} />
-              ) : null}
-              <AvatarFallback className="bg-orange-100 text-orange-700 text-xs font-bold">
-                {assignedUser ? getInitials(assignedUser.name) : '?'}
-              </AvatarFallback>
-            </Avatar>
-          </button>
+        <Avatar className="w-6 h-6 flex-shrink-0">
+          {currentUser?.avatar ? (
+            <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
+          ) : null}
+          <AvatarFallback className="bg-orange-100 text-orange-700 text-xs font-bold">
+            {currentUser ? getInitials(currentUser.name) : '?'}
+          </AvatarFallback>
+        </Avatar>
 
-          {showAssigneeMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 min-w-[160px] max-h-64 overflow-auto">
-              {users.map(u => (
-                <button
-                  key={u.id}
-                  onClick={() => {
-                    onAssigneeChange(u.id);
-                    setShowAssigneeMenu(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 text-left text-sm"
-                >
-                  <Avatar className="w-6 h-6">
-                    {u.avatar && <AvatarImage src={u.avatar} alt={u.name} />}
-                    <AvatarFallback className="text-xs bg-slate-200">{getInitials(u.name)}</AvatarFallback>
-                  </Avatar>
-                  <span className="truncate">{u.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <textarea
+          autoFocus
+          rows={2}
+          value={summary}
+          onChange={(e) => onSummaryChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && summary.trim()) {
+              e.preventDefault();
+              onSave();
+            }
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              onCancel();
+            }
+            if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+              e.preventDefault();
+            }
+          }}
+          placeholder="Type task..."
+          className="flex-1 bg-transparent border-b-2 border-orange-200 focus:border-orange-500 outline-none text-sm resize-none mx-3"
+        />
 
-        <div className="flex-1 min-w-0">
-          <textarea
-            autoFocus
-            rows={2}
-            value={summary}
-            onChange={(e) => onSummaryChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && summary.trim()) {
-                e.preventDefault();
-                onSave();
-              }
-              if (e.key === 'Escape') {
-                e.preventDefault();
-                onCancel();
-              }
-              if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
-                e.preventDefault();
-              }
-            }}
-            placeholder="Type task description (Cmd+Enter to save, Esc to cancel)..."
-            className="w-full text-sm leading-relaxed bg-yellow-50 border border-yellow-200 rounded px-2 py-1.5 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium resize-none focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
-          />
-        </div>
-
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex flex-col gap-2 items-center min-w-[32px]">
           <div className="relative">
             <input
               ref={dateInputRef}
@@ -193,28 +163,27 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
             />
             <button
-              className="p-1.5 hover:bg-slate-100 rounded transition-colors pointer-events-none"
+              className="pointer-events-none"
               title={dueDate ? new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Set due date'}
             >
-              <Calendar className="w-4 h-4 text-slate-600" />
+              <Calendar className="w-4 h-4 text-slate-400" />
             </button>
           </div>
 
           <button
             onClick={onSave}
             disabled={!summary.trim()}
-            className="p-1.5 hover:bg-green-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="disabled:opacity-30 disabled:cursor-not-allowed"
             title="Save (Cmd+Enter)"
           >
-            <Check className="w-4 h-4 text-green-600" />
+            <Check className="w-5 h-5 text-green-600" />
           </button>
 
           <button
             onClick={onCancel}
-            className="p-1.5 hover:bg-red-50 rounded transition-colors"
             title="Cancel (Esc)"
           >
-            <X className="w-4 h-4 text-red-600" />
+            <X className="w-5 h-5 text-red-500" />
           </button>
         </div>
       </div>
@@ -419,6 +388,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
               assigneeId={newTaskAssignee}
               summary={newTaskSummary}
               dueDate={newTaskDueDate}
+              currentUser={users.find(u => u.id === currentUserId)}
               onAssigneeChange={onNewTaskAssigneeChange}
               onSummaryChange={onNewTaskSummaryChange}
               onDueDateChange={onNewTaskDueDateChange}
@@ -593,6 +563,7 @@ const DealThread: React.FC<DealThreadProps> = ({
               assigneeId={newTaskAssignee}
               summary={newTaskSummary}
               dueDate={newTaskDueDate}
+              currentUser={users.find(u => u.id === currentUserId)}
               onAssigneeChange={onNewTaskAssigneeChange}
               onSummaryChange={onNewTaskSummaryChange}
               onDueDateChange={onNewTaskDueDateChange}
