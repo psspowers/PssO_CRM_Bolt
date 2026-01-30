@@ -529,8 +529,10 @@ export default function AppLayout() {
           className={`flex-1 ${
             activeTab === 'pulse'
               ? 'p-0 pb-20'
+              : activeTab === 'tasks'
+              ? 'p-0 pb-24 lg:pb-8'
               : 'p-3 sm:p-4 lg:p-8 pb-24 lg:pb-8'
-          }`}
+          } ${activeTab === 'tasks' ? 'bg-white' : ''}`}
         >
           <div className={activeTab === 'pulse' ? '' : 'max-w-7xl mx-auto w-full'}>
             {/* Page Title - Desktop */}

@@ -542,8 +542,8 @@ export const TasksScreen: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 pb-24">
-      <div className="space-y-3">
+    <div className="min-h-screen pb-24 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="space-y-3 mb-6 pt-6">
         <div>
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -659,10 +659,10 @@ export const TasksScreen: React.FC = () => {
             const flatTasks = flattenTaskTree(taskTree);
 
             return (
-              <div key={group.deal.id} className="mb-6">
-                <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200">
+              <div key={group.deal.id} className="mb-8">
+                <div className="flex items-center gap-3 px-2 py-3">
                   <div
-                    className={`w-9 h-9 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm`}
+                    className={`w-9 h-9 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}
                   >
                     {stageConfig.char}
                   </div>
@@ -681,7 +681,7 @@ export const TasksScreen: React.FC = () => {
                 </div>
 
                 {flatTasks.length > 0 && (
-                  <div className="space-y-0 bg-white">
+                  <div className="space-y-0 pl-2">
                     {flatTasks.map(flatTask =>
                       renderTask(flatTask, group.deal.id)
                     )}
