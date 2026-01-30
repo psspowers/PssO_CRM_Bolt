@@ -204,6 +204,16 @@ const TaskNode = ({
   onCancelTask,
   expandedTasks,
   onToggleExpand,
+  editingTaskId,
+  editingSummary,
+  editingAssignee,
+  editingDueDate,
+  onStartEdit,
+  onSaveEdit,
+  onCancelEdit,
+  onEditSummaryChange,
+  onEditAssigneeChange,
+  onEditDueDateChange,
 }: {
   task: TaskThread;
   dealId: string;
@@ -220,6 +230,16 @@ const TaskNode = ({
   onCancelTask: () => void;
   expandedTasks: Set<string>;
   onToggleExpand: (id: string) => void;
+  editingTaskId: string | null;
+  editingSummary: string;
+  editingAssignee: string;
+  editingDueDate: string;
+  onStartEdit: (task: TaskThread) => void;
+  onSaveEdit: () => void;
+  onCancelEdit: () => void;
+  onEditSummaryChange: (value: string) => void;
+  onEditAssigneeChange: (value: string) => void;
+  onEditDueDateChange: (value: string) => void;
 }) => {
   const isCompleted = task.task_status === 'Completed';
   const isMine = task.assigned_to_id === currentUserId;
@@ -228,10 +248,46 @@ const TaskNode = ({
   const isExpanded = expandedTasks.has(task.id);
   const isAddingChild = addingChildTo === task.id;
   const isAddingReply = addingReplyTo === task.id;
+  const isEditing = editingTaskId === task.id;
 
   const avatarSize = depth === 0 ? 'w-7 h-7' : 'w-6 h-6';
 
   const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isCompleted;
+
+  // Long press and double click handlers
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const clickCountRef = useRef(0);
+  const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleTouchStart = () => {
+    if (isCompleted) return;
+    longPressTimerRef.current = setTimeout(() => {
+      onStartEdit(task);
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleDoubleClick = () => {
+    if (isCompleted) return;
+    onStartEdit(task);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+      if (clickTimerRef.current) {
+        clearTimeout(clickTimerRef.current);
+      }
+    };
+  }, []);
 
   if (task.isOptimistic) {
     return (
@@ -257,12 +313,82 @@ const TaskNode = ({
 
   const currentUser = users.find(u => u.id === currentUserId);
 
+  // Edit Mode
+  if (isEditing) {
+    const selectedUser = users.find(u => u.id === editingAssignee);
+    const initials = selectedUser?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U';
+
+    return (
+      <div className="relative py-1">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex items-start gap-2"
+        >
+          <div className="w-4 flex-shrink-0" />
+          <div className="flex-shrink-0 mt-0.5">
+            <div className="relative">
+              <select
+                value={editingAssignee}
+                onChange={e => onEditAssigneeChange(e.target.value)}
+                className="appearance-none bg-transparent outline-none cursor-pointer opacity-0 absolute inset-0 w-7 h-7 z-10"
+                title="Change assignee"
+              >
+                <option value="">Unassigned</option>
+                {users.map(u => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+              <div className={cn(avatarSize, "rounded-full bg-orange-500 flex items-center justify-center text-white text-[10px] font-bold pointer-events-none ring-2 ring-white shadow-sm")}>
+                {initials}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 bg-white border-2 border-orange-300 rounded-lg shadow-md">
+            <input
+              value={editingSummary}
+              onChange={(e) => onEditSummaryChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSaveEdit();
+                if (e.key === 'Escape') onCancelEdit();
+              }}
+              placeholder="Task summary..."
+              className="w-full bg-transparent outline-none text-sm font-medium py-2 px-2"
+              autoFocus
+            />
+            <div className="flex items-center gap-2 px-2 pb-2 border-t border-orange-100 pt-2 mt-1">
+              <input
+                type="date"
+                value={editingDueDate}
+                onChange={e => onEditDueDateChange(e.target.value)}
+                className="text-[11px] outline-none text-slate-600 cursor-pointer flex-1"
+              />
+              <button onClick={onCancelEdit} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                <X className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={onSaveEdit} className="p-1 hover:bg-green-50 rounded text-green-600">
+                <Check className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative">
-      <div className={cn(
-        'flex items-start gap-2 py-1 group transition-all',
-        isCompleted && 'opacity-50 grayscale'
-      )}>
+      <div
+        className={cn(
+          'flex items-start gap-2 py-1 group transition-all',
+          isCompleted && 'opacity-50 grayscale'
+        )}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchEnd}
+        onDoubleClick={handleDoubleClick}
+      >
         {/* Expand/Collapse */}
         <div className="w-4 flex justify-center items-start pt-1.5 flex-shrink-0">
           {hasChildren ? (
@@ -386,6 +512,16 @@ const TaskNode = ({
                 onCancelTask={onCancelTask}
                 expandedTasks={expandedTasks}
                 onToggleExpand={onToggleExpand}
+                editingTaskId={editingTaskId}
+                editingSummary={editingSummary}
+                editingAssignee={editingAssignee}
+                editingDueDate={editingDueDate}
+                onStartEdit={onStartEdit}
+                onSaveEdit={onSaveEdit}
+                onCancelEdit={onCancelEdit}
+                onEditSummaryChange={onEditSummaryChange}
+                onEditAssigneeChange={onEditAssigneeChange}
+                onEditDueDateChange={onEditDueDateChange}
               />
             ))}
 
@@ -438,6 +574,11 @@ export const TasksScreen: React.FC = () => {
   const [addingReplyTo, setAddingReplyTo] = useState<string | null>(null);
 
   const [optimisticTasks, setOptimisticTasks] = useState<Map<string, TaskThread>>(new Map());
+
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingSummary, setEditingSummary] = useState('');
+  const [editingAssignee, setEditingAssignee] = useState('');
+  const [editingDueDate, setEditingDueDate] = useState('');
 
   // Hierarchy and team view
   const [hierarchyView, setHierarchyView] = useState<'mine' | 'team'>('mine');
@@ -558,6 +699,51 @@ export const TasksScreen: React.FC = () => {
     await supabase.from('activities').update({ assigned_to_id: user?.id }).eq('id', id);
     fetchTasks();
     toast({ title: 'Task Picked Up (+5⚡)', className: 'bg-orange-50 border-orange-200' });
+  };
+
+  const handleStartEdit = (task: TaskThread) => {
+    setEditingTaskId(task.id);
+    setEditingSummary(task.summary);
+    setEditingAssignee(task.assigned_to_id || '');
+    setEditingDueDate(task.due_date ? format(parseISO(task.due_date), 'yyyy-MM-dd') : '');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTaskId(null);
+    setEditingSummary('');
+    setEditingAssignee('');
+    setEditingDueDate('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingTaskId || !editingSummary.trim()) return;
+
+    try {
+      const updateData: any = {
+        summary: editingSummary.trim(),
+        assigned_to_id: editingAssignee || null,
+      };
+
+      if (editingDueDate) {
+        updateData.due_date = new Date(editingDueDate).toISOString();
+      } else {
+        updateData.due_date = null;
+      }
+
+      const { error } = await supabase
+        .from('activities')
+        .update(updateData)
+        .eq('id', editingTaskId);
+
+      if (error) throw error;
+
+      toast({ title: 'Task Updated' });
+      handleCancelEdit();
+      fetchTasks();
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
   };
 
   const handleSaveNewTask = async (
@@ -1093,6 +1279,16 @@ export const TasksScreen: React.FC = () => {
                         }}
                         expandedTasks={expandedTasks}
                         onToggleExpand={handleToggleTask}
+                        editingTaskId={editingTaskId}
+                        editingSummary={editingSummary}
+                        editingAssignee={editingAssignee}
+                        editingDueDate={editingDueDate}
+                        onStartEdit={handleStartEdit}
+                        onSaveEdit={handleSaveEdit}
+                        onCancelEdit={handleCancelEdit}
+                        onEditSummaryChange={setEditingSummary}
+                        onEditAssigneeChange={setEditingAssignee}
+                        onEditDueDateChange={setEditingDueDate}
                       />
                     ))}
 
