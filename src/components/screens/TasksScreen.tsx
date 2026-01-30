@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { CheckSquare, Square, Loader2, Hand, X, Plus, Calendar, Check, ChevronRight } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Hand, X, Plus, Calendar as CalendarIcon, Check, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { format } from 'date-fns';
 
 const INDENT_PX = 28;
 
@@ -109,10 +112,27 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
 }) => {
   const indent = depth * INDENT_PX;
   const inputRef = useRef<HTMLInputElement>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [assigneeOpen, setAssigneeOpen] = useState(false);
+
+  const selectedUser = users.find(u => u.id === assigneeId) || currentUser;
+  const selectedDate = dueDate ? new Date(dueDate) : undefined;
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      onDueDateChange(format(date, 'yyyy-MM-dd'));
+      setCalendarOpen(false);
+    }
+  };
+
+  const handleAssigneeSelect = (userId: string) => {
+    onAssigneeChange(userId);
+    setAssigneeOpen(false);
+  };
 
   return (
     <motion.div
@@ -120,17 +140,61 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.15 }}
-      className="relative flex items-start py-1 pr-4 bg-transparent my-1"
+      className="relative flex items-start py-1.5 pr-4 bg-transparent my-1"
       style={{ paddingLeft: `${indent + 48}px` }}
     >
       <div className="absolute w-[2px] bg-gray-300" style={{ left: `${indent + 27}px`, top: '-12px', bottom: '0' }} />
 
-      <Avatar className="w-8 h-8 flex-shrink-0 ring-4 ring-white z-10">
-        {currentUser?.avatar ? <AvatarImage src={currentUser.avatar} alt={currentUser.name} /> : null}
-        <AvatarFallback className="bg-orange-100 text-orange-700 text-xs font-bold">
-          {currentUser ? getInitials(currentUser.name) : '?'}
-        </AvatarFallback>
-      </Avatar>
+      <Popover open={assigneeOpen} onOpenChange={setAssigneeOpen}>
+        <PopoverTrigger asChild>
+          <button className="flex-shrink-0">
+            <Avatar className="w-8 h-8 ring-4 ring-white z-10 hover:ring-orange-100 transition-all cursor-pointer">
+              {selectedUser?.avatar ? <AvatarImage src={selectedUser.avatar} alt={selectedUser.name} /> : null}
+              <AvatarFallback className="bg-orange-100 text-orange-700 text-xs font-bold">
+                {selectedUser ? getInitials(selectedUser.name) : '?'}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-56 p-2" align="start">
+          <div className="space-y-1">
+            <button
+              onClick={() => handleAssigneeSelect(currentUser?.id || '')}
+              className={cn(
+                "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 transition-colors text-left",
+                assigneeId === currentUser?.id && "bg-orange-50"
+              )}
+            >
+              <Avatar className="w-6 h-6">
+                {currentUser?.avatar && <AvatarImage src={currentUser.avatar} alt={currentUser.name} />}
+                <AvatarFallback className="text-xs bg-orange-100 text-orange-700">
+                  {currentUser ? getInitials(currentUser.name) : '?'}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium">Me</span>
+            </button>
+            <div className="h-px bg-gray-200 my-1" />
+            {users.filter(u => u.id !== currentUser?.id).map((user) => (
+              <button
+                key={user.id}
+                onClick={() => handleAssigneeSelect(user.id)}
+                className={cn(
+                  "w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-gray-100 transition-colors text-left",
+                  assigneeId === user.id && "bg-orange-50"
+                )}
+              >
+                <Avatar className="w-6 h-6">
+                  {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
+                  <AvatarFallback className="text-xs bg-gray-200">
+                    {getInitials(user.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm">{user.name}</span>
+              </button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
 
       <div className="flex-1 ml-3">
         <input
@@ -151,29 +215,27 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
           }}
         />
 
-        <div className="flex items-center gap-4 mt-2 text-xs text-gray-600">
-          <div className="flex items-center gap-1">
-            <Calendar className="w-3.5 h-3.5" />
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => onDueDateChange(e.target.value)}
-              className="bg-transparent border-none outline-none cursor-pointer"
-            />
-          </div>
-
-          <select
-            value={assigneeId}
-            onChange={(e) => onAssigneeChange(e.target.value)}
-            className="bg-transparent border-none outline-none cursor-pointer"
-          >
-            <option value={currentUser?.id}>Me</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center gap-3 mt-2">
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <button className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 transition-colors">
+                <CalendarIcon className="w-3.5 h-3.5" />
+                {selectedDate ? (
+                  <span className="font-medium">{format(selectedDate, 'MMM d')}</span>
+                ) : (
+                  <span>Set date</span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={handleDateSelect}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
 
           <div className="ml-auto flex gap-3">
             <button onClick={onCancel} className="text-gray-500 hover:text-gray-700 transition-colors">
@@ -309,11 +371,11 @@ const TaskRow: React.FC<TaskRowProps> = ({
             <div className="flex flex-col items-end gap-1">
               {task.due_date && (
                 <div className={cn(
-                  'text-xs',
+                  'text-xs font-medium',
                   new Date(task.due_date) < new Date() ? 'text-red-600' : 'text-gray-500',
                   isCompleted && 'opacity-50 grayscale'
                 )}>
-                  {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {format(new Date(task.due_date), 'MMM d')}
                 </div>
               )}
               <button onClick={() => onToggleComplete(task.id, task.task_status)}>
