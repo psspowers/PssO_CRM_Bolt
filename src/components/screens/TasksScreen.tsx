@@ -406,14 +406,14 @@ export const TasksScreen: React.FC = () => {
 
     const taskRowStyle = depth > 0 ? {
       '--line-left': `${(depth - 1) * 32 + 20}px`,
-      '--line-height': isLast ? '20px' : '100%',
+      '--line-height': isLast ? '18px' : '100%',
       '--elbow-width': `${depth * 32 - 4 - ((depth - 1) * 32 + 20)}px`,
     } as React.CSSProperties : {};
 
     return (
       <div
         key={flatTask.id}
-        className={`task-row group ${depth > 0 ? 'task-row-nested' : ''} transition-colors`}
+        className={`task-row group ${depth > 0 ? 'task-row-nested' : ''} transition-colors hover:bg-slate-50/30`}
         style={taskRowStyle}
       >
         <div
@@ -432,22 +432,21 @@ export const TasksScreen: React.FC = () => {
           {hasChildren && (
             <button
               onClick={() => toggleExpanded(flatTask.id)}
-              className="task-toggle flex-shrink-0 w-4 h-4 mt-0.5 flex items-center justify-center text-slate-300 hover:text-orange-500 hover:bg-orange-50 rounded transition-colors border border-slate-200 bg-white"
+              className="tree-toggle-btn flex-shrink-0 w-4 h-4 flex items-center justify-center text-slate-700"
               style={{
                 position: 'absolute',
                 left: `${(depth - 1) * 32 + 12}px`,
-                top: '14px',
-                zIndex: 10
+                top: '12px'
               }}
             >
-              {isExpanded ? <Minus className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+              {isExpanded ? <Minus className="w-2.5 h-2.5" /> : <Plus className="w-2.5 h-2.5" />}
             </button>
           )}
 
           {depth > 0 && hasChildren && (
             <div
               onClick={() => toggleExpanded(flatTask.id)}
-              className="absolute cursor-pointer"
+              className="absolute cursor-pointer hover:opacity-75 transition-opacity"
               style={{
                 left: `${(depth - 1) * 32 + 20}px`,
                 top: 0,
@@ -485,7 +484,7 @@ export const TasksScreen: React.FC = () => {
             </TooltipProvider>
           )}
 
-          <div className="flex-1 min-w-0 pr-2">
+          <div className="flex-1 min-w-0 pr-2 flex items-center gap-2">
             <p
               className={`text-[14px] leading-relaxed ${
                 isCompleted ? 'line-through text-slate-400' : 'text-slate-900'
@@ -500,9 +499,15 @@ export const TasksScreen: React.FC = () => {
             >
               {flatTask.summary}
             </p>
+            <button
+              onClick={() => addSubtask(flatTask.id, dealId)}
+              className="task-add-btn flex-shrink-0 w-4 h-4 flex items-center justify-center text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-3 flex-shrink-0">
             {flatTask.dueDate && (
               <div className="flex items-center gap-1 text-[11px] text-slate-400">
                 <Clock className="w-3 h-3" />
@@ -512,27 +517,16 @@ export const TasksScreen: React.FC = () => {
               </div>
             )}
 
-            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              {hasChildren && (
-                <button
-                  onClick={() => addSubtask(flatTask.id, dealId)}
-                  className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-orange-500 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+            <button
+              onClick={() => toggleTask(flatTask.id, flatTask.status)}
+              className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              {isCompleted ? (
+                <CheckSquare className="w-5 h-5 text-green-500" />
+              ) : (
+                <Square className="w-5 h-5 text-slate-300 hover:text-slate-500 transition-colors" />
               )}
-
-              <button
-                onClick={() => toggleTask(flatTask.id, flatTask.status)}
-                className="flex-shrink-0"
-              >
-                {isCompleted ? (
-                  <CheckSquare className="w-5 h-5 text-green-500" />
-                ) : (
-                  <Square className="w-5 h-5 text-slate-300 hover:text-slate-500 transition-colors" />
-                )}
-              </button>
-            </div>
+            </button>
           </div>
         </div>
       </div>
@@ -665,8 +659,8 @@ export const TasksScreen: React.FC = () => {
             const flatTasks = flattenTaskTree(taskTree);
 
             return (
-              <div key={group.deal.id}>
-                <div className="flex items-center gap-3 px-4 py-3 bg-slate-50/80 sticky top-0 z-10 border-b border-slate-200">
+              <div key={group.deal.id} className="mb-6">
+                <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200">
                   <div
                     className={`w-9 h-9 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm`}
                   >
@@ -674,20 +668,20 @@ export const TasksScreen: React.FC = () => {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-[15px] text-slate-900 truncate">{group.deal.name}</h3>
+                    <h3 className="font-bold text-[16px] text-slate-900 truncate">{group.deal.name}</h3>
                   </div>
 
-                  <div className="text-sm font-semibold text-slate-500 flex-shrink-0">
+                  <div className="text-[11px] font-medium text-slate-400 flex-shrink-0">
                     {group.deal.value ? `${group.deal.value} MW` : ''}
                   </div>
 
-                  <div className="text-xs font-medium text-slate-400 flex-shrink-0 min-w-[40px] text-right">
+                  <div className="text-[11px] font-medium text-slate-400 flex-shrink-0 min-w-[40px] text-right">
                     {group.completed_tasks}/{group.total_tasks}
                   </div>
                 </div>
 
                 {flatTasks.length > 0 && (
-                  <div className="space-y-0">
+                  <div className="space-y-0 bg-white">
                     {flatTasks.map(flatTask =>
                       renderTask(flatTask, group.deal.id)
                     )}

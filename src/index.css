@@ -146,7 +146,7 @@
     box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.1);
   }
 
-  /* Task hierarchy tree lines - using pseudo-elements for proper layering */
+  /* Task hierarchy tree lines - Document Outline Style */
   .task-row {
     position: relative;
   }
@@ -156,9 +156,9 @@
     position: absolute;
     left: var(--line-left);
     top: 0;
-    width: 1.5px;
+    width: 2px;
     height: var(--line-height);
-    background-color: #e2e8f0;
+    background-color: #cbd5e1;
     pointer-events: none;
     z-index: 1;
   }
@@ -167,16 +167,41 @@
     content: '';
     position: absolute;
     left: var(--line-left);
-    top: 20px;
+    top: 18px;
     width: var(--elbow-width);
-    height: 1.5px;
-    background-color: #e2e8f0;
+    height: 2px;
+    background-color: #cbd5e1;
     pointer-events: none;
     z-index: 1;
   }
 
-  .task-toggle {
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  .tree-toggle-btn {
+    position: absolute;
+    z-index: 10;
+    background: white;
+    border: 1.5px solid #1e293b;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.15s ease;
+  }
+
+  .tree-toggle-btn:hover {
+    background: #1e293b;
+    border-color: #1e293b;
+    transform: scale(1.05);
+  }
+
+  .tree-toggle-btn:hover svg {
+    color: white;
+  }
+
+  .task-add-btn {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .group:hover .task-add-btn {
+    opacity: 1;
   }
 }
 
