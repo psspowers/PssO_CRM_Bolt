@@ -245,110 +245,125 @@ const TaskRow: React.FC<TaskRowProps> = ({
 
   const spineLeft = (depth * INDENT_PX) + ROOT_SPINE_LEFT;
 
+  const childSpineLeft = spineLeft + INDENT_PX;
+
   return (
     <>
-      <div className="relative flex items-start py-3 pr-4 overflow-visible group hover:bg-slate-50/30 transition-colors">
-        <div
-          className="absolute w-[2px] bg-slate-900 z-0"
-          style={{
-            left: `${spineLeft}px`,
-            top: '-12px',
-            bottom: isLast && !isAddingHere && (!hasChildren || !isExpanded) ? '50%' : '-12px'
-          }}
-        />
-
-        <div
-          className="absolute h-[2px] bg-slate-900 z-0"
-          style={{
-            left: `${spineLeft}px`,
-            top: '50%',
-            width: '20px'
-          }}
-        />
-
-        {hasChildren && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              onToggleExpand(task.id);
-            }}
-            className="absolute bg-slate-900 rounded-full w-2.5 h-2.5 flex items-center justify-center cursor-pointer hover:scale-125 transition-transform z-10"
+      <div className="relative py-0">
+        {!isLast ? (
+          <div
+            className="absolute w-[2px] bg-slate-900 z-0"
             style={{
-              left: `${spineLeft - 5}px`,
-              top: 'calc(50% - 5px)'
+              left: `${spineLeft}px`,
+              top: '-24px',
+              bottom: '-24px'
             }}
-            title={isExpanded ? 'Collapse' : 'Expand'}
-          >
-            {isExpanded ? (
-              <Minus className="w-2 h-2 text-white" />
-            ) : (
-              <Plus className="w-2 h-2 text-white" />
-            )}
-          </button>
+          />
+        ) : (
+          <div
+            className="absolute w-[2px] bg-slate-900 z-0"
+            style={{
+              left: `${spineLeft}px`,
+              top: '-24px',
+              height: '50%'
+            }}
+          />
         )}
 
-        <div
-          className="flex items-start gap-3 relative z-10 flex-1"
-          style={{ paddingLeft: `${spineLeft + 24}px` }}
-        >
-          {isUnassigned ? (
+        <div className="relative flex items-start py-3 pr-4 overflow-visible group hover:bg-slate-50/30 transition-colors">
+          <div
+            className="absolute h-[2px] bg-slate-900 z-0"
+            style={{
+              left: `${spineLeft}px`,
+              top: '50%',
+              width: '20px'
+            }}
+          />
+
+          {hasChildren && (
             <button
-              onClick={() => onPickup(task.id, task.summary)}
-              className="flex-shrink-0 group/pickup"
-              title="Pickup this task"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onToggleExpand(task.id);
+              }}
+              className="absolute bg-slate-900 rounded-full w-2.5 h-2.5 flex items-center justify-center cursor-pointer hover:scale-125 transition-transform z-10"
+              style={{
+                left: `${spineLeft - 5}px`,
+                top: 'calc(50% - 5px)'
+              }}
+              title={isExpanded ? 'Collapse' : 'Expand'}
             >
-              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-300 group-hover/pickup:border-orange-500 group-hover/pickup:bg-orange-50 transition-all">
-                <Hand className="w-4 h-4 text-slate-400 group-hover/pickup:text-orange-500 transition-colors" />
-              </div>
-            </button>
-          ) : (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex-shrink-0 cursor-default">
-                    <Avatar className={cn(getAvatarSize(depth), isMine && 'ring-2 ring-orange-500 ring-offset-1')}>
-                      {task.assigneeAvatar && (
-                        <AvatarImage src={task.assigneeAvatar} alt={task.assigneeName} />
-                      )}
-                      <AvatarFallback className="text-xs bg-slate-200 font-bold">
-                        {task.assigneeName ? getInitials(task.assigneeName) : '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p className="text-xs">{task.assigneeName || 'Unassigned'}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-
-          <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
-            <p className={cn(
-              "text-sm leading-relaxed",
-              isMine ? "font-bold text-slate-900" : "font-medium text-slate-700",
-              isCompleted && "line-through opacity-60"
-            )}>
-              {task.summary}
-            </p>
-
-            {task.dueDate && (
-              <div className="text-xs text-slate-400 font-medium">
-                {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </div>
-            )}
-
-            <button
-              onClick={() => onToggleComplete(task.id, task.status)}
-              className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              {isCompleted ? (
-                <CheckSquare className="w-5 h-5 text-green-500" />
+              {isExpanded ? (
+                <Minus className="w-2 h-2 text-white" />
               ) : (
-                <Square className="w-5 h-5 text-slate-300 hover:text-slate-500 transition-colors" />
+                <Plus className="w-2 h-2 text-white" />
               )}
             </button>
+          )}
+
+          <div
+            className="flex items-start gap-3 relative z-10 flex-1"
+            style={{ paddingLeft: `${spineLeft + 24}px` }}
+          >
+            {isUnassigned ? (
+              <button
+                onClick={() => onPickup(task.id, task.summary)}
+                className="flex-shrink-0 group/pickup"
+                title="Pickup this task"
+              >
+                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-300 group-hover/pickup:border-orange-500 group-hover/pickup:bg-orange-50 transition-all">
+                  <Hand className="w-4 h-4 text-slate-400 group-hover/pickup:text-orange-500 transition-colors" />
+                </div>
+              </button>
+            ) : (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex-shrink-0 cursor-default">
+                      <Avatar className={cn(getAvatarSize(depth), isMine && 'ring-2 ring-orange-500 ring-offset-1')}>
+                        {task.assigneeAvatar && (
+                          <AvatarImage src={task.assigneeAvatar} alt={task.assigneeName} />
+                        )}
+                        <AvatarFallback className="text-xs bg-slate-200 font-bold">
+                          {task.assigneeName ? getInitials(task.assigneeName) : '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p className="text-xs">{task.assigneeName || 'Unassigned'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+
+            <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
+              <p className={cn(
+                "text-sm leading-relaxed",
+                isMine ? "font-bold text-slate-900" : "font-medium text-slate-700",
+                isCompleted && "line-through opacity-60"
+              )}>
+                {task.summary}
+              </p>
+
+              {task.dueDate && (
+                <div className="text-xs text-slate-400 font-medium">
+                  {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </div>
+              )}
+
+              <button
+                onClick={() => onToggleComplete(task.id, task.status)}
+                className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                {isCompleted ? (
+                  <CheckSquare className="w-5 h-5 text-green-500" />
+                ) : (
+                  <Square className="w-5 h-5 text-slate-300 hover:text-slate-500 transition-colors" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -397,30 +412,33 @@ const TaskRow: React.FC<TaskRowProps> = ({
             />
           )}
 
-          <div className="relative h-8 flex items-center" style={{ paddingLeft: `${spineLeft + INDENT_PX}px` }}>
-            <div
-              className="absolute w-[2px] bg-slate-900"
-              style={{
-                left: `${spineLeft + INDENT_PX}px`,
-                top: '-12px',
-                height: isAddingHere ? 'calc(100% + 12px)' : '16px'
-              }}
-            />
-
-            {!isAddingHere && (
+          {!isAddingHere && (
+            <div className="relative h-10 flex items-center" style={{ paddingLeft: `${childSpineLeft}px` }}>
+              <div
+                className="absolute w-[2px] bg-slate-900"
+                style={{
+                  left: `${childSpineLeft}px`,
+                  top: '-10px',
+                  height: '20px'
+                }}
+              />
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
                   onAddChildTo(task.id, dealId);
                 }}
-                className="relative ml-4 w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm"
+                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm"
+                style={{
+                  left: `${childSpineLeft - 10}px`,
+                  top: '10px'
+                }}
                 title="Add subtask"
               >
-                +
+                <Plus className="w-3 h-3" />
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </>
       )}
     </>
@@ -521,15 +539,6 @@ const DealThread: React.FC<DealThreadProps> = ({
 
       {isDealExpanded && (
         <div className="relative">
-          <div
-            className="absolute w-[2px] bg-slate-900"
-            style={{
-              left: `${ROOT_SPINE_LEFT}px`,
-              top: '0',
-              bottom: '0'
-            }}
-          />
-
           {taskTree.map((task, idx) => (
             <TaskRow
               key={task.id}
@@ -572,30 +581,33 @@ const DealThread: React.FC<DealThreadProps> = ({
             />
           )}
 
-          <div className="relative h-8 flex items-center" style={{ paddingLeft: `${ROOT_SPINE_LEFT}px` }}>
-            <div
-              className="absolute w-[2px] bg-slate-900"
-              style={{
-                left: `${ROOT_SPINE_LEFT}px`,
-                top: '-12px',
-                height: isAddingRoot ? 'calc(100% + 12px)' : '16px'
-              }}
-            />
-
-            {!isAddingRoot && (
+          {!isAddingRoot && (
+            <div className="relative h-10 flex items-center" style={{ paddingLeft: `${ROOT_SPINE_LEFT}px` }}>
+              <div
+                className="absolute w-[2px] bg-slate-900"
+                style={{
+                  left: `${ROOT_SPINE_LEFT}px`,
+                  top: '-10px',
+                  height: '20px'
+                }}
+              />
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
                   onAddRootTask(group.deal.id);
                 }}
-                className="relative ml-4 w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm"
+                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm"
+                style={{
+                  left: `${ROOT_SPINE_LEFT - 10}px`,
+                  top: '10px'
+                }}
                 title="Add root task"
               >
-                +
+                <Plus className="w-3 h-3" />
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>

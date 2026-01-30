@@ -209,9 +209,9 @@
     position: absolute;
     width: 2px;
     background-color: #0f172a;
-    top: -14px;
-    bottom: -14px;
-    left: var(--spine-x);
+    top: -24px;
+    bottom: -24px;
+    left: 21px;
     z-index: 0;
     pointer-events: none;
   }
