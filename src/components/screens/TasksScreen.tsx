@@ -96,7 +96,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
   const spineLeft = depth * INDENT_PX + 19;
 
   return (
-    <div className="relative overflow-visible">
+    <div className="relative overflow-visible bg-orange-50/30 border-l-2 border-orange-500">
       <div
         className="absolute w-[2px] bg-slate-900"
         style={{
@@ -164,16 +164,20 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
             value={summary}
             onChange={(e) => onSummaryChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && e.metaKey && summary.trim()) {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && summary.trim()) {
                 e.preventDefault();
                 onSave();
               }
               if (e.key === 'Escape') {
+                e.preventDefault();
                 onCancel();
               }
+              if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+                e.preventDefault();
+              }
             }}
-            placeholder="Type task description..."
-            className="w-full text-sm leading-relaxed bg-transparent border-none focus:ring-0 focus:outline-none px-1 py-1 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium resize-none"
+            placeholder="Type task description (Cmd+Enter to save, Esc to cancel)..."
+            className="w-full text-sm leading-relaxed bg-yellow-50 border border-yellow-200 rounded px-2 py-1.5 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium resize-none focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
           />
         </div>
 
@@ -293,7 +297,11 @@ const TaskRow: React.FC<TaskRowProps> = ({
 
         {hasChildren && (
           <button
-            onClick={() => onToggleExpand(task.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onToggleExpand(task.id);
+            }}
             className="absolute bg-slate-900 rounded-full w-2.5 h-2.5 flex items-center justify-center cursor-pointer hover:scale-125 transition-transform z-10"
             style={{
               left: `${spineLeft - 5}px`,
@@ -310,8 +318,12 @@ const TaskRow: React.FC<TaskRowProps> = ({
         )}
 
         <button
-          onClick={() => onAddSubtask(task.id, dealId)}
-          className="absolute text-red-500 font-bold text-sm bg-white w-4 h-4 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 hover:scale-125 transition-all z-10 leading-none"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            onAddSubtask(task.id, dealId);
+          }}
+          className="absolute text-red-500 font-bold text-sm bg-white w-4 h-4 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 hover:scale-125 transition-all z-10 leading-none shadow-sm border border-red-200"
           style={{
             left: `${spineLeft - 8}px`,
             top: 'calc(50% + 8px)'
@@ -851,6 +863,7 @@ export const TasksScreen: React.FC = () => {
   };
 
   const handleAddSubtask = (parentId: string, dealId: string) => {
+    console.log('Adding subtask to:', parentId, 'dealId:', dealId);
     setAddingToTaskId(parentId);
     setAddingToDealId(dealId);
     setNewTaskSummary('');
@@ -860,6 +873,8 @@ export const TasksScreen: React.FC = () => {
   };
 
   const handleSaveSubtask = async () => {
+    console.log('Saving subtask:', { newTaskSummary, addingToDealId, addingToTaskId, newTaskAssignee });
+
     if (!newTaskSummary.trim()) {
       toast({
         title: 'Missing Information',
@@ -895,10 +910,12 @@ export const TasksScreen: React.FC = () => {
         insertData.due_date = new Date(newTaskDueDate).toISOString();
       }
 
+      console.log('Inserting subtask:', insertData);
       const { error, data } = await supabase.from('activities').insert(insertData).select();
 
       if (error) throw error;
 
+      console.log('Subtask created:', data);
       toast({
         title: 'Subtask Added',
         description: 'New subtask created successfully',
