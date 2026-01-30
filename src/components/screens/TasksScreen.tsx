@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { CheckSquare, Square, Clock, Loader2, User, Hand, Users, Search, X, Info, Plus, Minus, Calendar, Check, ChevronRight, Filter } from 'lucide-react';
+import { CheckSquare, Square, Clock, Loader2, User, Hand, Users, Search, X, Info, Plus, Minus, Calendar, Check, ChevronRight, ChevronDown, Filter } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
 import { supabase } from '@/lib/supabase';
@@ -9,7 +9,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { cn } from '@/lib/utils';
 
 const INDENT_PX = 32;
-const ROOT_SPINE_LEFT = 47;
 
 interface TaskThread {
   id: string;
@@ -32,7 +31,7 @@ interface DealGroup {
     id: string;
     name: string;
     stage: string;
-    value: number;
+    mw: number;
     account_name: string;
   };
   progress: number;
@@ -43,14 +42,14 @@ interface DealGroup {
 
 const getStageAvatar = (stage: string) => {
   const configs: Record<string, { char: string; color: string; label: string }> = {
-    'Prospect': { char: '', color: 'bg-slate-400', label: 'Prospect' },
+    'Prospect': { char: 'P', color: 'bg-gray-400', label: 'Prospect' },
     'Qualified': { char: 'Q', color: 'bg-blue-500', label: 'Qualified' },
     'Proposal': { char: 'P', color: 'bg-amber-500', label: 'Proposal' },
     'Negotiation': { char: 'N', color: 'bg-violet-500', label: 'Negotiation' },
     'Term Sheet': { char: 'T', color: 'bg-teal-500', label: 'Term Sheet' },
     'Won': { char: 'W', color: 'bg-green-500', label: 'Won' }
   };
-  return configs[stage] || { char: '', color: 'bg-slate-400', label: stage };
+  return configs[stage] || { char: 'P', color: 'bg-gray-400', label: stage };
 };
 
 const getInitials = (name?: string) => {
@@ -60,12 +59,6 @@ const getInitials = (name?: string) => {
     return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
   }
   return name.substring(0, 2).toUpperCase();
-};
-
-const getAvatarSize = (depth: number) => {
-  if (depth === 0) return 'w-8 h-8';
-  if (depth === 1) return 'w-7 h-7';
-  return 'w-6 h-6';
 };
 
 interface InlineTaskEditorProps {
@@ -95,16 +88,15 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
   onSave,
   onCancel
 }) => {
-  const dateInputRef = useRef<HTMLInputElement>(null);
-  const spineLeft = (depth * INDENT_PX) + ROOT_SPINE_LEFT;
+  const indent = depth * INDENT_PX;
 
   return (
-    <div className="relative flex items-start py-3 pr-2">
+    <div className="relative flex items-start py-3 pr-4">
       <div
-        className="absolute w-[2px] bg-slate-900"
+        className="absolute w-[2px] bg-gray-200"
         style={{
-          left: `${spineLeft}px`,
-          top: '-10px',
+          left: `${indent + 27}px`,
+          top: '-12px',
           bottom: '0'
         }}
       />
@@ -112,7 +104,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
       <div
         className="absolute h-[2px] bg-orange-500"
         style={{
-          left: `${spineLeft}px`,
+          left: `${indent + 27}px`,
           top: '24px',
           width: '16px'
         }}
@@ -120,9 +112,9 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
 
       <div
         className="flex items-start gap-3 relative z-10 flex-1"
-        style={{ paddingLeft: `${spineLeft + 20}px` }}
+        style={{ paddingLeft: `${indent + 48}px` }}
       >
-        <Avatar className="w-6 h-6 flex-shrink-0">
+        <Avatar className="w-8 h-8 flex-shrink-0 ring-4 ring-white z-10">
           {currentUser?.avatar ? (
             <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
           ) : null}
@@ -131,13 +123,13 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
           </AvatarFallback>
         </Avatar>
 
-        <textarea
+        <input
           autoFocus
-          rows={2}
+          type="text"
           value={summary}
           onChange={(e) => onSummaryChange(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && summary.trim()) {
+            if (e.key === 'Enter' && summary.trim()) {
               e.preventDefault();
               onSave();
             }
@@ -145,45 +137,26 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
               e.preventDefault();
               onCancel();
             }
-            if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
-              e.preventDefault();
-            }
           }}
           placeholder="Type task..."
-          className="flex-1 bg-transparent border-b-2 border-orange-200 focus:border-orange-500 outline-none text-sm resize-none mx-3"
+          className="flex-1 bg-transparent border-b border-orange-500 focus:outline-none text-sm resize-none py-1"
         />
 
         <div className="flex flex-col gap-2 items-center min-w-[32px]">
-          <div className="relative">
-            <input
-              ref={dateInputRef}
-              type="date"
-              value={dueDate}
-              onChange={(e) => onDueDateChange(e.target.value)}
-              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-            />
-            <button
-              className="pointer-events-none"
-              title={dueDate ? new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Set due date'}
-            >
-              <Calendar className="w-4 h-4 text-slate-400" />
-            </button>
-          </div>
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => onDueDateChange(e.target.value)}
+            className="text-xs text-gray-500"
+          />
 
           <button
             onClick={onSave}
             disabled={!summary.trim()}
             className="disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Save (Cmd+Enter)"
+            title="Save (Enter)"
           >
-            <Check className="w-5 h-5 text-green-600" />
-          </button>
-
-          <button
-            onClick={onCancel}
-            title="Cancel (Esc)"
-          >
-            <X className="w-5 h-5 text-red-500" />
+            <Check className="w-4 h-4 text-green-600" />
           </button>
         </div>
       </div>
@@ -243,124 +216,112 @@ const TaskRow: React.FC<TaskRowProps> = ({
   const isUnassigned = !task.assignedToId;
   const isAddingHere = addingToTaskId === task.id;
 
-  const spineLeft = (depth * INDENT_PX) + ROOT_SPINE_LEFT;
-
-  const childSpineLeft = spineLeft + INDENT_PX;
+  const indent = depth * INDENT_PX;
+  const spineLeft = indent + 27;
 
   return (
     <>
-      <div className="relative py-0">
-        {!isLast ? (
+      <div className="relative flex items-start py-3 pr-4">
+        {!isLast && (
           <div
-            className="absolute w-[2px] bg-slate-900 z-0"
+            className="absolute w-[2px] bg-gray-200"
             style={{
               left: `${spineLeft}px`,
-              top: '-24px',
-              bottom: '-24px'
-            }}
-          />
-        ) : (
-          <div
-            className="absolute w-[2px] bg-slate-900 z-0"
-            style={{
-              left: `${spineLeft}px`,
-              top: '-24px',
-              height: '50%'
+              top: '-12px',
+              bottom: '-12px'
             }}
           />
         )}
 
-        <div className="relative flex items-start py-1.5 pr-4 overflow-visible group hover:bg-slate-50/30 transition-colors">
+        {isLast && !isAddingHere && (
           <div
-            className="absolute h-[2px] bg-slate-900 z-0"
+            className="absolute w-[2px] bg-gray-200"
             style={{
               left: `${spineLeft}px`,
-              top: '50%',
-              width: '20px'
+              top: '-12px',
+              height: '24px'
             }}
           />
+        )}
 
-          {hasChildren && (
+        <div
+          className="absolute h-[2px] bg-gray-200"
+          style={{
+            left: `${spineLeft}px`,
+            top: '24px',
+            width: '16px'
+          }}
+        />
+
+        {hasChildren && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onToggleExpand(task.id);
+            }}
+            className="absolute z-10 w-4 h-4 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-all"
+            style={{
+              left: `${spineLeft - 8}px`,
+              top: '16px'
+            }}
+            title={isExpanded ? 'Collapse' : 'Expand'}
+          >
+            <ChevronRight className={cn("w-2.5 h-2.5 text-gray-500 transition-transform", isExpanded && "rotate-90")} />
+          </button>
+        )}
+
+        <div
+          className="flex items-start gap-3 relative z-10 flex-1"
+          style={{ paddingLeft: `${indent + 48}px` }}
+        >
+          {isUnassigned ? (
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                onToggleExpand(task.id);
-              }}
-              className="absolute z-50 w-4 h-4 bg-white border border-slate-300 rounded-full flex items-center justify-center hover:bg-slate-50 transition-all"
-              style={{
-                left: `${spineLeft - 8}px`,
-                top: 'calc(50% - 8px)'
-              }}
-              title={isExpanded ? 'Collapse' : 'Expand'}
+              onClick={() => onPickup(task.id, task.summary)}
+              className="flex-shrink-0 group/pickup"
+              title="Pickup this task"
             >
-              <ChevronRight className={cn("w-2.5 h-2.5 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
+              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 group-hover/pickup:border-orange-500 group-hover/pickup:bg-orange-50 transition-all ring-4 ring-white z-10">
+                <Hand className="w-4 h-4 text-gray-400 group-hover/pickup:text-orange-500 transition-colors" />
+              </div>
             </button>
+          ) : (
+            <Avatar className="w-8 h-8 flex-shrink-0 ring-4 ring-white z-10">
+              {task.assigneeAvatar && (
+                <AvatarImage src={task.assigneeAvatar} alt={task.assigneeName} />
+              )}
+              <AvatarFallback className="text-xs bg-gray-200 font-bold">
+                {task.assigneeName ? getInitials(task.assigneeName) : '?'}
+              </AvatarFallback>
+            </Avatar>
           )}
 
-          <div
-            className="flex items-start gap-3 relative z-10 flex-1"
-            style={{ paddingLeft: `${spineLeft + 24}px` }}
-          >
-            {isUnassigned ? (
-              <button
-                onClick={() => onPickup(task.id, task.summary)}
-                className="flex-shrink-0 group/pickup"
-                title="Pickup this task"
-              >
-                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-300 group-hover/pickup:border-orange-500 group-hover/pickup:bg-orange-50 transition-all">
-                  <Hand className="w-4 h-4 text-slate-400 group-hover/pickup:text-orange-500 transition-colors" />
+          <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
+            <p className={cn(
+              "text-sm leading-snug",
+              isMine ? "font-bold text-black" : "font-normal text-gray-600",
+              isCompleted && "line-through opacity-60"
+            )}>
+              {task.summary}
+            </p>
+
+            <div className="flex flex-col items-end justify-start gap-1.5">
+              {task.dueDate && (
+                <div className="text-[10px] text-gray-500 leading-none">
+                  {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </div>
-              </button>
-            ) : (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex-shrink-0 cursor-default">
-                      <Avatar className={cn(getAvatarSize(depth), isMine && 'ring-2 ring-orange-500 ring-offset-1')}>
-                        {task.assigneeAvatar && (
-                          <AvatarImage src={task.assigneeAvatar} alt={task.assigneeName} />
-                        )}
-                        <AvatarFallback className="text-xs bg-slate-200 font-bold">
-                          {task.assigneeName ? getInitials(task.assigneeName) : '?'}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p className="text-xs">{task.assigneeName || 'Unassigned'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+              )}
 
-            <div className="flex-1 min-w-0 flex items-center justify-between gap-3">
-              <p className={cn(
-                "text-sm leading-snug",
-                isMine ? "font-bold text-slate-900" : "font-normal text-slate-700",
-                isCompleted && "line-through opacity-60"
-              )}>
-                {task.summary}
-              </p>
-
-              <div className="flex flex-col items-end justify-center gap-1">
-                {task.dueDate && (
-                  <div className="text-[10px] text-slate-400 leading-none">
-                    {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </div>
+              <button
+                onClick={() => onToggleComplete(task.id, task.status)}
+                className="flex-shrink-0"
+              >
+                {isCompleted ? (
+                  <CheckSquare className="w-4 h-4 text-green-500" />
+                ) : (
+                  <Square className="w-4 h-4 text-gray-300 hover:text-gray-500 transition-colors" />
                 )}
-
-                <button
-                  onClick={() => onToggleComplete(task.id, task.status)}
-                  className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  {isCompleted ? (
-                    <CheckSquare className="w-4 h-4 text-green-500" />
-                  ) : (
-                    <Square className="w-4 h-4 text-slate-300 hover:text-slate-500 transition-colors" />
-                  )}
-                </button>
-              </div>
+              </button>
             </div>
           </div>
         </div>
@@ -411,13 +372,13 @@ const TaskRow: React.FC<TaskRowProps> = ({
           )}
 
           {!isAddingHere && (
-            <div className="relative h-6 flex items-center" style={{ paddingLeft: `${childSpineLeft}px` }}>
+            <div className="relative" style={{ paddingLeft: `${indent + INDENT_PX}px` }}>
               <div
-                className="absolute w-[2px] bg-slate-900"
+                className="absolute w-[2px] bg-gray-200"
                 style={{
-                  left: `${childSpineLeft}px`,
+                  left: `${indent + INDENT_PX + 27}px`,
                   top: '-8px',
-                  height: '16px'
+                  height: '20px'
                 }}
               />
               <button
@@ -428,8 +389,8 @@ const TaskRow: React.FC<TaskRowProps> = ({
                 }}
                 className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm"
                 style={{
-                  left: `${childSpineLeft - 10}px`,
-                  top: '8px'
+                  left: `${indent + INDENT_PX + 17}px`,
+                  top: '4px'
                 }}
                 title="Add subtask"
               >
@@ -467,7 +428,7 @@ interface DealThreadProps {
   onCancelNewTask: () => void;
 }
 
-const DealThread: React.FC<DealThreadProps> = ({
+const DealThreadItem: React.FC<DealThreadProps> = ({
   group,
   expanded,
   expandedDeals,
@@ -496,11 +457,11 @@ const DealThread: React.FC<DealThreadProps> = ({
   const isAddingRoot = addingRootToDealId === group.deal.id;
 
   return (
-    <div className="relative">
-      <div className="relative flex items-center gap-3 py-3 border-b border-slate-100">
+    <div className="relative border-b border-gray-100 py-4">
+      <div className="relative flex items-center gap-3">
         <button
           onClick={() => onToggleDealExpand(group.deal.id)}
-          className="flex-shrink-0 text-slate-400 hover:text-slate-600 transition-colors"
+          className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
         >
           <ChevronRight className={cn("w-5 h-5 transition-transform", isDealExpanded && "rotate-90")} />
         </button>
@@ -512,31 +473,32 @@ const DealThread: React.FC<DealThreadProps> = ({
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3">
-            <h3 className="font-bold text-base text-slate-900 truncate">{group.deal.name}</h3>
-            {group.deal.value && (
-              <span className="text-xs font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded">
-                {group.deal.value} MW
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-black truncate">{group.deal.name}</h3>
+            {group.deal.mw && (
+              <span className="text-sm font-bold text-orange-600">
+                {group.deal.mw} MW
               </span>
             )}
-            <span className="text-xs font-medium text-slate-400 ml-auto">
-              {group.completed_tasks}/{group.total_tasks}
-            </span>
           </div>
         </div>
 
-        {group.total_tasks > 0 && (
-          <div className="absolute left-12 right-0 bottom-0 h-0.5 bg-slate-200">
-            <div
-              className="h-full bg-green-500 transition-all"
-              style={{ width: `${group.progress}%` }}
-            />
-          </div>
-        )}
+        <div className="text-xs text-gray-500 flex-shrink-0">
+          {group.completed_tasks}/{group.total_tasks}
+        </div>
       </div>
 
       {isDealExpanded && (
         <div className="relative">
+          <div
+            className="absolute w-[2px] bg-gray-200"
+            style={{
+              left: '27px',
+              top: '0',
+              bottom: isAddingRoot ? '0' : '-12px'
+            }}
+          />
+
           {taskTree.map((task, idx) => (
             <TaskRow
               key={task.id}
@@ -580,13 +542,13 @@ const DealThread: React.FC<DealThreadProps> = ({
           )}
 
           {!isAddingRoot && (
-            <div className="relative h-6 flex items-center" style={{ paddingLeft: `${ROOT_SPINE_LEFT}px` }}>
+            <div className="relative h-8 flex items-center">
               <div
-                className="absolute w-[2px] bg-slate-900"
+                className="absolute w-[2px] bg-gray-200"
                 style={{
-                  left: `${ROOT_SPINE_LEFT}px`,
+                  left: '27px',
                   top: '-8px',
-                  height: '16px'
+                  height: '20px'
                 }}
               />
               <button
@@ -597,10 +559,10 @@ const DealThread: React.FC<DealThreadProps> = ({
                 }}
                 className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm"
                 style={{
-                  left: `${ROOT_SPINE_LEFT - 10}px`,
-                  top: '8px'
+                  left: '17px',
+                  top: '4px'
                 }}
-                title="Add root task"
+                title="Add task"
               >
                 <Plus className="w-3 h-3" />
               </button>
@@ -771,8 +733,6 @@ export const TasksScreen: React.FC = () => {
         }
       }
 
-      console.log('Fetching tasks with:', { targetUserId, filterMode });
-
       const { data, error } = await supabase.rpc('get_task_threads', {
         p_user_id: targetUserId,
         p_filter: filterMode
@@ -780,7 +740,6 @@ export const TasksScreen: React.FC = () => {
 
       if (error) throw error;
 
-      console.log('Fetched deal groups:', data);
       setDealGroups(data || []);
     } catch (error: any) {
       console.error('Error fetching task threads:', error);
@@ -878,7 +837,6 @@ export const TasksScreen: React.FC = () => {
   };
 
   const handleAddRootTask = (dealId: string) => {
-    console.log('Adding root task to deal:', dealId);
     setAddingRootToDealId(dealId);
     setAddingToDealId(dealId);
     setAddingToTaskId(null);
@@ -889,7 +847,6 @@ export const TasksScreen: React.FC = () => {
   };
 
   const handleAddChildTask = (parentId: string, dealId: string) => {
-    console.log('Adding child task to:', parentId, 'dealId:', dealId);
     setAddingToTaskId(parentId);
     setAddingRootToDealId(null);
     setAddingToDealId(dealId);
@@ -900,8 +857,6 @@ export const TasksScreen: React.FC = () => {
   };
 
   const handleSaveTask = async () => {
-    console.log('Saving task:', { newTaskSummary, addingToDealId, addingToTaskId, newTaskAssignee });
-
     if (!newTaskSummary.trim()) {
       toast({
         title: 'Missing Information',
@@ -937,12 +892,10 @@ export const TasksScreen: React.FC = () => {
         insertData.due_date = new Date(newTaskDueDate).toISOString();
       }
 
-      console.log('Inserting task:', insertData);
       const { error, data } = await supabase.from('activities').insert(insertData).select();
 
       if (error) throw error;
 
-      console.log('Task created:', data);
       toast({
         title: addingToTaskId ? 'Subtask Added' : 'Task Added',
         description: 'New task created successfully',
@@ -1009,114 +962,68 @@ export const TasksScreen: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pb-24 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="space-y-3 mb-6 pt-6">
-        <div>
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
-                      <Info className="w-4 h-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-xs">
-                    <p className="text-xs">
-                      <strong>Mine:</strong> Your tasks<br />
-                      <strong>Team:</strong> Your tasks + subordinates' tasks
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <h1 className="text-2xl font-bold text-slate-900">Tasks</h1>
-            </div>
+    <div className="min-h-screen pb-24 max-w-2xl mx-auto bg-white">
+      <div className="sticky top-0 z-50 bg-white border-b border-gray-100 px-4">
+        <div className="py-3">
+          <h1 className="text-lg font-medium text-black mb-3">Tasks</h1>
 
-            <div className="flex items-center gap-2 flex-1 max-w-md ml-auto">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search tasks..."
-                  className="w-full pl-9 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5 text-slate-400" />
-                  </button>
-                )}
-              </div>
-              <button
-                onClick={() => setShowFilter(true)}
-                className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors flex-shrink-0"
-              >
-                <Filter className="w-5 h-5 text-slate-600" />
-              </button>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search tasks..."
+                className="w-full px-3 py-2 bg-gray-50 border-0 rounded-lg text-sm text-black placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-200"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded transition-colors"
+                >
+                  <X className="w-3.5 h-3.5 text-gray-400" />
+                </button>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
-              <button
-                onClick={() => setHierarchyView('mine')}
-                className={cn(
-                  "px-3 py-1.5 text-xs font-bold rounded transition-all",
-                  hierarchyView === 'mine'
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                )}
-              >
-                Mine {myTasksCount > 0 && `(${myTasksCount})`}
-              </button>
-              <button
-                onClick={() => setHierarchyView('team')}
-                className={cn(
-                  "px-3 py-1.5 text-xs font-bold rounded transition-all",
-                  hierarchyView === 'team'
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                )}
-              >
-                Team {teamTasksCount > 0 && `(${teamTasksCount})`}
-              </button>
-            </div>
-
-            {hierarchyView === 'team' && isAdmin && (
-              <div className="relative flex-shrink-0">
-                <select
-                  value={selectedMemberId}
-                  onChange={(e) => setSelectedMemberId(e.target.value)}
-                  className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-2 pr-6 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-28 truncate"
-                >
-                  <option value="all">All Team</option>
-                  {teamMembers.map(m => (
-                    <option key={m.id} value={m.id}>{formatShortName(m.name)}</option>
-                  ))}
-                </select>
-                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                  <Users className="w-3 h-3" />
-                </div>
-              </div>
-            )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setHierarchyView('mine')}
+              className={cn(
+                "px-3 py-1.5 text-sm rounded-full transition-all",
+                hierarchyView === 'mine'
+                  ? "bg-black text-white font-medium"
+                  : "text-gray-600 hover:bg-gray-100 font-normal"
+              )}
+            >
+              Mine {myTasksCount > 0 && `(${myTasksCount})`}
+            </button>
+            <button
+              onClick={() => setHierarchyView('team')}
+              className={cn(
+                "px-3 py-1.5 text-sm rounded-full transition-all",
+                hierarchyView === 'team'
+                  ? "bg-black text-white font-medium"
+                  : "text-gray-600 hover:bg-gray-100 font-normal"
+              )}
+            >
+              Team {teamTasksCount > 0 && `(${teamTasksCount})`}
+            </button>
           </div>
         </div>
       </div>
 
-      {filteredDealGroups.length === 0 ? (
-        <div className="text-center py-12 text-slate-500">
-          <CheckSquare className="w-12 h-12 mx-auto mb-3 opacity-20" />
-          <p>No tasks found</p>
-          <p className="text-xs mt-1">{search ? 'Try a different search' : 'Create tasks from the Deals screen'}</p>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {filteredDealGroups.map(group => (
-            <DealThread
+      <div className="p-0 space-y-0">
+        {filteredDealGroups.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">
+            <CheckSquare className="w-12 h-12 mx-auto mb-3 opacity-20" />
+            <p>No tasks found</p>
+            <p className="text-xs mt-1">{search ? 'Try a different search' : 'Create tasks from the Deals screen'}</p>
+          </div>
+        ) : (
+          filteredDealGroups.map(group => (
+            <DealThreadItem
               key={group.deal.id}
               group={group}
               expanded={expandedTasks}
@@ -1140,9 +1047,9 @@ export const TasksScreen: React.FC = () => {
               onSaveNewTask={handleSaveTask}
               onCancelNewTask={handleCancelTask}
             />
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 };
