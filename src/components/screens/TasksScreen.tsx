@@ -169,11 +169,11 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
             type="date"
             value={dueDate}
             onChange={(e) => onDueDateChange(e.target.value)}
-            className="absolute opacity-0 pointer-events-none"
+            className="absolute opacity-0 pointer-events-auto w-0 h-0"
           />
 
           <button
-            onClick={() => dateInputRef.current?.showPicker()}
+            onClick={() => dateInputRef.current?.click()}
             className="p-1.5 hover:bg-slate-100 rounded transition-colors"
             title={dueDate ? new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Set due date'}
           >
