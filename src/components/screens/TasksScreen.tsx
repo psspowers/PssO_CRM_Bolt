@@ -489,11 +489,10 @@ const DealThreadItem: React.FC<DealThreadItemProps> = ({
         </div>
 
         <div className="flex-1 min-w-0 flex items-center gap-2">
-          <h3 className="font-bold text-[16px] text-slate-900 truncate">{group.deal.name}</h3>
           {taskTree.length > 0 && (
             <button
               onClick={() => onToggleDealExpand(group.deal.id)}
-              className="flex-shrink-0 opacity-0 group-hover/deal:opacity-100 transition-opacity p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
+              className="flex-shrink-0 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
               title={isDealExpanded ? 'Collapse tasks' : 'Expand tasks'}
             >
               <ChevronDown
@@ -501,6 +500,7 @@ const DealThreadItem: React.FC<DealThreadItemProps> = ({
               />
             </button>
           )}
+          <h3 className="font-bold text-[16px] text-slate-900 truncate">{group.deal.name}</h3>
         </div>
 
         <div className="text-[11px] font-medium text-slate-400 flex-shrink-0">
