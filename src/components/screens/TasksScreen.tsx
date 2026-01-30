@@ -1014,14 +1014,12 @@ export const TasksScreen: React.FC = () => {
                   className={cn("w-5 h-5 text-slate-400 transition-transform flex-shrink-0", isExpanded && "rotate-90")}
                 />
                 {getStageAvatar(group.stage)}
-                <div className="flex-1 min-w-0 flex items-center gap-2">
-                  <span className="font-bold text-slate-900 text-sm truncate">{group.name}</span>
-                  {group.mw > 0 && (
-                    <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full whitespace-nowrap">
-                      {group.mw} MW
-                    </span>
-                  )}
-                </div>
+                <span className="font-bold text-slate-900 text-sm truncate flex-1 min-w-0">{group.name}</span>
+                {group.mw > 0 && (
+                  <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
+                    {group.mw} MW
+                  </span>
+                )}
               </div>
 
               {/* Tasks Tree */}
