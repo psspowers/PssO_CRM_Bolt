@@ -372,7 +372,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
           )}
 
           {!isAddingHere && (
-            <div className="relative h-8 flex items-center">
+            <div className="relative h-8 w-full my-1 flex items-center">
               <div
                 className="absolute w-[2px] bg-gray-200"
                 style={{
@@ -387,10 +387,11 @@ const TaskRow: React.FC<TaskRowProps> = ({
                   e.preventDefault();
                   onAddChildTo(task.id, dealId);
                 }}
-                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm pointer-events-auto"
+                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-10 shadow-sm pointer-events-auto"
                 style={{
                   left: `${indent + INDENT_PX + 17}px`,
-                  top: '4px'
+                  top: '50%',
+                  transform: 'translateY(-50%)'
                 }}
                 title="Add subtask"
               >
@@ -542,7 +543,7 @@ const DealThreadItem: React.FC<DealThreadProps> = ({
           )}
 
           {!isAddingRoot && (
-            <div className="relative h-8 flex items-center">
+            <div className="relative h-8 w-full my-1 flex items-center">
               <div
                 className="absolute w-[2px] bg-gray-200"
                 style={{
@@ -557,10 +558,11 @@ const DealThreadItem: React.FC<DealThreadProps> = ({
                   e.preventDefault();
                   onAddRootTask(group.deal.id);
                 }}
-                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm pointer-events-auto"
+                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-10 shadow-sm pointer-events-auto"
                 style={{
                   left: '17px',
-                  top: '4px'
+                  top: '50%',
+                  transform: 'translateY(-50%)'
                 }}
                 title="Add task"
               >
@@ -963,7 +965,7 @@ export const TasksScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-24 max-w-2xl mx-auto bg-white">
-      <div className="sticky top-0 z-50 bg-white border-b border-gray-100 px-4">
+      <div className="sticky top-0 z-[100] bg-white dark:bg-slate-900 border-b border-slate-100 px-4">
         <div className="py-3">
           <h1 className="text-lg font-medium text-black mb-3">Tasks</h1>
 
