@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { CheckSquare, Square, Loader2, Hand, Search, X, Plus, Calendar, Check, ChevronRight, CornerDownRight, Filter, Eye, EyeOff, User } from 'lucide-react';
-import { format } from 'date-fns';
+import { CheckSquare, Square, Loader2, Hand, Search, X, Plus, Calendar, Check, ChevronRight, Eye, EyeOff, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
 import { supabase } from '@/lib/supabase';
@@ -9,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const INDENT_PX = 28;
+const INDENT_PX = 32;
 
 interface TaskThread {
   id: string;
@@ -35,20 +34,23 @@ interface DealGroup {
   mw: number;
   velocity_score: number;
   tasks: TaskThread[] | null;
+  completed_tasks?: number;
+  total_tasks?: number;
+  progress?: number;
 }
 
 const getStageAvatar = (stage: string) => {
-  const configs: Record<string, { char: string; color: string; bg: string }> = {
-    'Prospect': { char: '•', color: 'text-slate-400', bg: 'bg-slate-100' },
-    'Qualified': { char: 'Q', color: 'text-blue-600', bg: 'bg-blue-100' },
-    'Proposal': { char: 'P', color: 'text-amber-600', bg: 'bg-amber-100' },
-    'Negotiation': { char: 'N', color: 'text-orange-600', bg: 'bg-orange-100' },
-    'Term Sheet': { char: 'T', color: 'text-teal-600', bg: 'bg-teal-100' },
-    'Won': { char: 'W', color: 'text-emerald-600', bg: 'bg-emerald-100' },
+  const configs: Record<string, { char: string; color: string }> = {
+    'Prospect': { char: '•', color: 'bg-slate-200 text-slate-500' },
+    'Qualified': { char: 'Q', color: 'bg-blue-500 text-white' },
+    'Proposal': { char: 'P', color: 'bg-amber-500 text-white' },
+    'Negotiation': { char: 'N', color: 'bg-purple-500 text-white' },
+    'Term Sheet': { char: 'T', color: 'bg-teal-500 text-white' },
+    'Won': { char: 'W', color: 'bg-green-500 text-white' },
   };
-  const s = configs[stage] || { char: '?', color: 'text-slate-500', bg: 'bg-slate-100' };
+  const s = configs[stage] || { char: '?', color: 'bg-slate-300 text-white' };
   return (
-    <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ring-2 ring-white z-20 relative', s.bg, s.color)}>
+    <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ring-2 ring-white z-20 relative', s.color)}>
       {s.char}
     </div>
   );
@@ -64,11 +66,9 @@ const buildTaskTree = (tasks: TaskThread[]): TaskThread[] => {
   if (!tasks) return [];
   const taskMap = new Map<string, TaskThread>();
   const roots: TaskThread[] = [];
-
   const tasksCopy = tasks.map(t => ({ ...t, children: [] }));
 
   tasksCopy.forEach(task => taskMap.set(task.id, task));
-
   tasksCopy.forEach(task => {
     if (task.parent_task_id && taskMap.has(task.parent_task_id)) {
       taskMap.get(task.parent_task_id)!.children!.push(task);
@@ -76,16 +76,17 @@ const buildTaskTree = (tasks: TaskThread[]): TaskThread[] => {
       roots.push(task);
     }
   });
-
   return roots;
 };
 
 const InlineTaskEditor = ({
+  depth,
   users,
   currentUser,
   onSave,
   onCancel,
 }: {
+  depth: number;
   users: any[];
   currentUser: any;
   onSave: (summary: string, assignee: string, date: string) => void;
@@ -96,66 +97,68 @@ const InlineTaskEditor = ({
   const [dueDate, setDueDate] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const indent = depth * INDENT_PX;
+  const spineLeft = indent + 27;
 
   return (
     <motion.div
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
-      className="relative flex items-start py-2 pr-2"
+      className="relative flex items-start py-2 pr-4"
     >
-      <div className="flex-1 flex items-start gap-2 relative z-10">
-        <div className="flex-1 space-y-2 bg-white border border-orange-200 rounded-lg p-2 shadow-sm">
-          <input
-            ref={inputRef}
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && summary.trim()) onSave(summary, assigneeId, dueDate);
-              if (e.key === 'Escape') onCancel();
-            }}
-            placeholder="Type task..."
-            className="w-full bg-transparent border-b border-orange-100 focus:border-orange-500 outline-none text-sm font-medium py-1 placeholder:text-slate-300"
-          />
+      <div className="absolute w-[2px] bg-slate-300" style={{ left: `${spineLeft}px`, top: '-10px', bottom: '0' }} />
+      <div className="absolute h-[2px] w-[14px] bg-slate-300" style={{ left: `${spineLeft}px`, top: '18px' }} />
 
-          <div className="flex items-center gap-2">
-             <div className="flex items-center gap-1 bg-slate-50 rounded px-1.5 py-0.5">
-               <User className="w-3 h-3 text-slate-400" />
-               <select
-                 value={assigneeId}
-                 onChange={e => setAssigneeId(e.target.value)}
-                 className="bg-transparent text-[10px] outline-none text-slate-600 w-20 truncate"
-               >
-                 <option value={currentUser?.id}>Me</option>
-                 {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-               </select>
-             </div>
+      <div className="flex-1 flex flex-col gap-2 relative z-10 pl-3" style={{ marginLeft: `${spineLeft + 14}px` }}>
+        <input
+          ref={inputRef}
+          value={summary}
+          onChange={(e) => setSummary(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && summary.trim()) onSave(summary, assigneeId, dueDate);
+            if (e.key === 'Escape') onCancel();
+          }}
+          placeholder="Type task..."
+          className="w-full bg-transparent border-b-2 border-orange-400 focus:border-orange-600 outline-none text-sm font-medium py-1 placeholder:text-slate-400"
+        />
 
-             <div className="flex items-center gap-1 bg-slate-50 rounded px-1.5 py-0.5">
-               <Calendar className="w-3 h-3 text-slate-400" />
-               <input
-                 type="date"
-                 value={dueDate}
-                 onChange={e => setDueDate(e.target.value)}
-                 className="bg-transparent text-[10px] outline-none text-slate-600 w-24"
-               />
-             </div>
+        <div className="flex items-center gap-3">
+           <div className="flex items-center gap-1">
+             <User className="w-3 h-3 text-slate-400" />
+             <select
+               value={assigneeId}
+               onChange={e => setAssigneeId(e.target.value)}
+               className="bg-transparent text-[10px] outline-none text-slate-600 w-20 truncate cursor-pointer"
+             >
+               <option value={currentUser?.id}>Me</option>
+               {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+             </select>
+           </div>
 
-             <div className="flex items-center gap-1 ml-auto">
-               <button onClick={onCancel} className="p-1 hover:bg-slate-100 rounded text-slate-400"><X className="w-3.5 h-3.5" /></button>
-               <button onClick={() => onSave(summary, assigneeId, dueDate)} className="p-1 hover:bg-green-50 rounded text-green-600"><Check className="w-3.5 h-3.5" /></button>
-             </div>
-          </div>
+           <div className="flex items-center gap-1">
+             <Calendar className="w-3 h-3 text-slate-400" />
+             <input
+               type="date"
+               value={dueDate}
+               onChange={e => setDueDate(e.target.value)}
+               className="bg-transparent text-[10px] outline-none text-slate-600 w-24 cursor-pointer"
+             />
+           </div>
+
+           <div className="flex items-center gap-2 ml-auto">
+             <button onClick={onCancel} className="p-1 hover:bg-slate-100 rounded text-slate-400"><X className="w-3.5 h-3.5" /></button>
+             <button onClick={() => onSave(summary, assigneeId, dueDate)} className="p-1 hover:bg-green-50 rounded text-green-600"><Check className="w-3.5 h-3.5" /></button>
+           </div>
         </div>
       </div>
     </motion.div>
   );
 };
 
-const TaskNode = ({
+const TaskRow = ({
   task, dealId, depth, isLast, expanded, onToggle, onComplete, onPickup, onAdd,
   currentUserId, users, addingToId, onSaveTask, onCancelTask
 }: any) => {
@@ -166,110 +169,179 @@ const TaskNode = ({
   const hasChildren = task.children && task.children.length > 0;
   const isAddingChild = addingToId === task.id;
 
-  const avatarSize = depth === 0 ? 'w-7 h-7' : 'w-6 h-6';
+  const indent = depth * INDENT_PX;
+  const spineLeft = indent + 27;
 
   if (task.isOptimistic) {
      return (
-       <div className="py-2 pl-8 opacity-50 animate-pulse text-xs text-slate-400 flex items-center gap-2">
-         <Loader2 className="w-3 h-3 animate-spin" /> Saving task...
+       <div className="py-2 pl-12 opacity-50 animate-pulse text-xs text-slate-400 flex items-center gap-2" style={{ paddingLeft: `${indent + 48}px` }}>
+         <Loader2 className="w-3 h-3 animate-spin" /> Saving...
        </div>
      );
   }
 
   return (
-    <div className="relative">
-      <div className={`relative flex items-start gap-3 py-1 pr-2 group transition-colors rounded-lg ${isCompleted ? 'opacity-50 grayscale' : 'hover:bg-slate-50'}`}>
+    <>
+      <div className={`relative flex items-start py-1.5 pr-4 group transition-colors ${isCompleted ? 'opacity-50 grayscale' : 'hover:bg-slate-50/50'}`}>
 
-        <div className="w-4 flex justify-center mt-1.5 flex-shrink-0">
-          {hasChildren && (
-             <button
-               onClick={(e) => { e.stopPropagation(); onToggle(task.id); }}
-               className="z-10 w-4 h-4 flex items-center justify-center hover:bg-slate-200 rounded transition-colors"
-             >
-                <ChevronRight className={cn("w-3 h-3 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
-             </button>
-           )}
-        </div>
+        <div
+          className="absolute w-[2px] bg-slate-300 z-0"
+          style={{
+            left: `${spineLeft}px`,
+            top: '-12px',
+            bottom: isLast ? '50%' : '-12px'
+          }}
+        />
 
-        <div className="flex-1 flex items-start gap-3 min-w-0">
+        <div
+          className="absolute h-[2px] w-[14px] bg-slate-300 z-0"
+          style={{ left: `${spineLeft}px`, top: '50%' }}
+        />
+
+        {hasChildren && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggle(task.id); }}
+            className="absolute z-10 w-4 h-4 flex items-center justify-center bg-white border border-slate-300 rounded-full hover:bg-slate-100 transition-transform"
+            style={{ left: `${spineLeft - 7}px`, top: '50%', transform: 'translateY(-50%)' }}
+          >
+             <ChevronRight className={cn("w-2.5 h-2.5 text-slate-500", isExpanded && "rotate-90")} />
+          </button>
+        )}
+
+        <div className="flex-1 flex items-start gap-3 relative z-10" style={{ paddingLeft: `${indent + 48}px` }}>
           {isUnassigned ? (
-            <button onClick={() => onPickup(task.id)} className={cn(avatarSize, "rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white")}>
+            <button onClick={() => onPickup(task.id)} className="w-6 h-6 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white">
                <Hand className="w-3 h-3 text-amber-600" />
             </button>
           ) : (
-            <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm flex-shrink-0")}>
+            <Avatar className="w-6 h-6 ring-2 ring-white shadow-sm">
               <AvatarImage src={task.assignee_avatar} />
-              <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">{getInitials(task.assignee_name)}</AvatarFallback>
+              <AvatarFallback className="bg-slate-100 text-[9px]">{getInitials(task.assignee_name)}</AvatarFallback>
             </Avatar>
           )}
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1">
-                <p className={cn(
-                  "text-sm leading-snug transition-all",
-                  isMine ? "font-bold text-slate-900" : "font-medium text-slate-600",
-                  isCompleted && "line-through decoration-slate-300"
-                )}>
-                  {task.summary}
-                </p>
-                {task.details && <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{task.details}</p>}
-              </div>
-
-              <div className="flex flex-col items-end gap-1">
-                {task.due_date && <span className="text-[10px] text-slate-400 whitespace-nowrap">{format(new Date(task.due_date), 'MMM d')}</span>}
-                <button
-                  onClick={() => onComplete(task.id, task.task_status)}
-                  className="text-slate-300 hover:text-green-500 transition-colors"
-                >
-                  {isCompleted ? <CheckSquare className="w-4 h-4 text-green-500" /> : <Square className="w-4 h-4" />}
-                </button>
-              </div>
+          <div className="flex-1 min-w-0 flex justify-between items-start gap-2">
+            <div className="flex-1">
+              <p className={cn(
+                "text-sm leading-tight transition-all",
+                isMine ? "font-bold text-slate-900" : "font-normal text-slate-600",
+                isCompleted && "line-through decoration-slate-300"
+              )}>
+                {task.summary}
+              </p>
             </div>
 
-            {!isCompleted && (
+            <div className="flex flex-col items-end gap-1">
               <button
-                 onClick={() => onAdd(task.id)}
-                 className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 hover:text-orange-600 transition-colors opacity-0 group-hover:opacity-100"
+                onClick={() => onComplete(task.id, task.task_status)}
+                className="text-slate-300 hover:text-green-500 transition-colors"
               >
-                <CornerDownRight className="w-3 h-3" /> Reply
+                {isCompleted ? <CheckSquare className="w-4 h-4 text-green-500" /> : <Square className="w-4 h-4" />}
               </button>
-            )}
+            </div>
           </div>
         </div>
       </div>
 
       <AnimatePresence>
-        {isExpanded && task.children && (
-          <div className="ml-6 border-l-2 border-dotted border-gray-300 pl-2">
-            {task.children.map((child: TaskThread, idx: number) => (
-              <TaskNode
-                key={child.id} task={child} dealId={dealId} depth={depth + 1}
-                isLast={idx === task.children!.length - 1 && !isAddingChild}
-                expanded={expanded} onToggle={onToggle} onComplete={onComplete} onPickup={onPickup} onAdd={onAdd}
-                currentUserId={currentUserId} users={users} addingToId={addingToId}
-                onSaveTask={onSaveTask} onCancelTask={onCancelTask}
+        {isExpanded && task.children?.map((child: TaskThread, idx: number) => (
+          <TaskRow
+            key={child.id} task={child} dealId={dealId} depth={depth + 1}
+            isLast={idx === task.children!.length - 1 && !isAddingChild}
+            expanded={expanded} onToggle={onToggle} onComplete={onComplete} onPickup={onPickup} onAdd={onAdd}
+            currentUserId={currentUserId} users={users} addingToId={addingToId}
+            onSaveTask={onSaveTask} onCancelTask={onCancelTask}
+          />
+        ))}
+      </AnimatePresence>
+
+      {isAddingChild && (
+        <InlineTaskEditor
+          depth={depth + 1} users={users} currentUser={users.find((u:any) => u.id === currentUserId)}
+          onSave={(s, a, d) => onSaveTask(s, a, d, task.id)}
+          onCancel={onCancelTask}
+        />
+      )}
+
+      {isExpanded && !isAddingChild && (
+        <div className="relative h-6 w-full flex items-center">
+           <div className="absolute w-[2px] bg-slate-300" style={{ left: `${indent + INDENT_PX + 27}px`, top: '-12px', bottom: '50%' }} />
+           <button
+             onClick={(e) => { e.stopPropagation(); onAdd(task.id); }}
+             className="absolute w-5 h-5 rounded-full bg-white border border-red-400 flex items-center justify-center text-red-500 hover:bg-red-50 hover:scale-110 transition-transform shadow-sm z-20"
+             style={{ left: `${indent + INDENT_PX + 18}px`, top: '50%', transform: 'translateY(-50%)' }}
+           >
+             <Plus className="w-3 h-3" />
+           </button>
+        </div>
+      )}
+    </>
+  );
+};
+
+const DealThreadItem = ({
+  group, expanded, expandedDeals, onToggleDealExpand, onAddRootTask, addingRootToDealId, ...props
+}: any) => {
+  const isDealExpanded = expandedDeals.has(group.id);
+  const isAddingRoot = addingRootToDealId === group.id;
+  const taskTree = buildTaskTree(group.tasks || []);
+
+  const completedCount = (group.tasks || []).filter((t: TaskThread) => t.task_status === 'Completed').length;
+  const totalCount = (group.tasks || []).length;
+  const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  return (
+    <div className="relative border-b border-slate-100 py-4">
+      <div className="flex items-center gap-3 px-4 cursor-pointer" onClick={() => onToggleDealExpand(group.id)}>
+        <ChevronRight className={cn('w-5 h-5 text-slate-400 transition-transform', isDealExpanded && 'rotate-90')} />
+        {getStageAvatar(group.stage)}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-slate-900 text-sm truncate">{group.name}</h3>
+            {group.mw > 0 && <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">{group.mw} MW</span>}
+          </div>
+        </div>
+        <div className="text-xs text-slate-400">{completedCount}/{totalCount}</div>
+      </div>
+
+      <div className="absolute bottom-0 left-12 right-0 h-[2px] bg-orange-100">
+         <div className="h-full bg-orange-500 transition-all" style={{ width: `${progress}%` }} />
+      </div>
+
+      <AnimatePresence>
+        {isDealExpanded && (
+          <div className="relative">
+            <div className="absolute w-[2px] bg-slate-300" style={{ left: '27px', top: '0', bottom: isAddingRoot ? '0' : '-12px' }} />
+
+            {taskTree.map((task, idx) => (
+              <TaskRow
+                key={task.id} task={task} dealId={group.id} depth={0}
+                isLast={idx === taskTree.length - 1 && !isAddingRoot}
+                expanded={expanded} onToggle={props.onToggle} onComplete={props.onComplete}
+                onPickup={props.onPickup} onAdd={props.onAddChild}
+                currentUserId={props.currentUserId} users={props.users}
+                addingToId={props.addingToTaskId} onSaveTask={props.onSaveTask} onCancelTask={props.onCancelTask}
               />
             ))}
 
-            {isAddingChild && (
+            {isAddingRoot && (
               <InlineTaskEditor
-                users={users} currentUser={users.find((u:any) => u.id === currentUserId)}
-                onSave={(s, a, d) => onSaveTask(s, a, d, task.id)}
-                onCancel={onCancelTask}
+                depth={0} users={props.users} currentUser={props.currentUser}
+                onSave={(s,a,d) => props.onSaveTask(s,a,d)}
+                onCancel={props.onCancelTask}
               />
             )}
 
-            {!isAddingChild && (
-              <div className="relative h-6 w-full flex items-center">
+            {!isAddingRoot && (
+               <div className="relative h-8 w-full flex items-center mt-2">
+                 <div className="absolute w-[2px] bg-slate-300" style={{ left: '27px', top: '-12px', bottom: '50%' }} />
                  <button
-                   onClick={(e) => { e.stopPropagation(); onAdd(task.id); }}
-                   className="w-5 h-5 rounded-full bg-orange-50 border border-orange-300 flex items-center justify-center text-orange-600 hover:scale-110 transition-transform shadow-sm"
-                   title="Add Subtask"
+                   onClick={(e) => { e.stopPropagation(); onAddRootTask(group.id); }}
+                   className="absolute left-[18px] w-5 h-5 rounded-full bg-white border border-red-400 flex items-center justify-center text-red-500 hover:bg-red-50 hover:scale-110 transition-transform shadow-sm z-20"
                  >
                    <Plus className="w-3 h-3" />
                  </button>
-              </div>
+               </div>
             )}
           </div>
         )}
@@ -285,11 +357,12 @@ export const TasksScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [hideCompleted, setHideCompleted] = useState(false);
+
   const [expandedDeals, setExpandedDeals] = useState<Set<string>>(new Set());
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
 
   const [addingToId, setAddingToId] = useState<string | null>(null);
-  const [isRootAdd, setIsRootAdd] = useState(false);
+  const [addingRootToDealId, setAddingRootToDealId] = useState<string | null>(null);
 
   const fetchTasks = async () => {
     if (!user) return;
@@ -301,67 +374,22 @@ export const TasksScreen: React.FC = () => {
     } catch (err) {
       console.error(err);
       toast({ title: 'Error', description: 'Failed to load tasks', variant: 'destructive' });
-    } finally {
-      setLoading(false);
     }
+    finally { setLoading(false); }
   };
 
   useEffect(() => { fetchTasks(); }, [user]);
 
-  const handleToggleDeal = (id: string) => {
-    setExpandedDeals(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const handleToggleTask = (id: string) => {
-    setExpandedTasks(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const handleComplete = async (id: string, currentStatus?: string) => {
-    const newStatus = currentStatus === 'Completed' ? 'Pending' : 'Completed';
-    await supabase.from('activities').update({ task_status: newStatus }).eq('id', id);
-    fetchTasks();
-    if (newStatus === 'Completed') {
-       toast({ title: 'Task Completed (+10⚡)', className: 'bg-green-50 border-green-200' });
-    }
-  };
-
-  const handlePickup = async (id: string) => {
-    await supabase.from('activities').update({ assigned_to_id: user?.id }).eq('id', id);
-    fetchTasks();
-    toast({ title: 'Task Picked Up (+5⚡)', className: 'bg-orange-50 border-orange-200' });
-  };
-
-  const handleSaveNewTask = async (summary: string, assignee: string, date: string, parentId?: string) => {
+  const handleSaveTask = async (summary: string, assignee: string, date: string, parentId?: string) => {
     try {
-      let targetDealId = '';
-      for (const group of dealGroups) {
-         if (isRootAdd && group.id === addingToId) targetDealId = group.id;
-         if (!isRootAdd) {
-            const contains = (tasks: TaskThread[]): boolean => tasks.some(t => t.id === parentId || contains(t.children || []));
-            if (contains(group.tasks || [])) targetDealId = group.id;
-         }
-      }
+      const dealId = addingRootToDealId || dealGroups.find(g => g.tasks?.some(t => t.id === addingToId))?.id;
 
       const payload: any = {
-        summary,
-        is_task: true,
-        task_status: 'Pending',
-        created_by: user?.id,
-        assigned_to_id: assignee,
-        root_deal_id: targetDealId,
-        related_to_id: targetDealId,
-        related_to_type: 'Opportunity'
+        summary, is_task: true, task_status: 'Pending',
+        created_by: user?.id, assigned_to_id: assignee,
+        root_deal_id: dealId, related_to_id: dealId, related_to_type: 'Opportunity'
       };
-
-      if (!isRootAdd && parentId) payload.parent_task_id = parentId;
+      if (parentId) payload.parent_task_id = parentId;
       if (date) payload.due_date = new Date(date).toISOString();
 
       const { error } = await supabase.from('activities').insert(payload);
@@ -369,6 +397,7 @@ export const TasksScreen: React.FC = () => {
 
       toast({ title: 'Task Created' });
       setAddingToId(null);
+      setAddingRootToDealId(null);
       fetchTasks();
     } catch (err: any) {
       console.error(err);
@@ -385,17 +414,28 @@ export const TasksScreen: React.FC = () => {
     }).filter(g => g.tasks.length > 0 || g.name.toLowerCase().includes(search.toLowerCase()));
   }, [dealGroups, hideCompleted, search]);
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center p-12">
+        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white pb-24">
-      <div className="sticky top-0 z-[50] bg-white border-b border-slate-100 px-4 py-3">
+      <div className="sticky top-0 z-[100] bg-white border-b border-slate-100 px-4 py-3 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-xl font-bold text-slate-900">Tasks</h1>
           <button
-             onClick={() => setHideCompleted(!hideCompleted)}
-             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${hideCompleted ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            onClick={() => setHideCompleted(!hideCompleted)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+              hideCompleted ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            )}
           >
-            {hideCompleted ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            {hideCompleted ? 'Hidden' : 'Show All'}
+             {hideCompleted ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+             {hideCompleted ? 'Hidden' : 'Show All'}
           </button>
         </div>
 
@@ -404,77 +444,33 @@ export const TasksScreen: React.FC = () => {
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search deals..."
-            className="w-full bg-slate-50 border-0 rounded-lg pl-9 pr-4 py-2 text-sm focus:ring-2 focus:ring-orange-500/20"
+            className="w-full bg-slate-50 border-0 rounded-lg pl-9 pr-4 py-2 text-sm focus:ring-1 focus:ring-orange-200 outline-none"
           />
         </div>
       </div>
 
-      <div className="p-0 space-y-0">
-        {displayGroups.map(group => {
-            const isExpanded = expandedDeals.has(group.id);
-            const taskTree = buildTaskTree(group.tasks || []);
-            const isAddingRoot = addingToId === group.id && isRootAdd;
-
-            return (
-              <div key={group.id} className="relative border-b border-slate-100 py-4">
-                 <div
-                   onClick={() => handleToggleDeal(group.id)}
-                   className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-slate-50 transition-colors relative z-10"
-                 >
-                    <ChevronRight className={cn("w-5 h-5 text-slate-400 transition-transform", isExpanded && "rotate-90")} />
-                    {getStageAvatar(group.stage)}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 text-sm truncate">{group.name}</span>
-                        {group.mw > 0 && <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">{group.mw} MW</span>}
-                      </div>
-                    </div>
-                 </div>
-
-                 <div className="absolute bottom-0 left-12 right-0 h-[2px] bg-orange-100">
-                    <div className="h-full bg-orange-500" style={{ width: '40%' }} />
-                 </div>
-
-                 <AnimatePresence>
-                   {isExpanded && (
-                     <div className="ml-4 border-l-2 border-dotted border-gray-300 pl-2 mt-2">
-                       {taskTree.map((task, idx) => (
-                         <TaskNode
-                           key={task.id} task={task} dealId={group.id} depth={0}
-                           isLast={idx === taskTree.length - 1}
-                           expanded={expandedTasks} onToggle={handleToggleTask}
-                           onComplete={handleComplete} onPickup={handlePickup}
-                           onAdd={(id: string) => { setAddingToId(id); setIsRootAdd(false); setExpandedTasks(prev => new Set(prev).add(id)); }}
-                           currentUserId={user?.id} users={users}
-                           addingToId={addingToId} onSaveTask={handleSaveNewTask} onCancelTask={() => setAddingToId(null)}
-                         />
-                       ))}
-
-                       {!isAddingRoot && (
-                         <div className="relative h-8 w-full flex items-center mt-2">
-                           <button
-                             onClick={() => { setAddingToId(group.id); setIsRootAdd(true); }}
-                             className="w-6 h-6 rounded-full bg-orange-50 border border-orange-300 flex items-center justify-center text-orange-600 hover:scale-110 transition-transform shadow-sm"
-                             title="Add Task to Deal"
-                           >
-                             <Plus className="w-4 h-4" />
-                           </button>
-                         </div>
-                       )}
-
-                       {isAddingRoot && (
-                         <InlineTaskEditor
-                           users={users} currentUser={users.find(u=>u.id===user?.id)}
-                           onSave={(s,a,d) => handleSaveNewTask(s,a,d)}
-                           onCancel={() => setAddingToId(null)}
-                         />
-                       )}
-                     </div>
-                   )}
-                 </AnimatePresence>
-              </div>
-            );
-        })}
+      <div className="p-0">
+        {displayGroups.map(group => (
+            <DealThreadItem
+              key={group.id} group={group}
+              expanded={expandedTasks} expandedDeals={expandedDeals}
+              onToggleDealExpand={(id: string) => setExpandedDeals(prev => { const n = new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; })}
+              onToggle={(id: string) => setExpandedTasks(prev => { const n = new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; })}
+              onComplete={async (id: string, status?: string) => {
+                 await supabase.from('activities').update({ task_status: status==='Completed'?'Pending':'Completed' }).eq('id', id);
+                 fetchTasks();
+              }}
+              onPickup={async (id: string) => {
+                 await supabase.from('activities').update({ assigned_to_id: user?.id }).eq('id', id);
+                 fetchTasks();
+              }}
+              onAddRootTask={(id: string) => { setAddingRootToDealId(id); setAddingToId(null); setExpandedDeals(prev => new Set(prev).add(id)); }}
+              onAddChild={(id: string, dealId: string) => { setAddingToId(id); setAddingRootToDealId(null); setExpandedTasks(prev => new Set(prev).add(id)); }}
+              currentUserId={user?.id} users={users} currentUser={users.find(u => u.id === user?.id)}
+              addingToTaskId={addingToId} addingRootToDealId={addingRootToDealId}
+              onSaveTask={handleSaveTask} onCancelTask={() => { setAddingToId(null); setAddingRootToDealId(null); }}
+            />
+        ))}
       </div>
     </div>
   );
