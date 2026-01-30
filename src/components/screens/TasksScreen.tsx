@@ -631,7 +631,15 @@ export const TasksScreen: React.FC = () => {
         const countTask = (t: TaskThread) => {
           const isMyTask = t.assigned_to_id === user?.id;
           const isSubordinateTask = subordinateIds.includes(t.assigned_to_id || '');
-          if (isAdmin || isMyTask || isSubordinateTask) count++;
+
+          // Count team tasks EXCLUDING mine
+          if (isAdmin) {
+            // Admin sees all tasks except their own
+            if (!isMyTask) count++;
+          } else {
+            // Regular users see only subordinate tasks (not their own)
+            if (isSubordinateTask && !isMyTask) count++;
+          }
           (t.children || []).forEach(countTask);
         };
         countTask(task);
@@ -649,33 +657,55 @@ export const TasksScreen: React.FC = () => {
 
         // Apply hierarchy filter
         if (!isSearching && hierarchyView === 'mine') {
+          // Mine: Show only MY tasks
           const filterByOwnership = (t: TaskThread): boolean => {
             if (t.assigned_to_id === user?.id) return true;
             const filteredChildren = (t.children || []).filter(filterByOwnership);
             return filteredChildren.length > 0;
           };
           tasks = tasks.filter(filterByOwnership);
-        } else if (hierarchyView === 'team' || isSearching) {
-          const filterByTeam = (t: TaskThread): boolean => {
+        } else if (hierarchyView === 'team') {
+          // Team Member Filter (specific person selected)
+          if (selectedMemberId !== 'all') {
+            const filterByMember = (t: TaskThread): boolean => {
+              if (t.assigned_to_id === selectedMemberId) return true;
+              const filteredChildren = (t.children || []).filter(filterByMember);
+              return filteredChildren.length > 0;
+            };
+            tasks = tasks.filter(filterByMember);
+          } else {
+            // Team: Show all team tasks EXCLUDING mine
+            const filterByTeam = (t: TaskThread): boolean => {
+              const isMyTask = t.assigned_to_id === user?.id;
+              const isSubordinateTask = subordinateIds.includes(t.assigned_to_id || '');
+
+              // For admin, show all tasks except mine
+              if (isAdmin) {
+                if (isMyTask) return false;
+                const filteredChildren = (t.children || []).filter(filterByTeam);
+                return filteredChildren.length > 0 || true;
+              }
+
+              // For regular users, show only subordinate tasks (not mine)
+              if (isMyTask) return false;
+              if (isSubordinateTask) return true;
+              const filteredChildren = (t.children || []).filter(filterByTeam);
+              return filteredChildren.length > 0;
+            };
+            tasks = tasks.filter(filterByTeam);
+          }
+        } else if (isSearching) {
+          // When searching, show all accessible tasks
+          const filterByAccess = (t: TaskThread): boolean => {
             const isMyTask = t.assigned_to_id === user?.id;
             const isSubordinateTask = subordinateIds.includes(t.assigned_to_id || '');
             if (!isAdmin && !isMyTask && !isSubordinateTask) {
-              const filteredChildren = (t.children || []).filter(filterByTeam);
+              const filteredChildren = (t.children || []).filter(filterByAccess);
               return filteredChildren.length > 0;
             }
             return true;
           };
-          tasks = tasks.filter(filterByTeam);
-        }
-
-        // Team Member Filter (drill-down within team view)
-        if (selectedMemberId !== 'all') {
-          const filterByMember = (t: TaskThread): boolean => {
-            if (t.assigned_to_id === selectedMemberId) return true;
-            const filteredChildren = (t.children || []).filter(filterByMember);
-            return filteredChildren.length > 0;
-          };
-          tasks = tasks.filter(filterByMember);
+          tasks = tasks.filter(filterByAccess);
         }
 
         // Apply hide completed filter
