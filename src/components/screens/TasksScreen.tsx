@@ -260,7 +260,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
               e.preventDefault();
               onToggleExpand(task.id);
             }}
-            className="absolute z-10 w-4 h-4 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-all"
+            className="absolute z-50 relative pointer-events-auto w-4 h-4 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-all"
             style={{
               left: `${spineLeft - 8}px`,
               top: '16px'
@@ -372,7 +372,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
           )}
 
           {!isAddingHere && (
-            <div className="relative" style={{ paddingLeft: `${indent + INDENT_PX}px` }}>
+            <div className="relative h-8 flex items-center">
               <div
                 className="absolute w-[2px] bg-gray-200"
                 style={{
@@ -387,7 +387,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
                   e.preventDefault();
                   onAddChildTo(task.id, dealId);
                 }}
-                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm"
+                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm pointer-events-auto"
                 style={{
                   left: `${indent + INDENT_PX + 17}px`,
                   top: '4px'
@@ -557,7 +557,7 @@ const DealThreadItem: React.FC<DealThreadProps> = ({
                   e.preventDefault();
                   onAddRootTask(group.deal.id);
                 }}
-                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm"
+                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm pointer-events-auto"
                 style={{
                   left: '17px',
                   top: '4px'
