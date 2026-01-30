@@ -657,42 +657,79 @@ export const TasksScreen: React.FC = () => {
 
         // Apply hierarchy filter
         if (!isSearching && hierarchyView === 'mine') {
-          // Mine: Show only MY tasks
-          const filterByOwnership = (t: TaskThread): boolean => {
-            if (t.assigned_to_id === user?.id) return true;
-            const filteredChildren = (t.children || []).filter(filterByOwnership);
-            return filteredChildren.length > 0;
+          // Mine: Show ONLY tasks assigned to me (recursively check all levels)
+          const collectMyTasks = (taskList: TaskThread[]): TaskThread[] => {
+            const result: TaskThread[] = [];
+
+            for (const task of taskList) {
+              if (task.assigned_to_id === user?.id) {
+                // This task is mine, include it with its children
+                result.push({
+                  ...task,
+                  children: task.children ? collectMyTasks(task.children) : []
+                });
+              } else if (task.children && task.children.length > 0) {
+                // This task is not mine, but check its children
+                const myChildTasks = collectMyTasks(task.children);
+                result.push(...myChildTasks);
+              }
+            }
+
+            return result;
           };
-          tasks = tasks.filter(filterByOwnership);
+
+          tasks = collectMyTasks(tasks);
         } else if (hierarchyView === 'team') {
           // Team Member Filter (specific person selected)
           if (selectedMemberId !== 'all') {
-            const filterByMember = (t: TaskThread): boolean => {
-              if (t.assigned_to_id === selectedMemberId) return true;
-              const filteredChildren = (t.children || []).filter(filterByMember);
-              return filteredChildren.length > 0;
-            };
-            tasks = tasks.filter(filterByMember);
-          } else {
-            // Team: Show all team tasks EXCLUDING mine
-            const filterByTeam = (t: TaskThread): boolean => {
-              const isMyTask = t.assigned_to_id === user?.id;
-              const isSubordinateTask = subordinateIds.includes(t.assigned_to_id || '');
+            const collectMemberTasks = (taskList: TaskThread[]): TaskThread[] => {
+              const result: TaskThread[] = [];
 
-              // For admin, show all tasks except mine
-              if (isAdmin) {
-                if (isMyTask) return false;
-                const filteredChildren = (t.children || []).filter(filterByTeam);
-                return filteredChildren.length > 0 || true;
+              for (const task of taskList) {
+                if (task.assigned_to_id === selectedMemberId) {
+                  // This task belongs to the selected member
+                  result.push({
+                    ...task,
+                    children: task.children ? collectMemberTasks(task.children) : []
+                  });
+                } else if (task.children && task.children.length > 0) {
+                  // Check children
+                  const memberChildTasks = collectMemberTasks(task.children);
+                  result.push(...memberChildTasks);
+                }
               }
 
-              // For regular users, show only subordinate tasks (not mine)
-              if (isMyTask) return false;
-              if (isSubordinateTask) return true;
-              const filteredChildren = (t.children || []).filter(filterByTeam);
-              return filteredChildren.length > 0;
+              return result;
             };
-            tasks = tasks.filter(filterByTeam);
+
+            tasks = collectMemberTasks(tasks);
+          } else {
+            // Team: Show all team tasks EXCLUDING mine
+            const collectTeamTasks = (taskList: TaskThread[]): TaskThread[] => {
+              const result: TaskThread[] = [];
+
+              for (const task of taskList) {
+                const isMyTask = task.assigned_to_id === user?.id;
+                const isSubordinateTask = subordinateIds.includes(task.assigned_to_id || '');
+                const isTeamTask = isAdmin ? (task.assigned_to_id !== user?.id) : isSubordinateTask;
+
+                if (isTeamTask && !isMyTask) {
+                  // This task belongs to the team (not me)
+                  result.push({
+                    ...task,
+                    children: task.children ? collectTeamTasks(task.children) : []
+                  });
+                } else if (task.children && task.children.length > 0) {
+                  // Check children
+                  const teamChildTasks = collectTeamTasks(task.children);
+                  result.push(...teamChildTasks);
+                }
+              }
+
+              return result;
+            };
+
+            tasks = collectTeamTasks(tasks);
           }
         } else if (isSearching) {
           // When searching, show all accessible tasks
