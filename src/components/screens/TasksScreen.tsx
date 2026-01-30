@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { CheckSquare, Square, Clock, Loader2, User, Hand, Users, Search, X, Info, Plus, Minus, Calendar, Check, ChevronRight } from 'lucide-react';
+import { CheckSquare, Square, Clock, Loader2, User, Hand, Users, Search, X, Info, Plus, Minus, Calendar, Check, ChevronRight, Filter } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
 import { supabase } from '@/lib/supabase';
@@ -638,6 +638,7 @@ export const TasksScreen: React.FC = () => {
   const [dealGroups, setDealGroups] = useState<DealGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [showFilter, setShowFilter] = useState(false);
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [expandedDeals, setExpandedDeals] = useState<Set<string>>(new Set());
   const [addingToTaskId, setAddingToTaskId] = useState<string | null>(null);
@@ -1050,6 +1051,12 @@ export const TasksScreen: React.FC = () => {
                   </button>
                 )}
               </div>
+              <button
+                onClick={() => setShowFilter(true)}
+                className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors flex-shrink-0"
+              >
+                <Filter className="w-5 h-5 text-slate-600" />
+              </button>
             </div>
           </div>
 
