@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { CheckSquare, Square, Loader2, Hand, X, Plus, Calendar as CalendarIcon, Check, ChevronRight } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Hand, X, Plus, Calendar as CalendarIcon, Check, ChevronRight, CornerDownRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
 import { supabase } from '@/lib/supabase';
@@ -140,10 +140,10 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.15 }}
-      className="relative flex items-start py-1.5 pr-4 bg-transparent my-1"
+      className="relative flex items-start py-2 pr-4 bg-white border border-orange-200 shadow-sm rounded-lg my-2"
       style={{ paddingLeft: `${indent + 48}px` }}
     >
-      <div className="absolute w-[2px] bg-gray-300" style={{ left: `${indent + 27}px`, top: '-12px', bottom: '0' }} />
+      <div className="absolute w-[2px] bg-gray-300" style={{ left: `${indent + 27}px`, top: '-16px', bottom: '100%' }} />
 
       <Popover open={assigneeOpen} onOpenChange={setAssigneeOpen}>
         <PopoverTrigger asChild>
@@ -202,7 +202,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
           value={summary}
           onChange={(e) => onSummaryChange(e.target.value)}
           placeholder="Type task... (Enter to save)"
-          className="w-full bg-transparent border-b border-orange-400 focus:border-orange-600 outline-none text-sm font-medium py-1"
+          className="w-full bg-white border-b-2 border-orange-400 focus:border-orange-600 outline-none text-sm font-medium py-1.5"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey && summary.trim()) {
               e.preventDefault();
@@ -368,23 +368,36 @@ const TaskRow: React.FC<TaskRowProps> = ({
               {task.details && <p className="text-xs text-gray-500 opacity-70 mt-0.5">{task.details}</p>}
             </div>
 
-            <div className="flex flex-col items-end gap-1">
-              {task.due_date && (
-                <div className={cn(
-                  'text-xs font-medium',
-                  new Date(task.due_date) < new Date() ? 'text-red-600' : 'text-gray-500',
-                  isCompleted && 'opacity-50 grayscale'
-                )}>
-                  {format(new Date(task.due_date), 'MMM d')}
-                </div>
-              )}
-              <button onClick={() => onToggleComplete(task.id, task.task_status)}>
-                {isCompleted ? (
-                  <CheckSquare className="w-4 h-4 text-green-500 opacity-50 grayscale" />
-                ) : (
-                  <Square className="w-4 h-4 text-gray-300 hover:text-gray-500" />
-                )}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddChildTo(task.id, dealId);
+                }}
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded p-1"
+                title="Reply to this task"
+              >
+                <CornerDownRight className="w-3.5 h-3.5" />
               </button>
+
+              <div className="flex flex-col items-end gap-1">
+                {task.due_date && (
+                  <div className={cn(
+                    'text-xs font-medium',
+                    new Date(task.due_date) < new Date() ? 'text-red-600' : 'text-gray-500',
+                    isCompleted && 'opacity-50 grayscale'
+                  )}>
+                    {format(new Date(task.due_date), 'MMM d')}
+                  </div>
+                )}
+                <button onClick={() => onToggleComplete(task.id, task.task_status)}>
+                  {isCompleted ? (
+                    <CheckSquare className="w-4 h-4 text-green-500 opacity-50 grayscale" />
+                  ) : (
+                    <Square className="w-4 h-4 text-gray-300 hover:text-gray-500" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -514,18 +527,27 @@ const DealThreadItem: React.FC<DealThreadProps> = ({
   const completedCount = tasks.filter(t => t.task_status === 'Completed').length;
   const totalCount = tasks.length;
 
+  const progressPercentage = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
   return (
     <div className="relative border-b border-gray-100">
-      <div className="flex items-center gap-3 py-3 px-4 cursor-pointer hover:bg-gray-50/50 transition-colors" onClick={() => onToggleDealExpand(group.id)}>
+      <div className="relative flex items-center gap-3 py-3 px-4 cursor-pointer hover:bg-gray-50/50 transition-colors" onClick={() => onToggleDealExpand(group.id)}>
         <ChevronRight className={cn('w-5 h-5 text-gray-500 transition-transform', isDealExpanded && 'rotate-90')} />
         {stageAvatar}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h3 className="font-medium text-black truncate">{group.name}</h3>
-            {group.mw > 0 && <span className="text-sm font-medium text-orange-600 bg-orange-50 px-2 py-0.5 rounded">{group.mw} MW</span>}
+            {group.mw > 0 && <span className="text-sm font-medium text-orange-600 bg-orange-50 px-2 py-0.5 rounded">{(group.mw || 0).toLocaleString()} MW</span>}
           </div>
         </div>
         <div className="text-xs text-gray-500">{completedCount}/{totalCount}</div>
+
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-orange-100">
+          <div
+            className="h-full bg-orange-500 transition-all duration-500"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
       </div>
 
       {isDealExpanded && (
@@ -645,7 +667,7 @@ export const TasksScreen: React.FC = () => {
       setLoading(true);
 
       const { data, error } = await supabase.rpc('get_deal_threads_view', {
-        p_view_mode: viewMode
+        p_view_mode: viewMode === 'team' ? 'all' : viewMode
       });
 
       if (error) throw error;
