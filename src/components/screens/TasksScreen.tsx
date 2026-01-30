@@ -164,21 +164,21 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
         </div>
 
         <div className="flex flex-col items-center gap-1 flex-shrink-0 ml-2">
-          <input
-            ref={dateInputRef}
-            type="date"
-            value={dueDate}
-            onChange={(e) => onDueDateChange(e.target.value)}
-            className="absolute opacity-0 pointer-events-auto w-0 h-0"
-          />
-
-          <button
-            onClick={() => dateInputRef.current?.click()}
-            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-            title={dueDate ? new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Set due date'}
-          >
-            <Calendar className="w-4 h-4 text-slate-600" />
-          </button>
+          <div className="relative">
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={dueDate}
+              onChange={(e) => onDueDateChange(e.target.value)}
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            />
+            <button
+              className="p-1.5 hover:bg-slate-100 rounded transition-colors pointer-events-none"
+              title={dueDate ? new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Set due date'}
+            >
+              <Calendar className="w-4 h-4 text-slate-600" />
+            </button>
+          </div>
 
           <button
             onClick={onSave}
