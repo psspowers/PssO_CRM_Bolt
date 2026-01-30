@@ -615,6 +615,11 @@ export const TasksScreen: React.FC = () => {
     dealGroups.forEach(group => {
       (group.tasks || []).forEach(task => {
         const countTask = (t: TaskThread) => {
+          // Skip completed tasks if hideCompleted is enabled
+          if (hideCompleted && t.task_status === 'Completed') {
+            (t.children || []).forEach(countTask);
+            return;
+          }
           if (t.assigned_to_id === user?.id) count++;
           (t.children || []).forEach(countTask);
         };
@@ -622,13 +627,19 @@ export const TasksScreen: React.FC = () => {
       });
     });
     return count;
-  }, [dealGroups, user]);
+  }, [dealGroups, user, hideCompleted]);
 
   const teamTasksCount = useMemo(() => {
     let count = 0;
     dealGroups.forEach(group => {
       (group.tasks || []).forEach(task => {
         const countTask = (t: TaskThread) => {
+          // Skip completed tasks if hideCompleted is enabled
+          if (hideCompleted && t.task_status === 'Completed') {
+            (t.children || []).forEach(countTask);
+            return;
+          }
+
           const isMyTask = t.assigned_to_id === user?.id;
           const isSubordinateTask = subordinateIds.includes(t.assigned_to_id || '');
 
@@ -646,7 +657,7 @@ export const TasksScreen: React.FC = () => {
       });
     });
     return count;
-  }, [dealGroups, subordinateIds, isAdmin, user]);
+  }, [dealGroups, subordinateIds, isAdmin, user, hideCompleted]);
 
   const displayGroups = useMemo(() => {
     const isSearching = search.trim().length > 0;
