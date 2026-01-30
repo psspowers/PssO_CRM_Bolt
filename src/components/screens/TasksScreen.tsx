@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { CheckSquare, Square, Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight, Reply, Filter, Users } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight, Reply, Filter, Users, ChevronDown } from 'lucide-react';
 import { format, isPast, parseISO } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
@@ -406,7 +406,7 @@ const TaskNode = ({
 };
 
 export const TasksScreen: React.FC = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { users } = useAppContext();
   const [dealGroups, setDealGroups] = useState<DealGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -418,6 +418,64 @@ export const TasksScreen: React.FC = () => {
   const [addingRootTo, setAddingRootTo] = useState<string | null>(null);
   const [addingChildTo, setAddingChildTo] = useState<string | null>(null);
   const [addingReplyTo, setAddingReplyTo] = useState<string | null>(null);
+
+  // Hierarchy and team view
+  const [hierarchyView, setHierarchyView] = useState<'mine' | 'team'>('mine');
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
+  const [subordinateIds, setSubordinateIds] = useState<string[]>([]);
+  const [loadingSubordinates, setLoadingSubordinates] = useState(false);
+
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+
+  // Fetch subordinates for hierarchy view
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchSubordinates = async () => {
+      setLoadingSubordinates(true);
+      try {
+        const { data, error } = await supabase
+          .from('user_hierarchy')
+          .select('subordinate_id')
+          .eq('manager_id', user.id);
+
+        if (error) {
+          console.error('Error fetching subordinates:', error);
+          setSubordinateIds([]);
+        } else {
+          const ids = data?.map(row => row.subordinate_id) || [];
+          setSubordinateIds(ids);
+        }
+      } catch (err) {
+        console.error('Failed to fetch subordinates:', err);
+        setSubordinateIds([]);
+      } finally {
+        setLoadingSubordinates(false);
+      }
+    };
+
+    fetchSubordinates();
+  }, [user?.id]);
+
+  // Reset member filter when switching back to "Mine"
+  useEffect(() => {
+    if (hierarchyView === 'mine') setSelectedMemberId('all');
+  }, [hierarchyView]);
+
+  // Calculate team members list for dropdown
+  const teamMembers = useMemo(() => {
+    if (profile?.role === 'admin' || profile?.role === 'super_admin') {
+      return users.filter(u => ['internal', 'admin', 'super_admin'].includes(u.role));
+    } else {
+      return users.filter(u => subordinateIds.includes(u.id) || u.id === user?.id);
+    }
+  }, [users, subordinateIds, profile, user]);
+
+  const formatShortName = (fullName: string) => {
+    const parts = fullName.split(' ');
+    if (parts.length === 1) return fullName;
+    return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+  };
 
   const fetchTasks = async () => {
     if (!user) return;
@@ -544,8 +602,6 @@ export const TasksScreen: React.FC = () => {
     }
   };
 
-  const [viewFilter, setViewFilter] = useState<'me' | 'all' | 'people'>('all');
-
   const filterTasks = (tasks: TaskThread[]): TaskThread[] => {
     if (!hideCompleted) return tasks;
     return tasks
@@ -553,18 +609,73 @@ export const TasksScreen: React.FC = () => {
       .map(t => ({ ...t, children: t.children ? filterTasks(t.children) : [] }));
   };
 
+  // Calculate counts for Mine vs Team
+  const myTasksCount = useMemo(() => {
+    let count = 0;
+    dealGroups.forEach(group => {
+      (group.tasks || []).forEach(task => {
+        const countTask = (t: TaskThread) => {
+          if (t.assigned_to_id === user?.id) count++;
+          (t.children || []).forEach(countTask);
+        };
+        countTask(task);
+      });
+    });
+    return count;
+  }, [dealGroups, user]);
+
+  const teamTasksCount = useMemo(() => {
+    let count = 0;
+    dealGroups.forEach(group => {
+      (group.tasks || []).forEach(task => {
+        const countTask = (t: TaskThread) => {
+          const isMyTask = t.assigned_to_id === user?.id;
+          const isSubordinateTask = subordinateIds.includes(t.assigned_to_id || '');
+          if (isAdmin || isMyTask || isSubordinateTask) count++;
+          (t.children || []).forEach(countTask);
+        };
+        countTask(task);
+      });
+    });
+    return count;
+  }, [dealGroups, subordinateIds, isAdmin, user]);
+
   const displayGroups = useMemo(() => {
+    const isSearching = search.trim().length > 0;
+
     return dealGroups
       .map(group => {
         let tasks = group.tasks || [];
 
-        // Apply view filter (Me/All/People)
-        if (viewFilter === 'me') {
-          const filterByAssignee = (t: TaskThread): boolean => {
+        // Apply hierarchy filter
+        if (!isSearching && hierarchyView === 'mine') {
+          const filterByOwnership = (t: TaskThread): boolean => {
             if (t.assigned_to_id === user?.id) return true;
-            return (t.children || []).some(filterByAssignee);
+            const filteredChildren = (t.children || []).filter(filterByOwnership);
+            return filteredChildren.length > 0;
           };
-          tasks = tasks.filter(filterByAssignee);
+          tasks = tasks.filter(filterByOwnership);
+        } else if (hierarchyView === 'team' || isSearching) {
+          const filterByTeam = (t: TaskThread): boolean => {
+            const isMyTask = t.assigned_to_id === user?.id;
+            const isSubordinateTask = subordinateIds.includes(t.assigned_to_id || '');
+            if (!isAdmin && !isMyTask && !isSubordinateTask) {
+              const filteredChildren = (t.children || []).filter(filterByTeam);
+              return filteredChildren.length > 0;
+            }
+            return true;
+          };
+          tasks = tasks.filter(filterByTeam);
+        }
+
+        // Team Member Filter (drill-down within team view)
+        if (selectedMemberId !== 'all') {
+          const filterByMember = (t: TaskThread): boolean => {
+            if (t.assigned_to_id === selectedMemberId) return true;
+            const filteredChildren = (t.children || []).filter(filterByMember);
+            return filteredChildren.length > 0;
+          };
+          tasks = tasks.filter(filterByMember);
         }
 
         // Apply hide completed filter
@@ -584,7 +695,7 @@ export const TasksScreen: React.FC = () => {
         return { ...group, tasks };
       })
       .filter(g => g.tasks.length > 0 || g.name.toLowerCase().includes(search.toLowerCase()));
-  }, [dealGroups, hideCompleted, search, viewFilter, user?.id]);
+  }, [dealGroups, hideCompleted, search, hierarchyView, selectedMemberId, subordinateIds, isAdmin, user?.id]);
 
   const currentUser = users.find(u => u.id === user?.id);
 
@@ -625,41 +736,63 @@ export const TasksScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Row 2: Filter Tabs & Hide Done */}
+        {/* Row 2: Hierarchy Toggle & Hide Done */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
-            <button
-              onClick={() => setViewFilter('me')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                viewFilter === 'me'
-                  ? 'bg-white shadow-sm text-orange-600'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              <User className="w-3.5 h-3.5" />
-              <span>Me</span>
-            </button>
-            <button
-              onClick={() => setViewFilter('all')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                viewFilter === 'all'
-                  ? 'bg-white shadow-sm text-orange-600'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              <span>All</span>
-            </button>
-            <button
-              onClick={() => setViewFilter('people')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                viewFilter === 'people'
-                  ? 'bg-white shadow-sm text-orange-600'
-                  : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>People</span>
-            </button>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
+              <button
+                onClick={() => setHierarchyView('mine')}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  hierarchyView === 'mine'
+                    ? 'bg-white shadow-sm text-orange-600'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Mine</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  hierarchyView === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {myTasksCount}
+                </span>
+              </button>
+              <button
+                onClick={() => setHierarchyView('team')}
+                disabled={loadingSubordinates}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  hierarchyView === 'team'
+                    ? 'bg-white shadow-sm text-orange-600'
+                    : 'text-slate-500 hover:text-slate-700'
+                } ${loadingSubordinates ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Team</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  hierarchyView === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {loadingSubordinates ? '...' : teamTasksCount}
+                </span>
+              </button>
+            </div>
+
+            {/* Team Member Drill-Down Filter */}
+            {hierarchyView === 'team' && (
+              <div className="relative flex-shrink-0 animate-in fade-in slide-in-from-left-2">
+                <select
+                  value={selectedMemberId}
+                  onChange={(e) => setSelectedMemberId(e.target.value)}
+                  className="appearance-none bg-slate-100 text-slate-700 text-xs font-bold pl-2 pr-6 py-1.5 rounded-full border-none focus:ring-2 focus:ring-orange-500 cursor-pointer outline-none w-28 truncate"
+                >
+                  <option value="all">All Team</option>
+                  {teamMembers.map(m => (
+                    <option key={m.id} value={m.id}>{formatShortName(m.name)}</option>
+                  ))}
+                </select>
+                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                  <ChevronDown className="w-3 h-3" />
+                </div>
+              </div>
+            )}
           </div>
 
           <label className="flex items-center gap-2 cursor-pointer">
