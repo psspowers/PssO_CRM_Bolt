@@ -435,7 +435,9 @@ const TaskRow: React.FC<TaskRowProps> = ({
 interface DealThreadItemProps {
   group: DealGroup;
   expanded: Set<string>;
+  expandedDeals: Set<string>;
   onToggleExpand: (id: string) => void;
+  onToggleDealExpand: (id: string) => void;
   onToggleComplete: (id: string, status?: string) => void;
   onPickup: (id: string, summary: string) => void;
   onAddSubtask: (parentId: string, dealId: string) => void;
@@ -455,7 +457,9 @@ interface DealThreadItemProps {
 const DealThreadItem: React.FC<DealThreadItemProps> = ({
   group,
   expanded,
+  expandedDeals,
   onToggleExpand,
+  onToggleDealExpand,
   onToggleComplete,
   onPickup,
   onAddSubtask,
@@ -473,18 +477,30 @@ const DealThreadItem: React.FC<DealThreadItemProps> = ({
 }) => {
   const stageConfig = getStageConfig(group.deal.stage);
   const taskTree = buildTaskTree(group.tasks);
+  const isDealExpanded = expandedDeals.has(group.deal.id);
 
   return (
     <div className="mb-8 relative">
-      <div className="relative flex items-center gap-3 px-2 py-3">
+      <div className="relative flex items-center gap-3 px-2 py-3 group/deal">
         <div
           className={`w-9 h-9 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-sm flex-shrink-0 z-10 relative`}
         >
           {stageConfig.char}
         </div>
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex items-center gap-2">
           <h3 className="font-bold text-[16px] text-slate-900 truncate">{group.deal.name}</h3>
+          {taskTree.length > 0 && (
+            <button
+              onClick={() => onToggleDealExpand(group.deal.id)}
+              className="flex-shrink-0 opacity-0 group-hover/deal:opacity-100 transition-opacity p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
+              title={isDealExpanded ? 'Collapse tasks' : 'Expand tasks'}
+            >
+              <ChevronDown
+                className={`w-4 h-4 text-slate-400 transition-transform ${isDealExpanded ? '' : '-rotate-90'}`}
+              />
+            </button>
+          )}
         </div>
 
         <div className="text-[11px] font-medium text-slate-400 flex-shrink-0">
@@ -496,7 +512,7 @@ const DealThreadItem: React.FC<DealThreadItemProps> = ({
         </div>
       </div>
 
-      {taskTree.length > 0 && (
+      {taskTree.length > 0 && isDealExpanded && (
         <>
           <div className="absolute left-[27px] top-[44px] bottom-0 w-[2px] bg-slate-200 dark:bg-slate-700 z-0" />
           <div className="pl-2">
@@ -559,6 +575,7 @@ export const TasksScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [expandedDeals, setExpandedDeals] = useState<Set<string>>(new Set());
   const [addingToTaskId, setAddingToTaskId] = useState<string | null>(null);
   const [addingToDealId, setAddingToDealId] = useState<string | null>(null);
   const [newTaskSummary, setNewTaskSummary] = useState('');
@@ -738,7 +755,11 @@ export const TasksScreen: React.FC = () => {
   useEffect(() => {
     if (dealGroups.length > 0) {
       const tasksWithChildren: string[] = [];
+      const dealIds: string[] = [];
+
       dealGroups.forEach(group => {
+        dealIds.push(group.deal.id);
+
         const taskMap = new Map<string, TaskThread>();
         group.tasks.forEach(task => taskMap.set(task.id, task));
 
@@ -750,7 +771,9 @@ export const TasksScreen: React.FC = () => {
           }
         });
       });
+
       setExpandedTasks(new Set(tasksWithChildren));
+      setExpandedDeals(new Set(dealIds));
     }
   }, [dealGroups]);
 
@@ -940,6 +963,18 @@ export const TasksScreen: React.FC = () => {
     });
   };
 
+  const toggleDealExpanded = (dealId: string) => {
+    setExpandedDeals(prev => {
+      const next = new Set(prev);
+      if (next.has(dealId)) {
+        next.delete(dealId);
+      } else {
+        next.add(dealId);
+      }
+      return next;
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center p-12">
@@ -1065,7 +1100,9 @@ export const TasksScreen: React.FC = () => {
               key={group.deal.id}
               group={group}
               expanded={expandedTasks}
+              expandedDeals={expandedDeals}
               onToggleExpand={toggleExpanded}
+              onToggleDealExpand={toggleDealExpanded}
               onToggleComplete={toggleTask}
               onPickup={pickupTask}
               onAddSubtask={handleAddSubtask}
