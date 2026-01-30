@@ -88,14 +88,20 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
     return name.substring(0, 2).toUpperCase();
   };
 
+  const getAvatarSize = () => {
+    if (depth === 0) return 'w-8 h-8';
+    if (depth === 1) return 'w-7 h-7';
+    return 'w-6 h-6';
+  };
+
   return (
     <div
-      className="task-row relative py-2 pr-4 overflow-visible"
+      className="task-row relative py-2 pr-4 overflow-visible bg-transparent"
       style={{ '--spine-x': `${depth * INDENT_PX}px` } as React.CSSProperties}
     >
       {depth > 0 && (
         <>
-          <div className="tree-spine z-0" style={{ bottom: '-14px' }} />
+          <div className="tree-spine z-0" style={{ top: '-12px', bottom: '-12px' }} />
           <div className="tree-elbow z-0" />
         </>
       )}
@@ -107,9 +113,9 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
         <div className="relative">
           <button
             onClick={() => setShowAssigneeMenu(!showAssigneeMenu)}
-            className="flex-shrink-0"
+            className="flex-shrink-0 z-10"
           >
-            <Avatar className="w-8 h-8 cursor-pointer">
+            <Avatar className={`${getAvatarSize()} cursor-pointer ring-4 ring-white dark:ring-slate-900`}>
               <AvatarImage src={assignedUser?.avatar_url} />
               <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
                 {assignedUser ? getInitials(assignedUser.name) : '?'}
@@ -159,7 +165,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
               }
             }}
             placeholder="Type task description..."
-            className="w-full text-sm leading-relaxed bg-transparent border-b-2 border-orange-500 focus:outline-none focus:border-orange-600 px-1 py-1 text-slate-900 placeholder:text-slate-400 resize-none"
+            className="w-full text-sm leading-relaxed bg-transparent border-none focus:ring-0 focus:outline-none px-1 py-1 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium resize-none"
           />
         </div>
 
@@ -262,6 +268,12 @@ const TaskRow: React.FC<TaskRowProps> = ({
     return name.substring(0, 2).toUpperCase();
   };
 
+  const getAvatarSize = () => {
+    if (depth === 0) return 'w-8 h-8';
+    if (depth === 1) return 'w-7 h-7';
+    return 'w-6 h-6';
+  };
+
   return (
     <>
       <div
@@ -273,7 +285,8 @@ const TaskRow: React.FC<TaskRowProps> = ({
             <div
               className="tree-spine"
               style={{
-                bottom: isLast && !isAddingHere ? '50%' : '-14px'
+                top: '-12px',
+                bottom: isLast && !isAddingHere ? '50%' : '-12px'
               }}
             />
             <div className="tree-elbow" />
@@ -312,7 +325,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
           {isUnassigned ? (
             <button
               onClick={() => onPickup(task.id, task.summary)}
-              className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-amber-100 hover:bg-amber-200 rounded-full transition-colors border border-amber-300 ring-4 ring-white dark:ring-slate-900"
+              className={`flex-shrink-0 ${getAvatarSize()} flex items-center justify-center bg-amber-100 hover:bg-amber-200 rounded-full transition-colors border border-amber-300 ring-4 ring-white dark:ring-slate-900 z-10`}
             >
               <Hand className="w-4 h-4 text-amber-700" />
             </button>
@@ -320,8 +333,8 @@ const TaskRow: React.FC<TaskRowProps> = ({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex-shrink-0 bg-white dark:bg-slate-900">
-                    <Avatar className="w-8 h-8 ring-4 ring-white dark:ring-slate-900">
+                  <div className="flex-shrink-0 bg-white dark:bg-slate-900 z-10">
+                    <Avatar className={`${getAvatarSize()} ring-4 ring-white dark:ring-slate-900`}>
                       <AvatarImage src={task.assigneeAvatar} />
                       <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
                         {task.assigneeName ? getInitials(task.assigneeName) : '?'}
@@ -339,8 +352,12 @@ const TaskRow: React.FC<TaskRowProps> = ({
           <div className="flex-1 min-w-0 pr-2">
             <p
               className={`text-[14px] leading-relaxed ${
-                isCompleted ? 'line-through text-slate-400' : 'text-slate-900 dark:text-slate-100'
-              } ${isMine && !isCompleted ? 'font-medium bg-yellow-50 dark:bg-yellow-900/20 px-2 py-0.5 rounded' : ''}`}
+                isCompleted
+                  ? 'line-through text-slate-400'
+                  : isMine
+                  ? 'font-black text-slate-900 dark:text-white'
+                  : 'font-medium text-slate-500'
+              }`}
             >
               {task.summary}
             </p>
@@ -458,10 +475,10 @@ const DealThreadItem: React.FC<DealThreadItemProps> = ({
   const taskTree = buildTaskTree(group.tasks);
 
   return (
-    <div className="mb-8">
+    <div className="mb-8 relative">
       <div className="relative flex items-center gap-3 px-2 py-3">
         <div
-          className={`w-9 h-9 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}
+          className={`w-9 h-9 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-sm flex-shrink-0 z-10 relative`}
         >
           {stageConfig.char}
         </div>
@@ -480,33 +497,36 @@ const DealThreadItem: React.FC<DealThreadItemProps> = ({
       </div>
 
       {taskTree.length > 0 && (
-        <div className="pl-2">
-          {taskTree.map((task, idx) => (
-            <TaskRow
-              key={task.id}
-              task={task}
-              dealId={group.deal.id}
-              depth={0}
-              isLast={idx === taskTree.length - 1}
-              expanded={expanded}
-              onToggleExpand={onToggleExpand}
-              onToggleComplete={onToggleComplete}
-              onPickup={onPickup}
-              onAddSubtask={onAddSubtask}
-              currentUserId={currentUserId}
-              addingToTaskId={addingToTaskId}
-              newTaskSummary={newTaskSummary}
-              newTaskAssignee={newTaskAssignee}
-              newTaskDueDate={newTaskDueDate}
-              users={users}
-              onNewTaskSummaryChange={onNewTaskSummaryChange}
-              onNewTaskAssigneeChange={onNewTaskAssigneeChange}
-              onNewTaskDueDateChange={onNewTaskDueDateChange}
-              onSaveNewTask={onSaveNewTask}
-              onCancelNewTask={onCancelNewTask}
-            />
-          ))}
-        </div>
+        <>
+          <div className="absolute left-[27px] top-[44px] bottom-0 w-[2px] bg-slate-200 dark:bg-slate-700 z-0" />
+          <div className="pl-2">
+            {taskTree.map((task, idx) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                dealId={group.deal.id}
+                depth={0}
+                isLast={idx === taskTree.length - 1}
+                expanded={expanded}
+                onToggleExpand={onToggleExpand}
+                onToggleComplete={onToggleComplete}
+                onPickup={onPickup}
+                onAddSubtask={onAddSubtask}
+                currentUserId={currentUserId}
+                addingToTaskId={addingToTaskId}
+                newTaskSummary={newTaskSummary}
+                newTaskAssignee={newTaskAssignee}
+                newTaskDueDate={newTaskDueDate}
+                users={users}
+                onNewTaskSummaryChange={onNewTaskSummaryChange}
+                onNewTaskAssigneeChange={onNewTaskAssigneeChange}
+                onNewTaskDueDateChange={onNewTaskDueDateChange}
+                onSaveNewTask={onSaveNewTask}
+                onCancelNewTask={onCancelNewTask}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
