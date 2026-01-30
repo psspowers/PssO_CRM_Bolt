@@ -118,7 +118,7 @@ const InlineTaskEditor = ({
       className="py-1"
     >
       <div className="flex items-start gap-2 pl-1">
-        <div className="flex-1 bg-white border border-orange-200 rounded-lg p-2 shadow-sm">
+        <div className="flex-1 bg-white border border-orange-200 rounded-lg shadow-sm">
           <input
             ref={inputRef}
             value={summary}
@@ -128,46 +128,45 @@ const InlineTaskEditor = ({
               if (e.key === 'Escape') onCancel();
             }}
             placeholder={isReply ? "Type reply..." : "Type task..."}
-            className="w-full bg-transparent border-b border-orange-100 focus:border-orange-500 outline-none text-sm font-medium py-1 placeholder:text-slate-300"
+            className="w-full bg-transparent border-b border-orange-100 focus:border-orange-500 outline-none text-sm font-medium py-2 px-2 placeholder:text-slate-300"
           />
 
           {!isReply && (
-            <div className="flex items-center gap-2 mt-2">
-              <div className="flex items-center gap-1 bg-slate-50 rounded px-1.5 py-0.5">
-                <User className="w-3 h-3 text-slate-400" />
+            <div className="flex items-center gap-2 px-2 py-2">
+              <div className="relative">
                 <select
                   value={assigneeId}
                   onChange={e => setAssigneeId(e.target.value)}
-                  className="bg-transparent text-[10px] outline-none text-slate-600 w-20 truncate"
+                  className="appearance-none bg-transparent outline-none cursor-pointer opacity-0 absolute inset-0 w-6 h-6"
+                  title="Assign to user"
                 >
                   <option value={currentUser?.id}>Me</option>
-                  {users.filter(u => u.id !== currentUser?.id).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                  {users.filter(u => u.id !== currentUser?.id).map(u => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
                 </select>
+                <User className="w-4 h-4 text-slate-400 pointer-events-none" />
               </div>
 
-              <div className="flex items-center gap-1 bg-slate-50 rounded px-1.5 py-0.5">
-                <Calendar className="w-3 h-3 text-slate-400" />
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={e => setDueDate(e.target.value)}
-                  className="bg-transparent text-[10px] outline-none text-slate-600 w-24"
-                />
-              </div>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={e => setDueDate(e.target.value)}
+                className="text-[11px] outline-none text-slate-600 cursor-pointer ml-auto"
+                placeholder="mm/dd/yyyy"
+              />
 
-              <div className="flex items-center gap-1 ml-auto">
-                <button onClick={onCancel} className="p-1 hover:bg-slate-100 rounded text-slate-400">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-                <button onClick={handleSave} className="p-1 hover:bg-green-50 rounded text-green-600">
-                  <Check className="w-3.5 h-3.5" />
-                </button>
-              </div>
+              <button onClick={onCancel} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                <X className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={handleSave} className="p-1 hover:bg-green-50 rounded text-green-600">
+                <Check className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
 
           {isReply && (
-            <div className="flex items-center gap-1 mt-2 justify-end">
+            <div className="flex items-center gap-1 px-2 py-2 justify-end">
               <button onClick={onCancel} className="p-1 hover:bg-slate-100 rounded text-slate-400">
                 <X className="w-3.5 h-3.5" />
               </button>
