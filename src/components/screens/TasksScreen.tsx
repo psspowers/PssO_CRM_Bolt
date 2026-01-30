@@ -118,7 +118,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
           </button>
 
           {showAssigneeMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 min-w-[180px] max-h-60 overflow-y-auto">
+            <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-[9999] min-w-[180px] max-h-60 overflow-y-auto">
               {users
                 .filter(u => ['internal', 'admin', 'super_admin'].includes(u.role))
                 .map(u => (
@@ -143,7 +143,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
           )}
         </div>
 
-        <div className="flex-1 min-w-0 pr-3">
+        <div className="flex-1 min-w-0">
           <textarea
             autoFocus
             rows={2}
@@ -163,7 +163,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
           />
         </div>
 
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex flex-col items-center gap-1 flex-shrink-0 ml-2">
           <input
             ref={dateInputRef}
             type="date"
