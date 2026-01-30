@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { CheckSquare, Square, Loader2, Hand, X, Plus, ChevronRight, Check } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { CheckSquare, Square, Loader2, Hand, Search, X, Plus, Calendar, Check, ChevronRight, CornerDownRight, Filter, Eye, EyeOff, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
@@ -7,21 +7,25 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const INDENT_PX = 32;
+const INDENT_PX = 28;
 
 interface TaskThread {
   id: string;
   summary: string;
-  task_status?: string;
+  details?: string;
+  task_status?: 'Pending' | 'Completed';
+  priority?: 'Low' | 'Medium' | 'High';
   due_date?: string;
   assigned_to_id?: string;
   assignee_name?: string;
   assignee_avatar?: string;
   parent_task_id?: string;
-  thread_depth?: number;
-  from_pulse?: boolean;
+  depth: number;
+  created_at: string;
   children?: TaskThread[];
+  isOptimistic?: boolean;
 }
 
 interface DealGroup {
@@ -34,559 +38,242 @@ interface DealGroup {
 }
 
 const getStageAvatar = (stage: string) => {
-  const configs: Record<string, { char: string; color: string }> = {
-    'Prospect': { char: 'P', color: 'bg-gray-400' },
-    'Qualified': { char: 'Q', color: 'bg-blue-500' },
-    'Proposal': { char: 'P', color: 'bg-amber-500' },
-    'Negotiation': { char: 'N', color: 'bg-purple-500' },
-    'Term Sheet': { char: 'T', color: 'bg-teal-500' },
-    'Won': { char: 'W', color: 'bg-green-500' }
+  const configs: Record<string, { char: string; color: string; bg: string }> = {
+    'Prospect': { char: '•', color: 'text-slate-400', bg: 'bg-slate-100' },
+    'Qualified': { char: 'Q', color: 'text-blue-600', bg: 'bg-blue-100' },
+    'Proposal': { char: 'P', color: 'text-amber-600', bg: 'bg-amber-100' },
+    'Negotiation': { char: 'N', color: 'text-orange-600', bg: 'bg-orange-100' },
+    'Term Sheet': { char: 'T', color: 'text-teal-600', bg: 'bg-teal-100' },
+    'Won': { char: 'W', color: 'text-emerald-600', bg: 'bg-emerald-100' },
   };
-  return configs[stage] || { char: 'P', color: 'bg-gray-400' };
+  const s = configs[stage] || { char: '?', color: 'text-slate-500', bg: 'bg-slate-100' };
+  return (
+    <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ring-2 ring-white z-20 relative', s.bg, s.color)}>
+      {s.char}
+    </div>
+  );
 };
 
 const getInitials = (name?: string) => {
   if (!name) return '?';
   const parts = name.split(' ');
-  if (parts.length >= 2) {
-    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
+  return parts.length >= 2 ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase() : name.substring(0, 2).toUpperCase();
 };
 
 const buildTaskTree = (tasks: TaskThread[]): TaskThread[] => {
+  if (!tasks) return [];
   const taskMap = new Map<string, TaskThread>();
   const roots: TaskThread[] = [];
 
-  tasks.forEach(task => {
-    taskMap.set(task.id, { ...task, children: [] });
-  });
+  const tasksCopy = tasks.map(t => ({ ...t, children: [] }));
 
-  tasks.forEach(task => {
-    const node = taskMap.get(task.id)!;
+  tasksCopy.forEach(task => taskMap.set(task.id, task));
+
+  tasksCopy.forEach(task => {
     if (task.parent_task_id && taskMap.has(task.parent_task_id)) {
-      const parent = taskMap.get(task.parent_task_id)!;
-      if (!parent.children) parent.children = [];
-      parent.children.push(node);
+      taskMap.get(task.parent_task_id)!.children!.push(task);
     } else {
-      roots.push(node);
+      roots.push(task);
     }
   });
 
   return roots;
 };
 
-interface InlineTaskEditorProps {
-  depth: number;
-  summary: string;
-  dueDate: string;
-  currentUser?: { id: string; name: string; avatar?: string };
-  onSummaryChange: (text: string) => void;
-  onDueDateChange: (date: string) => void;
-  onSave: () => void;
-  onCancel: () => void;
-}
-
-const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
-  depth,
-  summary,
-  dueDate,
+const InlineTaskEditor = ({
+  users,
   currentUser,
-  onSummaryChange,
-  onDueDateChange,
   onSave,
-  onCancel
+  onCancel,
+}: {
+  users: any[];
+  currentUser: any;
+  onSave: (summary: string, assignee: string, date: string) => void;
+  onCancel: () => void;
 }) => {
-  const indent = depth * INDENT_PX;
-  const spineLeft = indent + 27;
+  const [summary, setSummary] = useState('');
+  const [assigneeId, setAssigneeId] = useState(currentUser?.id || '');
+  const [dueDate, setDueDate] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   return (
-    <div className="relative flex items-start py-1.5 pr-4">
-      <div
-        className="absolute w-[2px] bg-slate-300"
-        style={{
-          left: `${spineLeft}px`,
-          top: '-12px',
-          bottom: '0'
-        }}
-      />
-
-      <div
-        className="absolute h-[2px] bg-slate-300"
-        style={{
-          left: `${spineLeft}px`,
-          top: '20px',
-          width: '16px'
-        }}
-      />
-
-      <div
-        className="flex items-start gap-3 relative z-10 flex-1"
-        style={{ paddingLeft: `${indent + 48}px` }}
-      >
-        <Avatar className="w-8 h-8 flex-shrink-0 ring-4 ring-white z-10">
-          {currentUser?.avatar ? (
-            <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
-          ) : null}
-          <AvatarFallback className="bg-orange-100 text-orange-700 text-xs font-bold">
-            {currentUser ? getInitials(currentUser.name) : '?'}
-          </AvatarFallback>
-        </Avatar>
-
-        <div className="flex-1 flex flex-col gap-2">
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      exit={{ opacity: 0, height: 0 }}
+      className="relative flex items-start py-2 pr-2"
+    >
+      <div className="flex-1 flex items-start gap-2 relative z-10">
+        <div className="flex-1 space-y-2 bg-white border border-orange-200 rounded-lg p-2 shadow-sm">
           <input
-            autoFocus
-            type="text"
+            ref={inputRef}
             value={summary}
-            onChange={(e) => onSummaryChange(e.target.value)}
+            onChange={(e) => setSummary(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && summary.trim()) {
-                e.preventDefault();
-                onSave();
-              }
-              if (e.key === 'Escape') {
-                e.preventDefault();
-                onCancel();
-              }
+              if (e.key === 'Enter' && summary.trim()) onSave(summary, assigneeId, dueDate);
+              if (e.key === 'Escape') onCancel();
             }}
-            placeholder="What needs to be done?"
-            className="w-full bg-transparent border-b-2 border-orange-500 focus:outline-none text-sm py-1 placeholder-gray-400"
+            placeholder="Type task..."
+            className="w-full bg-transparent border-b border-orange-100 focus:border-orange-500 outline-none text-sm font-medium py-1 placeholder:text-slate-300"
           />
 
           <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => onDueDateChange(e.target.value)}
-              className="text-xs text-gray-500 border-0 focus:outline-none bg-transparent"
-            />
+             <div className="flex items-center gap-1 bg-slate-50 rounded px-1.5 py-0.5">
+               <User className="w-3 h-3 text-slate-400" />
+               <select
+                 value={assigneeId}
+                 onChange={e => setAssigneeId(e.target.value)}
+                 className="bg-transparent text-[10px] outline-none text-slate-600 w-20 truncate"
+               >
+                 <option value={currentUser?.id}>Me</option>
+                 {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+               </select>
+             </div>
 
-            <button
-              onClick={onSave}
-              disabled={!summary.trim()}
-              className="ml-auto disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Save (Enter)"
-            >
-              <Check className="w-4 h-4 text-green-600" />
-            </button>
+             <div className="flex items-center gap-1 bg-slate-50 rounded px-1.5 py-0.5">
+               <Calendar className="w-3 h-3 text-slate-400" />
+               <input
+                 type="date"
+                 value={dueDate}
+                 onChange={e => setDueDate(e.target.value)}
+                 className="bg-transparent text-[10px] outline-none text-slate-600 w-24"
+               />
+             </div>
 
-            <button
-              onClick={onCancel}
-              className="text-gray-400 hover:text-gray-600"
-              title="Cancel (Esc)"
-            >
-              <X className="w-4 h-4" />
-            </button>
+             <div className="flex items-center gap-1 ml-auto">
+               <button onClick={onCancel} className="p-1 hover:bg-slate-100 rounded text-slate-400"><X className="w-3.5 h-3.5" /></button>
+               <button onClick={() => onSave(summary, assigneeId, dueDate)} className="p-1 hover:bg-green-50 rounded text-green-600"><Check className="w-3.5 h-3.5" /></button>
+             </div>
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
-interface TaskRowProps {
-  task: TaskThread;
-  dealId: string;
-  depth: number;
-  isLast: boolean;
-  expanded: Set<string>;
-  onToggleExpand: (id: string) => void;
-  onToggleComplete: (id: string, status?: string) => void;
-  onPickup: (id: string, summary: string) => void;
-  onAddChildTo: (parentId: string, dealId: string) => void;
-  currentUserId?: string;
-  addingToTaskId: string | null;
-  newTaskSummary: string;
-  newTaskDueDate: string;
-  users: any[];
-  onNewTaskSummaryChange: (text: string) => void;
-  onNewTaskDueDateChange: (date: string) => void;
-  onSaveNewTask: () => void;
-  onCancelNewTask: () => void;
-}
-
-const TaskRow: React.FC<TaskRowProps> = ({
-  task,
-  dealId,
-  depth,
-  isLast,
-  expanded,
-  onToggleExpand,
-  onToggleComplete,
-  onPickup,
-  onAddChildTo,
-  currentUserId,
-  addingToTaskId,
-  newTaskSummary,
-  newTaskDueDate,
-  users,
-  onNewTaskSummaryChange,
-  onNewTaskDueDateChange,
-  onSaveNewTask,
-  onCancelNewTask
-}) => {
-  const hasChildren = task.children && task.children.length > 0;
-  const isExpanded = expanded.has(task.id);
+const TaskNode = ({
+  task, dealId, depth, isLast, expanded, onToggle, onComplete, onPickup, onAdd,
+  currentUserId, users, addingToId, onSaveTask, onCancelTask
+}: any) => {
   const isCompleted = task.task_status === 'Completed';
   const isMine = task.assigned_to_id === currentUserId;
   const isUnassigned = !task.assigned_to_id;
-  const isAddingHere = addingToTaskId === task.id;
+  const isExpanded = expanded.has(task.id);
+  const hasChildren = task.children && task.children.length > 0;
+  const isAddingChild = addingToId === task.id;
 
-  const indent = depth * INDENT_PX;
-  const spineLeft = indent + 27;
+  const avatarSize = depth === 0 ? 'w-7 h-7' : 'w-6 h-6';
+
+  if (task.isOptimistic) {
+     return (
+       <div className="py-2 pl-8 opacity-50 animate-pulse text-xs text-slate-400 flex items-center gap-2">
+         <Loader2 className="w-3 h-3 animate-spin" /> Saving task...
+       </div>
+     );
+  }
 
   return (
-    <>
-      <div className="relative flex items-start py-1.5 pr-4 group">
-        {!isLast && !isAddingHere && (
-          <div
-            className="absolute w-[2px] bg-slate-300"
-            style={{
-              left: `${spineLeft}px`,
-              top: '-12px',
-              bottom: '-12px'
-            }}
-          />
-        )}
+    <div className="relative">
+      <div className={`relative flex items-start gap-3 py-1 pr-2 group transition-colors rounded-lg ${isCompleted ? 'opacity-50 grayscale' : 'hover:bg-slate-50'}`}>
 
-        {isLast && !isAddingHere && (
-          <div
-            className="absolute w-[2px] bg-slate-300"
-            style={{
-              left: `${spineLeft}px`,
-              top: '-12px',
-              height: 'calc(50% + 12px)'
-            }}
-          />
-        )}
+        <div className="w-4 flex justify-center mt-1.5 flex-shrink-0">
+          {hasChildren && (
+             <button
+               onClick={(e) => { e.stopPropagation(); onToggle(task.id); }}
+               className="z-10 w-4 h-4 flex items-center justify-center hover:bg-slate-200 rounded transition-colors"
+             >
+                <ChevronRight className={cn("w-3 h-3 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
+             </button>
+           )}
+        </div>
 
-        {isAddingHere && (
-          <div
-            className="absolute w-[2px] bg-slate-300"
-            style={{
-              left: `${spineLeft}px`,
-              top: '-12px',
-              bottom: '-12px'
-            }}
-          />
-        )}
-
-        <div
-          className="absolute h-[2px] bg-slate-300"
-          style={{
-            left: `${spineLeft}px`,
-            top: '20px',
-            width: '16px'
-          }}
-        />
-
-        {hasChildren && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              onToggleExpand(task.id);
-            }}
-            className="absolute z-50 w-4 h-4 bg-white border border-slate-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-all"
-            style={{
-              left: `${spineLeft - 8}px`,
-              top: '12px'
-            }}
-            title={isExpanded ? 'Collapse' : 'Expand'}
-          >
-            <ChevronRight className={cn("w-2.5 h-2.5 text-gray-500 transition-transform", isExpanded && "rotate-90")} />
-          </button>
-        )}
-
-        <div
-          className="flex items-start gap-3 relative z-10 flex-1"
-          style={{ paddingLeft: `${indent + 48}px` }}
-        >
+        <div className="flex-1 flex items-start gap-3 min-w-0">
           {isUnassigned ? (
-            <button
-              onClick={() => onPickup(task.id, task.summary)}
-              className="flex-shrink-0 group/pickup"
-              title="Pick up this task"
-            >
-              <div className={cn(
-                "w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 group-hover/pickup:border-orange-500 group-hover/pickup:bg-orange-50 transition-all ring-4 ring-white z-10",
-                isCompleted && "opacity-50 grayscale"
-              )}>
-                <Hand className="w-4 h-4 text-gray-400 group-hover/pickup:text-orange-500 transition-colors" />
-              </div>
+            <button onClick={() => onPickup(task.id)} className={cn(avatarSize, "rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white")}>
+               <Hand className="w-3 h-3 text-amber-600" />
             </button>
           ) : (
-            <Avatar className={cn("w-8 h-8 flex-shrink-0 ring-4 ring-white z-10", isCompleted && "opacity-50 grayscale")}>
-              {task.assignee_avatar && (
-                <AvatarImage src={task.assignee_avatar} alt={task.assignee_name} />
-              )}
-              <AvatarFallback className="text-xs bg-gray-200 font-medium">
-                {task.assignee_name ? getInitials(task.assignee_name) : '?'}
-              </AvatarFallback>
+            <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm flex-shrink-0")}>
+              <AvatarImage src={task.assignee_avatar} />
+              <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">{getInitials(task.assignee_name)}</AvatarFallback>
             </Avatar>
           )}
 
-          <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              {task.due_date && (
-                <div className={cn("text-[11px] text-gray-500 mb-1", isCompleted && "opacity-50 grayscale")}>
-                  {format(new Date(task.due_date), 'MMM d')}
-                </div>
-              )}
-              <p className={cn(
-                "text-sm leading-snug",
-                isMine ? "font-bold text-slate-900" : "font-normal text-gray-600",
-                isCompleted && "line-through opacity-50 grayscale"
-              )}>
-                {task.summary}
-              </p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1">
+                <p className={cn(
+                  "text-sm leading-snug transition-all",
+                  isMine ? "font-bold text-slate-900" : "font-medium text-slate-600",
+                  isCompleted && "line-through decoration-slate-300"
+                )}>
+                  {task.summary}
+                </p>
+                {task.details && <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{task.details}</p>}
+              </div>
+
+              <div className="flex flex-col items-end gap-1">
+                {task.due_date && <span className="text-[10px] text-slate-400 whitespace-nowrap">{format(new Date(task.due_date), 'MMM d')}</span>}
+                <button
+                  onClick={() => onComplete(task.id, task.task_status)}
+                  className="text-slate-300 hover:text-green-500 transition-colors"
+                >
+                  {isCompleted ? <CheckSquare className="w-4 h-4 text-green-500" /> : <Square className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
-            <button
-              onClick={() => onToggleComplete(task.id, task.task_status)}
-              className="flex-shrink-0 mt-0.5"
-            >
-              {isCompleted ? (
-                <CheckSquare className="w-4 h-4 text-green-500 opacity-50 grayscale" />
-              ) : (
-                <Square className="w-4 h-4 text-gray-300 hover:text-gray-500 transition-colors" />
-              )}
-            </button>
+            {!isCompleted && (
+              <button
+                 onClick={() => onAdd(task.id)}
+                 className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 hover:text-orange-600 transition-colors opacity-0 group-hover:opacity-100"
+              >
+                <CornerDownRight className="w-3 h-3" /> Reply
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {hasChildren && isExpanded && task.children && (
-        <>
-          {task.children.map((child, idx) => (
-            <TaskRow
-              key={child.id}
-              task={child}
-              dealId={dealId}
-              depth={depth + 1}
-              isLast={idx === task.children!.length - 1 && !isAddingHere}
-              expanded={expanded}
-              onToggleExpand={onToggleExpand}
-              onToggleComplete={onToggleComplete}
-              onPickup={onPickup}
-              onAddChildTo={onAddChildTo}
-              currentUserId={currentUserId}
-              addingToTaskId={addingToTaskId}
-              newTaskSummary={newTaskSummary}
-              newTaskDueDate={newTaskDueDate}
-              users={users}
-              onNewTaskSummaryChange={onNewTaskSummaryChange}
-              onNewTaskDueDateChange={onNewTaskDueDateChange}
-              onSaveNewTask={onSaveNewTask}
-              onCancelNewTask={onCancelNewTask}
-            />
-          ))}
-
-          {isAddingHere && (
-            <InlineTaskEditor
-              depth={depth + 1}
-              summary={newTaskSummary}
-              dueDate={newTaskDueDate}
-              currentUser={users.find(u => u.id === currentUserId)}
-              onSummaryChange={onNewTaskSummaryChange}
-              onDueDateChange={onNewTaskDueDateChange}
-              onSave={onSaveNewTask}
-              onCancel={onCancelNewTask}
-            />
-          )}
-
-          {!isAddingHere && (
-            <div className="relative h-8 w-full">
-              <div
-                className="absolute w-[2px] bg-slate-300"
-                style={{
-                  left: `${indent + INDENT_PX + 27}px`,
-                  top: '-12px',
-                  bottom: '0'
-                }}
+      <AnimatePresence>
+        {isExpanded && task.children && (
+          <div className="ml-6 border-l-2 border-dotted border-gray-300 pl-2">
+            {task.children.map((child: TaskThread, idx: number) => (
+              <TaskNode
+                key={child.id} task={child} dealId={dealId} depth={depth + 1}
+                isLast={idx === task.children!.length - 1 && !isAddingChild}
+                expanded={expanded} onToggle={onToggle} onComplete={onComplete} onPickup={onPickup} onAdd={onAdd}
+                currentUserId={currentUserId} users={users} addingToId={addingToId}
+                onSaveTask={onSaveTask} onCancelTask={onCancelTask}
               />
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onAddChildTo(task.id, dealId);
-                }}
-                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-20 shadow-sm"
-                style={{
-                  left: `${indent + INDENT_PX + 17}px`,
-                  bottom: '0'
-                }}
-                title="Add subtask"
-              >
-                <Plus className="w-3 h-3" />
-              </button>
-            </div>
-          )}
-        </>
-      )}
-    </>
-  );
-};
+            ))}
 
-interface DealThreadProps {
-  group: DealGroup;
-  expanded: Set<string>;
-  expandedDeals: Set<string>;
-  onToggleExpand: (id: string) => void;
-  onToggleDealExpand: (id: string) => void;
-  onToggleComplete: (id: string, status?: string) => void;
-  onPickup: (id: string, summary: string) => void;
-  onAddRootTask: (dealId: string) => void;
-  onAddChildTo: (parentId: string, dealId: string) => void;
-  currentUserId?: string;
-  addingToTaskId: string | null;
-  addingRootToDealId: string | null;
-  newTaskSummary: string;
-  newTaskDueDate: string;
-  users: any[];
-  onNewTaskSummaryChange: (text: string) => void;
-  onNewTaskDueDateChange: (date: string) => void;
-  onSaveNewTask: () => void;
-  onCancelNewTask: () => void;
-}
-
-const DealThreadItem: React.FC<DealThreadProps> = ({
-  group,
-  expanded,
-  expandedDeals,
-  onToggleExpand,
-  onToggleDealExpand,
-  onToggleComplete,
-  onPickup,
-  onAddRootTask,
-  onAddChildTo,
-  currentUserId,
-  addingToTaskId,
-  addingRootToDealId,
-  newTaskSummary,
-  newTaskDueDate,
-  users,
-  onNewTaskSummaryChange,
-  onNewTaskDueDateChange,
-  onSaveNewTask,
-  onCancelNewTask
-}) => {
-  const stageConfig = getStageAvatar(group.stage);
-  const tasks = group.tasks || [];
-  const taskTree = buildTaskTree(tasks);
-  const isDealExpanded = expandedDeals.has(group.id);
-  const isAddingRoot = addingRootToDealId === group.id;
-
-  const completedCount = tasks.filter(t => t.task_status === 'Completed').length;
-  const totalCount = tasks.length;
-
-  return (
-    <div className="relative border-b border-gray-100 py-4">
-      <div className="relative flex items-center gap-3 px-4">
-        <button
-          onClick={() => onToggleDealExpand(group.id)}
-          className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <ChevronRight className={cn("w-5 h-5 transition-transform", isDealExpanded && "rotate-90")} />
-        </button>
-
-        <div
-          className={`w-8 h-8 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}
-        >
-          {stageConfig.char}
-        </div>
-
-        <div className="flex-1 min-w-0 flex items-center gap-2">
-          <h3 className="font-medium text-black truncate">{group.name}</h3>
-          {group.mw > 0 && (
-            <span className="text-sm font-bold text-orange-600 flex-shrink-0">
-              {group.mw} MW
-            </span>
-          )}
-        </div>
-
-        <div className="text-xs text-gray-500 flex-shrink-0">
-          {completedCount}/{totalCount}
-        </div>
-      </div>
-
-      {isDealExpanded && taskTree.length > 0 && (
-        <div className="relative">
-          <div
-            className="absolute w-[2px] bg-slate-300"
-            style={{
-              left: '27px',
-              top: '0',
-              bottom: isAddingRoot ? '0' : '-12px'
-            }}
-          />
-
-          {taskTree.map((task, idx) => (
-            <TaskRow
-              key={task.id}
-              task={task}
-              dealId={group.id}
-              depth={0}
-              isLast={idx === taskTree.length - 1 && !isAddingRoot}
-              expanded={expanded}
-              onToggleExpand={onToggleExpand}
-              onToggleComplete={onToggleComplete}
-              onPickup={onPickup}
-              onAddChildTo={onAddChildTo}
-              currentUserId={currentUserId}
-              addingToTaskId={addingToTaskId}
-              newTaskSummary={newTaskSummary}
-              newTaskDueDate={newTaskDueDate}
-              users={users}
-              onNewTaskSummaryChange={onNewTaskSummaryChange}
-              onNewTaskDueDateChange={onNewTaskDueDateChange}
-              onSaveNewTask={onSaveNewTask}
-              onCancelNewTask={onCancelNewTask}
-            />
-          ))}
-
-          {isAddingRoot && (
-            <InlineTaskEditor
-              depth={0}
-              summary={newTaskSummary}
-              dueDate={newTaskDueDate}
-              currentUser={users.find(u => u.id === currentUserId)}
-              onSummaryChange={onNewTaskSummaryChange}
-              onDueDateChange={onNewTaskDueDateChange}
-              onSave={onSaveNewTask}
-              onCancel={onCancelNewTask}
-            />
-          )}
-
-          {!isAddingRoot && (
-            <div className="relative h-8 w-full">
-              <div
-                className="absolute w-[2px] bg-slate-300"
-                style={{
-                  left: '27px',
-                  top: '-12px',
-                  bottom: '0'
-                }}
+            {isAddingChild && (
+              <InlineTaskEditor
+                users={users} currentUser={users.find((u:any) => u.id === currentUserId)}
+                onSave={(s, a, d) => onSaveTask(s, a, d, task.id)}
+                onCancel={onCancelTask}
               />
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onAddRootTask(group.id);
-                }}
-                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-20 shadow-sm"
-                style={{
-                  left: '17px',
-                  bottom: '0'
-                }}
-                title="Add task"
-              >
-                <Plus className="w-3 h-3" />
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+            )}
+
+            {!isAddingChild && (
+              <div className="relative h-6 w-full flex items-center">
+                 <button
+                   onClick={(e) => { e.stopPropagation(); onAdd(task.id); }}
+                   className="w-5 h-5 rounded-full bg-orange-50 border border-orange-300 flex items-center justify-center text-orange-600 hover:scale-110 transition-transform shadow-sm"
+                   title="Add Subtask"
+                 >
+                   <Plus className="w-3 h-3" />
+                 </button>
+              </div>
+            )}
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -597,360 +284,200 @@ export const TasksScreen: React.FC = () => {
   const [dealGroups, setDealGroups] = useState<DealGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [hideCompleted, setHideCompleted] = useState(false);
   const [expandedDeals, setExpandedDeals] = useState<Set<string>>(new Set());
-  const [addingToTaskId, setAddingToTaskId] = useState<string | null>(null);
-  const [addingRootToDealId, setAddingRootToDealId] = useState<string | null>(null);
-  const [addingToDealId, setAddingToDealId] = useState<string | null>(null);
-  const [newTaskSummary, setNewTaskSummary] = useState('');
-  const [newTaskDueDate, setNewTaskDueDate] = useState<string>('');
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
 
-  const [viewMode, setViewMode] = useState<'mine' | 'all'>('mine');
+  const [addingToId, setAddingToId] = useState<string | null>(null);
+  const [isRootAdd, setIsRootAdd] = useState(false);
 
-  const [myTasksCount, setMyTasksCount] = useState(0);
-  const [teamTasksCount, setTeamTasksCount] = useState(0);
-
-  const filteredDealGroups = useMemo(() => {
-    if (!search.trim()) return dealGroups;
-
-    const searchLower = search.toLowerCase();
-    return dealGroups.map(group => {
-      const tasks = group.tasks || [];
-      const filteredTasks = tasks.filter(task =>
-        task.summary.toLowerCase().includes(searchLower) ||
-        task.assignee_name?.toLowerCase().includes(searchLower)
-      );
-
-      return {
-        ...group,
-        tasks: filteredTasks
-      };
-    }).filter(group =>
-      (group.tasks && group.tasks.length > 0) ||
-      group.name.toLowerCase().includes(searchLower)
-    );
-  }, [dealGroups, search]);
-
-  const fetchTaskThreads = async () => {
-    if (!user?.id) return;
-
+  const fetchTasks = async () => {
+    if (!user) return;
     try {
       setLoading(true);
-
-      const { data, error } = await supabase.rpc('get_deal_threads_view', {
-        p_view_mode: viewMode
-      });
-
+      const { data, error } = await supabase.rpc('get_deal_threads_view', { p_view_mode: 'all' });
       if (error) throw error;
-
-      const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
-      setDealGroups(parsedData || []);
-
-      const allTasks = (parsedData || []).flatMap((g: DealGroup) => g.tasks || []);
-      const myCount = allTasks.filter((t: TaskThread) => t.assigned_to_id === user.id).length;
-      const teamCount = allTasks.length;
-
-      setMyTasksCount(myCount);
-      setTeamTasksCount(teamCount);
-    } catch (error: any) {
-      console.error('Error fetching task threads:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load tasks',
-        variant: 'destructive'
-      });
+      setDealGroups(typeof data === 'string' ? JSON.parse(data) : data);
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Error', description: 'Failed to load tasks', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchTaskThreads();
-  }, [user?.id, viewMode]);
+  useEffect(() => { fetchTasks(); }, [user]);
 
-  useEffect(() => {
-    if (dealGroups.length > 0) {
-      const dealIds = dealGroups.map(g => g.id);
-      const tasksWithChildren = dealGroups.flatMap(g =>
-        (g.tasks || []).filter(t => (g.tasks || []).some(child => child.parent_task_id === t.id)).map(t => t.id)
-      );
-      setExpandedTasks(new Set(tasksWithChildren));
-      setExpandedDeals(new Set(dealIds));
-    }
-  }, [dealGroups]);
-
-  const toggleTask = async (taskId: string, currentStatus?: string) => {
-    try {
-      const newStatus = currentStatus === 'Completed' ? 'Pending' : 'Completed';
-      const { error } = await supabase
-        .from('activities')
-        .update({ task_status: newStatus })
-        .eq('id', taskId);
-
-      if (error) throw error;
-
-      toast({
-        title: newStatus === 'Completed' ? 'Task Completed' : 'Task Reopened',
-        description: newStatus === 'Completed' ? 'Great work!' : 'Task marked as pending'
-      });
-
-      fetchTaskThreads();
-    } catch (error: any) {
-      console.error('Error toggling task:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update task',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const pickupTask = async (taskId: string, taskSummary: string) => {
-    if (!user?.id) return;
-
-    try {
-      const { error: updateError } = await supabase
-        .from('activities')
-        .update({ assigned_to_id: user.id })
-        .eq('id', taskId);
-
-      if (updateError) throw updateError;
-
-      const { error: wattsError } = await supabase
-        .from('watts_ledger')
-        .insert({
-          user_id: user.id,
-          amount: 5,
-          type: 'pickup_task',
-          description: `Picked up task: ${taskSummary}`,
-          related_entity_id: taskId,
-          related_entity_type: 'Activity'
-        });
-
-      if (wattsError) throw wattsError;
-
-      toast({
-        title: 'Task Picked Up!',
-        description: '+5 Watts earned',
-        className: 'bg-green-50 border-green-200'
-      });
-
-      fetchTaskThreads();
-    } catch (error: any) {
-      console.error('Error picking up task:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to pickup task',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleAddRootTask = (dealId: string) => {
-    setAddingRootToDealId(dealId);
-    setAddingToDealId(dealId);
-    setAddingToTaskId(null);
-    setNewTaskSummary('');
-    setNewTaskDueDate('');
-    setExpandedDeals(prev => new Set(prev).add(dealId));
-  };
-
-  const handleAddChildTask = (parentId: string, dealId: string) => {
-    setAddingToTaskId(parentId);
-    setAddingRootToDealId(null);
-    setAddingToDealId(dealId);
-    setNewTaskSummary('');
-    setNewTaskDueDate('');
-    setExpandedTasks(prev => new Set(prev).add(parentId));
-  };
-
-  const handleSaveTask = async () => {
-    if (!newTaskSummary.trim()) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please enter a task description',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    if (!addingToDealId) {
-      toast({
-        title: 'Error',
-        description: 'Missing deal information',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    try {
-      const insertData: any = {
-        type: 'Task',
-        summary: newTaskSummary.trim(),
-        task_status: 'Pending',
-        related_to_id: addingToDealId,
-        related_to_type: 'Opportunity',
-        is_task: true,
-        assigned_to_id: user?.id,
-        parent_task_id: addingToTaskId,
-        created_by: user?.id
-      };
-
-      if (newTaskDueDate) {
-        insertData.due_date = new Date(newTaskDueDate).toISOString();
-      }
-
-      const { error } = await supabase.from('activities').insert(insertData);
-
-      if (error) throw error;
-
-      toast({
-        title: addingToTaskId ? 'Subtask Added' : 'Task Added',
-        description: 'New task created successfully',
-        className: 'bg-green-50 border-green-200'
-      });
-
-      setAddingToTaskId(null);
-      setAddingRootToDealId(null);
-      setAddingToDealId(null);
-      setNewTaskSummary('');
-      setNewTaskDueDate('');
-      fetchTaskThreads();
-    } catch (error: any) {
-      console.error('Error adding task:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to add task',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleCancelTask = () => {
-    setAddingToTaskId(null);
-    setAddingRootToDealId(null);
-    setAddingToDealId(null);
-    setNewTaskSummary('');
-    setNewTaskDueDate('');
-  };
-
-  const toggleExpanded = (taskId: string) => {
-    setExpandedTasks(prev => {
-      const next = new Set(prev);
-      if (next.has(taskId)) {
-        next.delete(taskId);
-      } else {
-        next.add(taskId);
-      }
-      return next;
-    });
-  };
-
-  const toggleDealExpanded = (dealId: string) => {
+  const handleToggleDeal = (id: string) => {
     setExpandedDeals(prev => {
       const next = new Set(prev);
-      if (next.has(dealId)) {
-        next.delete(dealId);
-      } else {
-        next.add(dealId);
-      }
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center p-12">
-        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-      </div>
-    );
-  }
+  const handleToggleTask = (id: string) => {
+    setExpandedTasks(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleComplete = async (id: string, currentStatus?: string) => {
+    const newStatus = currentStatus === 'Completed' ? 'Pending' : 'Completed';
+    await supabase.from('activities').update({ task_status: newStatus }).eq('id', id);
+    fetchTasks();
+    if (newStatus === 'Completed') {
+       toast({ title: 'Task Completed (+10⚡)', className: 'bg-green-50 border-green-200' });
+    }
+  };
+
+  const handlePickup = async (id: string) => {
+    await supabase.from('activities').update({ assigned_to_id: user?.id }).eq('id', id);
+    fetchTasks();
+    toast({ title: 'Task Picked Up (+5⚡)', className: 'bg-orange-50 border-orange-200' });
+  };
+
+  const handleSaveNewTask = async (summary: string, assignee: string, date: string, parentId?: string) => {
+    try {
+      let targetDealId = '';
+      for (const group of dealGroups) {
+         if (isRootAdd && group.id === addingToId) targetDealId = group.id;
+         if (!isRootAdd) {
+            const contains = (tasks: TaskThread[]): boolean => tasks.some(t => t.id === parentId || contains(t.children || []));
+            if (contains(group.tasks || [])) targetDealId = group.id;
+         }
+      }
+
+      const payload: any = {
+        summary,
+        is_task: true,
+        task_status: 'Pending',
+        created_by: user?.id,
+        assigned_to_id: assignee,
+        root_deal_id: targetDealId,
+        related_to_id: targetDealId,
+        related_to_type: 'Opportunity'
+      };
+
+      if (!isRootAdd && parentId) payload.parent_task_id = parentId;
+      if (date) payload.due_date = new Date(date).toISOString();
+
+      const { error } = await supabase.from('activities').insert(payload);
+      if (error) throw error;
+
+      toast({ title: 'Task Created' });
+      setAddingToId(null);
+      fetchTasks();
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const displayGroups = useMemo(() => {
+    return dealGroups.map(group => {
+      let tasks = group.tasks || [];
+      if (hideCompleted) tasks = tasks.filter(t => t.task_status !== 'Completed');
+      if (search) tasks = tasks.filter(t => t.summary.toLowerCase().includes(search.toLowerCase()));
+      return { ...group, tasks };
+    }).filter(g => g.tasks.length > 0 || g.name.toLowerCase().includes(search.toLowerCase()));
+  }, [dealGroups, hideCompleted, search]);
 
   return (
-    <div className="min-h-screen bg-white pb-24 max-w-2xl mx-auto">
-      <div className="sticky top-0 z-[100] bg-white border-b border-gray-100 px-4 py-3">
-        <h1 className="text-lg font-medium text-black mb-3">Tasks</h1>
-
-        <div className="relative mb-3">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search tasks..."
-            className="w-full px-3 py-2 bg-gray-50 border-0 rounded-lg text-sm text-black placeholder-gray-500 focus:outline-none focus:ring-0"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded transition-colors"
-            >
-              <X className="w-3.5 h-3.5 text-gray-400" />
-            </button>
-          )}
+    <div className="min-h-screen bg-white pb-24">
+      <div className="sticky top-0 z-[50] bg-white border-b border-slate-100 px-4 py-3">
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-xl font-bold text-slate-900">Tasks</h1>
+          <button
+             onClick={() => setHideCompleted(!hideCompleted)}
+             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${hideCompleted ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+          >
+            {hideCompleted ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            {hideCompleted ? 'Hidden' : 'Show All'}
+          </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setViewMode('mine')}
-            className={cn(
-              "px-3 py-1.5 text-sm rounded-full transition-all",
-              viewMode === 'mine'
-                ? "bg-black text-white font-medium"
-                : "text-gray-600 hover:bg-gray-50 font-normal"
-            )}
-          >
-            Mine {myTasksCount > 0 && `(${myTasksCount})`}
-          </button>
-          <button
-            onClick={() => setViewMode('all')}
-            className={cn(
-              "px-3 py-1.5 text-sm rounded-full transition-all",
-              viewMode === 'all'
-                ? "bg-black text-white font-medium"
-                : "text-gray-600 hover:bg-gray-50 font-normal"
-            )}
-          >
-            Team {teamTasksCount > 0 && `(${teamTasksCount})`}
-          </button>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search deals..."
+            className="w-full bg-slate-50 border-0 rounded-lg pl-9 pr-4 py-2 text-sm focus:ring-2 focus:ring-orange-500/20"
+          />
         </div>
       </div>
 
       <div className="p-0 space-y-0">
-        {filteredDealGroups.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <CheckSquare className="w-12 h-12 mx-auto mb-3 opacity-20" />
-            <p className="text-sm">No tasks found</p>
-            <p className="text-xs mt-1 text-gray-400">
-              {search ? 'Try a different search' : 'Create tasks from deals'}
-            </p>
-          </div>
-        ) : (
-          filteredDealGroups.map(group => (
-            <DealThreadItem
-              key={group.id}
-              group={group}
-              expanded={expandedTasks}
-              expandedDeals={expandedDeals}
-              onToggleExpand={toggleExpanded}
-              onToggleDealExpand={toggleDealExpanded}
-              onToggleComplete={toggleTask}
-              onPickup={pickupTask}
-              onAddRootTask={handleAddRootTask}
-              onAddChildTo={handleAddChildTask}
-              currentUserId={user?.id}
-              addingToTaskId={addingToTaskId}
-              addingRootToDealId={addingRootToDealId}
-              newTaskSummary={newTaskSummary}
-              newTaskDueDate={newTaskDueDate}
-              users={users}
-              onNewTaskSummaryChange={setNewTaskSummary}
-              onNewTaskDueDateChange={setNewTaskDueDate}
-              onSaveNewTask={handleSaveTask}
-              onCancelNewTask={handleCancelTask}
-            />
-          ))
-        )}
+        {displayGroups.map(group => {
+            const isExpanded = expandedDeals.has(group.id);
+            const taskTree = buildTaskTree(group.tasks || []);
+            const isAddingRoot = addingToId === group.id && isRootAdd;
+
+            return (
+              <div key={group.id} className="relative border-b border-slate-100 py-4">
+                 <div
+                   onClick={() => handleToggleDeal(group.id)}
+                   className="flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-slate-50 transition-colors relative z-10"
+                 >
+                    <ChevronRight className={cn("w-5 h-5 text-slate-400 transition-transform", isExpanded && "rotate-90")} />
+                    {getStageAvatar(group.stage)}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 text-sm truncate">{group.name}</span>
+                        {group.mw > 0 && <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">{group.mw} MW</span>}
+                      </div>
+                    </div>
+                 </div>
+
+                 <div className="absolute bottom-0 left-12 right-0 h-[2px] bg-orange-100">
+                    <div className="h-full bg-orange-500" style={{ width: '40%' }} />
+                 </div>
+
+                 <AnimatePresence>
+                   {isExpanded && (
+                     <div className="ml-4 border-l-2 border-dotted border-gray-300 pl-2 mt-2">
+                       {taskTree.map((task, idx) => (
+                         <TaskNode
+                           key={task.id} task={task} dealId={group.id} depth={0}
+                           isLast={idx === taskTree.length - 1}
+                           expanded={expandedTasks} onToggle={handleToggleTask}
+                           onComplete={handleComplete} onPickup={handlePickup}
+                           onAdd={(id: string) => { setAddingToId(id); setIsRootAdd(false); setExpandedTasks(prev => new Set(prev).add(id)); }}
+                           currentUserId={user?.id} users={users}
+                           addingToId={addingToId} onSaveTask={handleSaveNewTask} onCancelTask={() => setAddingToId(null)}
+                         />
+                       ))}
+
+                       {!isAddingRoot && (
+                         <div className="relative h-8 w-full flex items-center mt-2">
+                           <button
+                             onClick={() => { setAddingToId(group.id); setIsRootAdd(true); }}
+                             className="w-6 h-6 rounded-full bg-orange-50 border border-orange-300 flex items-center justify-center text-orange-600 hover:scale-110 transition-transform shadow-sm"
+                             title="Add Task to Deal"
+                           >
+                             <Plus className="w-4 h-4" />
+                           </button>
+                         </div>
+                       )}
+
+                       {isAddingRoot && (
+                         <InlineTaskEditor
+                           users={users} currentUser={users.find(u=>u.id===user?.id)}
+                           onSave={(s,a,d) => handleSaveNewTask(s,a,d)}
+                           onCancel={() => setAddingToId(null)}
+                         />
+                       )}
+                     </div>
+                   )}
+                 </AnimatePresence>
+              </div>
+            );
+        })}
       </div>
     </div>
   );
 };
+
+export default TasksScreen;
