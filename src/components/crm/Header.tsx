@@ -32,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
   const [loading, setLoading] = useState(false);
   const [tableExists, setTableExists] = useState(true);
   const [notificationPopoverOpen, setNotificationPopoverOpen] = useState(false);
+  const [notificationTab, setNotificationTab] = useState<'tasks' | 'general'>('tasks');
   const channelRef = useRef<any>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -277,7 +278,23 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
     return date.toLocaleDateString();
   };
 
+  // Separate task notifications from general notifications
+  const taskNotifications = notifications.filter(n =>
+    n.entity_type === 'Activity' ||
+    n.type?.includes('task') ||
+    n.type?.includes('assigned')
+  );
+  const generalNotifications = notifications.filter(n =>
+    n.entity_type !== 'Activity' &&
+    !n.type?.includes('task') &&
+    !n.type?.includes('assigned')
+  );
+
+  const unreadTaskCount = taskNotifications.filter(n => !n.is_read).length;
+  const unreadGeneralCount = generalNotifications.filter(n => !n.is_read).length;
   const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  const displayNotifications = notificationTab === 'tasks' ? taskNotifications : generalNotifications;
 
   return (
     <header className="sticky top-0 bg-white border-b border-slate-200 px-4 lg:px-8 py-3 z-50" role="banner">
@@ -327,19 +344,26 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
                 <Plus className="w-5 h-5" />
               </button>
 
-              {/* Notifications */}
+              {/* Notifications - Panda Ears Design */}
               <Popover open={notificationPopoverOpen} onOpenChange={setNotificationPopoverOpen}>
                 <PopoverTrigger asChild>
                   <button
                     className="relative w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors"
-                    aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+                    aria-label={`Notifications (${unreadTaskCount} tasks, ${unreadGeneralCount} general)`}
                     onMouseEnter={handleMouseEnter}
                     onMouseLeave={handleMouseLeave}
                   >
                     <Bell className="w-5 h-5" />
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold ring-2 ring-white">
-                        {unreadCount > 9 ? '9+' : unreadCount}
+                    {/* Left Ear - Task Notifications */}
+                    {unreadTaskCount > 0 && (
+                      <span className="absolute -top-1 -left-1 w-4 h-4 bg-orange-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold ring-2 ring-white">
+                        {unreadTaskCount > 9 ? '9' : unreadTaskCount}
+                      </span>
+                    )}
+                    {/* Right Ear - General Notifications */}
+                    {unreadGeneralCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-[9px] rounded-full flex items-center justify-center font-bold ring-2 ring-white">
+                        {unreadGeneralCount > 9 ? '9' : unreadGeneralCount}
                       </span>
                     )}
                   </button>
@@ -350,25 +374,66 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
                   onMouseEnter={handleMouseEnter}
                   onMouseLeave={handleMouseLeave}
                 >
-                  <div className="p-4 bg-slate-900 text-white flex justify-between items-center">
-                    <span className="font-bold">Notifications</span>
-                    {tableExists && (
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={deleteOldNotifications}
-                          className="text-xs font-bold uppercase text-slate-400 hover:text-slate-300 transition-colors"
-                          title="Delete notifications older than 30 days"
-                        >
-                          Clean up
-                        </button>
-                        <button 
-                          onClick={markAllRead} 
-                          className="text-xs font-bold uppercase text-orange-400 hover:text-orange-300 transition-colors"
-                        >
-                          Mark all read
-                        </button>
-                      </div>
-                    )}
+                  <div className="bg-slate-900 text-white">
+                    <div className="p-4 flex justify-between items-center border-b border-slate-700">
+                      <span className="font-bold">Notifications</span>
+                      {tableExists && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={deleteOldNotifications}
+                            className="text-xs font-bold uppercase text-slate-400 hover:text-slate-300 transition-colors"
+                            title="Delete notifications older than 30 days"
+                          >
+                            Clean up
+                          </button>
+                          <button
+                            onClick={markAllRead}
+                            className="text-xs font-bold uppercase text-orange-400 hover:text-orange-300 transition-colors"
+                          >
+                            Mark all read
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    {/* Tabs */}
+                    <div className="flex border-b border-slate-700">
+                      <button
+                        onClick={() => setNotificationTab('tasks')}
+                        className={`flex-1 py-2.5 text-sm font-semibold transition-colors relative ${
+                          notificationTab === 'tasks'
+                            ? 'text-white bg-slate-800'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Tasks
+                        {unreadTaskCount > 0 && (
+                          <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-[10px] bg-orange-500 text-white rounded-full font-bold">
+                            {unreadTaskCount}
+                          </span>
+                        )}
+                        {notificationTab === 'tasks' && (
+                          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setNotificationTab('general')}
+                        className={`flex-1 py-2.5 text-sm font-semibold transition-colors relative ${
+                          notificationTab === 'general'
+                            ? 'text-white bg-slate-800'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        General
+                        {unreadGeneralCount > 0 && (
+                          <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-[10px] bg-blue-500 text-white rounded-full font-bold">
+                            {unreadGeneralCount}
+                          </span>
+                        )}
+                        {notificationTab === 'general' && (
+                          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   <div className="max-h-96 overflow-y-auto bg-white divide-y divide-slate-100">
                     {loading ? (
@@ -382,23 +447,30 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
                         <p className="text-sm text-slate-600 font-medium">Notifications not available</p>
                         <p className="text-xs text-slate-600 mt-1">Database setup required</p>
                       </div>
-                    ) : notifications.length === 0 ? (
+                    ) : displayNotifications.length === 0 ? (
                       <div className="p-8 text-center">
                         <Bell className="w-10 h-10 text-slate-200 mx-auto mb-2" />
-                        <p className="text-sm text-slate-500">No notifications yet</p>
+                        <p className="text-sm text-slate-500">
+                          {notificationTab === 'tasks' ? 'No task notifications' : 'No general notifications'}
+                        </p>
                         <p className="text-xs text-slate-600 mt-1">You'll see updates here</p>
                       </div>
                     ) : (
-                      notifications.map((n) => (
-                        <div 
-                          key={n.id} 
-                          className={`w-full text-left p-4 flex gap-3 hover:bg-slate-50 transition-colors ${n.is_read ? 'opacity-60' : 'bg-orange-50/30'}`}
-                        >
-                          <button
-                            onClick={() => handleItemClick(n)}
-                            className="flex-1 flex gap-3 text-left"
+                      displayNotifications.map((n) => {
+                        const isTaskNotif = n.entity_type === 'Activity' || n.type?.includes('task') || n.type?.includes('assigned');
+                        const indicatorColor = n.is_read ? 'bg-slate-200' : (isTaskNotif ? 'bg-orange-500' : 'bg-blue-500');
+                        const bgColor = n.is_read ? 'opacity-60' : (isTaskNotif ? 'bg-orange-50/30' : 'bg-blue-50/30');
+
+                        return (
+                          <div
+                            key={n.id}
+                            className={`w-full text-left p-4 flex gap-3 hover:bg-slate-50 transition-colors ${bgColor}`}
                           >
-                            <div className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${n.is_read ? 'bg-slate-200' : 'bg-orange-500'}`} />
+                            <button
+                              onClick={() => handleItemClick(n)}
+                              className="flex-1 flex gap-3 text-left"
+                            >
+                              <div className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${indicatorColor}`} />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm text-slate-800 font-semibold leading-tight">{n.title || n.message}</p>
                               {n.title && n.message && (
@@ -409,7 +481,7 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
                                   <Clock className="w-3 h-3" />{formatTimeAgo(n.created_at)}
                                 </span>
                                 {!n.is_read && (
-                                  <span className="text-xs font-bold text-orange-600 uppercase flex items-center gap-1">
+                                  <span className={`text-xs font-bold uppercase flex items-center gap-1 ${isTaskNotif ? 'text-orange-600' : 'text-blue-600'}`}>
                                     View <ExternalLink className="w-3 h-3" />
                                   </span>
                                 )}
@@ -427,7 +499,8 @@ export const Header: React.FC<HeaderProps> = ({ onQuickAdd, onNavigate, activeTa
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </PopoverContent>
