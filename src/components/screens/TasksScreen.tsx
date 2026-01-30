@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { CheckSquare, Square, Loader2, Hand, Search, X, Plus, ChevronRight, Check } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Hand, X, Plus, ChevronRight, Check } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
 import { supabase } from '@/lib/supabase';
@@ -12,31 +12,24 @@ const INDENT_PX = 32;
 interface TaskThread {
   id: string;
   summary: string;
-  details?: string;
-  status?: 'Pending' | 'Completed';
-  priority?: 'Low' | 'Medium' | 'High';
-  dueDate?: string;
-  assignedToId?: string;
-  assigneeName?: string;
-  assigneeAvatar?: string;
-  parentTaskId?: string;
-  depth: number;
-  createdAt: string;
+  task_status?: string;
+  due_date?: string;
+  assigned_to_id?: string;
+  assignee_name?: string;
+  assignee_avatar?: string;
+  parent_task_id?: string;
+  thread_depth?: number;
+  from_pulse?: boolean;
   children?: TaskThread[];
 }
 
 interface DealGroup {
-  deal: {
-    id: string;
-    name: string;
-    stage: string;
-    mw: number;
-    account_name: string;
-  };
-  progress: number;
-  total_tasks: number;
-  completed_tasks: number;
-  tasks: TaskThread[];
+  id: string;
+  name: string;
+  stage: string;
+  mw: number;
+  velocity_score: number;
+  tasks: TaskThread[] | null;
 }
 
 const getStageAvatar = (stage: string) => {
@@ -60,9 +53,9 @@ const getInitials = (name?: string) => {
   return name.substring(0, 2).toUpperCase();
 };
 
-const buildTaskTree = (tasks: TaskThread[]): (TaskThread & { children: TaskThread[] })[] => {
-  const taskMap = new Map<string, TaskThread & { children: TaskThread[] }>();
-  const roots: (TaskThread & { children: TaskThread[] })[] = [];
+const buildTaskTree = (tasks: TaskThread[]): TaskThread[] => {
+  const taskMap = new Map<string, TaskThread>();
+  const roots: TaskThread[] = [];
 
   tasks.forEach(task => {
     taskMap.set(task.id, { ...task, children: [] });
@@ -70,8 +63,10 @@ const buildTaskTree = (tasks: TaskThread[]): (TaskThread & { children: TaskThrea
 
   tasks.forEach(task => {
     const node = taskMap.get(task.id)!;
-    if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
-      taskMap.get(task.parentTaskId)!.children.push(node);
+    if (task.parent_task_id && taskMap.has(task.parent_task_id)) {
+      const parent = taskMap.get(task.parent_task_id)!;
+      if (!parent.children) parent.children = [];
+      parent.children.push(node);
     } else {
       roots.push(node);
     }
@@ -96,12 +91,10 @@ interface InlineTaskEditorProps {
 
 const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
   depth,
-  users,
   assigneeId,
   summary,
   dueDate,
   currentUser,
-  onAssigneeChange,
   onSummaryChange,
   onDueDateChange,
   onSave,
@@ -111,12 +104,12 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
   const spineLeft = indent + 27;
 
   return (
-    <div className="relative flex items-start py-3 pr-4">
+    <div className="relative flex items-start py-1.5 pr-4">
       <div
-        className="absolute w-[2px] bg-gray-200"
+        className="absolute w-[2px] bg-slate-200"
         style={{
           left: `${spineLeft}px`,
-          top: '-12px',
+          top: '-14px',
           bottom: '0'
         }}
       />
@@ -125,7 +118,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
         className="absolute h-[2px] bg-orange-500"
         style={{
           left: `${spineLeft}px`,
-          top: '24px',
+          top: '20px',
           width: '16px'
         }}
       />
@@ -167,7 +160,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
             type="date"
             value={dueDate}
             onChange={(e) => onDueDateChange(e.target.value)}
-            className="text-xs text-gray-500 border-0 focus:outline-none"
+            className="text-xs text-gray-500 border-0 focus:outline-none bg-transparent"
           />
 
           <button
@@ -193,7 +186,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
 };
 
 interface TaskRowProps {
-  task: TaskThread & { children?: TaskThread[] };
+  task: TaskThread;
   dealId: string;
   depth: number;
   isLast: boolean;
@@ -239,9 +232,9 @@ const TaskRow: React.FC<TaskRowProps> = ({
 }) => {
   const hasChildren = task.children && task.children.length > 0;
   const isExpanded = expanded.has(task.id);
-  const isCompleted = task.status === 'Completed';
-  const isMine = task.assignedToId === currentUserId;
-  const isUnassigned = !task.assignedToId;
+  const isCompleted = task.task_status === 'Completed';
+  const isMine = task.assigned_to_id === currentUserId;
+  const isUnassigned = !task.assigned_to_id;
   const isAddingHere = addingToTaskId === task.id;
 
   const indent = depth * INDENT_PX;
@@ -249,34 +242,45 @@ const TaskRow: React.FC<TaskRowProps> = ({
 
   return (
     <>
-      <div className="relative flex items-start py-3 pr-4">
-        {!isLast && (
+      <div className="relative flex items-start py-1.5 pr-4">
+        {!isLast && !isAddingHere && (
           <div
-            className="absolute w-[2px] bg-gray-200"
+            className="absolute w-[2px] bg-slate-200"
             style={{
               left: `${spineLeft}px`,
-              top: '-12px',
-              bottom: '-12px'
+              top: '-14px',
+              bottom: '-14px'
             }}
           />
         )}
 
         {isLast && !isAddingHere && (
           <div
-            className="absolute w-[2px] bg-gray-200"
+            className="absolute w-[2px] bg-slate-200"
             style={{
               left: `${spineLeft}px`,
-              top: '-12px',
-              height: '24px'
+              top: '-14px',
+              height: 'calc(50% + 6px)'
+            }}
+          />
+        )}
+
+        {isAddingHere && (
+          <div
+            className="absolute w-[2px] bg-slate-200"
+            style={{
+              left: `${spineLeft}px`,
+              top: '-14px',
+              bottom: '-14px'
             }}
           />
         )}
 
         <div
-          className="absolute h-[2px] bg-gray-200"
+          className="absolute h-[2px] bg-slate-200"
           style={{
             left: `${spineLeft}px`,
-            top: '24px',
+            top: '20px',
             width: '16px'
           }}
         />
@@ -291,7 +295,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
             className="absolute z-50 w-4 h-4 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 transition-all"
             style={{
               left: `${spineLeft - 8}px`,
-              top: '16px'
+              top: '12px'
             }}
             title={isExpanded ? 'Collapse' : 'Expand'}
           >
@@ -315,11 +319,11 @@ const TaskRow: React.FC<TaskRowProps> = ({
             </button>
           ) : (
             <Avatar className="w-8 h-8 flex-shrink-0 ring-4 ring-white z-10">
-              {task.assigneeAvatar && (
-                <AvatarImage src={task.assigneeAvatar} alt={task.assigneeName} />
+              {task.assignee_avatar && (
+                <AvatarImage src={task.assignee_avatar} alt={task.assignee_name} />
               )}
               <AvatarFallback className="text-xs bg-gray-200 font-medium">
-                {task.assigneeName ? getInitials(task.assigneeName) : '?'}
+                {task.assignee_name ? getInitials(task.assignee_name) : '?'}
               </AvatarFallback>
             </Avatar>
           )}
@@ -333,15 +337,15 @@ const TaskRow: React.FC<TaskRowProps> = ({
               )}>
                 {task.summary}
               </p>
-              {task.dueDate && (
-                <div className="text-[10px] text-gray-500 mt-1">
-                  {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              {task.due_date && (
+                <div className="text-[10px] text-gray-500 mt-0.5">
+                  {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </div>
               )}
             </div>
 
             <button
-              onClick={() => onToggleComplete(task.id, task.status)}
+              onClick={() => onToggleComplete(task.id, task.task_status)}
               className="flex-shrink-0 mt-0.5"
             >
               {isCompleted ? (
@@ -399,13 +403,13 @@ const TaskRow: React.FC<TaskRowProps> = ({
           )}
 
           {!isAddingHere && (
-            <div className="relative h-8 w-full my-1 flex items-center">
+            <div className="relative h-6 w-full flex items-center">
               <div
-                className="absolute w-[2px] bg-gray-200"
+                className="absolute w-[2px] bg-slate-200"
                 style={{
                   left: `${indent + INDENT_PX + 27}px`,
                   top: '-8px',
-                  height: '20px'
+                  height: '16px'
                 }}
               />
               <button
@@ -414,7 +418,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
                   e.preventDefault();
                   onAddChildTo(task.id, dealId);
                 }}
-                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-10 shadow-sm"
+                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-20 shadow-sm"
                 style={{
                   left: `${indent + INDENT_PX + 17}px`,
                   top: '50%',
@@ -479,16 +483,21 @@ const DealThreadItem: React.FC<DealThreadProps> = ({
   onSaveNewTask,
   onCancelNewTask
 }) => {
-  const stageConfig = getStageAvatar(group.deal.stage);
-  const taskTree = buildTaskTree(group.tasks);
-  const isDealExpanded = expandedDeals.has(group.deal.id);
-  const isAddingRoot = addingRootToDealId === group.deal.id;
+  const stageConfig = getStageAvatar(group.stage);
+  const tasks = group.tasks || [];
+  const taskTree = buildTaskTree(tasks);
+  const isDealExpanded = expandedDeals.has(group.id);
+  const isAddingRoot = addingRootToDealId === group.id;
+
+  const completedCount = tasks.filter(t => t.task_status === 'Completed').length;
+  const totalCount = tasks.length;
+  const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   return (
-    <div className="relative border-b border-gray-100 py-4">
+    <div className="relative py-3 border-b border-slate-100">
       <div className="relative flex items-center gap-3 px-4">
         <button
-          onClick={() => onToggleDealExpand(group.deal.id)}
+          onClick={() => onToggleDealExpand(group.id)}
           className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
         >
           <ChevronRight className={cn("w-5 h-5 transition-transform", isDealExpanded && "rotate-90")} />
@@ -502,37 +511,37 @@ const DealThreadItem: React.FC<DealThreadProps> = ({
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="font-medium text-black truncate">{group.deal.name}</h3>
-            {group.deal.mw && (
+            <h3 className="font-bold text-black truncate">{group.name}</h3>
+            {group.mw > 0 && (
               <span className="text-sm font-bold text-orange-600">
-                {group.deal.mw} MW
+                {group.mw} MW
               </span>
             )}
           </div>
         </div>
 
         <div className="text-xs text-gray-500 flex-shrink-0">
-          {group.completed_tasks}/{group.total_tasks}
+          {completedCount}/{totalCount}
         </div>
       </div>
 
       <div
-        className="absolute bottom-0 left-12 right-0 h-[2px] bg-gray-100"
+        className="absolute bottom-0 left-12 right-0 h-[2px] bg-slate-100"
       >
         <div
           className="h-full bg-orange-500 transition-all duration-300"
-          style={{ width: `${group.progress}%` }}
+          style={{ width: `${progress}%` }}
         />
       </div>
 
       {isDealExpanded && (
         <div className="relative">
           <div
-            className="absolute w-[2px] bg-gray-200"
+            className="absolute w-[2px] bg-slate-200"
             style={{
               left: '27px',
               top: '0',
-              bottom: isAddingRoot ? '0' : '-12px'
+              bottom: isAddingRoot ? '0' : '-14px'
             }}
           />
 
@@ -540,7 +549,7 @@ const DealThreadItem: React.FC<DealThreadProps> = ({
             <TaskRow
               key={task.id}
               task={task}
-              dealId={group.deal.id}
+              dealId={group.id}
               depth={0}
               isLast={idx === taskTree.length - 1 && !isAddingRoot}
               expanded={expanded}
@@ -579,22 +588,22 @@ const DealThreadItem: React.FC<DealThreadProps> = ({
           )}
 
           {!isAddingRoot && (
-            <div className="relative h-8 w-full my-1 flex items-center">
+            <div className="relative h-6 w-full flex items-center">
               <div
-                className="absolute w-[2px] bg-gray-200"
+                className="absolute w-[2px] bg-slate-200"
                 style={{
                   left: '27px',
                   top: '-8px',
-                  height: '20px'
+                  height: '16px'
                 }}
               />
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
-                  onAddRootTask(group.deal.id);
+                  onAddRootTask(group.id);
                 }}
-                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-10 shadow-sm"
+                className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-20 shadow-sm"
                 style={{
                   left: '17px',
                   top: '50%',
@@ -627,87 +636,31 @@ export const TasksScreen: React.FC = () => {
   const [newTaskAssignee, setNewTaskAssignee] = useState<string>('');
   const [newTaskDueDate, setNewTaskDueDate] = useState<string>('');
 
-  const [hierarchyView, setHierarchyView] = useState<'mine' | 'team'>('mine');
-  const [subordinateIds, setSubordinateIds] = useState<string[]>([]);
-
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+  const [viewMode, setViewMode] = useState<'mine' | 'all' | 'delegated'>('mine');
 
   const [myTasksCount, setMyTasksCount] = useState(0);
   const [teamTasksCount, setTeamTasksCount] = useState(0);
-
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const fetchSubordinates = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('user_hierarchy')
-          .select('subordinate_id')
-          .eq('manager_id', user.id);
-
-        if (error) {
-          console.error('Error fetching subordinates:', error);
-          setSubordinateIds([]);
-        } else {
-          const ids = data?.map(row => row.subordinate_id) || [];
-          setSubordinateIds(ids);
-        }
-      } catch (err) {
-        console.error('Failed to fetch subordinates:', err);
-        setSubordinateIds([]);
-      }
-    };
-
-    fetchSubordinates();
-  }, [user?.id]);
 
   const filteredDealGroups = useMemo(() => {
     if (!search.trim()) return dealGroups;
 
     const searchLower = search.toLowerCase();
     return dealGroups.map(group => {
-      const filteredTasks = group.tasks.filter(task =>
+      const tasks = group.tasks || [];
+      const filteredTasks = tasks.filter(task =>
         task.summary.toLowerCase().includes(searchLower) ||
-        task.assigneeName?.toLowerCase().includes(searchLower)
+        task.assignee_name?.toLowerCase().includes(searchLower)
       );
 
       return {
         ...group,
-        tasks: filteredTasks,
-        total_tasks: filteredTasks.length,
-        completed_tasks: filteredTasks.filter(t => t.status === 'Completed').length,
-        progress: filteredTasks.length > 0
-          ? (filteredTasks.filter(t => t.status === 'Completed').length / filteredTasks.length) * 100
-          : 0
+        tasks: filteredTasks
       };
-    }).filter(group => group.tasks.length > 0 || group.deal.name.toLowerCase().includes(searchLower));
+    }).filter(group =>
+      (group.tasks && group.tasks.length > 0) ||
+      group.name.toLowerCase().includes(searchLower)
+    );
   }, [dealGroups, search]);
-
-  const fetchCounts = async () => {
-    if (!user?.id) return;
-
-    try {
-      const { data: myData } = await supabase.rpc('get_task_threads', {
-        p_user_id: user.id,
-        p_filter: 'mine'
-      });
-      const myCount = myData?.reduce((sum: number, group: DealGroup) => sum + group.total_tasks, 0) || 0;
-      setMyTasksCount(myCount);
-
-      const { data: teamData } = await supabase.rpc('get_task_threads', {
-        p_user_id: user.id,
-        p_filter: 'all'
-      });
-      const teamCount = teamData?.reduce((sum: number, group: DealGroup) => sum + group.total_tasks, 0) || 0;
-      setTeamTasksCount(teamCount);
-    } catch (error) {
-      console.error('Error fetching task counts:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchCounts();
-  }, [user?.id]);
 
   const fetchTaskThreads = async () => {
     if (!user?.id) return;
@@ -715,16 +668,21 @@ export const TasksScreen: React.FC = () => {
     try {
       setLoading(true);
 
-      const filterMode = hierarchyView === 'mine' ? 'mine' : 'all';
-
-      const { data, error } = await supabase.rpc('get_task_threads', {
-        p_user_id: user.id,
-        p_filter: filterMode
+      const { data, error } = await supabase.rpc('get_deal_threads_view', {
+        p_view_mode: viewMode
       });
 
       if (error) throw error;
 
-      setDealGroups(data || []);
+      const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
+      setDealGroups(parsedData || []);
+
+      const allTasks = (parsedData || []).flatMap((g: DealGroup) => g.tasks || []);
+      const myCount = allTasks.filter((t: TaskThread) => t.assigned_to_id === user.id).length;
+      const teamCount = allTasks.length;
+
+      setMyTasksCount(myCount);
+      setTeamTasksCount(teamCount);
     } catch (error: any) {
       console.error('Error fetching task threads:', error);
       toast({
@@ -739,13 +697,13 @@ export const TasksScreen: React.FC = () => {
 
   useEffect(() => {
     fetchTaskThreads();
-  }, [user?.id, hierarchyView]);
+  }, [user?.id, viewMode]);
 
   useEffect(() => {
     if (dealGroups.length > 0) {
-      const dealIds = dealGroups.map(g => g.deal.id);
+      const dealIds = dealGroups.map(g => g.id);
       const tasksWithChildren = dealGroups.flatMap(g =>
-        g.tasks.filter(t => g.tasks.some(child => child.parentTaskId === t.id)).map(t => t.id)
+        (g.tasks || []).filter(t => (g.tasks || []).some(child => child.parent_task_id === t.id)).map(t => t.id)
       );
       setExpandedTasks(new Set(tasksWithChildren));
       setExpandedDeals(new Set(dealIds));
@@ -768,7 +726,6 @@ export const TasksScreen: React.FC = () => {
       });
 
       fetchTaskThreads();
-      fetchCounts();
     } catch (error: any) {
       console.error('Error toggling task:', error);
       toast({
@@ -876,7 +833,7 @@ export const TasksScreen: React.FC = () => {
         insertData.due_date = new Date(newTaskDueDate).toISOString();
       }
 
-      const { error, data } = await supabase.from('activities').insert(insertData).select();
+      const { error } = await supabase.from('activities').insert(insertData);
 
       if (error) throw error;
 
@@ -893,7 +850,6 @@ export const TasksScreen: React.FC = () => {
       setNewTaskAssignee('');
       setNewTaskDueDate('');
       fetchTaskThreads();
-      fetchCounts();
     } catch (error: any) {
       console.error('Error adding task:', error);
       toast({
@@ -947,7 +903,7 @@ export const TasksScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-24 max-w-2xl mx-auto bg-white">
-      <div className="sticky top-0 z-[100] bg-white border-b border-gray-100 px-4">
+      <div className="sticky top-0 z-[100] bg-white border-b border-slate-100 px-4">
         <div className="py-3">
           <h1 className="text-lg font-medium text-black mb-3">Tasks</h1>
 
@@ -973,10 +929,10 @@ export const TasksScreen: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setHierarchyView('mine')}
+              onClick={() => setViewMode('mine')}
               className={cn(
                 "px-3 py-1.5 text-sm rounded-full transition-all",
-                hierarchyView === 'mine'
+                viewMode === 'mine'
                   ? "bg-black text-white font-medium"
                   : "text-gray-600 hover:bg-gray-100 font-normal"
               )}
@@ -984,10 +940,10 @@ export const TasksScreen: React.FC = () => {
               Mine {myTasksCount > 0 && `(${myTasksCount})`}
             </button>
             <button
-              onClick={() => setHierarchyView('team')}
+              onClick={() => setViewMode('all')}
               className={cn(
                 "px-3 py-1.5 text-sm rounded-full transition-all",
-                hierarchyView === 'team'
+                viewMode === 'all'
                   ? "bg-black text-white font-medium"
                   : "text-gray-600 hover:bg-gray-100 font-normal"
               )}
@@ -1008,7 +964,7 @@ export const TasksScreen: React.FC = () => {
         ) : (
           filteredDealGroups.map(group => (
             <DealThreadItem
-              key={group.deal.id}
+              key={group.id}
               group={group}
               expanded={expandedTasks}
               expandedDeals={expandedDeals}
