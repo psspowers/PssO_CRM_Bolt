@@ -124,7 +124,10 @@ const TaskRow: React.FC<TaskRowProps> = ({
 
         <div
           className="red-plus-btn"
-          onClick={() => onAddSubtask(task.id, dealId)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddSubtask(task.id, dealId);
+          }}
           title="Add subtask"
         >
           +
@@ -171,13 +174,10 @@ const TaskRow: React.FC<TaskRowProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex flex-col items-end gap-1 flex-shrink-0">
             {task.dueDate && (
-              <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                <Clock className="w-3 h-3" />
-                <span>
-                  {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </span>
+              <div className="text-[11px] text-slate-400 font-medium">
+                {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </div>
             )}
 
@@ -315,6 +315,8 @@ export const TasksScreen: React.FC = () => {
   const [addingToTaskId, setAddingToTaskId] = useState<string | null>(null);
   const [addingToDealId, setAddingToDealId] = useState<string | null>(null);
   const [newTaskSummary, setNewTaskSummary] = useState('');
+  const [newTaskAssignee, setNewTaskAssignee] = useState<string>('');
+  const [newTaskDueDate, setNewTaskDueDate] = useState<string>('');
 
   const [hierarchyView, setHierarchyView] = useState<'mine' | 'team'>('mine');
   const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
@@ -577,6 +579,8 @@ export const TasksScreen: React.FC = () => {
     setAddingToTaskId(parentId);
     setAddingToDealId(dealId);
     setNewTaskSummary('');
+    setNewTaskAssignee(user?.id || '');
+    setNewTaskDueDate('');
     setExpandedTasks(prev => new Set(prev).add(parentId));
   };
 
@@ -584,17 +588,23 @@ export const TasksScreen: React.FC = () => {
     if (!newTaskSummary.trim() || !addingToDealId || !addingToTaskId) return;
 
     try {
-      const { error } = await supabase.from('activities').insert({
+      const insertData: any = {
         type: 'Task',
         summary: newTaskSummary.trim(),
         task_status: 'Pending',
         related_to_id: addingToDealId,
         related_to_type: 'Opportunity',
         is_task: true,
-        assigned_to_id: user?.id,
+        assigned_to_id: newTaskAssignee || user?.id,
         parent_task_id: addingToTaskId,
         created_by: user?.id
-      });
+      };
+
+      if (newTaskDueDate) {
+        insertData.due_date = new Date(newTaskDueDate).toISOString();
+      }
+
+      const { error } = await supabase.from('activities').insert(insertData);
 
       if (error) throw error;
 
@@ -607,6 +617,8 @@ export const TasksScreen: React.FC = () => {
       setAddingToTaskId(null);
       setAddingToDealId(null);
       setNewTaskSummary('');
+      setNewTaskAssignee('');
+      setNewTaskDueDate('');
       fetchTaskThreads();
     } catch (error: any) {
       console.error('Error adding subtask:', error);
@@ -744,42 +756,74 @@ export const TasksScreen: React.FC = () => {
 
       {addingToTaskId && (
         <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-          <div className="flex items-center gap-2">
-            <input
-              autoFocus
-              type="text"
-              placeholder="Type subtask and hit Enter..."
-              className="flex-1 bg-white border border-orange-200 focus:border-orange-500 outline-none text-sm py-2 px-3 rounded text-slate-900 placeholder-slate-400"
-              value={newTaskSummary}
-              onChange={(e) => setNewTaskSummary(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newTaskSummary.trim()) {
-                  handleSaveSubtask();
-                }
-                if (e.key === 'Escape') {
+          <div className="space-y-3">
+            <div className="flex items-start gap-2">
+              <input
+                autoFocus
+                type="text"
+                placeholder="Task description..."
+                className="flex-1 bg-white border border-orange-200 focus:border-orange-500 outline-none text-sm py-2 px-3 rounded text-slate-900 placeholder-slate-400"
+                value={newTaskSummary}
+                onChange={(e) => setNewTaskSummary(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newTaskSummary.trim()) {
+                    handleSaveSubtask();
+                  }
+                  if (e.key === 'Escape') {
+                    setAddingToTaskId(null);
+                    setAddingToDealId(null);
+                    setNewTaskSummary('');
+                    setNewTaskAssignee('');
+                    setNewTaskDueDate('');
+                  }
+                }}
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={newTaskAssignee}
+                onChange={(e) => setNewTaskAssignee(e.target.value)}
+                className="flex-1 bg-white border border-orange-200 focus:border-orange-500 outline-none text-sm py-2 px-3 rounded text-slate-900"
+              >
+                <option value="">Unassigned</option>
+                {users
+                  .filter(u => ['internal', 'admin', 'super_admin'].includes(u.role))
+                  .map(u => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
+              </select>
+
+              <input
+                type="date"
+                value={newTaskDueDate}
+                onChange={(e) => setNewTaskDueDate(e.target.value)}
+                className="bg-white border border-orange-200 focus:border-orange-500 outline-none text-sm py-2 px-3 rounded text-slate-900"
+              />
+
+              <button
+                onClick={handleSaveSubtask}
+                disabled={!newTaskSummary.trim()}
+                className="px-4 py-2 bg-orange-500 text-white rounded font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                Add Task
+              </button>
+
+              <button
+                onClick={() => {
                   setAddingToTaskId(null);
                   setAddingToDealId(null);
                   setNewTaskSummary('');
-                }
-              }}
-            />
-            <button
-              onClick={handleSaveSubtask}
-              disabled={!newTaskSummary.trim()}
-              className="px-4 py-2 bg-orange-500 text-white rounded font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Add
-            </button>
-            <button
-              onClick={() => {
-                setAddingToTaskId(null);
-                setAddingToDealId(null);
-                setNewTaskSummary('');
-              }}
-              className="px-4 py-2 bg-slate-200 text-slate-700 rounded font-medium hover:bg-slate-300"
-            >
-              Cancel
-            </button>
+                  setNewTaskAssignee('');
+                  setNewTaskDueDate('');
+                }}
+                className="px-4 py-2 bg-slate-200 text-slate-700 rounded font-medium hover:bg-slate-300"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
