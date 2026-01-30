@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { SquareCheck as CheckSquare, Square, Clock, Loader as Loader2, User, ChevronDown, Hand, Zap, Users, Search, X, Info, Plus, Minus } from 'lucide-react';
+import { CheckSquare, Square, Clock, Loader2, User, ChevronDown, Hand, Users, Search, X, Info, Plus, Minus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
 import { supabase } from '@/lib/supabase';
@@ -47,6 +47,262 @@ const getStageConfig = (stage: string) => {
     'Won': { char: 'W', color: 'bg-green-500', label: 'Won' }
   };
   return configs[stage] || { char: '', color: 'bg-slate-400', label: stage };
+};
+
+const INDENT_PX = 32;
+
+interface TaskRowProps {
+  task: TaskThread & { children?: TaskThread[] };
+  dealId: string;
+  depth: number;
+  isLast: boolean;
+  expanded: Set<string>;
+  onToggleExpand: (id: string) => void;
+  onToggleComplete: (id: string, status?: string) => void;
+  onPickup: (id: string, summary: string) => void;
+  onAddSubtask: (parentId: string, dealId: string) => void;
+  currentUserId?: string;
+}
+
+const TaskRow: React.FC<TaskRowProps> = ({
+  task,
+  dealId,
+  depth,
+  isLast,
+  expanded,
+  onToggleExpand,
+  onToggleComplete,
+  onPickup,
+  onAddSubtask,
+  currentUserId
+}) => {
+  const hasChildren = task.children && task.children.length > 0;
+  const isExpanded = expanded.has(task.id);
+  const isCompleted = task.status === 'Completed';
+  const isMine = task.assignedToId === currentUserId;
+  const isUnassigned = !task.assignedToId;
+
+  const getInitials = (name: string) => {
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  return (
+    <>
+      <div
+        className="task-row relative py-3 pr-4 overflow-visible border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/30 transition-colors group"
+        style={{ '--spine-x': `${depth * INDENT_PX}px` } as React.CSSProperties}
+      >
+        {depth > 0 && (
+          <>
+            <div
+              className="tree-spine"
+              style={{
+                bottom: isLast ? '50%' : '-14px'
+              }}
+            />
+            <div className="tree-elbow" />
+          </>
+        )}
+
+        {hasChildren && (
+          <div
+            className="junction-dot"
+            onClick={() => onToggleExpand(task.id)}
+            title={isExpanded ? 'Collapse' : 'Expand'}
+          >
+            {isExpanded ? (
+              <Minus className="w-2 h-2 text-white" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
+            ) : (
+              <Plus className="w-2 h-2 text-white" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
+            )}
+          </div>
+        )}
+
+        <div
+          className="red-plus-btn"
+          onClick={() => onAddSubtask(task.id, dealId)}
+          title="Add subtask"
+        >
+          +
+        </div>
+
+        <div
+          className="flex items-start gap-3 relative z-10"
+          style={{ paddingLeft: `${depth * INDENT_PX + 24}px` }}
+        >
+          {isUnassigned ? (
+            <button
+              onClick={() => onPickup(task.id, task.summary)}
+              className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-amber-100 hover:bg-amber-200 rounded-full transition-colors border border-amber-300 ring-4 ring-white dark:ring-slate-900"
+            >
+              <Hand className="w-4 h-4 text-amber-700" />
+            </button>
+          ) : (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex-shrink-0 bg-white dark:bg-slate-900">
+                    <Avatar className="w-8 h-8 ring-4 ring-white dark:ring-slate-900">
+                      <AvatarImage src={task.assigneeAvatar} />
+                      <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
+                        {task.assigneeName ? getInitials(task.assigneeName) : '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">{task.assigneeName || 'Unassigned'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          <div className="flex-1 min-w-0 pr-2">
+            <p
+              className={`text-[14px] leading-relaxed ${
+                isCompleted ? 'line-through text-slate-400' : 'text-slate-900 dark:text-slate-100'
+              } ${isMine && !isCompleted ? 'font-medium bg-yellow-50 dark:bg-yellow-900/20 px-2 py-0.5 rounded' : ''}`}
+            >
+              {task.summary}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {task.dueDate && (
+              <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                <Clock className="w-3 h-3" />
+                <span>
+                  {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+            )}
+
+            <button
+              onClick={() => onToggleComplete(task.id, task.status)}
+              className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              {isCompleted ? (
+                <CheckSquare className="w-5 h-5 text-green-500" />
+              ) : (
+                <Square className="w-5 h-5 text-slate-300 hover:text-slate-500 transition-colors" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {hasChildren && isExpanded && task.children && (
+        <>
+          {task.children.map((child, idx) => (
+            <TaskRow
+              key={child.id}
+              task={child}
+              dealId={dealId}
+              depth={depth + 1}
+              isLast={idx === task.children!.length - 1}
+              expanded={expanded}
+              onToggleExpand={onToggleExpand}
+              onToggleComplete={onToggleComplete}
+              onPickup={onPickup}
+              onAddSubtask={onAddSubtask}
+              currentUserId={currentUserId}
+            />
+          ))}
+        </>
+      )}
+    </>
+  );
+};
+
+interface DealThreadItemProps {
+  group: DealGroup;
+  expanded: Set<string>;
+  onToggleExpand: (id: string) => void;
+  onToggleComplete: (id: string, status?: string) => void;
+  onPickup: (id: string, summary: string) => void;
+  onAddSubtask: (parentId: string, dealId: string) => void;
+  currentUserId?: string;
+}
+
+const DealThreadItem: React.FC<DealThreadItemProps> = ({
+  group,
+  expanded,
+  onToggleExpand,
+  onToggleComplete,
+  onPickup,
+  onAddSubtask,
+  currentUserId
+}) => {
+  const stageConfig = getStageConfig(group.deal.stage);
+  const taskTree = buildTaskTree(group.tasks);
+
+  return (
+    <div className="mb-8">
+      <div className="relative flex items-center gap-3 px-2 py-3">
+        <div
+          className={`w-9 h-9 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}
+        >
+          {stageConfig.char}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-[16px] text-slate-900 truncate">{group.deal.name}</h3>
+        </div>
+
+        <div className="text-[11px] font-medium text-slate-400 flex-shrink-0">
+          {group.deal.value ? `${group.deal.value} MW` : ''}
+        </div>
+
+        <div className="text-[11px] font-medium text-slate-400 flex-shrink-0 min-w-[40px] text-right">
+          {group.completed_tasks}/{group.total_tasks}
+        </div>
+      </div>
+
+      {taskTree.length > 0 && (
+        <div className="pl-2">
+          {taskTree.map((task, idx) => (
+            <TaskRow
+              key={task.id}
+              task={task}
+              dealId={group.deal.id}
+              depth={0}
+              isLast={idx === taskTree.length - 1}
+              expanded={expanded}
+              onToggleExpand={onToggleExpand}
+              onToggleComplete={onToggleComplete}
+              onPickup={onPickup}
+              onAddSubtask={onAddSubtask}
+              currentUserId={currentUserId}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const buildTaskTree = (tasks: TaskThread[]): (TaskThread & { children: TaskThread[] })[] => {
+  const taskMap = new Map<string, TaskThread & { children: TaskThread[] }>();
+  const roots: (TaskThread & { children: TaskThread[] })[] = [];
+
+  tasks.forEach(task => {
+    taskMap.set(task.id, { ...task, children: [] });
+  });
+
+  tasks.forEach(task => {
+    const node = taskMap.get(task.id)!;
+    if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
+      taskMap.get(task.parentTaskId)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+
+  return roots;
 };
 
 export const TasksScreen: React.FC = () => {
@@ -201,10 +457,8 @@ export const TasksScreen: React.FC = () => {
     fetchTaskThreads();
   }, [hierarchyView, selectedMemberId, user?.id]);
 
-  // Auto-expand parent tasks when data loads
   useEffect(() => {
     if (dealGroups.length > 0) {
-      // Expand all tasks that have children
       const tasksWithChildren: string[] = [];
       dealGroups.forEach(group => {
         const taskMap = new Map<string, TaskThread>();
@@ -290,8 +544,15 @@ export const TasksScreen: React.FC = () => {
     }
   };
 
-  const handleSaveSubtask = async (parentTaskId: string) => {
-    if (!newTaskSummary.trim() || !addingToDealId) return;
+  const handleAddSubtask = (parentId: string, dealId: string) => {
+    setAddingToTaskId(parentId);
+    setAddingToDealId(dealId);
+    setNewTaskSummary('');
+    setExpandedTasks(prev => new Set(prev).add(parentId));
+  };
+
+  const handleSaveSubtask = async () => {
+    if (!newTaskSummary.trim() || !addingToDealId || !addingToTaskId) return;
 
     try {
       const { error } = await supabase.from('activities').insert({
@@ -301,7 +562,7 @@ export const TasksScreen: React.FC = () => {
         related_to_id: addingToDealId,
         related_to_type: 'opportunity',
         assigned_to_id: user?.id,
-        parent_task_id: parentTaskId,
+        parent_task_id: addingToTaskId,
         created_by: user?.id
       });
 
@@ -317,7 +578,6 @@ export const TasksScreen: React.FC = () => {
       setAddingToDealId(null);
       setNewTaskSummary('');
       fetchTaskThreads();
-      setExpandedTasks(prev => new Set(prev).add(parentTaskId));
     } catch (error: any) {
       console.error('Error adding subtask:', error);
       toast({
@@ -326,60 +586,6 @@ export const TasksScreen: React.FC = () => {
         variant: 'destructive'
       });
     }
-  };
-
-  const buildTaskTree = (tasks: TaskThread[]): TaskThread[] => {
-    const taskMap = new Map<string, TaskThread & { children: TaskThread[] }>();
-    const roots: (TaskThread & { children: TaskThread[] })[] = [];
-
-    tasks.forEach(task => {
-      taskMap.set(task.id, { ...task, children: [] });
-    });
-
-    tasks.forEach(task => {
-      const node = taskMap.get(task.id)!;
-      if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
-        taskMap.get(task.parentTaskId)!.children.push(node);
-      } else {
-        roots.push(node);
-      }
-    });
-
-    return roots;
-  };
-
-  interface FlatTask extends TaskThread {
-    depth: number;
-    isLast: boolean;
-    hasChildren: boolean;
-    parentDepth: number;
-  }
-
-  const flattenTaskTree = (tasks: TaskThread[]): FlatTask[] => {
-    const result: FlatTask[] = [];
-
-    const traverse = (nodes: (TaskThread & { children?: TaskThread[] })[], depth: number, parentDepth: number = -1) => {
-      nodes.forEach((node, idx) => {
-        const isLast = idx === nodes.length - 1;
-        const hasChildren = node.children && node.children.length > 0;
-        const isExpanded = expandedTasks.has(node.id);
-
-        result.push({
-          ...node,
-          depth,
-          isLast,
-          hasChildren: !!hasChildren,
-          parentDepth
-        });
-
-        if (hasChildren && isExpanded) {
-          traverse(node.children!, depth + 1, depth);
-        }
-      });
-    };
-
-    traverse(tasks, 0);
-    return result;
   };
 
   const toggleExpanded = (taskId: string) => {
@@ -394,199 +600,6 @@ export const TasksScreen: React.FC = () => {
     });
   };
 
-  const getInitials = (name: string) => {
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
-
-  const INDENT_PX = 32;
-
-  const renderTask = (flatTask: FlatTask, dealId: string): React.ReactNode => {
-    const { depth, isLast, hasChildren } = flatTask;
-    const isCompleted = flatTask.status === 'Completed';
-    const isMine = flatTask.assignedToId === user?.id;
-    const isExpanded = expandedTasks.has(flatTask.id);
-    const isUnassigned = !flatTask.assignedToId;
-
-    return (
-      <>
-        <div
-          key={flatTask.id}
-          className="relative flex items-start border-b border-slate-100 dark:border-slate-800 py-3 group transition-colors hover:bg-slate-50/30"
-          style={{ paddingLeft: `${(depth + 1) * INDENT_PX}px` }}
-        >
-          {depth > 0 && (
-            <>
-              <div
-                className="absolute bg-slate-300 dark:bg-slate-700"
-                style={{
-                  left: `${depth * INDENT_PX + 15}px`,
-                  top: 0,
-                  width: '2px',
-                  height: isLast ? '50%' : '100%',
-                  zIndex: 0
-                }}
-              />
-              <div
-                className="absolute bg-slate-300 dark:bg-slate-700"
-                style={{
-                  left: `${depth * INDENT_PX + 15}px`,
-                  top: '50%',
-                  width: '15px',
-                  height: '2px',
-                  zIndex: 0
-                }}
-              />
-            </>
-          )}
-
-          {hasChildren && (
-            <button
-              onClick={() => toggleExpanded(flatTask.id)}
-              className="absolute flex-shrink-0 w-4 h-4 flex items-center justify-center text-slate-700 hover:bg-slate-200 rounded transition-colors z-10"
-              style={{
-                left: `${depth * INDENT_PX + 11}px`,
-                top: '50%',
-                transform: 'translateY(-50%)'
-              }}
-            >
-              {isExpanded ? <Minus className="w-2.5 h-2.5" /> : <Plus className="w-2.5 h-2.5" />}
-            </button>
-          )}
-
-          <div className="flex items-start gap-3 flex-1 relative z-10">
-            {isUnassigned ? (
-              <button
-                onClick={() => pickupTask(flatTask.id, flatTask.summary)}
-                className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-amber-100 hover:bg-amber-200 rounded-full transition-colors border border-amber-300 ring-4 ring-white dark:ring-slate-900"
-              >
-                <Hand className="w-4 h-4 text-amber-700" />
-              </button>
-            ) : (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex-shrink-0 bg-white dark:bg-slate-900">
-                      <Avatar className="w-8 h-8 ring-4 ring-white dark:ring-slate-900">
-                        <AvatarImage src={flatTask.assigneeAvatar} />
-                        <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
-                          {flatTask.assigneeName ? getInitials(flatTask.assigneeName) : '?'}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs">{flatTask.assigneeName || 'Unassigned'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-
-            <div className="flex-1 min-w-0 pr-2 flex items-center gap-2">
-              <p
-                className={`text-[14px] leading-relaxed ${
-                  isCompleted ? 'line-through text-slate-400' : 'text-slate-900 dark:text-slate-100'
-                } ${isMine && !isCompleted ? 'font-medium' : ''}`}
-                style={{
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  wordBreak: 'break-word'
-                }}
-              >
-                {flatTask.summary}
-              </p>
-              <button
-                onClick={() => {
-                  setAddingToTaskId(flatTask.id);
-                  setAddingToDealId(dealId);
-                  setNewTaskSummary('');
-                  setExpandedTasks(prev => new Set(prev).add(flatTask.id));
-                }}
-                className="flex-shrink-0 w-4 h-4 flex items-center justify-center text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3 flex-shrink-0">
-              {flatTask.dueDate && (
-                <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                  <Clock className="w-3 h-3" />
-                  <span>
-                    {new Date(flatTask.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </span>
-                </div>
-              )}
-
-              <button
-                onClick={() => toggleTask(flatTask.id, flatTask.status)}
-                className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                {isCompleted ? (
-                  <CheckSquare className="w-5 h-5 text-green-500" />
-                ) : (
-                  <Square className="w-5 h-5 text-slate-300 hover:text-slate-500 transition-colors" />
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {addingToTaskId === flatTask.id && (
-          <div
-            className="relative flex items-center py-3 border-b border-slate-100 dark:border-slate-800 bg-orange-50/30 dark:bg-orange-950/10"
-            style={{ paddingLeft: `${(depth + 2) * INDENT_PX}px` }}
-          >
-            <div
-              className="absolute bg-slate-300 dark:bg-slate-700"
-              style={{
-                left: `${(depth + 1) * INDENT_PX + 15}px`,
-                top: 0,
-                bottom: 0,
-                width: '2px',
-                zIndex: 0
-              }}
-            />
-            <div
-              className="absolute bg-orange-400"
-              style={{
-                left: `${(depth + 1) * INDENT_PX + 15}px`,
-                top: '50%',
-                width: '15px',
-                height: '2px',
-                zIndex: 0
-              }}
-            />
-
-            <input
-              autoFocus
-              type="text"
-              placeholder="Type subtask and hit Enter..."
-              className="w-full bg-transparent border-b-2 border-orange-200 focus:border-orange-500 outline-none text-sm py-1 px-2 text-slate-900 dark:text-slate-100 placeholder-slate-400"
-              value={newTaskSummary}
-              onChange={(e) => setNewTaskSummary(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newTaskSummary.trim()) {
-                  handleSaveSubtask(flatTask.id);
-                }
-                if (e.key === 'Escape') {
-                  setAddingToTaskId(null);
-                  setAddingToDealId(null);
-                  setNewTaskSummary('');
-                }
-              }}
-            />
-          </div>
-        )}
-      </>
-    );
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center items-center p-12">
@@ -596,7 +609,7 @@ export const TasksScreen: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pb-24 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen pb-24 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-hidden">
       <div className="space-y-3 mb-6 pt-6">
         <div>
           <div className="flex items-center justify-between gap-2 mb-2">
@@ -699,6 +712,48 @@ export const TasksScreen: React.FC = () => {
         </div>
       </div>
 
+      {addingToTaskId && (
+        <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <input
+              autoFocus
+              type="text"
+              placeholder="Type subtask and hit Enter..."
+              className="flex-1 bg-white border border-orange-200 focus:border-orange-500 outline-none text-sm py-2 px-3 rounded text-slate-900 placeholder-slate-400"
+              value={newTaskSummary}
+              onChange={(e) => setNewTaskSummary(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newTaskSummary.trim()) {
+                  handleSaveSubtask();
+                }
+                if (e.key === 'Escape') {
+                  setAddingToTaskId(null);
+                  setAddingToDealId(null);
+                  setNewTaskSummary('');
+                }
+              }}
+            />
+            <button
+              onClick={handleSaveSubtask}
+              disabled={!newTaskSummary.trim()}
+              className="px-4 py-2 bg-orange-500 text-white rounded font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add
+            </button>
+            <button
+              onClick={() => {
+                setAddingToTaskId(null);
+                setAddingToDealId(null);
+                setNewTaskSummary('');
+              }}
+              className="px-4 py-2 bg-slate-200 text-slate-700 rounded font-medium hover:bg-slate-300"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {filteredDealGroups.length === 0 ? (
         <div className="text-center py-12 text-slate-500">
           <CheckSquare className="w-12 h-12 mx-auto mb-3 opacity-20" />
@@ -707,43 +762,18 @@ export const TasksScreen: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-0">
-          {filteredDealGroups.map(group => {
-            const stageConfig = getStageConfig(group.deal.stage);
-            const taskTree = buildTaskTree(group.tasks);
-            const flatTasks = flattenTaskTree(taskTree);
-
-            return (
-              <div key={group.deal.id} className="mb-8">
-                <div className="flex items-center gap-3 px-2 py-3">
-                  <div
-                    className={`w-9 h-9 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}
-                  >
-                    {stageConfig.char}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-[16px] text-slate-900 truncate">{group.deal.name}</h3>
-                  </div>
-
-                  <div className="text-[11px] font-medium text-slate-400 flex-shrink-0">
-                    {group.deal.value ? `${group.deal.value} MW` : ''}
-                  </div>
-
-                  <div className="text-[11px] font-medium text-slate-400 flex-shrink-0 min-w-[40px] text-right">
-                    {group.completed_tasks}/{group.total_tasks}
-                  </div>
-                </div>
-
-                {flatTasks.length > 0 && (
-                  <div className="pl-2">
-                    {flatTasks.map(flatTask =>
-                      renderTask(flatTask, group.deal.id)
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {filteredDealGroups.map(group => (
+            <DealThreadItem
+              key={group.deal.id}
+              group={group}
+              expanded={expandedTasks}
+              onToggleExpand={toggleExpanded}
+              onToggleComplete={toggleTask}
+              onPickup={pickupTask}
+              onAddSubtask={handleAddSubtask}
+              currentUserId={user?.id}
+            />
+          ))}
         </div>
       )}
     </div>
