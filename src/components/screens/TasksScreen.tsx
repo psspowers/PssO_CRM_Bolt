@@ -270,7 +270,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
           />
         )}
 
-        <div className="relative flex items-start py-3 pr-4 overflow-visible group hover:bg-slate-50/30 transition-colors">
+        <div className="relative flex items-start py-1.5 pr-4 overflow-visible group hover:bg-slate-50/30 transition-colors">
           <div
             className="absolute h-[2px] bg-slate-900 z-0"
             style={{
@@ -287,18 +287,14 @@ const TaskRow: React.FC<TaskRowProps> = ({
                 e.preventDefault();
                 onToggleExpand(task.id);
               }}
-              className="absolute bg-slate-900 rounded-full w-2.5 h-2.5 flex items-center justify-center cursor-pointer hover:scale-125 transition-transform z-10"
+              className="absolute z-50 w-4 h-4 bg-white border border-slate-300 rounded-full flex items-center justify-center hover:bg-slate-50 transition-all"
               style={{
-                left: `${spineLeft - 5}px`,
-                top: 'calc(50% - 5px)'
+                left: `${spineLeft - 8}px`,
+                top: 'calc(50% - 8px)'
               }}
               title={isExpanded ? 'Collapse' : 'Expand'}
             >
-              {isExpanded ? (
-                <Minus className="w-2 h-2 text-white" />
-              ) : (
-                <Plus className="w-2 h-2 text-white" />
-              )}
+              <ChevronRight className={cn("w-2.5 h-2.5 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
             </button>
           )}
 
@@ -338,31 +334,33 @@ const TaskRow: React.FC<TaskRowProps> = ({
               </TooltipProvider>
             )}
 
-            <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0 flex items-center justify-between gap-3">
               <p className={cn(
-                "text-sm leading-relaxed",
-                isMine ? "font-bold text-slate-900" : "font-medium text-slate-700",
+                "text-sm leading-snug",
+                isMine ? "font-bold text-slate-900" : "font-normal text-slate-700",
                 isCompleted && "line-through opacity-60"
               )}>
                 {task.summary}
               </p>
 
-              {task.dueDate && (
-                <div className="text-xs text-slate-400 font-medium">
-                  {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </div>
-              )}
-
-              <button
-                onClick={() => onToggleComplete(task.id, task.status)}
-                className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                {isCompleted ? (
-                  <CheckSquare className="w-5 h-5 text-green-500" />
-                ) : (
-                  <Square className="w-5 h-5 text-slate-300 hover:text-slate-500 transition-colors" />
+              <div className="flex flex-col items-end justify-center gap-1">
+                {task.dueDate && (
+                  <div className="text-[10px] text-slate-400 leading-none">
+                    {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
                 )}
-              </button>
+
+                <button
+                  onClick={() => onToggleComplete(task.id, task.status)}
+                  className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  {isCompleted ? (
+                    <CheckSquare className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <Square className="w-4 h-4 text-slate-300 hover:text-slate-500 transition-colors" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -413,13 +411,13 @@ const TaskRow: React.FC<TaskRowProps> = ({
           )}
 
           {!isAddingHere && (
-            <div className="relative h-10 flex items-center" style={{ paddingLeft: `${childSpineLeft}px` }}>
+            <div className="relative h-6 flex items-center" style={{ paddingLeft: `${childSpineLeft}px` }}>
               <div
                 className="absolute w-[2px] bg-slate-900"
                 style={{
                   left: `${childSpineLeft}px`,
-                  top: '-10px',
-                  height: '20px'
+                  top: '-8px',
+                  height: '16px'
                 }}
               />
               <button
@@ -431,7 +429,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
                 className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm"
                 style={{
                   left: `${childSpineLeft - 10}px`,
-                  top: '10px'
+                  top: '8px'
                 }}
                 title="Add subtask"
               >
@@ -582,13 +580,13 @@ const DealThread: React.FC<DealThreadProps> = ({
           )}
 
           {!isAddingRoot && (
-            <div className="relative h-10 flex items-center" style={{ paddingLeft: `${ROOT_SPINE_LEFT}px` }}>
+            <div className="relative h-6 flex items-center" style={{ paddingLeft: `${ROOT_SPINE_LEFT}px` }}>
               <div
                 className="absolute w-[2px] bg-slate-900"
                 style={{
                   left: `${ROOT_SPINE_LEFT}px`,
-                  top: '-10px',
-                  height: '20px'
+                  top: '-8px',
+                  height: '16px'
                 }}
               />
               <button
@@ -600,7 +598,7 @@ const DealThread: React.FC<DealThreadProps> = ({
                 className="absolute w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm"
                 style={{
                   left: `${ROOT_SPINE_LEFT - 10}px`,
-                  top: '10px'
+                  top: '8px'
                 }}
                 title="Add root task"
               >
