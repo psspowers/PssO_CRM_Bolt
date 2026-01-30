@@ -772,7 +772,12 @@ export const TasksScreen: React.FC = () => {
 
         return { ...group, tasks };
       })
-      .filter(g => g.tasks.length > 0 || g.name.toLowerCase().includes(search.toLowerCase()));
+      .filter(g => {
+        // Only show groups with tasks, unless searching and group name matches
+        if (g.tasks.length > 0) return true;
+        if (search.trim() && g.name.toLowerCase().includes(search.toLowerCase())) return true;
+        return false;
+      });
   }, [dealGroups, hideCompleted, search, hierarchyView, selectedMemberId, subordinateIds, isAdmin, user?.id]);
 
   const currentUser = users.find(u => u.id === user?.id);
