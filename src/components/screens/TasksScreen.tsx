@@ -37,14 +37,14 @@ interface DealGroup {
 
 const getStageAvatar = (stage: string) => {
   const configs: Record<string, { char: string; color: string }> = {
-    'Prospect': { char: 'P', color: 'bg-gray-400' },
+    'Prospect': { char: '', color: 'border border-gray-300 bg-transparent' },
     'Qualified': { char: 'Q', color: 'bg-blue-500' },
     'Proposal': { char: 'P', color: 'bg-amber-500' },
     'Negotiation': { char: 'N', color: 'bg-orange-500' },
     'Term Sheet': { char: 'T', color: 'bg-teal-500' },
     'Won': { char: 'W', color: 'bg-green-500' }
   };
-  const s = configs[stage] || { char: '?', color: 'bg-gray-400' };
+  const s = configs[stage] || { char: 'P', color: 'bg-gray-400' };
   return (
     <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold', s.color)}>
       {s.char}
@@ -120,7 +120,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.15 }}
-      className="relative flex items-start py-1.5 pr-4 bg-gray-50/60 rounded-md my-1 border-l-2 border-orange-300"
+      className="relative flex items-start py-1 pr-4 bg-transparent my-1"
       style={{ paddingLeft: `${indent + 48}px` }}
     >
       <div className="absolute w-[2px] bg-gray-300" style={{ left: `${indent + 27}px`, top: '-12px', bottom: '0' }} />
@@ -444,12 +444,11 @@ const DealThreadItem: React.FC<DealThreadProps> = ({
   onSaveNewTask,
   onCancelNewTask
 }) => {
-  const stageConfig = getStageAvatar(group.stage);
+  const stageAvatar = getStageAvatar(group.stage);
   const tasks = group.tasks || [];
   const taskTree = buildTaskTree(tasks);
   const isDealExpanded = expandedDeals.has(group.id);
   const isAddingRoot = addingRootToDealId === group.id;
-
   const completedCount = tasks.filter(t => t.task_status === 'Completed').length;
   const totalCount = tasks.length;
 
@@ -457,7 +456,7 @@ const DealThreadItem: React.FC<DealThreadProps> = ({
     <div className="relative border-b border-gray-100">
       <div className="flex items-center gap-3 py-3 px-4 cursor-pointer hover:bg-gray-50/50 transition-colors" onClick={() => onToggleDealExpand(group.id)}>
         <ChevronRight className={cn('w-5 h-5 text-gray-500 transition-transform', isDealExpanded && 'rotate-90')} />
-        {stageConfig}
+        {stageAvatar}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h3 className="font-medium text-black truncate">{group.name}</h3>
@@ -552,9 +551,7 @@ export const TasksScreen: React.FC = () => {
   const [newTaskSummary, setNewTaskSummary] = useState('');
   const [newTaskAssignee, setNewTaskAssignee] = useState<string>('');
   const [newTaskDueDate, setNewTaskDueDate] = useState<string>('');
-
-  const [viewMode, setViewMode] = useState<'mine' | 'all'>('mine');
-
+  const [viewMode, setViewMode] = useState<'mine' | 'team'>('mine');
   const [myTasksCount, setMyTasksCount] = useState(0);
   const [teamTasksCount, setTeamTasksCount] = useState(0);
 
@@ -863,10 +860,10 @@ export const TasksScreen: React.FC = () => {
             Mine {myTasksCount > 0 && `(${myTasksCount})`}
           </button>
           <button
-            onClick={() => setViewMode('all')}
+            onClick={() => setViewMode('team')}
             className={cn(
               'px-4 py-1.5 text-sm rounded-md transition-all',
-              viewMode === 'all' ? 'bg-white text-black shadow-sm font-medium' : 'text-gray-600 hover:text-black'
+              viewMode === 'team' ? 'bg-white text-black shadow-sm font-medium' : 'text-gray-600 hover:text-black'
             )}
           >
             Team {teamTasksCount > 0 && `(${teamTasksCount})`}
