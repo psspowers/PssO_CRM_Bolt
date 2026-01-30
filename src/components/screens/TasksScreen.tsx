@@ -110,6 +110,10 @@ const InlineTaskEditor = ({
     }
   };
 
+  const selectedUser = users.find(u => u.id === assigneeId);
+  const initials = selectedUser?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U';
+  const avatarColor = selectedUser?.avatar_url || 'bg-orange-500';
+
   return (
     <motion.div
       initial={{ opacity: 0, height: 0 }}
@@ -128,16 +132,16 @@ const InlineTaskEditor = ({
               if (e.key === 'Escape') onCancel();
             }}
             placeholder={isReply ? "Type reply..." : "Type task..."}
-            className="w-full bg-transparent border-b border-orange-100 focus:border-orange-500 outline-none text-sm font-medium py-2 px-2 placeholder:text-slate-300"
+            className="w-full bg-transparent outline-none text-sm font-medium py-2 px-2 placeholder:text-slate-300"
           />
 
           {!isReply && (
-            <div className="flex items-center gap-2 px-2 py-2">
+            <div className="flex items-center gap-2 px-2 pb-2">
               <div className="relative">
                 <select
                   value={assigneeId}
                   onChange={e => setAssigneeId(e.target.value)}
-                  className="appearance-none bg-transparent outline-none cursor-pointer opacity-0 absolute inset-0 w-6 h-6"
+                  className="appearance-none bg-transparent outline-none cursor-pointer opacity-0 absolute inset-0 w-6 h-6 z-10"
                   title="Assign to user"
                 >
                   <option value={currentUser?.id}>Me</option>
@@ -145,14 +149,16 @@ const InlineTaskEditor = ({
                     <option key={u.id} value={u.id}>{u.name}</option>
                   ))}
                 </select>
-                <User className="w-4 h-4 text-slate-400 pointer-events-none" />
+                <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-[10px] font-bold pointer-events-none">
+                  {initials}
+                </div>
               </div>
 
               <input
                 type="date"
                 value={dueDate}
                 onChange={e => setDueDate(e.target.value)}
-                className="text-[11px] outline-none text-slate-600 cursor-pointer ml-auto"
+                className="text-[11px] outline-none text-slate-400 cursor-pointer ml-auto"
                 placeholder="mm/dd/yyyy"
               />
 
