@@ -56,6 +56,9 @@ export const TasksScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [addingToTaskId, setAddingToTaskId] = useState<string | null>(null);
+  const [addingToDealId, setAddingToDealId] = useState<string | null>(null);
+  const [newTaskSummary, setNewTaskSummary] = useState('');
 
   const [hierarchyView, setHierarchyView] = useState<'mine' | 'team'>('mine');
   const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
@@ -287,16 +290,15 @@ export const TasksScreen: React.FC = () => {
     }
   };
 
-  const addSubtask = async (parentTaskId: string, dealId: string) => {
-    const summary = prompt('Enter subtask name:');
-    if (!summary?.trim()) return;
+  const handleSaveSubtask = async (parentTaskId: string) => {
+    if (!newTaskSummary.trim() || !addingToDealId) return;
 
     try {
       const { error } = await supabase.from('activities').insert({
         type: 'Task',
-        summary,
+        summary: newTaskSummary.trim(),
         task_status: 'Pending',
-        related_to_id: dealId,
+        related_to_id: addingToDealId,
         related_to_type: 'opportunity',
         assigned_to_id: user?.id,
         parent_task_id: parentTaskId,
@@ -311,6 +313,9 @@ export const TasksScreen: React.FC = () => {
         className: 'bg-green-50 border-green-200'
       });
 
+      setAddingToTaskId(null);
+      setAddingToDealId(null);
+      setNewTaskSummary('');
       fetchTaskThreads();
       setExpandedTasks(prev => new Set(prev).add(parentTaskId));
     } catch (error: any) {
@@ -407,124 +412,178 @@ export const TasksScreen: React.FC = () => {
     const isUnassigned = !flatTask.assignedToId;
 
     return (
-      <div
-        key={flatTask.id}
-        className="relative flex items-start border-b border-slate-100 dark:border-slate-800 py-3 group transition-colors hover:bg-slate-50/30"
-        style={{ paddingLeft: `${(depth + 1) * INDENT_PX}px` }}
-      >
-        {depth > 0 && (
-          <>
+      <>
+        <div
+          key={flatTask.id}
+          className="relative flex items-start border-b border-slate-100 dark:border-slate-800 py-3 group transition-colors hover:bg-slate-50/30"
+          style={{ paddingLeft: `${(depth + 1) * INDENT_PX}px` }}
+        >
+          {depth > 0 && (
+            <>
+              <div
+                className="absolute bg-slate-300 dark:bg-slate-700"
+                style={{
+                  left: `${depth * INDENT_PX + 15}px`,
+                  top: 0,
+                  width: '2px',
+                  height: isLast ? '50%' : '100%',
+                  zIndex: 0
+                }}
+              />
+              <div
+                className="absolute bg-slate-300 dark:bg-slate-700"
+                style={{
+                  left: `${depth * INDENT_PX + 15}px`,
+                  top: '50%',
+                  width: '15px',
+                  height: '2px',
+                  zIndex: 0
+                }}
+              />
+            </>
+          )}
+
+          {hasChildren && (
+            <button
+              onClick={() => toggleExpanded(flatTask.id)}
+              className="absolute flex-shrink-0 w-4 h-4 flex items-center justify-center text-slate-700 hover:bg-slate-200 rounded transition-colors z-10"
+              style={{
+                left: `${depth * INDENT_PX + 11}px`,
+                top: '50%',
+                transform: 'translateY(-50%)'
+              }}
+            >
+              {isExpanded ? <Minus className="w-2.5 h-2.5" /> : <Plus className="w-2.5 h-2.5" />}
+            </button>
+          )}
+
+          <div className="flex items-start gap-3 flex-1 relative z-10">
+            {isUnassigned ? (
+              <button
+                onClick={() => pickupTask(flatTask.id, flatTask.summary)}
+                className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-amber-100 hover:bg-amber-200 rounded-full transition-colors border border-amber-300 ring-4 ring-white dark:ring-slate-900"
+              >
+                <Hand className="w-4 h-4 text-amber-700" />
+              </button>
+            ) : (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex-shrink-0 bg-white dark:bg-slate-900">
+                      <Avatar className="w-8 h-8 ring-4 ring-white dark:ring-slate-900">
+                        <AvatarImage src={flatTask.assigneeAvatar} />
+                        <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
+                          {flatTask.assigneeName ? getInitials(flatTask.assigneeName) : '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">{flatTask.assigneeName || 'Unassigned'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+
+            <div className="flex-1 min-w-0 pr-2 flex items-center gap-2">
+              <p
+                className={`text-[14px] leading-relaxed ${
+                  isCompleted ? 'line-through text-slate-400' : 'text-slate-900 dark:text-slate-100'
+                } ${isMine && !isCompleted ? 'font-medium' : ''}`}
+                style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  wordBreak: 'break-word'
+                }}
+              >
+                {flatTask.summary}
+              </p>
+              <button
+                onClick={() => {
+                  setAddingToTaskId(flatTask.id);
+                  setAddingToDealId(dealId);
+                  setNewTaskSummary('');
+                  setExpandedTasks(prev => new Set(prev).add(flatTask.id));
+                }}
+                className="flex-shrink-0 w-4 h-4 flex items-center justify-center text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 flex-shrink-0">
+              {flatTask.dueDate && (
+                <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                  <Clock className="w-3 h-3" />
+                  <span>
+                    {new Date(flatTask.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+              )}
+
+              <button
+                onClick={() => toggleTask(flatTask.id, flatTask.status)}
+                className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                {isCompleted ? (
+                  <CheckSquare className="w-5 h-5 text-green-500" />
+                ) : (
+                  <Square className="w-5 h-5 text-slate-300 hover:text-slate-500 transition-colors" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {addingToTaskId === flatTask.id && (
+          <div
+            className="relative flex items-center py-3 border-b border-slate-100 dark:border-slate-800 bg-orange-50/30 dark:bg-orange-950/10"
+            style={{ paddingLeft: `${(depth + 2) * INDENT_PX}px` }}
+          >
             <div
               className="absolute bg-slate-300 dark:bg-slate-700"
               style={{
-                left: `${depth * INDENT_PX + 15}px`,
+                left: `${(depth + 1) * INDENT_PX + 15}px`,
                 top: 0,
+                bottom: 0,
                 width: '2px',
-                height: isLast ? '50%' : '100%',
                 zIndex: 0
               }}
             />
             <div
-              className="absolute bg-slate-300 dark:bg-slate-700"
+              className="absolute bg-orange-400"
               style={{
-                left: `${depth * INDENT_PX + 15}px`,
+                left: `${(depth + 1) * INDENT_PX + 15}px`,
                 top: '50%',
                 width: '15px',
                 height: '2px',
                 zIndex: 0
               }}
             />
-          </>
-        )}
 
-        {hasChildren && (
-          <button
-            onClick={() => toggleExpanded(flatTask.id)}
-            className="absolute flex-shrink-0 w-4 h-4 flex items-center justify-center text-slate-700 hover:bg-slate-200 rounded transition-colors z-10"
-            style={{
-              left: `${depth * INDENT_PX + 11}px`,
-              top: '50%',
-              transform: 'translateY(-50%)'
-            }}
-          >
-            {isExpanded ? <Minus className="w-2.5 h-2.5" /> : <Plus className="w-2.5 h-2.5" />}
-          </button>
-        )}
-
-        <div className="flex items-start gap-3 flex-1 relative z-10">
-          {isUnassigned ? (
-            <button
-              onClick={() => pickupTask(flatTask.id, flatTask.summary)}
-              className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-amber-100 hover:bg-amber-200 rounded-full transition-colors border border-amber-300 ring-4 ring-white dark:ring-slate-900"
-            >
-              <Hand className="w-4 h-4 text-amber-700" />
-            </button>
-          ) : (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex-shrink-0 bg-white dark:bg-slate-900">
-                    <Avatar className="w-8 h-8 ring-4 ring-white dark:ring-slate-900">
-                      <AvatarImage src={flatTask.assigneeAvatar} />
-                      <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
-                        {flatTask.assigneeName ? getInitials(flatTask.assigneeName) : '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs">{flatTask.assigneeName || 'Unassigned'}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-
-          <div className="flex-1 min-w-0 pr-2 flex items-center gap-2">
-            <p
-              className={`text-[14px] leading-relaxed ${
-                isCompleted ? 'line-through text-slate-400' : 'text-slate-900 dark:text-slate-100'
-              } ${isMine && !isCompleted ? 'font-medium' : ''}`}
-              style={{
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                wordBreak: 'break-word'
+            <input
+              autoFocus
+              type="text"
+              placeholder="Type subtask and hit Enter..."
+              className="w-full bg-transparent border-b-2 border-orange-200 focus:border-orange-500 outline-none text-sm py-1 px-2 text-slate-900 dark:text-slate-100 placeholder-slate-400"
+              value={newTaskSummary}
+              onChange={(e) => setNewTaskSummary(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newTaskSummary.trim()) {
+                  handleSaveSubtask(flatTask.id);
+                }
+                if (e.key === 'Escape') {
+                  setAddingToTaskId(null);
+                  setAddingToDealId(null);
+                  setNewTaskSummary('');
+                }
               }}
-            >
-              {flatTask.summary}
-            </p>
-            <button
-              onClick={() => addSubtask(flatTask.id, dealId)}
-              className="flex-shrink-0 w-4 h-4 flex items-center justify-center text-red-500 hover:text-red-600 hover:bg-red-50 rounded transition-all"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
+            />
           </div>
-
-          <div className="flex items-center gap-3 flex-shrink-0">
-            {flatTask.dueDate && (
-              <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                <Clock className="w-3 h-3" />
-                <span>
-                  {new Date(flatTask.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </span>
-              </div>
-            )}
-
-            <button
-              onClick={() => toggleTask(flatTask.id, flatTask.status)}
-              className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              {isCompleted ? (
-                <CheckSquare className="w-5 h-5 text-green-500" />
-              ) : (
-                <Square className="w-5 h-5 text-slate-300 hover:text-slate-500 transition-colors" />
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
+        )}
+      </>
     );
   };
 
