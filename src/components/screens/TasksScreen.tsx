@@ -51,6 +51,145 @@ const getStageConfig = (stage: string) => {
 
 const INDENT_PX = 32;
 
+interface InlineTaskEditorProps {
+  depth: number;
+  users: any[];
+  assigneeId: string;
+  summary: string;
+  dueDate: string;
+  onAssigneeChange: (id: string) => void;
+  onSummaryChange: (text: string) => void;
+  onDueDateChange: (date: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}
+
+const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
+  depth,
+  users,
+  assigneeId,
+  summary,
+  dueDate,
+  onAssigneeChange,
+  onSummaryChange,
+  onDueDateChange,
+  onSave,
+  onCancel
+}) => {
+  const [showAssigneeMenu, setShowAssigneeMenu] = useState(false);
+  const assignedUser = users.find(u => u.id === assigneeId);
+
+  const getInitials = (name: string) => {
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  return (
+    <div
+      className="task-row relative py-3 pr-4 overflow-visible border-b border-orange-200 bg-orange-50/50 group"
+      style={{ '--spine-x': `${depth * INDENT_PX}px` } as React.CSSProperties}
+    >
+      {depth > 0 && (
+        <>
+          <div className="tree-spine" style={{ bottom: '-14px' }} />
+          <div className="tree-elbow" />
+        </>
+      )}
+
+      <div
+        className="flex items-start gap-3 relative z-10"
+        style={{ paddingLeft: `${depth * INDENT_PX + 24}px` }}
+      >
+        <div className="relative">
+          <button
+            onClick={() => setShowAssigneeMenu(!showAssigneeMenu)}
+            className="flex-shrink-0 bg-white dark:bg-slate-900 hover:ring-2 hover:ring-orange-300 transition-all"
+          >
+            <Avatar className="w-8 h-8 ring-4 ring-orange-100 cursor-pointer">
+              <AvatarImage src={assignedUser?.avatar_url} />
+              <AvatarFallback className="bg-orange-200 text-orange-700 text-xs font-semibold">
+                {assignedUser ? getInitials(assignedUser.name) : '?'}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+
+          {showAssigneeMenu && (
+            <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 min-w-[180px] max-h-60 overflow-y-auto">
+              {users
+                .filter(u => ['internal', 'admin', 'super_admin'].includes(u.role))
+                .map(u => (
+                  <button
+                    key={u.id}
+                    onClick={() => {
+                      onAssigneeChange(u.id);
+                      setShowAssigneeMenu(false);
+                    }}
+                    className="w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center gap-2 text-sm"
+                  >
+                    <Avatar className="w-6 h-6">
+                      <AvatarImage src={u.avatar_url} />
+                      <AvatarFallback className="bg-slate-200 text-slate-700 text-xs">
+                        {getInitials(u.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-slate-900">{u.name}</span>
+                  </button>
+                ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0 pr-2">
+          <input
+            autoFocus
+            type="text"
+            value={summary}
+            onChange={(e) => onSummaryChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && summary.trim()) {
+                onSave();
+              }
+              if (e.key === 'Escape') {
+                onCancel();
+              }
+            }}
+            placeholder="Type task description..."
+            className="w-full text-[14px] leading-relaxed bg-white border border-orange-300 focus:border-orange-500 outline-none px-2 py-1 rounded text-slate-900 placeholder-slate-400"
+          />
+        </div>
+
+        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => onDueDateChange(e.target.value)}
+            className="text-[11px] text-slate-600 font-medium border border-orange-300 rounded px-2 py-1 focus:border-orange-500 outline-none cursor-pointer"
+          />
+
+          <div className="flex items-center gap-1">
+            <button
+              onClick={onSave}
+              disabled={!summary.trim()}
+              className="text-xs px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Save
+            </button>
+            <button
+              onClick={onCancel}
+              className="text-xs px-2 py-1 bg-slate-200 text-slate-700 rounded hover:bg-slate-300"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface TaskRowProps {
   task: TaskThread & { children?: TaskThread[] };
   dealId: string;
@@ -62,6 +201,16 @@ interface TaskRowProps {
   onPickup: (id: string, summary: string) => void;
   onAddSubtask: (parentId: string, dealId: string) => void;
   currentUserId?: string;
+  addingToTaskId: string | null;
+  newTaskSummary: string;
+  newTaskAssignee: string;
+  newTaskDueDate: string;
+  users: any[];
+  onNewTaskSummaryChange: (text: string) => void;
+  onNewTaskAssigneeChange: (id: string) => void;
+  onNewTaskDueDateChange: (date: string) => void;
+  onSaveNewTask: () => void;
+  onCancelNewTask: () => void;
 }
 
 const TaskRow: React.FC<TaskRowProps> = ({
@@ -74,13 +223,24 @@ const TaskRow: React.FC<TaskRowProps> = ({
   onToggleComplete,
   onPickup,
   onAddSubtask,
-  currentUserId
+  currentUserId,
+  addingToTaskId,
+  newTaskSummary,
+  newTaskAssignee,
+  newTaskDueDate,
+  users,
+  onNewTaskSummaryChange,
+  onNewTaskAssigneeChange,
+  onNewTaskDueDateChange,
+  onSaveNewTask,
+  onCancelNewTask
 }) => {
   const hasChildren = task.children && task.children.length > 0;
   const isExpanded = expanded.has(task.id);
   const isCompleted = task.status === 'Completed';
   const isMine = task.assignedToId === currentUserId;
   const isUnassigned = !task.assignedToId;
+  const isAddingHere = addingToTaskId === task.id;
 
   const getInitials = (name: string) => {
     const parts = name.split(' ');
@@ -101,7 +261,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
             <div
               className="tree-spine"
               style={{
-                bottom: isLast ? '50%' : '-14px'
+                bottom: isLast && !isAddingHere ? '50%' : '-14px'
               }}
             />
             <div className="tree-elbow" />
@@ -195,6 +355,21 @@ const TaskRow: React.FC<TaskRowProps> = ({
         </div>
       </div>
 
+      {isAddingHere && (
+        <InlineTaskEditor
+          depth={depth + 1}
+          users={users}
+          assigneeId={newTaskAssignee}
+          summary={newTaskSummary}
+          dueDate={newTaskDueDate}
+          onAssigneeChange={onNewTaskAssigneeChange}
+          onSummaryChange={onNewTaskSummaryChange}
+          onDueDateChange={onNewTaskDueDateChange}
+          onSave={onSaveNewTask}
+          onCancel={onCancelNewTask}
+        />
+      )}
+
       {hasChildren && isExpanded && task.children && (
         <>
           {task.children.map((child, idx) => (
@@ -210,6 +385,16 @@ const TaskRow: React.FC<TaskRowProps> = ({
               onPickup={onPickup}
               onAddSubtask={onAddSubtask}
               currentUserId={currentUserId}
+              addingToTaskId={addingToTaskId}
+              newTaskSummary={newTaskSummary}
+              newTaskAssignee={newTaskAssignee}
+              newTaskDueDate={newTaskDueDate}
+              users={users}
+              onNewTaskSummaryChange={onNewTaskSummaryChange}
+              onNewTaskAssigneeChange={onNewTaskAssigneeChange}
+              onNewTaskDueDateChange={onNewTaskDueDateChange}
+              onSaveNewTask={onSaveNewTask}
+              onCancelNewTask={onCancelNewTask}
             />
           ))}
         </>
@@ -226,6 +411,16 @@ interface DealThreadItemProps {
   onPickup: (id: string, summary: string) => void;
   onAddSubtask: (parentId: string, dealId: string) => void;
   currentUserId?: string;
+  addingToTaskId: string | null;
+  newTaskSummary: string;
+  newTaskAssignee: string;
+  newTaskDueDate: string;
+  users: any[];
+  onNewTaskSummaryChange: (text: string) => void;
+  onNewTaskAssigneeChange: (id: string) => void;
+  onNewTaskDueDateChange: (date: string) => void;
+  onSaveNewTask: () => void;
+  onCancelNewTask: () => void;
 }
 
 const DealThreadItem: React.FC<DealThreadItemProps> = ({
@@ -235,7 +430,17 @@ const DealThreadItem: React.FC<DealThreadItemProps> = ({
   onToggleComplete,
   onPickup,
   onAddSubtask,
-  currentUserId
+  currentUserId,
+  addingToTaskId,
+  newTaskSummary,
+  newTaskAssignee,
+  newTaskDueDate,
+  users,
+  onNewTaskSummaryChange,
+  onNewTaskAssigneeChange,
+  onNewTaskDueDateChange,
+  onSaveNewTask,
+  onCancelNewTask
 }) => {
   const stageConfig = getStageConfig(group.deal.stage);
   const taskTree = buildTaskTree(group.tasks);
@@ -277,6 +482,16 @@ const DealThreadItem: React.FC<DealThreadItemProps> = ({
               onPickup={onPickup}
               onAddSubtask={onAddSubtask}
               currentUserId={currentUserId}
+              addingToTaskId={addingToTaskId}
+              newTaskSummary={newTaskSummary}
+              newTaskAssignee={newTaskAssignee}
+              newTaskDueDate={newTaskDueDate}
+              users={users}
+              onNewTaskSummaryChange={onNewTaskSummaryChange}
+              onNewTaskAssigneeChange={onNewTaskAssigneeChange}
+              onNewTaskDueDateChange={onNewTaskDueDateChange}
+              onSaveNewTask={onSaveNewTask}
+              onCancelNewTask={onCancelNewTask}
             />
           ))}
         </div>
@@ -620,6 +835,7 @@ export const TasksScreen: React.FC = () => {
       setNewTaskAssignee('');
       setNewTaskDueDate('');
       fetchTaskThreads();
+      fetchCounts();
     } catch (error: any) {
       console.error('Error adding subtask:', error);
       toast({
@@ -628,6 +844,14 @@ export const TasksScreen: React.FC = () => {
         variant: 'destructive'
       });
     }
+  };
+
+  const handleCancelSubtask = () => {
+    setAddingToTaskId(null);
+    setAddingToDealId(null);
+    setNewTaskSummary('');
+    setNewTaskAssignee('');
+    setNewTaskDueDate('');
   };
 
   const toggleExpanded = (taskId: string) => {
@@ -754,80 +978,6 @@ export const TasksScreen: React.FC = () => {
         </div>
       </div>
 
-      {addingToTaskId && (
-        <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-          <div className="space-y-3">
-            <div className="flex items-start gap-2">
-              <input
-                autoFocus
-                type="text"
-                placeholder="Task description..."
-                className="flex-1 bg-white border border-orange-200 focus:border-orange-500 outline-none text-sm py-2 px-3 rounded text-slate-900 placeholder-slate-400"
-                value={newTaskSummary}
-                onChange={(e) => setNewTaskSummary(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newTaskSummary.trim()) {
-                    handleSaveSubtask();
-                  }
-                  if (e.key === 'Escape') {
-                    setAddingToTaskId(null);
-                    setAddingToDealId(null);
-                    setNewTaskSummary('');
-                    setNewTaskAssignee('');
-                    setNewTaskDueDate('');
-                  }
-                }}
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <select
-                value={newTaskAssignee}
-                onChange={(e) => setNewTaskAssignee(e.target.value)}
-                className="flex-1 bg-white border border-orange-200 focus:border-orange-500 outline-none text-sm py-2 px-3 rounded text-slate-900"
-              >
-                <option value="">Unassigned</option>
-                {users
-                  .filter(u => ['internal', 'admin', 'super_admin'].includes(u.role))
-                  .map(u => (
-                    <option key={u.id} value={u.id}>
-                      {u.name}
-                    </option>
-                  ))}
-              </select>
-
-              <input
-                type="date"
-                value={newTaskDueDate}
-                onChange={(e) => setNewTaskDueDate(e.target.value)}
-                className="bg-white border border-orange-200 focus:border-orange-500 outline-none text-sm py-2 px-3 rounded text-slate-900"
-              />
-
-              <button
-                onClick={handleSaveSubtask}
-                disabled={!newTaskSummary.trim()}
-                className="px-4 py-2 bg-orange-500 text-white rounded font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-              >
-                Add Task
-              </button>
-
-              <button
-                onClick={() => {
-                  setAddingToTaskId(null);
-                  setAddingToDealId(null);
-                  setNewTaskSummary('');
-                  setNewTaskAssignee('');
-                  setNewTaskDueDate('');
-                }}
-                className="px-4 py-2 bg-slate-200 text-slate-700 rounded font-medium hover:bg-slate-300"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {filteredDealGroups.length === 0 ? (
         <div className="text-center py-12 text-slate-500">
           <CheckSquare className="w-12 h-12 mx-auto mb-3 opacity-20" />
@@ -846,6 +996,16 @@ export const TasksScreen: React.FC = () => {
               onPickup={pickupTask}
               onAddSubtask={handleAddSubtask}
               currentUserId={user?.id}
+              addingToTaskId={addingToTaskId}
+              newTaskSummary={newTaskSummary}
+              newTaskAssignee={newTaskAssignee}
+              newTaskDueDate={newTaskDueDate}
+              users={users}
+              onNewTaskSummaryChange={setNewTaskSummary}
+              onNewTaskAssigneeChange={setNewTaskAssignee}
+              onNewTaskDueDateChange={setNewTaskDueDate}
+              onSaveNewTask={handleSaveSubtask}
+              onCancelNewTask={handleCancelSubtask}
             />
           ))}
         </div>
