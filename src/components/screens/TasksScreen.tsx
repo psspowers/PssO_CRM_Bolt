@@ -144,13 +144,13 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
         </div>
 
         <div className="flex-1 min-w-0 pr-3">
-          <input
+          <textarea
             autoFocus
-            type="text"
+            rows={2}
             value={summary}
             onChange={(e) => onSummaryChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && summary.trim()) {
+              if (e.key === 'Enter' && e.metaKey && summary.trim()) {
                 e.preventDefault();
                 onSave();
               }
@@ -159,7 +159,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
               }
             }}
             placeholder="Type task description..."
-            className="w-full text-[14px] leading-relaxed bg-white border border-orange-300 focus:border-orange-500 outline-none px-3 py-2 rounded text-slate-900 placeholder-slate-400"
+            className="w-full text-[14px] leading-relaxed bg-white border-2 border-orange-300 focus:border-orange-500 outline-none px-3 py-2 rounded-lg text-slate-900 placeholder-slate-400 resize-none"
           />
         </div>
 
@@ -174,19 +174,19 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
 
           <button
             onClick={() => dateInputRef.current?.showPicker()}
-            className="p-2.5 hover:bg-orange-100 rounded-lg transition-colors border border-orange-200"
+            className="p-2 hover:bg-orange-100 rounded-lg transition-colors border border-orange-200"
             title={dueDate ? new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Set due date'}
           >
-            <Calendar className="w-6 h-6 text-orange-600" />
+            <Calendar className="w-5 h-5 text-orange-600" />
           </button>
 
           <button
             onClick={onSave}
             disabled={!summary.trim()}
-            className="p-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
-            title="Save task (Enter)"
+            className="p-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
+            title="Save task (Cmd+Enter)"
           >
-            <Check className="w-6 h-6" />
+            <Check className="w-5 h-5" />
           </button>
         </div>
       </div>
