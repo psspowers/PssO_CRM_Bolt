@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { CheckSquare, Square, Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight, Reply } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight, Reply, Filter, Users } from 'lucide-react';
 import { format, isPast, parseISO } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
@@ -544,6 +544,8 @@ export const TasksScreen: React.FC = () => {
     }
   };
 
+  const [viewFilter, setViewFilter] = useState<'me' | 'all' | 'people'>('all');
+
   const filterTasks = (tasks: TaskThread[]): TaskThread[] => {
     if (!hideCompleted) return tasks;
     return tasks
@@ -555,9 +557,22 @@ export const TasksScreen: React.FC = () => {
     return dealGroups
       .map(group => {
         let tasks = group.tasks || [];
+
+        // Apply view filter (Me/All/People)
+        if (viewFilter === 'me') {
+          const filterByAssignee = (t: TaskThread): boolean => {
+            if (t.assigned_to_id === user?.id) return true;
+            return (t.children || []).some(filterByAssignee);
+          };
+          tasks = tasks.filter(filterByAssignee);
+        }
+
+        // Apply hide completed filter
         if (hideCompleted) {
           tasks = filterTasks(tasks);
         }
+
+        // Apply search filter
         if (search) {
           const matchSearch = (t: TaskThread): boolean => {
             return t.summary.toLowerCase().includes(search.toLowerCase()) ||
@@ -565,10 +580,11 @@ export const TasksScreen: React.FC = () => {
           };
           tasks = tasks.filter(matchSearch);
         }
+
         return { ...group, tasks };
       })
       .filter(g => g.tasks.length > 0 || g.name.toLowerCase().includes(search.toLowerCase()));
-  }, [dealGroups, hideCompleted, search]);
+  }, [dealGroups, hideCompleted, search, viewFilter, user?.id]);
 
   const currentUser = users.find(u => u.id === user?.id);
 
@@ -576,8 +592,76 @@ export const TasksScreen: React.FC = () => {
     <div className="min-h-screen bg-white pb-24">
       {/* Sticky Header */}
       <div className="sticky top-0 z-[50] bg-white border-b border-slate-100 px-4 py-3">
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-xl font-bold text-slate-900">Tasks</h1>
+        {/* Row 1: Title, Search, Filter */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h1 className="text-2xl font-bold text-slate-900">Tasks</h1>
+
+          {/* Search & Filter */}
+          <div className="flex items-center gap-2 flex-1 max-w-md ml-auto">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search tasks..."
+                className="w-full pl-9 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded transition-colors"
+                >
+                  <X className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => {}}
+              className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors flex-shrink-0"
+            >
+              <Filter className="w-5 h-5 text-slate-600" />
+            </button>
+          </div>
+        </div>
+
+        {/* Row 2: Filter Tabs & Hide Done */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
+            <button
+              onClick={() => setViewFilter('me')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                viewFilter === 'me'
+                  ? 'bg-white shadow-sm text-orange-600'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>Me</span>
+            </button>
+            <button
+              onClick={() => setViewFilter('all')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                viewFilter === 'all'
+                  ? 'bg-white shadow-sm text-orange-600'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <span>All</span>
+            </button>
+            <button
+              onClick={() => setViewFilter('people')}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                viewFilter === 'people'
+                  ? 'bg-white shadow-sm text-orange-600'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>People</span>
+            </button>
+          </div>
+
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -585,18 +669,8 @@ export const TasksScreen: React.FC = () => {
               onChange={(e) => setHideCompleted(e.target.checked)}
               className="w-4 h-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
             />
-            <span className="text-xs font-medium text-slate-600">Hide completed</span>
+            <span className="text-xs font-medium text-slate-600">Hide Done</span>
           </label>
-        </div>
-
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search tasks..."
-            className="w-full bg-slate-50 border-0 rounded-lg pl-9 pr-4 py-2 text-sm focus:ring-2 focus:ring-orange-500/20"
-          />
         </div>
       </div>
 
