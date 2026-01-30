@@ -118,7 +118,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
           </button>
 
           {showAssigneeMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-[9999] min-w-[180px] max-h-60 overflow-y-auto">
+            <div className="absolute bottom-full left-0 mb-1 bg-white border border-slate-200 rounded-lg shadow-xl z-[9999] min-w-[180px] max-h-60 overflow-y-auto">
               {users
                 .filter(u => ['internal', 'admin', 'super_admin'].includes(u.role))
                 .map(u => (
