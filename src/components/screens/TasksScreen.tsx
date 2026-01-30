@@ -83,12 +83,14 @@ const InlineTaskEditor = ({
   onSave,
   onCancel,
   depth = 0,
+  isReply = false,
 }: {
   users: any[];
   currentUser: any;
   onSave: (summary: string, assignee: string, date: string) => void;
   onCancel: () => void;
   depth?: number;
+  isReply?: boolean;
 }) => {
   const [summary, setSummary] = useState('');
   const [assigneeId, setAssigneeId] = useState(currentUser?.id || '');
@@ -125,34 +127,47 @@ const InlineTaskEditor = ({
               if (e.key === 'Enter') handleSave();
               if (e.key === 'Escape') onCancel();
             }}
-            placeholder="Type task..."
+            placeholder={isReply ? "Type reply..." : "Type task..."}
             className="w-full bg-transparent border-b border-orange-100 focus:border-orange-500 outline-none text-sm font-medium py-1 placeholder:text-slate-300"
           />
 
-          <div className="flex items-center gap-2 mt-2">
-            <div className="flex items-center gap-1 bg-slate-50 rounded px-1.5 py-0.5">
-              <User className="w-3 h-3 text-slate-400" />
-              <select
-                value={assigneeId}
-                onChange={e => setAssigneeId(e.target.value)}
-                className="bg-transparent text-[10px] outline-none text-slate-600 w-20 truncate"
-              >
-                <option value={currentUser?.id}>Me</option>
-                {users.filter(u => u.id !== currentUser?.id).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
-            </div>
+          {!isReply && (
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-1 bg-slate-50 rounded px-1.5 py-0.5">
+                <User className="w-3 h-3 text-slate-400" />
+                <select
+                  value={assigneeId}
+                  onChange={e => setAssigneeId(e.target.value)}
+                  className="bg-transparent text-[10px] outline-none text-slate-600 w-20 truncate"
+                >
+                  <option value={currentUser?.id}>Me</option>
+                  {users.filter(u => u.id !== currentUser?.id).map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+              </div>
 
-            <div className="flex items-center gap-1 bg-slate-50 rounded px-1.5 py-0.5">
-              <Calendar className="w-3 h-3 text-slate-400" />
-              <input
-                type="date"
-                value={dueDate}
-                onChange={e => setDueDate(e.target.value)}
-                className="bg-transparent text-[10px] outline-none text-slate-600 w-24"
-              />
-            </div>
+              <div className="flex items-center gap-1 bg-slate-50 rounded px-1.5 py-0.5">
+                <Calendar className="w-3 h-3 text-slate-400" />
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
+                  className="bg-transparent text-[10px] outline-none text-slate-600 w-24"
+                />
+              </div>
 
-            <div className="flex items-center gap-1 ml-auto">
+              <div className="flex items-center gap-1 ml-auto">
+                <button onClick={onCancel} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={handleSave} className="p-1 hover:bg-green-50 rounded text-green-600">
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isReply && (
+            <div className="flex items-center gap-1 mt-2 justify-end">
               <button onClick={onCancel} className="p-1 hover:bg-slate-100 rounded text-slate-400">
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -160,7 +175,7 @@ const InlineTaskEditor = ({
                 <Check className="w-3.5 h-3.5" />
               </button>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </motion.div>
@@ -304,8 +319,8 @@ const TaskNode = ({
               </p>
             </div>
 
-            {/* Right Side: Due Date + Checkbox */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Right Side: Due Date + Checkbox (Stacked) */}
+            <div className="flex flex-col items-end gap-1 flex-shrink-0">
               {task.due_date && (
                 <span className={cn(
                   "text-[10px] whitespace-nowrap font-medium",
@@ -363,6 +378,7 @@ const TaskNode = ({
                 onSave={(s, a, d) => onSaveTask(s, a, d, task.id, false)}
                 onCancel={onCancelTask}
                 depth={depth + 1}
+                isReply={false}
               />
             )}
 
@@ -374,6 +390,7 @@ const TaskNode = ({
                 onSave={(s, a, d) => onSaveTask(s, a, d, task.id, true)}
                 onCancel={onCancelTask}
                 depth={depth + 1}
+                isReply={true}
               />
             )}
           </div>
@@ -657,6 +674,7 @@ export const TasksScreen: React.FC = () => {
                         onSave={(s, a, d) => handleSaveNewTask(s, a, d)}
                         onCancel={() => setAddingRootTo(null)}
                         depth={0}
+                        isReply={false}
                       />
                     )}
 
