@@ -234,9 +234,22 @@ const TaskNode = ({
 
   if (task.isOptimistic) {
     return (
-      <div className="py-1 flex items-center gap-2 opacity-50 animate-pulse">
-        <Loader2 className="w-3 h-3 animate-spin text-orange-500" />
-        <span className="text-xs text-slate-400">Saving...</span>
+      <div className="py-1 flex items-start gap-2 opacity-60">
+        {/* Chevron space for alignment */}
+        <div className="w-4 flex-shrink-0" />
+        <div className="flex-shrink-0 mt-0.5">
+          <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm animate-pulse")}>
+            <AvatarImage src={task.assignee_avatar} />
+            <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
+              {getInitials(task.assignee_name)}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+        <div className="flex-1 flex items-center gap-2 min-w-0">
+          <p className="text-sm font-medium text-slate-600">{task.summary}</p>
+          <Loader2 className="w-3 h-3 animate-spin text-orange-500 flex-shrink-0" />
+          <span className="text-[10px] text-slate-400">Saving...</span>
+        </div>
       </div>
     );
   }
@@ -303,10 +316,10 @@ const TaskNode = ({
                         e.stopPropagation();
                         onAddChild(task.id);
                       }}
-                      className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-50 border border-orange-300 text-orange-600 hover:scale-110 transition-transform ml-1"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-50 border border-orange-300 hover:scale-110 active:scale-90 transition-transform ml-1"
                       title="Add subtask"
                     >
-                      <Plus className="w-3 h-3" />
+                      <Plus className="w-3.5 h-3.5 text-orange-600" />
                     </button>
                     {' '}
                     <button
@@ -328,8 +341,8 @@ const TaskNode = ({
             <div className="flex flex-col items-end gap-1 flex-shrink-0">
               {task.due_date && (
                 <span className={cn(
-                  "text-[10px] whitespace-nowrap font-medium",
-                  isOverdue ? "text-red-500 font-bold" : "text-slate-400"
+                  "text-xs whitespace-nowrap",
+                  isOverdue ? "text-red-600 font-extrabold" : "text-slate-400 font-medium"
                 )}>
                   {format(parseISO(task.due_date), 'MMM d')}
                 </span>
@@ -418,6 +431,8 @@ export const TasksScreen: React.FC = () => {
   const [addingRootTo, setAddingRootTo] = useState<string | null>(null);
   const [addingChildTo, setAddingChildTo] = useState<string | null>(null);
   const [addingReplyTo, setAddingReplyTo] = useState<string | null>(null);
+
+  const [optimisticTasks, setOptimisticTasks] = useState<Map<string, TaskThread>>(new Map());
 
   // Hierarchy and team view
   const [hierarchyView, setHierarchyView] = useState<'mine' | 'team'>('mine');
@@ -547,6 +562,9 @@ export const TasksScreen: React.FC = () => {
     parentId?: string,
     isReply?: boolean
   ) => {
+    // Generate optimistic task ID
+    const optimisticId = `optimistic-${Date.now()}-${Math.random()}`;
+
     try {
       let targetDealId = '';
 
@@ -564,6 +582,71 @@ export const TasksScreen: React.FC = () => {
         }
       }
 
+      // Create optimistic task
+      const assignedUser = users.find(u => u.id === assignee);
+      const optimisticTask: TaskThread = {
+        id: optimisticId,
+        summary,
+        task_status: 'Pending',
+        priority: 'Medium',
+        due_date: date ? new Date(date).toISOString() : undefined,
+        assigned_to_id: assignee,
+        assignee_name: assignedUser?.name,
+        assignee_avatar: assignedUser?.avatar_url,
+        parent_task_id: parentId,
+        depth: parentId ? 1 : 0,
+        created_at: new Date().toISOString(),
+        children: [],
+        isOptimistic: true,
+      };
+
+      // Immediately add optimistic task to state
+      setOptimisticTasks(prev => new Map(prev).set(optimisticId, { ...optimisticTask, dealId: targetDealId }));
+
+      // Insert optimistic task into dealGroups for instant feedback
+      setDealGroups(prevGroups => {
+        return prevGroups.map(group => {
+          if (group.id !== targetDealId) return group;
+
+          const tasks = group.tasks || [];
+
+          if (!parentId) {
+            // Root level task
+            return { ...group, tasks: [...tasks, optimisticTask] };
+          } else {
+            // Child task - need to insert into parent
+            const insertIntoParent = (taskList: TaskThread[]): TaskThread[] => {
+              return taskList.map(task => {
+                if (task.id === parentId) {
+                  return {
+                    ...task,
+                    children: [...(task.children || []), optimisticTask],
+                  };
+                } else if (task.children && task.children.length > 0) {
+                  return {
+                    ...task,
+                    children: insertIntoParent(task.children),
+                  };
+                }
+                return task;
+              });
+            };
+            return { ...group, tasks: insertIntoParent(tasks) };
+          }
+        });
+      });
+
+      // Expand parent if needed
+      if (parentId) {
+        setExpandedTasks(prev => new Set(prev).add(parentId));
+      }
+
+      // Close editors
+      setAddingRootTo(null);
+      setAddingChildTo(null);
+      setAddingReplyTo(null);
+
+      // Now make the actual API call
       const payload: any = {
         summary,
         is_task: true,
@@ -584,20 +667,43 @@ export const TasksScreen: React.FC = () => {
       }
 
       const { error } = await supabase.from('activities').insert(payload);
+
       if (error) throw error;
 
+      // Success - remove optimistic task and refetch
+      setOptimisticTasks(prev => {
+        const next = new Map(prev);
+        next.delete(optimisticId);
+        return next;
+      });
+
       toast({ title: 'Task Created' });
-      setAddingRootTo(null);
-      setAddingChildTo(null);
-      setAddingReplyTo(null);
-
-      if (parentId) {
-        setExpandedTasks(prev => new Set(prev).add(parentId));
-      }
-
       fetchTasks();
     } catch (err: any) {
       console.error(err);
+
+      // Error - remove optimistic task
+      setOptimisticTasks(prev => {
+        const next = new Map(prev);
+        next.delete(optimisticId);
+        return next;
+      });
+
+      // Remove optimistic task from dealGroups
+      setDealGroups(prevGroups => {
+        return prevGroups.map(group => {
+          const removeOptimistic = (tasks: TaskThread[]): TaskThread[] => {
+            return tasks
+              .filter(t => t.id !== optimisticId)
+              .map(t => ({
+                ...t,
+                children: t.children ? removeOptimistic(t.children) : [],
+              }));
+          };
+          return { ...group, tasks: removeOptimistic(group.tasks || []) };
+        });
+      });
+
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
   };
@@ -982,10 +1088,10 @@ export const TasksScreen: React.FC = () => {
                             setAddingChildTo(null);
                             setAddingReplyTo(null);
                           }}
-                          className="w-7 h-7 rounded-full bg-orange-50 border border-orange-300 flex items-center justify-center text-orange-600 hover:scale-110 transition-transform shadow-sm"
+                          className="w-7 h-7 rounded-full bg-orange-50 border border-orange-300 flex items-center justify-center hover:scale-110 active:scale-90 transition-transform shadow-sm"
                           title="Add root task"
                         >
-                          <Plus className="w-4 h-4" />
+                          <Plus className="w-4 h-4 text-orange-600" />
                         </button>
                       </div>
                     )}
