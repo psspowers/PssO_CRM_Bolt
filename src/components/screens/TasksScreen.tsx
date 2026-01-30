@@ -785,7 +785,7 @@ export const TasksScreen: React.FC = () => {
   return (
     <div className="min-h-screen bg-white pb-24">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-[50] bg-white border-b border-slate-100 px-4 py-3">
+      <div className="sticky top-0 z-40 bg-white border-b border-slate-100 px-4 py-3">
         {/* Row 1: Title, Search, Filter */}
         <div className="flex items-center justify-between gap-2 mb-3">
           <h1 className="text-2xl font-bold text-slate-900">Tasks</h1>
