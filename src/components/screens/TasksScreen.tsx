@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { CheckSquare, Square, Clock, Loader2, User, Hand, Users, Search, X, Info, Plus, Minus, Calendar, Check } from 'lucide-react';
+import { CheckSquare, Square, Clock, Loader2, User, Hand, Users, Search, X, Info, Plus, Minus, Calendar, Check, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 const INDENT_PX = 32;
+const ROOT_SPINE_LEFT = 47;
 
 interface TaskThread {
   id: string;
@@ -93,7 +95,7 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
   const [showAssigneeMenu, setShowAssigneeMenu] = useState(false);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const assignedUser = users.find(u => u.id === assigneeId);
-  const spineLeft = depth * INDENT_PX + 19;
+  const spineLeft = (depth * INDENT_PX) + ROOT_SPINE_LEFT;
 
   return (
     <div className="relative overflow-visible bg-orange-50/30 border-l-2 border-orange-500">
@@ -105,54 +107,53 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
           bottom: '-12px'
         }}
       />
+
       <div
         className="absolute h-[2px] bg-slate-900"
         style={{
           left: `${spineLeft}px`,
-          top: '50%',
-          width: '20px'
+          top: '24px',
+          width: '16px'
         }}
       />
 
       <div
-        className="flex items-center gap-3 relative py-3 pr-4"
-        style={{ paddingLeft: `${depth * INDENT_PX + 44}px` }}
+        className="flex items-start gap-3 py-3 pr-4 relative z-10"
+        style={{ paddingLeft: `${spineLeft + 20}px` }}
       >
         <div className="relative">
           <button
             onClick={() => setShowAssigneeMenu(!showAssigneeMenu)}
-            className="flex-shrink-0 z-10"
+            className="flex-shrink-0"
           >
-            <Avatar className={`${getAvatarSize(depth)} cursor-pointer ring-2 ring-white dark:ring-slate-900`}>
-              <AvatarImage src={assignedUser?.avatar_url} />
-              <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
-                {assignedUser ? getInitials(assignedUser.name) : '?'}
+            <Avatar className="w-7 h-7 border-2 border-orange-500">
+              {assignedUser?.avatar_url ? (
+                <AvatarImage src={assignedUser.avatar_url} alt={assignedUser.full_name} />
+              ) : null}
+              <AvatarFallback className="bg-orange-100 text-orange-700 text-xs font-bold">
+                {assignedUser ? getInitials(assignedUser.full_name) : '?'}
               </AvatarFallback>
             </Avatar>
           </button>
 
           {showAssigneeMenu && (
-            <div className="absolute bottom-full left-0 mb-1 bg-white border border-slate-200 rounded-lg shadow-xl z-[9999] min-w-[180px] max-h-60 overflow-y-auto">
-              {users
-                .filter(u => ['internal', 'admin', 'super_admin'].includes(u.role))
-                .map(u => (
-                  <button
-                    key={u.id}
-                    onClick={() => {
-                      onAssigneeChange(u.id);
-                      setShowAssigneeMenu(false);
-                    }}
-                    className="w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center gap-2 text-sm"
-                  >
-                    <Avatar className="w-6 h-6">
-                      <AvatarImage src={u.avatar_url} />
-                      <AvatarFallback className="bg-slate-200 text-slate-700 text-xs">
-                        {getInitials(u.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-slate-900">{u.name}</span>
-                  </button>
-                ))}
+            <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 min-w-[160px] max-h-64 overflow-auto">
+              {users.map(u => (
+                <button
+                  key={u.id}
+                  onClick={() => {
+                    onAssigneeChange(u.id);
+                    setShowAssigneeMenu(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 text-left text-sm"
+                >
+                  <Avatar className="w-6 h-6">
+                    {u.avatar_url && <AvatarImage src={u.avatar_url} alt={u.full_name} />}
+                    <AvatarFallback className="text-xs bg-slate-200">{getInitials(u.full_name)}</AvatarFallback>
+                  </Avatar>
+                  <span className="truncate">{u.full_name}</span>
+                </button>
+              ))}
             </div>
           )}
         </div>
@@ -229,7 +230,7 @@ interface TaskRowProps {
   onToggleExpand: (id: string) => void;
   onToggleComplete: (id: string, status?: string) => void;
   onPickup: (id: string, summary: string) => void;
-  onAddSubtask: (parentId: string, dealId: string) => void;
+  onAddChildTo: (parentId: string, dealId: string) => void;
   currentUserId?: string;
   addingToTaskId: string | null;
   newTaskSummary: string;
@@ -252,7 +253,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
   onToggleExpand,
   onToggleComplete,
   onPickup,
-  onAddSubtask,
+  onAddChildTo,
   currentUserId,
   addingToTaskId,
   newTaskSummary,
@@ -272,7 +273,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
   const isUnassigned = !task.assignedToId;
   const isAddingHere = addingToTaskId === task.id;
 
-  const spineLeft = depth * INDENT_PX + 19;
+  const spineLeft = (depth * INDENT_PX) + ROOT_SPINE_LEFT;
 
   return (
     <>
@@ -282,7 +283,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
           style={{
             left: `${spineLeft}px`,
             top: '-12px',
-            bottom: isLast && !isAddingHere ? '50%' : '-12px'
+            bottom: isLast && !isAddingHere && (!hasChildren || !isExpanded) ? '50%' : '-12px'
           }}
         />
 
@@ -317,68 +318,51 @@ const TaskRow: React.FC<TaskRowProps> = ({
           </button>
         )}
 
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            onAddSubtask(task.id, dealId);
-          }}
-          className="absolute text-red-500 font-bold text-sm bg-white w-4 h-4 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 hover:scale-125 transition-all z-10 leading-none shadow-sm border border-red-200"
-          style={{
-            left: `${spineLeft - 8}px`,
-            top: 'calc(50% + 8px)'
-          }}
-          title="Add subtask"
-        >
-          +
-        </button>
-
         <div
           className="flex items-start gap-3 relative z-10 flex-1"
-          style={{ paddingLeft: `${depth * INDENT_PX + 44}px` }}
+          style={{ paddingLeft: `${spineLeft + 24}px` }}
         >
           {isUnassigned ? (
             <button
               onClick={() => onPickup(task.id, task.summary)}
-              className={`flex-shrink-0 ${getAvatarSize(depth)} flex items-center justify-center bg-amber-100 hover:bg-amber-200 rounded-full transition-colors border border-amber-300 ring-2 ring-white dark:ring-slate-900`}
+              className="flex-shrink-0 group/pickup"
+              title="Pickup this task"
             >
-              <Hand className="w-4 h-4 text-amber-700" />
+              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-300 group-hover/pickup:border-orange-500 group-hover/pickup:bg-orange-50 transition-all">
+                <Hand className="w-4 h-4 text-slate-400 group-hover/pickup:text-orange-500 transition-colors" />
+              </div>
             </button>
           ) : (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex-shrink-0">
-                    <Avatar className={`${getAvatarSize(depth)} ring-2 ring-white dark:ring-slate-900`}>
-                      <AvatarImage src={task.assigneeAvatar} />
-                      <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
+                  <div className="flex-shrink-0 cursor-default">
+                    <Avatar className={cn(getAvatarSize(depth), isMine && 'ring-2 ring-orange-500 ring-offset-1')}>
+                      {task.assigneeAvatar && (
+                        <AvatarImage src={task.assigneeAvatar} alt={task.assigneeName} />
+                      )}
+                      <AvatarFallback className="text-xs bg-slate-200 font-bold">
                         {task.assigneeName ? getInitials(task.assigneeName) : '?'}
                       </AvatarFallback>
                     </Avatar>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent side="top">
                   <p className="text-xs">{task.assigneeName || 'Unassigned'}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
 
-          <div className="flex-1 min-w-0">
-            <p
-              className={`text-sm leading-relaxed ${
-                isCompleted
-                  ? 'line-through text-slate-400'
-                  : isMine
-                  ? 'font-bold text-slate-900 bg-yellow-100/50 px-1 rounded'
-                  : 'font-medium text-slate-500'
-              }`}
-            >
+          <div className="flex-1 min-w-0 flex items-start justify-between gap-3">
+            <p className={cn(
+              "text-sm leading-relaxed",
+              isMine ? "font-bold text-slate-900" : "font-medium text-slate-700",
+              isCompleted && "line-through opacity-60"
+            )}>
               {task.summary}
             </p>
-          </div>
 
-          <div className="flex items-center gap-3 flex-shrink-0">
             {task.dueDate && (
               <div className="text-xs text-slate-400 font-medium">
                 {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -399,21 +383,6 @@ const TaskRow: React.FC<TaskRowProps> = ({
         </div>
       </div>
 
-      {isAddingHere && (
-        <InlineTaskEditor
-          depth={depth + 1}
-          users={users}
-          assigneeId={newTaskAssignee}
-          summary={newTaskSummary}
-          dueDate={newTaskDueDate}
-          onAssigneeChange={onNewTaskAssigneeChange}
-          onSummaryChange={onNewTaskSummaryChange}
-          onDueDateChange={onNewTaskDueDateChange}
-          onSave={onSaveNewTask}
-          onCancel={onCancelNewTask}
-        />
-      )}
-
       {hasChildren && isExpanded && task.children && (
         <>
           {task.children.map((child, idx) => (
@@ -422,12 +391,12 @@ const TaskRow: React.FC<TaskRowProps> = ({
               task={child}
               dealId={dealId}
               depth={depth + 1}
-              isLast={idx === task.children!.length - 1}
+              isLast={idx === task.children!.length - 1 && !isAddingHere}
               expanded={expanded}
               onToggleExpand={onToggleExpand}
               onToggleComplete={onToggleComplete}
               onPickup={onPickup}
-              onAddSubtask={onAddSubtask}
+              onAddChildTo={onAddChildTo}
               currentUserId={currentUserId}
               addingToTaskId={addingToTaskId}
               newTaskSummary={newTaskSummary}
@@ -441,6 +410,46 @@ const TaskRow: React.FC<TaskRowProps> = ({
               onCancelNewTask={onCancelNewTask}
             />
           ))}
+
+          {isAddingHere && (
+            <InlineTaskEditor
+              depth={depth + 1}
+              users={users}
+              assigneeId={newTaskAssignee}
+              summary={newTaskSummary}
+              dueDate={newTaskDueDate}
+              onAssigneeChange={onNewTaskAssigneeChange}
+              onSummaryChange={onNewTaskSummaryChange}
+              onDueDateChange={onNewTaskDueDateChange}
+              onSave={onSaveNewTask}
+              onCancel={onCancelNewTask}
+            />
+          )}
+
+          <div className="relative h-8 flex items-center" style={{ paddingLeft: `${spineLeft + INDENT_PX}px` }}>
+            <div
+              className="absolute w-[2px] bg-slate-900"
+              style={{
+                left: `${spineLeft + INDENT_PX}px`,
+                top: '-12px',
+                height: isAddingHere ? 'calc(100% + 12px)' : '16px'
+              }}
+            />
+
+            {!isAddingHere && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onAddChildTo(task.id, dealId);
+                }}
+                className="relative ml-4 w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm"
+                title="Add subtask"
+              >
+                +
+              </button>
+            )}
+          </div>
         </>
       )}
     </>
@@ -455,9 +464,11 @@ interface DealThreadProps {
   onToggleDealExpand: (id: string) => void;
   onToggleComplete: (id: string, status?: string) => void;
   onPickup: (id: string, summary: string) => void;
-  onAddSubtask: (parentId: string, dealId: string) => void;
+  onAddRootTask: (dealId: string) => void;
+  onAddChildTo: (parentId: string, dealId: string) => void;
   currentUserId?: string;
   addingToTaskId: string | null;
+  addingRootToDealId: string | null;
   newTaskSummary: string;
   newTaskAssignee: string;
   newTaskDueDate: string;
@@ -477,9 +488,11 @@ const DealThread: React.FC<DealThreadProps> = ({
   onToggleDealExpand,
   onToggleComplete,
   onPickup,
-  onAddSubtask,
+  onAddRootTask,
+  onAddChildTo,
   currentUserId,
   addingToTaskId,
+  addingRootToDealId,
   newTaskSummary,
   newTaskAssignee,
   newTaskDueDate,
@@ -493,30 +506,26 @@ const DealThread: React.FC<DealThreadProps> = ({
   const stageConfig = getStageAvatar(group.deal.stage);
   const taskTree = buildTaskTree(group.tasks);
   const isDealExpanded = expandedDeals.has(group.deal.id);
+  const isAddingRoot = addingRootToDealId === group.deal.id;
 
   return (
-    <div className="relative py-4">
-      <div className="relative flex items-start gap-4 px-2 mb-2">
+    <div className="relative">
+      <div className="relative flex items-center gap-3 py-3 border-b border-slate-100">
+        <button
+          onClick={() => onToggleDealExpand(group.deal.id)}
+          className="flex-shrink-0 text-slate-400 hover:text-slate-600 transition-colors"
+        >
+          <ChevronRight className={cn("w-5 h-5 transition-transform", isDealExpanded && "rotate-90")} />
+        </button>
+
         <div
-          className={`w-10 h-10 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-base flex-shrink-0 z-10`}
+          className={`w-8 h-8 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}
         >
           {stageConfig.char}
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-1">
-            {taskTree.length > 0 && (
-              <button
-                onClick={() => onToggleDealExpand(group.deal.id)}
-                className="flex-shrink-0 text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                {isDealExpanded ? (
-                  <Minus className="w-4 h-4" />
-                ) : (
-                  <Plus className="w-4 h-4" />
-                )}
-              </button>
-            )}
+          <div className="flex items-center gap-3">
             <h3 className="font-bold text-base text-slate-900 truncate">{group.deal.name}</h3>
             {group.deal.value && (
               <span className="text-xs font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded">
@@ -527,25 +536,25 @@ const DealThread: React.FC<DealThreadProps> = ({
               {group.completed_tasks}/{group.total_tasks}
             </span>
           </div>
-
-          {group.total_tasks > 0 && (
-            <div className="w-full bg-slate-200 h-1 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-green-500 transition-all"
-                style={{ width: `${group.progress}%` }}
-              />
-            </div>
-          )}
         </div>
+
+        {group.total_tasks > 0 && (
+          <div className="absolute left-12 right-0 bottom-0 h-0.5 bg-slate-200">
+            <div
+              className="h-full bg-green-500 transition-all"
+              style={{ width: `${group.progress}%` }}
+            />
+          </div>
+        )}
       </div>
 
-      {taskTree.length > 0 && isDealExpanded && (
+      {isDealExpanded && (
         <div className="relative">
           <div
-            className="absolute w-[2px] bg-slate-900 z-0"
+            className="absolute w-[2px] bg-slate-900"
             style={{
-              left: '19px',
-              top: '-12px',
+              left: `${ROOT_SPINE_LEFT}px`,
+              top: '0',
               bottom: '0'
             }}
           />
@@ -556,12 +565,12 @@ const DealThread: React.FC<DealThreadProps> = ({
               task={task}
               dealId={group.deal.id}
               depth={0}
-              isLast={idx === taskTree.length - 1}
+              isLast={idx === taskTree.length - 1 && !isAddingRoot}
               expanded={expanded}
               onToggleExpand={onToggleExpand}
               onToggleComplete={onToggleComplete}
               onPickup={onPickup}
-              onAddSubtask={onAddSubtask}
+              onAddChildTo={onAddChildTo}
               currentUserId={currentUserId}
               addingToTaskId={addingToTaskId}
               newTaskSummary={newTaskSummary}
@@ -575,6 +584,46 @@ const DealThread: React.FC<DealThreadProps> = ({
               onCancelNewTask={onCancelNewTask}
             />
           ))}
+
+          {isAddingRoot && (
+            <InlineTaskEditor
+              depth={0}
+              users={users}
+              assigneeId={newTaskAssignee}
+              summary={newTaskSummary}
+              dueDate={newTaskDueDate}
+              onAssigneeChange={onNewTaskAssigneeChange}
+              onSummaryChange={onNewTaskSummaryChange}
+              onDueDateChange={onNewTaskDueDateChange}
+              onSave={onSaveNewTask}
+              onCancel={onCancelNewTask}
+            />
+          )}
+
+          <div className="relative h-8 flex items-center" style={{ paddingLeft: `${ROOT_SPINE_LEFT}px` }}>
+            <div
+              className="absolute w-[2px] bg-slate-900"
+              style={{
+                left: `${ROOT_SPINE_LEFT}px`,
+                top: '-12px',
+                height: isAddingRoot ? 'calc(100% + 12px)' : '16px'
+              }}
+            />
+
+            {!isAddingRoot && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onAddRootTask(group.deal.id);
+                }}
+                className="relative ml-4 w-5 h-5 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-500 font-bold text-sm hover:bg-red-50 hover:scale-110 transition-all z-50 shadow-sm"
+                title="Add root task"
+              >
+                +
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -610,6 +659,7 @@ export const TasksScreen: React.FC = () => {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [expandedDeals, setExpandedDeals] = useState<Set<string>>(new Set());
   const [addingToTaskId, setAddingToTaskId] = useState<string | null>(null);
+  const [addingRootToDealId, setAddingRootToDealId] = useState<string | null>(null);
   const [addingToDealId, setAddingToDealId] = useState<string | null>(null);
   const [newTaskSummary, setNewTaskSummary] = useState('');
   const [newTaskAssignee, setNewTaskAssignee] = useState<string>('');
@@ -702,62 +752,58 @@ export const TasksScreen: React.FC = () => {
     if (!search.trim()) return dealGroups;
 
     const searchLower = search.toLowerCase();
-    return dealGroups
-      .map(group => ({
+    return dealGroups.map(group => {
+      const filteredTasks = group.tasks.filter(task =>
+        task.summary.toLowerCase().includes(searchLower) ||
+        task.assigneeName?.toLowerCase().includes(searchLower)
+      );
+
+      return {
         ...group,
-        tasks: group.tasks.filter(task =>
-          task.summary.toLowerCase().includes(searchLower) ||
-          task.details?.toLowerCase().includes(searchLower) ||
-          task.assigneeName?.toLowerCase().includes(searchLower) ||
-          group.deal.name.toLowerCase().includes(searchLower)
-        )
-      }))
-      .filter(group => group.tasks.length > 0);
+        tasks: filteredTasks,
+        total_tasks: filteredTasks.length,
+        completed_tasks: filteredTasks.filter(t => t.status === 'Completed').length,
+        progress: filteredTasks.length > 0
+          ? (filteredTasks.filter(t => t.status === 'Completed').length / filteredTasks.length) * 100
+          : 0
+      };
+    }).filter(group => group.tasks.length > 0 || group.deal.name.toLowerCase().includes(searchLower));
   }, [dealGroups, search]);
 
   const fetchTaskThreads = async () => {
-    setLoading(true);
+    if (!user?.id) return;
+
     try {
-      const filterParam = hierarchyView === 'mine' ? 'mine' : 'all';
+      setLoading(true);
+
+      let targetUserId = user.id;
+      let filterMode = 'mine';
+
+      if (hierarchyView === 'team') {
+        if (isAdmin && selectedMemberId !== 'all') {
+          targetUserId = selectedMemberId;
+          filterMode = 'mine';
+        } else {
+          filterMode = 'all';
+        }
+      }
+
+      console.log('Fetching tasks with:', { targetUserId, filterMode });
 
       const { data, error } = await supabase.rpc('get_task_threads', {
-        p_user_id: user?.id || null,
-        p_filter: filterParam
+        p_user_id: targetUserId,
+        p_filter: filterMode
       });
 
       if (error) throw error;
 
-      let filteredData: DealGroup[] = [];
-
-      if (data !== null && data !== undefined) {
-        if (Array.isArray(data)) {
-          filteredData = data as DealGroup[];
-        } else if (typeof data === 'object') {
-          if ('data' in data) {
-            filteredData = (data as any).data as DealGroup[];
-          } else {
-            filteredData = [data] as DealGroup[];
-          }
-        }
-      }
-
-      if (hierarchyView === 'team' && selectedMemberId !== 'all') {
-        filteredData = filteredData.map(group => ({
-          ...group,
-          tasks: group.tasks.filter((t: TaskThread) => t.assignedToId === selectedMemberId),
-          completed_tasks: group.tasks.filter((t: TaskThread) =>
-            t.assignedToId === selectedMemberId && t.status === 'Completed'
-          ).length,
-          total_tasks: group.tasks.filter((t: TaskThread) => t.assignedToId === selectedMemberId).length
-        })).filter(group => group.total_tasks > 0);
-      }
-
-      setDealGroups(filteredData);
+      console.log('Fetched deal groups:', data);
+      setDealGroups(data || []);
     } catch (error: any) {
       console.error('Error fetching task threads:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load task threads',
+        description: 'Failed to load tasks',
         variant: 'destructive'
       });
     } finally {
@@ -767,28 +813,14 @@ export const TasksScreen: React.FC = () => {
 
   useEffect(() => {
     fetchTaskThreads();
-  }, [hierarchyView, selectedMemberId, user?.id]);
+  }, [user?.id, hierarchyView, selectedMemberId]);
 
   useEffect(() => {
     if (dealGroups.length > 0) {
-      const tasksWithChildren: string[] = [];
-      const dealIds: string[] = [];
-
-      dealGroups.forEach(group => {
-        dealIds.push(group.deal.id);
-
-        const taskMap = new Map<string, TaskThread>();
-        group.tasks.forEach(task => taskMap.set(task.id, task));
-
-        group.tasks.forEach(task => {
-          if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
-            if (!tasksWithChildren.includes(task.parentTaskId)) {
-              tasksWithChildren.push(task.parentTaskId);
-            }
-          }
-        });
-      });
-
+      const dealIds = dealGroups.map(g => g.deal.id);
+      const tasksWithChildren = dealGroups.flatMap(g =>
+        g.tasks.filter(t => g.tasks.some(child => child.parentTaskId === t.id)).map(t => t.id)
+      );
       setExpandedTasks(new Set(tasksWithChildren));
       setExpandedDeals(new Set(dealIds));
     }
@@ -862,9 +894,21 @@ export const TasksScreen: React.FC = () => {
     }
   };
 
-  const handleAddSubtask = (parentId: string, dealId: string) => {
-    console.log('Adding subtask to:', parentId, 'dealId:', dealId);
+  const handleAddRootTask = (dealId: string) => {
+    console.log('Adding root task to deal:', dealId);
+    setAddingRootToDealId(dealId);
+    setAddingToDealId(dealId);
+    setAddingToTaskId(null);
+    setNewTaskSummary('');
+    setNewTaskAssignee(user?.id || '');
+    setNewTaskDueDate('');
+    setExpandedDeals(prev => new Set(prev).add(dealId));
+  };
+
+  const handleAddChildTask = (parentId: string, dealId: string) => {
+    console.log('Adding child task to:', parentId, 'dealId:', dealId);
     setAddingToTaskId(parentId);
+    setAddingRootToDealId(null);
     setAddingToDealId(dealId);
     setNewTaskSummary('');
     setNewTaskAssignee(user?.id || '');
@@ -872,8 +916,8 @@ export const TasksScreen: React.FC = () => {
     setExpandedTasks(prev => new Set(prev).add(parentId));
   };
 
-  const handleSaveSubtask = async () => {
-    console.log('Saving subtask:', { newTaskSummary, addingToDealId, addingToTaskId, newTaskAssignee });
+  const handleSaveTask = async () => {
+    console.log('Saving task:', { newTaskSummary, addingToDealId, addingToTaskId, newTaskAssignee });
 
     if (!newTaskSummary.trim()) {
       toast({
@@ -884,10 +928,10 @@ export const TasksScreen: React.FC = () => {
       return;
     }
 
-    if (!addingToDealId || !addingToTaskId) {
+    if (!addingToDealId) {
       toast({
         title: 'Error',
-        description: 'Missing deal or parent task information',
+        description: 'Missing deal information',
         variant: 'destructive'
       });
       return;
@@ -910,19 +954,20 @@ export const TasksScreen: React.FC = () => {
         insertData.due_date = new Date(newTaskDueDate).toISOString();
       }
 
-      console.log('Inserting subtask:', insertData);
+      console.log('Inserting task:', insertData);
       const { error, data } = await supabase.from('activities').insert(insertData).select();
 
       if (error) throw error;
 
-      console.log('Subtask created:', data);
+      console.log('Task created:', data);
       toast({
-        title: 'Subtask Added',
-        description: 'New subtask created successfully',
+        title: addingToTaskId ? 'Subtask Added' : 'Task Added',
+        description: 'New task created successfully',
         className: 'bg-green-50 border-green-200'
       });
 
       setAddingToTaskId(null);
+      setAddingRootToDealId(null);
       setAddingToDealId(null);
       setNewTaskSummary('');
       setNewTaskAssignee('');
@@ -930,17 +975,18 @@ export const TasksScreen: React.FC = () => {
       fetchTaskThreads();
       fetchCounts();
     } catch (error: any) {
-      console.error('Error adding subtask:', error);
+      console.error('Error adding task:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to add subtask',
+        description: error.message || 'Failed to add task',
         variant: 'destructive'
       });
     }
   };
 
-  const handleCancelSubtask = () => {
+  const handleCancelTask = () => {
     setAddingToTaskId(null);
+    setAddingRootToDealId(null);
     setAddingToDealId(null);
     setNewTaskSummary('');
     setNewTaskAssignee('');
@@ -1029,41 +1075,30 @@ export const TasksScreen: React.FC = () => {
             <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
               <button
                 onClick={() => setHierarchyView('mine')}
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                className={cn(
+                  "px-3 py-1.5 text-xs font-bold rounded transition-all",
                   hierarchyView === 'mine'
-                    ? 'bg-white shadow-sm text-orange-600'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                )}
               >
-                <User className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Mine</span>
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  hierarchyView === 'mine' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
-                }`}>
-                  {myTasksCount}
-                </span>
+                Mine {myTasksCount > 0 && `(${myTasksCount})`}
               </button>
               <button
                 onClick={() => setHierarchyView('team')}
-                disabled={loadingSubordinates}
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                className={cn(
+                  "px-3 py-1.5 text-xs font-bold rounded transition-all",
                   hierarchyView === 'team'
-                    ? 'bg-white shadow-sm text-orange-600'
-                    : 'text-slate-500 hover:text-slate-700'
-                } ${loadingSubordinates ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                )}
               >
-                <Users className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Team</span>
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  hierarchyView === 'team' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'
-                }`}>
-                  {loadingSubordinates ? '...' : teamTasksCount}
-                </span>
+                Team {teamTasksCount > 0 && `(${teamTasksCount})`}
               </button>
             </div>
 
-            {hierarchyView === 'team' && (
-              <div className="relative flex-shrink-0 animate-in fade-in slide-in-from-left-2">
+            {hierarchyView === 'team' && isAdmin && (
+              <div className="relative flex-shrink-0">
                 <select
                   value={selectedMemberId}
                   onChange={(e) => setSelectedMemberId(e.target.value)}
@@ -1101,9 +1136,11 @@ export const TasksScreen: React.FC = () => {
               onToggleDealExpand={toggleDealExpanded}
               onToggleComplete={toggleTask}
               onPickup={pickupTask}
-              onAddSubtask={handleAddSubtask}
+              onAddRootTask={handleAddRootTask}
+              onAddChildTo={handleAddChildTask}
               currentUserId={user?.id}
               addingToTaskId={addingToTaskId}
+              addingRootToDealId={addingRootToDealId}
               newTaskSummary={newTaskSummary}
               newTaskAssignee={newTaskAssignee}
               newTaskDueDate={newTaskDueDate}
@@ -1111,8 +1148,8 @@ export const TasksScreen: React.FC = () => {
               onNewTaskSummaryChange={setNewTaskSummary}
               onNewTaskAssigneeChange={setNewTaskAssignee}
               onNewTaskDueDateChange={setNewTaskDueDate}
-              onSaveNewTask={handleSaveSubtask}
-              onCancelNewTask={handleCancelSubtask}
+              onSaveNewTask={handleSaveTask}
+              onCancelNewTask={handleCancelTask}
             />
           ))}
         </div>
