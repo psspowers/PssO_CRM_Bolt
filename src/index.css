@@ -146,73 +146,62 @@
     box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.1);
   }
 
-  /* Task Tree - Document Outline Style with Continuous Spines */
-  .task-tree-container {
-    background-color: white;
-    overflow-x: hidden;
+  /* Task hierarchy tree lines - Document Outline Style */
+  .task-row {
+    position: relative;
   }
 
-  .tree-spine {
+  .task-row-nested::before {
+    content: '';
     position: absolute;
+    left: var(--line-left);
+    top: 0;
     width: 2px;
-    background-color: #0f172a;
-    top: -12px;
-    bottom: -12px;
-    left: var(--spine-x);
-    z-index: 0;
+    height: var(--line-height);
+    background-color: #cbd5e1;
+    pointer-events: none;
+    z-index: 1;
   }
 
-  .tree-elbow {
+  .task-row-nested::after {
+    content: '';
     position: absolute;
-    height: 2px;
-    width: 16px;
-    background-color: #0f172a;
-    top: 22px;
-    left: var(--spine-x);
-    z-index: 0;
-  }
-
-  .junction-dot {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    background-color: black;
-    border-radius: 50%;
-    left: calc(var(--spine-x) - 3px);
+    left: var(--line-left);
     top: 18px;
-    z-index: 20;
-    cursor: pointer;
-    transition: all 0.15s ease;
+    width: var(--elbow-width);
+    height: 2px;
+    background-color: #cbd5e1;
+    pointer-events: none;
+    z-index: 1;
   }
 
-  .junction-dot:hover {
-    background-color: #334155;
-    transform: scale(1.2);
-  }
-
-  .red-plus-btn {
+  .tree-toggle-btn {
     position: absolute;
-    left: calc(var(--spine-x) - 5px);
-    top: 38px;
-    z-index: 20;
-    color: #ef4444;
-    font-weight: 900;
-    font-size: 14px;
-    line-height: 1;
-    cursor: pointer;
+    z-index: 10;
     background: white;
-    border-radius: 50%;
-    width: 12px;
-    height: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    border: 1.5px solid #1e293b;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     transition: all 0.15s ease;
   }
 
-  .red-plus-btn:hover {
-    color: #dc2626;
-    transform: scale(1.15);
+  .tree-toggle-btn:hover {
+    background: #1e293b;
+    border-color: #1e293b;
+    transform: scale(1.05);
+  }
+
+  .tree-toggle-btn:hover svg {
+    color: white;
+  }
+
+  .task-add-btn {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .group:hover .task-add-btn {
+    opacity: 1;
   }
 }
 
