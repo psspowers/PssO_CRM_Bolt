@@ -90,28 +90,28 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
 
   return (
     <div
-      className="task-row relative py-3 pr-4 overflow-visible border-b border-orange-200 bg-orange-50/50 group"
+      className="task-row relative py-2 pr-4 overflow-visible"
       style={{ '--spine-x': `${depth * INDENT_PX}px` } as React.CSSProperties}
     >
       {depth > 0 && (
         <>
-          <div className="tree-spine" style={{ bottom: '-14px' }} />
-          <div className="tree-elbow" />
+          <div className="tree-spine z-0" style={{ bottom: '-14px' }} />
+          <div className="tree-elbow z-0" />
         </>
       )}
 
       <div
-        className="flex items-start gap-3 relative z-10"
+        className="flex items-center gap-3 relative z-10"
         style={{ paddingLeft: `${depth * INDENT_PX + 24}px` }}
       >
         <div className="relative">
           <button
             onClick={() => setShowAssigneeMenu(!showAssigneeMenu)}
-            className="flex-shrink-0 bg-white dark:bg-slate-900 hover:ring-2 hover:ring-orange-300 transition-all"
+            className="flex-shrink-0"
           >
-            <Avatar className="w-8 h-8 ring-4 ring-orange-100 cursor-pointer">
+            <Avatar className="w-8 h-8 cursor-pointer">
               <AvatarImage src={assignedUser?.avatar_url} />
-              <AvatarFallback className="bg-orange-200 text-orange-700 text-xs font-semibold">
+              <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
                 {assignedUser ? getInitials(assignedUser.name) : '?'}
               </AvatarFallback>
             </Avatar>
@@ -159,11 +159,11 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
               }
             }}
             placeholder="Type task description..."
-            className="w-full text-[14px] leading-relaxed bg-white border-2 border-orange-300 focus:border-orange-500 outline-none px-3 py-2 rounded-lg text-slate-900 placeholder-slate-400 resize-none"
+            className="w-full text-sm leading-relaxed bg-transparent border-b-2 border-orange-500 focus:outline-none focus:border-orange-600 px-1 py-1 text-slate-900 placeholder:text-slate-400 resize-none"
           />
         </div>
 
-        <div className="flex flex-col items-center gap-2 flex-shrink-0 relative">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <input
             ref={dateInputRef}
             type="date"
@@ -174,19 +174,27 @@ const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
 
           <button
             onClick={() => dateInputRef.current?.showPicker()}
-            className="p-2 hover:bg-orange-100 rounded-lg transition-colors border border-orange-200"
-            title={dueDate ? new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Set due date'}
+            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+            title={dueDate ? new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Set due date'}
           >
-            <Calendar className="w-5 h-5 text-orange-600" />
+            <Calendar className="w-4 h-4 text-slate-600" />
           </button>
 
           <button
             onClick={onSave}
             disabled={!summary.trim()}
-            className="p-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
-            title="Save task (Cmd+Enter)"
+            className="p-1.5 hover:bg-green-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Save (Cmd+Enter)"
           >
-            <Check className="w-5 h-5" />
+            <Check className="w-4 h-4 text-green-600" />
+          </button>
+
+          <button
+            onClick={onCancel}
+            className="p-1.5 hover:bg-red-50 rounded transition-colors"
+            title="Cancel (Esc)"
+          >
+            <X className="w-4 h-4 text-red-600" />
           </button>
         </div>
       </div>
