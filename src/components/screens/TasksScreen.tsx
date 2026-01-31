@@ -699,30 +699,15 @@ const TaskNode = ({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        // If there are existing comments, expand to show ONLY comments
-                        // Otherwise, open the reply editor
+                        // Invariant: Clicking Comment NEVER collapses or hides information
+                        // If comments exist: Ensure open + show comments view
+                        // If no comments: Ensure open + open reply editor
                         if (commentCount > 0) {
-                          const isExpanded = expandedTasks.has(task.id);
-                          const isCommentsView = commentsViewTasks.has(task.id);
-
-                          if (isExpanded && isCommentsView) {
-                            // Already showing comments, collapse
-                            setExpandedTasks(prev => {
-                              const next = new Set(prev);
-                              next.delete(task.id);
-                              return next;
-                            });
-                            setCommentsViewTasks(prev => {
-                              const next = new Set(prev);
-                              next.delete(task.id);
-                              return next;
-                            });
-                          } else {
-                            // Show comments view
-                            setExpandedTasks(prev => new Set(prev).add(task.id));
-                            setCommentsViewTasks(prev => new Set(prev).add(task.id));
-                          }
+                          // Always ensure expanded and show comments view
+                          setExpandedTasks(prev => new Set(prev).add(task.id));
+                          setCommentsViewTasks(prev => new Set(prev).add(task.id));
                         } else {
+                          // No comments yet: open reply editor
                           onAddReply(task.id);
                         }
                       }}
