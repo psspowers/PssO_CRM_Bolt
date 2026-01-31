@@ -699,15 +699,14 @@ const TaskNode = ({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Invariant: Clicking Comment NEVER collapses or hides information
-                        // If comments exist: Ensure open + show comments view
-                        // If no comments: Ensure open + open reply editor
-                        if (commentCount > 0) {
-                          // Always ensure expanded and show comments view
-                          setExpandedTasks(prev => new Set(prev).add(task.id));
-                          setCommentsViewTasks(prev => new Set(prev).add(task.id));
+                        const isExpanded = expandedTasks.has(task.id);
+
+                        if (!isExpanded) {
+                          // Case 1: Thread is closed. Open it to show content.
+                          onToggleExpand(task.id);
                         } else {
-                          // No comments yet: open reply editor
+                          // Case 2: Thread is ALREADY open.
+                          // The user clicked "Comment" while looking at the thread, so they must want to WRITE.
                           onAddReply(task.id);
                         }
                       }}
