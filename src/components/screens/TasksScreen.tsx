@@ -37,8 +37,8 @@ interface DealGroup {
 }
 
 const getStageAvatar = (stage: string) => {
-  const configs: Record<string, { char: string; color: string; bg: string }> = {
-    'Prospect': { char: 'P', color: 'text-slate-500', bg: 'bg-slate-100' },
+  const configs: Record<string, { char: string; color: string; bg: string; hollow?: boolean }> = {
+    'Prospect': { char: '', color: 'text-slate-500', bg: 'bg-white', hollow: true },
     'Qualified': { char: 'Q', color: 'text-blue-600', bg: 'bg-blue-100' },
     'Proposal': { char: 'P', color: 'text-amber-600', bg: 'bg-amber-100' },
     'Negotiation': { char: 'N', color: 'text-purple-600', bg: 'bg-purple-100' },
@@ -47,7 +47,12 @@ const getStageAvatar = (stage: string) => {
   };
   const s = configs[stage] || { char: '?', color: 'text-slate-500', bg: 'bg-slate-100' };
   return (
-    <div className={cn('w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ring-2 ring-white', s.bg, s.color)}>
+    <div className={cn(
+      'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ring-2 ring-white',
+      s.bg,
+      s.color,
+      s.hollow && 'border-[3px] border-slate-400'
+    )}>
       {s.char}
     </div>
   );
