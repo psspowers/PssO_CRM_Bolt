@@ -163,7 +163,7 @@ export interface Activity {
   summary: string;
   details?: string;
   relatedToId: string;
-  relatedToType: 'Partner' | 'Account' | 'Contact' | 'Opportunity' | 'Project';
+  relatedToType: 'Partner' | 'Account' | 'Contact' | 'Opportunity' | 'Project' | 'Activity';
   createdById: string;
   createdAt: Date;
   attachments?: string[];
@@ -175,6 +175,8 @@ export interface Activity {
   dueDate?: Date;
   taskStatus?: 'Pending' | 'Completed';
   priority?: 'Low' | 'Medium' | 'High';
+  // NEW FIELD FOR RECURSIVE TASKS
+  parentTaskId?: string;
 }
 
 export interface Relationship {
@@ -186,6 +188,9 @@ export interface Relationship {
 export interface User {
   id: string; name: string; email: string; role: UserRole; avatar?: string; badges: string[];
   reportsTo?: string;
+  // NEW FIELDS FOR RAINMAKER ENGINE
+  commissionRate?: number; // THB per MW
+  annualQuota?: number;    // MW Target
 }
 
 export interface WattsTransaction {
