@@ -84,6 +84,8 @@ const getRoleBorderColor = (role?: string) => {
 const buildTaskTree = (tasks: TaskThread[]): TaskThread[] => {
   if (!tasks || tasks.length === 0) return [];
 
+  console.log('🌳 Building tree from tasks:', tasks.length);
+
   const uniqueTasks = Array.from(
     new Map(tasks.map(t => [t.id, t])).values()
   );
@@ -96,9 +98,20 @@ const buildTaskTree = (tasks: TaskThread[]): TaskThread[] => {
 
   tasksCopy.forEach(task => {
     if (task.parent_task_id && taskMap.has(task.parent_task_id)) {
-      taskMap.get(task.parent_task_id)!.children!.push(task);
+      const parent = taskMap.get(task.parent_task_id)!;
+      parent.children!.push(task);
+      console.log(`  └─ Added ${task.is_task ? 'subtask' : 'comment'} "${task.summary?.substring(0, 30)}" to parent "${parent.summary?.substring(0, 30)}"`);
     } else {
       roots.push(task);
+    }
+  });
+
+  console.log(`🌳 Built tree with ${roots.length} roots, checking children...`);
+  roots.forEach(root => {
+    if (root.children && root.children.length > 0) {
+      const comments = root.children.filter(c => !c.is_task).length;
+      const subtasks = root.children.filter(c => c.is_task).length;
+      console.log(`  ✓ "${root.summary?.substring(0, 40)}" has ${comments} comments + ${subtasks} subtasks`);
     }
   });
 
@@ -950,7 +963,9 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
       setLoading(true);
       const { data, error } = await supabase.rpc('get_deal_threads_view', { p_view_mode: 'all' });
       if (error) throw error;
-      setDealGroups(typeof data === 'string' ? JSON.parse(data) : data);
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+      console.log('🔍 Raw RPC data:', JSON.stringify(parsed, null, 2));
+      setDealGroups(parsed);
     } catch (err) {
       console.error(err);
       toast({ title: 'Error', description: 'Failed to load tasks', variant: 'destructive' });
