@@ -115,19 +115,9 @@ const buildTaskTree = (tasks: TaskThread[]): TaskThread[] => {
 };
 
 const InlineTaskEditor = ({
-  users,
-  currentUser,
-  onSave,
-  onCancel,
-  depth = 0,
-  mode = 'task',
+  users, currentUser, onSave, onCancel, depth = 0, mode = 'task',
 }: {
-  users: any[];
-  currentUser: any;
-  onSave: (summary: string, assignee: string, date: string) => void;
-  onCancel: () => void;
-  depth?: number;
-  mode?: 'task' | 'comment';
+  users: any[]; currentUser: any; onSave: (summary: string, assignee: string, date: string) => void; onCancel: () => void; depth?: number; mode?: 'task' | 'comment';
 }) => {
   const [summary, setSummary] = useState('');
   const [assigneeId, setAssigneeId] = useState(currentUser?.id || '');
@@ -136,24 +126,13 @@ const InlineTaskEditor = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const userPickerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    textareaRef.current?.focus();
-  }, []);
-
+  useEffect(() => { textareaRef.current?.focus(); }, []);
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (userPickerRef.current && !userPickerRef.current.contains(event.target as Node)) {
-        setShowUserPicker(false);
-      }
+      if (userPickerRef.current && !userPickerRef.current.contains(event.target as Node)) setShowUserPicker(false);
     };
-
-    if (showUserPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    if (showUserPicker) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showUserPicker]);
 
   useEffect(() => {
@@ -166,76 +145,36 @@ const InlineTaskEditor = ({
   const handleSave = () => {
     if (summary.trim()) {
       onSave(summary, assigneeId, dueDate);
-      setSummary('');
-      setAssigneeId(currentUser?.id || '');
-      setDueDate('');
+      setSummary(''); setAssigneeId(currentUser?.id || ''); setDueDate('');
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSave();
-    }
-    if (e.key === 'Escape') {
-      onCancel();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSave(); }
+    if (e.key === 'Escape') onCancel();
   };
 
   const selectedUser = users.find(u => u.id === assigneeId);
   const initials = selectedUser?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U';
 
   return (
-    <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: 'auto' }}
-      exit={{ opacity: 0, height: 0 }}
-      className="relative group py-3"
-    >
+    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="relative group py-3">
       <div className="absolute left-[22px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 z-0" />
-
       <div className="relative z-10 pl-[42px] pr-2">
         <div className="flex items-start gap-2">
           {mode === 'task' && (
             <div ref={userPickerRef} className="relative flex-shrink-0">
-              <button
-                onClick={() => setShowUserPicker(!showUserPicker)}
-                className="relative"
-                title="Assign to user"
-              >
+              <button onClick={() => setShowUserPicker(!showUserPicker)} className="relative">
                 <Avatar className="w-5 h-5 ring-2 ring-white shadow-sm hover:ring-orange-500 transition-all">
                   <AvatarImage src={selectedUser?.avatar_url} />
-                  <AvatarFallback className="bg-orange-500 text-white text-[9px] font-bold">
-                    {initials}
-                  </AvatarFallback>
+                  <AvatarFallback className="bg-orange-500 text-white text-[9px] font-bold">{initials}</AvatarFallback>
                 </Avatar>
               </button>
-
               {showUserPicker && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                  className="absolute left-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
-                >
+                <motion.div initial={{ opacity: 0, scale: 0.95, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -10 }} className="absolute left-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
                   {users.map(u => (
-                    <button
-                      key={u.id}
-                      onClick={() => {
-                        setAssigneeId(u.id);
-                        setShowUserPicker(false);
-                      }}
-                      className={cn(
-                        "w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors text-left",
-                        assigneeId === u.id && "bg-orange-50"
-                      )}
-                    >
-                      <Avatar className={cn("w-6 h-6 ring-2 ring-white border-2", getRoleBorderColor(u.role))}>
-                        <AvatarImage src={u.avatar_url} />
-                        <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
-                          {getInitials(u.name)}
-                        </AvatarFallback>
-                      </Avatar>
+                    <button key={u.id} onClick={() => { setAssigneeId(u.id); setShowUserPicker(false); }} className={cn("w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors text-left", assigneeId === u.id && "bg-orange-50")}>
+                      <Avatar className={cn("w-6 h-6 ring-2 ring-white border-2", getRoleBorderColor(u.role))}><AvatarImage src={u.avatar_url} /><AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">{getInitials(u.name)}</AvatarFallback></Avatar>
                       <span className="text-sm font-medium text-slate-700 truncate">{u.name}</span>
                       {assigneeId === u.id && <Check className="w-4 h-4 text-orange-600 ml-auto" />}
                     </button>
@@ -244,105 +183,24 @@ const InlineTaskEditor = ({
               )}
             </div>
           )}
-
-          {mode === 'comment' && (
-            <div className="flex-shrink-0">
-              <MessageSquare className="w-4 h-4 text-green-500 mt-1" />
-            </div>
-          )}
-
+          {mode === 'comment' && <div className="flex-shrink-0"><MessageSquare className="w-4 h-4 text-green-500 mt-1" /></div>}
           <div className="flex-1 min-w-0">
-            <textarea
-              ref={textareaRef}
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={mode === 'comment' ? "Add a comment..." : "Type task..."}
-              rows={1}
-              className="w-full bg-transparent resize-none outline-none text-[13px] text-slate-700 font-normal placeholder:text-slate-400 leading-relaxed overflow-hidden"
-            />
+            <textarea ref={textareaRef} value={summary} onChange={(e) => setSummary(e.target.value)} onKeyDown={handleKeyDown} placeholder={mode === 'comment' ? "Add a comment..." : "Type task..."} rows={1} className="w-full bg-transparent resize-none outline-none text-[13px] text-slate-700 font-normal placeholder:text-slate-400 leading-relaxed overflow-hidden" />
           </div>
         </div>
-
-        {mode === 'task' && (
-          <div className="flex items-center gap-2 mt-1 ml-7">
-            <div className="relative">
-              {dueDate ? (
-                <button
-                  onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
-                  className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded-md hover:bg-yellow-200 transition-colors"
-                >
-                  {format(parseISO(dueDate), 'MMM d')}
-                </button>
-              ) : (
-                <button
-                  onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
-                  className="text-slate-400 hover:text-orange-500 transition-colors"
-                  title="Set due date"
-                >
-                  <Calendar className="w-4 h-4" />
-                </button>
-              )}
-              <input
-                id={`date-picker-${depth}`}
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-              />
-            </div>
-
-            <div className="flex-1" />
-
-            <button
-              onClick={handleSave}
-              disabled={!summary.trim()}
-              className={cn(
-                "text-xs font-bold px-3 py-1 rounded-md transition-colors",
-                summary.trim()
-                  ? "bg-orange-500 text-white hover:bg-orange-600"
-                  : "bg-slate-200 text-slate-400 cursor-not-allowed"
-              )}
-              title="Post"
-            >
-            Post
-          </button>
-
-          <button
-            onClick={onCancel}
-            className="text-xs font-bold px-3 py-1 text-slate-500 hover:text-slate-700 transition-colors"
-            title="Cancel"
-          >
-            Cancel
-          </button>
+        <div className="flex items-center gap-2 mt-1 ml-7">
+          {mode === 'task' && (
+             <div className="relative">
+               <button onClick={() => document.getElementById(`date-picker-${depth}`)?.click()} className={cn("text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors", dueDate ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200" : "text-slate-400 hover:text-orange-500")} title="Set due date">
+                 {dueDate ? format(parseISO(dueDate), 'MMM d') : <Calendar className="w-4 h-4" />}
+               </button>
+               <input id={`date-picker-${depth}`} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+             </div>
+          )}
+          <div className="flex-1" />
+          <button onClick={handleSave} disabled={!summary.trim()} className={cn("text-xs font-bold px-3 py-1 rounded-md transition-colors", summary.trim() ? (mode === 'comment' ? "bg-green-500 text-white hover:bg-green-600" : "bg-orange-500 text-white hover:bg-orange-600") : "bg-slate-200 text-slate-400 cursor-not-allowed")}>Post</button>
+          <button onClick={onCancel} className="text-xs font-bold px-3 py-1 text-slate-500 hover:text-slate-700 transition-colors">Cancel</button>
         </div>
-        )}
-
-        {mode === 'comment' && (
-          <div className="flex items-center gap-2 mt-1 ml-7">
-            <button
-              onClick={handleSave}
-              disabled={!summary.trim()}
-              className={cn(
-                "text-xs font-bold px-3 py-1 rounded-md transition-colors",
-                summary.trim()
-                  ? "bg-green-500 text-white hover:bg-green-600"
-                  : "bg-slate-200 text-slate-400 cursor-not-allowed"
-              )}
-              title="Post Comment"
-            >
-              Post
-            </button>
-
-            <button
-              onClick={onCancel}
-              className="text-xs font-bold px-3 py-1 text-slate-500 hover:text-slate-700 transition-colors"
-              title="Cancel"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
       </div>
     </motion.div>
   );
@@ -787,126 +645,15 @@ const TaskNode = ({
       </div>
 
       <AnimatePresence>
-        {isAddingReply && (
-          <div key={`comment-editor-${task.id}`} className="ml-6">
-            <InlineTaskEditor
-              users={users}
-              currentUser={currentUser}
-              onSave={(s, a, d) => onSaveTask(s, a, d, task.id, true)}
-              onCancel={onCancelTask}
-              depth={depth + 1}
-              mode="comment"
-            />
-          </div>
-        )}
-
+        {isAddingReply && <div key={`comment-editor-${task.id}`} className="ml-6"><InlineTaskEditor users={users} currentUser={users.find((u:any)=>u.id===currentUserId)} onSave={(s, a, d) => onSaveTask(s, a, d, task.id, true)} onCancel={onCancelTask} depth={depth + 1} mode="comment" /></div>}
         {isExpanded && hasChildren && (() => {
-          const isCommentsView = commentsViewTasks.has(task.id);
-          const comments = task.children?.filter(c => c.is_task === false && c.id && c.id.trim() !== '') || [];
-          const subtasks = task.children?.filter(c => c.is_task !== false && c.id && c.id.trim() !== '') || [];
-
+          const comments = task.children?.filter((c:any) => c.is_task === false && c.id && c.id.trim() !== '') || [];
+          const subtasks = task.children?.filter((c:any) => c.is_task !== false && c.id && c.id.trim() !== '') || [];
           return (
             <>
-              {isCommentsView ? (
-                <>
-                  {comments.length > 0 && (
-                    <div className="ml-6">
-                      {comments.map((comment) => (
-                        <TaskNode
-                          key={comment.id}
-                          task={comment}
-                          dealId={dealId}
-                          dealName={dealName}
-                          depth={depth + 1}
-                          onComplete={onComplete}
-                          onPickup={onPickup}
-                          onAddChild={onAddChild}
-                          onAddReply={onAddReply}
-                          onShare={onShare}
-                          onLike={onLike}
-                          currentUserId={currentUserId}
-                          users={users}
-                          addingChildTo={addingChildTo}
-                          addingReplyTo={addingReplyTo}
-                          onSaveTask={onSaveTask}
-                          onCancelTask={onCancelTask}
-                          expandedTasks={expandedTasks}
-                          onToggleExpand={onToggleExpand}
-                          setExpandedTasks={setExpandedTasks}
-                          commentsViewTasks={commentsViewTasks}
-                          setCommentsViewTasks={setCommentsViewTasks}
-                          editingTaskId={editingTaskId}
-                          editingSummary={editingSummary}
-                          editingAssignee={editingAssignee}
-                          editingDueDate={editingDueDate}
-                          onStartEdit={onStartEdit}
-                          onSaveEdit={onSaveEdit}
-                          onCancelEdit={onCancelEdit}
-                          onEditSummaryChange={onEditSummaryChange}
-                          onEditAssigneeChange={onEditAssigneeChange}
-                          onEditDueDateChange={onEditDueDateChange}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  {isAddingChild && (
-                    <div key={`subtask-editor-${task.id}`} className="ml-6">
-                      <InlineTaskEditor
-                        users={users}
-                        currentUser={currentUser}
-                        onSave={(s, a, d) => onSaveTask(s, a, d, task.id, false)}
-                        onCancel={onCancelTask}
-                        depth={depth + 1}
-                        mode="task"
-                      />
-                    </div>
-                  )}
-
-                  {subtasks.length > 0 && (
-                    <div className="ml-6">
-                      {subtasks.map((subtask) => (
-                        <TaskNode
-                          key={subtask.id}
-                          task={subtask}
-                          dealId={dealId}
-                          dealName={dealName}
-                          depth={depth + 1}
-                          onComplete={onComplete}
-                          onPickup={onPickup}
-                          onAddChild={onAddChild}
-                          onAddReply={onAddReply}
-                          onShare={onShare}
-                          onLike={onLike}
-                          currentUserId={currentUserId}
-                          users={users}
-                          addingChildTo={addingChildTo}
-                          addingReplyTo={addingReplyTo}
-                          onSaveTask={onSaveTask}
-                          onCancelTask={onCancelTask}
-                          expandedTasks={expandedTasks}
-                          onToggleExpand={onToggleExpand}
-                          setExpandedTasks={setExpandedTasks}
-                          commentsViewTasks={commentsViewTasks}
-                          setCommentsViewTasks={setCommentsViewTasks}
-                          editingTaskId={editingTaskId}
-                          editingSummary={editingSummary}
-                          editingAssignee={editingAssignee}
-                          editingDueDate={editingDueDate}
-                          onStartEdit={onStartEdit}
-                          onSaveEdit={onSaveEdit}
-                          onCancelEdit={onCancelEdit}
-                          onEditSummaryChange={onEditSummaryChange}
-                          onEditAssigneeChange={onEditAssigneeChange}
-                          onEditDueDateChange={onEditDueDateChange}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
+              {comments.length > 0 && <div className="ml-6">{comments.map((comment:any) => <TaskNode key={comment.id} task={comment} dealId={dealId} dealName={dealName} depth={depth + 1} onComplete={onComplete} onPickup={onPickup} onAddChild={onAddChild} onAddReply={onAddReply} onShare={onShare} onLike={onLike} currentUserId={currentUserId} users={users} addingChildTo={addingChildTo} addingReplyTo={addingReplyTo} onSaveTask={onSaveTask} onCancelTask={onCancelTask} expandedTasks={expandedTasks} onToggleExpand={onToggleExpand} setExpandedTasks={setExpandedTasks} commentsViewTasks={commentsViewTasks} setCommentsViewTasks={setCommentsViewTasks} editingTaskId={editingTaskId} editingSummary={editingSummary} editingAssignee={editingAssignee} editingDueDate={editingDueDate} onStartEdit={onStartEdit} onSaveEdit={onSaveEdit} onCancelEdit={onCancelEdit} onEditSummaryChange={onEditSummaryChange} onEditAssigneeChange={onEditAssigneeChange} onEditDueDateChange={onEditDueDateChange} />)}</div>}
+              {isAddingChild && <div key={`subtask-editor-${task.id}`} className="ml-6"><InlineTaskEditor users={users} currentUser={users.find((u:any)=>u.id===currentUserId)} onSave={(s, a, d) => onSaveTask(s, a, d, task.id, false)} onCancel={onCancelTask} depth={depth + 1} mode="task" /></div>}
+              {subtasks.length > 0 && <div className="ml-6">{subtasks.map((subtask:any) => <TaskNode key={subtask.id} task={subtask} dealId={dealId} dealName={dealName} depth={depth + 1} onComplete={onComplete} onPickup={onPickup} onAddChild={onAddChild} onAddReply={onAddReply} onShare={onShare} onLike={onLike} currentUserId={currentUserId} users={users} addingChildTo={addingChildTo} addingReplyTo={addingReplyTo} onSaveTask={onSaveTask} onCancelTask={onCancelTask} expandedTasks={expandedTasks} onToggleExpand={onToggleExpand} setExpandedTasks={setExpandedTasks} commentsViewTasks={commentsViewTasks} setCommentsViewTasks={setCommentsViewTasks} editingTaskId={editingTaskId} editingSummary={editingSummary} editingAssignee={editingAssignee} editingDueDate={editingDueDate} onStartEdit={onStartEdit} onSaveEdit={onSaveEdit} onCancelEdit={onCancelEdit} onEditSummaryChange={onEditSummaryChange} onEditAssigneeChange={onEditAssigneeChange} onEditDueDateChange={onEditDueDateChange} />)}</div>}
             </>
           );
         })()}
