@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { CheckSquare, Square, Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight, Reply, Filter, Users, ChevronDown, ThumbsUp, CornerDownRight } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight, Reply, Filter, Users, ChevronDown, ThumbsUp, CornerDownRight, MessageSquare, ListPlus } from 'lucide-react';
 import { format, isPast, parseISO } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
@@ -25,6 +25,8 @@ interface TaskThread {
   created_at: string;
   children?: TaskThread[];
   isOptimistic?: boolean;
+  reactions?: Record<string, string>;
+  comment_count?: number;
 }
 
 interface DealGroup {
@@ -281,6 +283,7 @@ const TaskNode = ({
   onPickup,
   onAddChild,
   onAddReply,
+  onLike,
   currentUserId,
   users,
   addingChildTo,
@@ -307,6 +310,7 @@ const TaskNode = ({
   onPickup: (id: string) => void;
   onAddChild: (taskId: string) => void;
   onAddReply: (taskId: string) => void;
+  onLike: (id: string, userId: string) => void;
   currentUserId?: string;
   users: any[];
   addingChildTo: string | null;
@@ -334,6 +338,8 @@ const TaskNode = ({
   const isAddingChild = addingChildTo === task.id;
   const isAddingReply = addingReplyTo === task.id;
   const isEditing = editingTaskId === task.id;
+  const hasLiked = currentUserId && task.reactions?.[currentUserId] === 'like';
+  const likeCount = task.reactions ? Object.keys(task.reactions).length : 0;
 
   const avatarSize = 'w-7 h-7';
   const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isCompleted;
@@ -535,48 +541,75 @@ const TaskNode = ({
               </p>
 
               {!isCompleted && (
-                <div className="flex items-center gap-4 mt-1">
-                  <button
-                    className="text-slate-400 hover:text-orange-500 transition-colors"
-                    title="Like"
-                  >
-                    <ThumbsUp className="w-4 h-4" />
-                  </button>
+                <div className="flex items-center justify-between mt-2 ml-7 pr-2">
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (currentUserId) {
+                          onLike(task.id, currentUserId);
+                        }
+                      }}
+                      className={cn(
+                        "flex items-center gap-1 transition-all",
+                        hasLiked
+                          ? "text-blue-500 hover:text-blue-600"
+                          : "text-slate-400 hover:text-blue-500 hover:scale-110"
+                      )}
+                      title={hasLiked ? "Unlike" : "Like"}
+                    >
+                      <ThumbsUp className={cn("w-4 h-4", hasLiked && "fill-blue-500")} />
+                      {likeCount > 0 && (
+                        <span className="text-[10px] font-bold">{likeCount}</span>
+                      )}
+                    </button>
 
-                  {task.due_date && (
-                    <span className={cn(
-                      "text-[10px] font-bold px-2 py-0.5 rounded-md",
-                      isOverdue
-                        ? "bg-red-100 text-red-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    )}>
-                      {format(parseISO(task.due_date), 'MMM d')}
-                    </span>
-                  )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddReply(task.id);
+                      }}
+                      className="text-slate-400 hover:text-green-500 transition-colors"
+                      title="Comment"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
 
-                  <div className="flex-1" />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddChild(task.id);
+                      }}
+                      className="text-slate-400 hover:text-orange-500 transition-colors"
+                      title="Add subtask"
+                    >
+                      <ListPlus className="w-4 h-4" />
+                    </button>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAddChild(task.id);
-                    }}
-                    className="text-slate-400 hover:text-orange-500 transition-colors"
-                    title="Add subtask"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddReply(task.id);
+                      }}
+                      className="text-slate-400 hover:text-slate-600 transition-colors"
+                      title="Reply"
+                    >
+                      <CornerDownRight className="w-4 h-4" />
+                    </button>
+                  </div>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAddReply(task.id);
-                    }}
-                    className="text-slate-400 hover:text-slate-600 transition-colors"
-                    title="Reply"
-                  >
-                    <CornerDownRight className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center">
+                    {task.due_date && (
+                      <span className={cn(
+                        "text-[10px] font-bold px-2 py-0.5 rounded-md",
+                        isOverdue
+                          ? "bg-red-100 text-red-700"
+                          : "bg-yellow-100 text-yellow-700"
+                      )}>
+                        {format(parseISO(task.due_date), 'MMM d')}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -597,6 +630,7 @@ const TaskNode = ({
                 onPickup={onPickup}
                 onAddChild={onAddChild}
                 onAddReply={onAddReply}
+                onLike={onLike}
                 currentUserId={currentUserId}
                 users={users}
                 addingChildTo={addingChildTo}
@@ -783,6 +817,54 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
     await supabase.from('activities').update({ assigned_to_id: user?.id }).eq('id', id);
     fetchTasks();
     toast({ title: 'Task Picked Up (+5⚡)', className: 'bg-orange-50 border-orange-200' });
+  };
+
+  const handleLike = async (taskId: string, userId: string) => {
+    try {
+      const { data: currentTask, error: fetchError } = await supabase
+        .from('activities')
+        .select('reactions')
+        .eq('id', taskId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const reactions = currentTask?.reactions || {};
+      const newReactions = { ...reactions };
+
+      if (newReactions[userId] === 'like') {
+        delete newReactions[userId];
+      } else {
+        newReactions[userId] = 'like';
+      }
+
+      const { error: updateError } = await supabase
+        .from('activities')
+        .update({ reactions: newReactions })
+        .eq('id', taskId);
+
+      if (updateError) throw updateError;
+
+      setDealGroups(prevGroups => {
+        return prevGroups.map(group => {
+          const updateReactions = (tasks: TaskThread[]): TaskThread[] => {
+            return tasks.map(task => {
+              if (task.id === taskId) {
+                return { ...task, reactions: newReactions };
+              }
+              return {
+                ...task,
+                children: task.children ? updateReactions(task.children) : []
+              };
+            });
+          };
+          return { ...group, tasks: updateReactions(group.tasks || []) };
+        });
+      });
+    } catch (err: any) {
+      console.error('Error toggling like:', err);
+      toast({ title: 'Error', description: 'Failed to update reaction', variant: 'destructive' });
+    }
   };
 
   const handleStartEdit = (task: TaskThread) => {
@@ -1317,6 +1399,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
                           setAddingRootTo(null);
                           setExpandedTasks(prev => new Set(prev).add(id));
                         }}
+                        onLike={handleLike}
                         currentUserId={user?.id}
                         users={users}
                         addingChildTo={addingChildTo}
