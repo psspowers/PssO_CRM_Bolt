@@ -83,10 +83,15 @@ const getRoleBorderColor = (role?: string) => {
 
 const buildTaskTree = (tasks: TaskThread[]): TaskThread[] => {
   if (!tasks || tasks.length === 0) return [];
+
+  const uniqueTasks = Array.from(
+    new Map(tasks.map(t => [t.id, t])).values()
+  );
+
   const taskMap = new Map<string, TaskThread>();
   const roots: TaskThread[] = [];
 
-  const tasksCopy = tasks.map(t => ({ ...t, children: [] }));
+  const tasksCopy = uniqueTasks.map(t => ({ ...t, children: [] }));
   tasksCopy.forEach(task => taskMap.set(task.id, task));
 
   tasksCopy.forEach(task => {
