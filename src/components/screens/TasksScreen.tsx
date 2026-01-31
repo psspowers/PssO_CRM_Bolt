@@ -687,6 +687,13 @@ const TaskNode = ({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        console.log(`[DEBUG] Comment button clicked for "${task.summary.substring(0, 30)}":`, {
+                          commentCount,
+                          subtaskCount,
+                          hasChildren,
+                          totalChildren: task.children?.length,
+                          willExpand: commentCount > 0
+                        });
                         // If there are existing comments, expand to show them
                         // Otherwise, open the reply editor
                         if (commentCount > 0) {
@@ -772,6 +779,17 @@ const TaskNode = ({
         {isExpanded && hasChildren && (() => {
           const comments = task.children?.filter(c => c.is_task === false && c.id && c.id.trim() !== '') || [];
           const subtasks = task.children?.filter(c => c.is_task !== false && c.id && c.id.trim() !== '') || [];
+
+          console.log(`[DEBUG] Task "${task.summary.substring(0, 30)}" expanded:`, {
+            totalChildren: task.children?.length,
+            commentsFound: comments.length,
+            subtasksFound: subtasks.length,
+            childrenDetails: task.children?.map(c => ({
+              summary: c.summary?.substring(0, 30),
+              is_task: c.is_task,
+              type: c.is_task === false ? 'COMMENT' : (c.is_task === true ? 'SUBTASK' : 'UNKNOWN')
+            }))
+          });
 
           return (
             <>
