@@ -113,7 +113,6 @@ const InlineTaskEditor = ({
 
   const selectedUser = users.find(u => u.id === assigneeId);
   const initials = selectedUser?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U';
-  const avatarColor = selectedUser?.avatar_url || 'bg-orange-500';
 
   return (
     <motion.div
@@ -250,14 +249,10 @@ const TaskNode = ({
   const isAddingReply = addingReplyTo === task.id;
   const isEditing = editingTaskId === task.id;
 
-  const avatarSize = depth === 0 ? 'w-7 h-7' : 'w-6 h-6';
-
+  const avatarSize = 'w-7 h-7';
   const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isCompleted;
 
-  // Long press and double click handlers
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const clickCountRef = useRef(0);
-  const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleTouchStart = () => {
     if (isCompleted) return;
@@ -283,29 +278,28 @@ const TaskNode = ({
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
       }
-      if (clickTimerRef.current) {
-        clearTimeout(clickTimerRef.current);
-      }
     };
   }, []);
 
   if (task.isOptimistic) {
     return (
-      <div className="py-1 flex items-start gap-2 opacity-60">
-        {/* Chevron space for alignment */}
-        <div className="w-4 flex-shrink-0" />
-        <div className="flex-shrink-0 mt-0.5">
-          <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm animate-pulse")}>
+      <div className="relative group py-3">
+        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 z-0" />
+        <div className="relative z-10 pl-[48px] pr-2 flex items-start gap-3">
+          <div className="absolute left-[17px] top-[16px] z-20 bg-white">
+            <div className="w-4 h-4 rounded-full border-2 border-slate-300 animate-pulse" />
+          </div>
+          <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm animate-pulse flex-shrink-0")}>
             <AvatarImage src={task.assignee_avatar} />
             <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
               {getInitials(task.assignee_name)}
             </AvatarFallback>
           </Avatar>
-        </div>
-        <div className="flex-1 flex items-center gap-2 min-w-0">
-          <p className="text-sm font-medium text-slate-600">{task.summary}</p>
-          <Loader2 className="w-3 h-3 animate-spin text-orange-500 flex-shrink-0" />
-          <span className="text-[10px] text-slate-400">Saving...</span>
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <p className="text-sm font-medium text-slate-600">{task.summary}</p>
+            <Loader2 className="w-3 h-3 animate-spin text-orange-500 flex-shrink-0" />
+            <span className="text-[10px] text-slate-400">Saving...</span>
+          </div>
         </div>
       </div>
     );
@@ -313,20 +307,19 @@ const TaskNode = ({
 
   const currentUser = users.find(u => u.id === currentUserId);
 
-  // Edit Mode
   if (isEditing) {
     const selectedUser = users.find(u => u.id === editingAssignee);
     const initials = selectedUser?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U';
 
     return (
-      <div className="relative py-1">
+      <div className="relative group py-3">
+        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 z-0" />
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="flex items-start gap-2"
+          className="relative z-10 pl-[48px] pr-2 flex items-start gap-3"
         >
-          <div className="w-4 flex-shrink-0" />
-          <div className="flex-shrink-0 mt-0.5">
+          <div className="absolute left-[17px] top-[16px] z-20 bg-white">
             <div className="relative">
               <select
                 value={editingAssignee}
@@ -377,367 +370,169 @@ const TaskNode = ({
     );
   }
 
-  // Root tasks (depth 0) should be Cards
-  const isRootTask = depth === 0;
-
   return (
-    <div className="relative">
-      {/* Root Task: Card wrapper */}
-      {isRootTask && (
-        <div className={cn(
-          'bg-white shadow-sm border border-slate-200 rounded-lg p-3 mb-2',
+    <div className="relative group">
+      <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 group-hover:bg-slate-300 transition-colors z-0" />
+
+      <div
+        className={cn(
+          'relative z-10 pl-[48px] py-3 pr-2 flex items-start gap-3 transition-all',
           isCompleted && 'opacity-50 grayscale'
-        )}>
-          <div
-            className="flex items-start gap-2 group transition-all"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            onTouchMove={handleTouchEnd}
-            onDoubleClick={handleDoubleClick}
-          >
-            {/* Expand/Collapse */}
-            <div className="w-4 flex justify-center items-start pt-1.5 flex-shrink-0">
-              {hasChildren ? (
-                <button
-                  onClick={() => onToggleExpand(task.id)}
-                  className="w-4 h-4 flex items-center justify-center hover:bg-slate-200 rounded transition-colors"
-                >
-                  <ChevronRight className={cn("w-3 h-3 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
-                </button>
-              ) : null}
-            </div>
-
-            {/* Avatar or Pickup Button */}
-            <div className="flex-shrink-0 mt-0.5">
-              {isUnassigned ? (
-                <button
-                  onClick={() => onPickup(task.id)}
-                  className={cn(
-                    avatarSize,
-                    "rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white"
-                  )}
-                >
-                  <Hand className="w-3 h-3 text-amber-600" />
-                </button>
-              ) : (
-                <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm")}>
-                  <AvatarImage src={task.assignee_avatar} />
-                  <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
-                    {getInitials(task.assignee_name)}
-                  </AvatarFallback>
-                </Avatar>
-              )}
-            </div>
-
-            {/* Task Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <p
-                    className={cn(
-                      "text-sm leading-snug transition-all inline",
-                      isMine ? "font-bold text-slate-900" : "font-medium text-slate-600",
-                      isCompleted && "line-through decoration-slate-300"
-                    )}
-                  >
-                    {task.summary}
-                    {!isCompleted && (
-                      <>
-                        {' '}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onAddChild(task.id);
-                          }}
-                          className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-50 border border-orange-300 hover:scale-110 active:scale-90 transition-transform ml-1"
-                          title="Add subtask"
-                        >
-                          <Plus className="w-3.5 h-3.5 text-orange-600" />
-                        </button>
-                        {' '}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onAddReply(task.id);
-                          }}
-                          className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:scale-110 transition-transform ml-1"
-                          title="Reply"
-                        >
-                          <Reply className="w-2.5 h-2.5" />
-                        </button>
-                      </>
-                    )}
-                  </p>
-                </div>
-
-                {/* Right Side: Due Date + Checkbox (Stacked) */}
-                <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  {task.due_date && (
-                    <span className={cn(
-                      "text-xs whitespace-nowrap",
-                      isOverdue ? "text-red-600 font-extrabold" : "text-slate-400 font-medium"
-                    )}>
-                      {format(parseISO(task.due_date), 'MMM d')}
-                    </span>
-                  )}
-                  <button
-                    onClick={() => onComplete(task.id, task.task_status)}
-                    className="text-slate-300 hover:text-green-500 transition-colors"
-                  >
-                    {isCompleted ? (
-                      <CheckSquare className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <Square className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Children inside root card */}
-          <AnimatePresence>
-            {isExpanded && (
-              <div className="ml-2 mt-3 border-l-2 border-slate-300 pl-2">
-                {task.children?.map((child) => (
-                  <TaskNode
-                    key={child.id}
-                    task={child}
-                    dealId={dealId}
-                    depth={depth + 1}
-                    onComplete={onComplete}
-                    onPickup={onPickup}
-                    onAddChild={onAddChild}
-                    onAddReply={onAddReply}
-                    currentUserId={currentUserId}
-                    users={users}
-                    addingChildTo={addingChildTo}
-                    addingReplyTo={addingReplyTo}
-                    onSaveTask={onSaveTask}
-                    onCancelTask={onCancelTask}
-                    expandedTasks={expandedTasks}
-                    onToggleExpand={onToggleExpand}
-                    editingTaskId={editingTaskId}
-                    editingSummary={editingSummary}
-                    editingAssignee={editingAssignee}
-                    editingDueDate={editingDueDate}
-                    onStartEdit={onStartEdit}
-                    onSaveEdit={onSaveEdit}
-                    onCancelEdit={onCancelEdit}
-                    onEditSummaryChange={onEditSummaryChange}
-                    onEditAssigneeChange={onEditAssigneeChange}
-                    onEditDueDateChange={onEditDueDateChange}
-                  />
-                ))}
-
-                {/* Adding Child Editor inside root card */}
-                {isAddingChild && (
-                  <InlineTaskEditor
-                    users={users}
-                    currentUser={currentUser}
-                    onSave={(s, a, d) => onSaveTask(s, a, d, task.id, false)}
-                    onCancel={onCancelTask}
-                    depth={depth + 1}
-                    isReply={false}
-                  />
-                )}
-
-                {/* Adding Reply Editor inside root card */}
-                {isAddingReply && (
-                  <InlineTaskEditor
-                    users={users}
-                    currentUser={currentUser}
-                    onSave={(s, a, d) => onSaveTask(s, a, d, task.id, true)}
-                    onCancel={onCancelTask}
-                    depth={depth + 1}
-                    isReply={true}
-                  />
-                )}
-              </div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
-
-      {/* Child Task: Transparent with connector */}
-      {!isRootTask && (
-        <div className="relative">
-          {/* Horizontal connector hook from spine to avatar */}
-          <div className="absolute left-0 top-4 w-3 border-b-2 border-slate-300" />
-
-          <div
+        )}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchEnd}
+        onDoubleClick={handleDoubleClick}
+      >
+        <div className="absolute left-[17px] top-[16px] z-20 bg-white">
+          <button
+            onClick={() => onComplete(task.id, task.task_status)}
             className={cn(
-              'flex items-start gap-2 py-1 pl-3 group transition-all',
-              isCompleted && 'opacity-50 grayscale'
+              "w-4 h-4 rounded-full border-2 transition-all hover:scale-110",
+              isCompleted
+                ? "bg-green-500 border-green-500"
+                : "border-slate-300 hover:border-green-400"
             )}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            onTouchMove={handleTouchEnd}
-            onDoubleClick={handleDoubleClick}
           >
-            {/* Expand/Collapse */}
-            <div className="w-4 flex justify-center items-start pt-1.5 flex-shrink-0">
-              {hasChildren ? (
-                <button
-                  onClick={() => onToggleExpand(task.id)}
-                  className="w-4 h-4 flex items-center justify-center hover:bg-slate-200 rounded transition-colors"
-                >
-                  <ChevronRight className={cn("w-3 h-3 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
-                </button>
-              ) : null}
+            {isCompleted && <Check className="w-3 h-3 text-white absolute inset-0 m-auto" />}
+          </button>
+        </div>
+
+        {isUnassigned ? (
+          <button
+            onClick={() => onPickup(task.id)}
+            className={cn(
+              avatarSize,
+              "rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white flex-shrink-0"
+            )}
+          >
+            <Hand className="w-3 h-3 text-amber-600" />
+          </button>
+        ) : (
+          <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm flex-shrink-0")}>
+            <AvatarImage src={task.assignee_avatar} />
+            <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
+              {getInitials(task.assignee_name)}
+            </AvatarFallback>
+          </Avatar>
+        )}
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p
+                className={cn(
+                  "text-sm leading-snug transition-all inline",
+                  isMine ? "font-bold text-slate-900" : "font-medium text-slate-600",
+                  isCompleted && "line-through decoration-slate-300"
+                )}
+              >
+                {task.summary}
+                {!isCompleted && (
+                  <>
+                    {' '}
+                    {hasChildren && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleExpand(task.id);
+                        }}
+                        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-50 border border-slate-200 hover:scale-110 transition-transform ml-1"
+                        title="Toggle subtasks"
+                      >
+                        <ChevronRight className={cn("w-2.5 h-2.5 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
+                      </button>
+                    )}
+                    {' '}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddChild(task.id);
+                      }}
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-50 border border-orange-300 hover:scale-110 active:scale-90 transition-transform ml-1"
+                      title="Add subtask"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-orange-600" />
+                    </button>
+                    {' '}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddReply(task.id);
+                      }}
+                      className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:scale-110 transition-transform ml-1"
+                      title="Reply"
+                    >
+                      <Reply className="w-2.5 h-2.5" />
+                    </button>
+                  </>
+                )}
+              </p>
             </div>
 
-            {/* Avatar or Pickup Button */}
-            <div className="flex-shrink-0 mt-0.5">
-              {isUnassigned ? (
-                <button
-                  onClick={() => onPickup(task.id)}
-                  className={cn(
-                    avatarSize,
-                    "rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white"
-                  )}
-                >
-                  <Hand className="w-3 h-3 text-amber-600" />
-                </button>
-              ) : (
-                <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm")}>
-                  <AvatarImage src={task.assignee_avatar} />
-                  <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
-                    {getInitials(task.assignee_name)}
-                  </AvatarFallback>
-                </Avatar>
+            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+              {task.due_date && (
+                <span className={cn(
+                  "text-xs whitespace-nowrap",
+                  isOverdue ? "text-red-600 font-extrabold" : "text-slate-400 font-medium"
+                )}>
+                  {format(parseISO(task.due_date), 'MMM d')}
+                </span>
               )}
             </div>
-
-            {/* Task Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <p
-                    className={cn(
-                      "text-sm leading-snug transition-all inline",
-                      isMine ? "font-bold text-slate-900" : "font-medium text-slate-600",
-                      isCompleted && "line-through decoration-slate-300"
-                    )}
-                  >
-                    {task.summary}
-                    {!isCompleted && (
-                      <>
-                        {' '}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onAddChild(task.id);
-                          }}
-                          className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-50 border border-orange-300 hover:scale-110 active:scale-90 transition-transform ml-1"
-                          title="Add subtask"
-                        >
-                          <Plus className="w-3.5 h-3.5 text-orange-600" />
-                        </button>
-                        {' '}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onAddReply(task.id);
-                          }}
-                          className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:scale-110 transition-transform ml-1"
-                          title="Reply"
-                        >
-                          <Reply className="w-2.5 h-2.5" />
-                        </button>
-                      </>
-                    )}
-                  </p>
-                </div>
-
-                {/* Right Side: Due Date + Checkbox (Stacked) */}
-                <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  {task.due_date && (
-                    <span className={cn(
-                      "text-xs whitespace-nowrap",
-                      isOverdue ? "text-red-600 font-extrabold" : "text-slate-400 font-medium"
-                    )}>
-                      {format(parseISO(task.due_date), 'MMM d')}
-                    </span>
-                  )}
-                  <button
-                    onClick={() => onComplete(task.id, task.task_status)}
-                    className="text-slate-300 hover:text-green-500 transition-colors"
-                  >
-                    {isCompleted ? (
-                      <CheckSquare className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <Square className="w-4 h-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
-
-          {/* Child task nested children */}
-          <AnimatePresence>
-            {isExpanded && (
-              <div className="ml-3 border-l-2 border-slate-300 pl-2">
-                {task.children?.map((child) => (
-                  <TaskNode
-                    key={child.id}
-                    task={child}
-                    dealId={dealId}
-                    depth={depth + 1}
-                    onComplete={onComplete}
-                    onPickup={onPickup}
-                    onAddChild={onAddChild}
-                    onAddReply={onAddReply}
-                    currentUserId={currentUserId}
-                    users={users}
-                    addingChildTo={addingChildTo}
-                    addingReplyTo={addingReplyTo}
-                    onSaveTask={onSaveTask}
-                    onCancelTask={onCancelTask}
-                    expandedTasks={expandedTasks}
-                    onToggleExpand={onToggleExpand}
-                    editingTaskId={editingTaskId}
-                    editingSummary={editingSummary}
-                    editingAssignee={editingAssignee}
-                    editingDueDate={editingDueDate}
-                    onStartEdit={onStartEdit}
-                    onSaveEdit={onSaveEdit}
-                    onCancelEdit={onCancelEdit}
-                    onEditSummaryChange={onEditSummaryChange}
-                    onEditAssigneeChange={onEditAssigneeChange}
-                    onEditDueDateChange={onEditDueDateChange}
-                  />
-                ))}
-
-                {/* Adding Child Editor */}
-                {isAddingChild && (
-                  <InlineTaskEditor
-                    users={users}
-                    currentUser={currentUser}
-                    onSave={(s, a, d) => onSaveTask(s, a, d, task.id, false)}
-                    onCancel={onCancelTask}
-                    depth={depth + 1}
-                    isReply={false}
-                  />
-                )}
-
-                {/* Adding Reply Editor */}
-                {isAddingReply && (
-                  <InlineTaskEditor
-                    users={users}
-                    currentUser={currentUser}
-                    onSave={(s, a, d) => onSaveTask(s, a, d, task.id, true)}
-                    onCancel={onCancelTask}
-                    depth={depth + 1}
-                    isReply={true}
-                  />
-                )}
-              </div>
-            )}
-          </AnimatePresence>
         </div>
-      )}
+      </div>
+
+      <AnimatePresence>
+        {isExpanded && hasChildren && (
+          <div className="ml-6">
+            {task.children?.map((child) => (
+              <TaskNode
+                key={child.id}
+                task={child}
+                dealId={dealId}
+                depth={depth + 1}
+                onComplete={onComplete}
+                onPickup={onPickup}
+                onAddChild={onAddChild}
+                onAddReply={onAddReply}
+                currentUserId={currentUserId}
+                users={users}
+                addingChildTo={addingChildTo}
+                addingReplyTo={addingReplyTo}
+                onSaveTask={onSaveTask}
+                onCancelTask={onCancelTask}
+                expandedTasks={expandedTasks}
+                onToggleExpand={onToggleExpand}
+                editingTaskId={editingTaskId}
+                editingSummary={editingSummary}
+                editingAssignee={editingAssignee}
+                editingDueDate={editingDueDate}
+                onStartEdit={onStartEdit}
+                onSaveEdit={onSaveEdit}
+                onCancelEdit={onCancelEdit}
+                onEditSummaryChange={onEditSummaryChange}
+                onEditAssigneeChange={onEditAssigneeChange}
+                onEditDueDateChange={onEditDueDateChange}
+              />
+            ))}
+          </div>
+        )}
+
+        {(isAddingChild || isAddingReply) && (
+          <div className="ml-6">
+            <InlineTaskEditor
+              users={users}
+              currentUser={currentUser}
+              onSave={(s, a, d) => onSaveTask(s, a, d, task.id, isAddingReply)}
+              onCancel={onCancelTask}
+              depth={depth + 1}
+              isReply={isAddingReply}
+            />
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -767,7 +562,6 @@ export const TasksScreen: React.FC = () => {
   const [editingAssignee, setEditingAssignee] = useState('');
   const [editingDueDate, setEditingDueDate] = useState('');
 
-  // Hierarchy and team view
   const [hierarchyView, setHierarchyView] = useState<'mine' | 'team'>('mine');
   const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
   const [subordinateIds, setSubordinateIds] = useState<string[]>([]);
@@ -775,7 +569,6 @@ export const TasksScreen: React.FC = () => {
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
-  // Fetch subordinates for hierarchy view
   useEffect(() => {
     if (!user?.id) return;
 
@@ -805,12 +598,10 @@ export const TasksScreen: React.FC = () => {
     fetchSubordinates();
   }, [user?.id]);
 
-  // Reset member filter when switching back to "Mine"
   useEffect(() => {
     if (hierarchyView === 'mine') setSelectedMemberId('all');
   }, [hierarchyView]);
 
-  // Calculate team members list for dropdown
   const teamMembers = useMemo(() => {
     if (profile?.role === 'admin' || profile?.role === 'super_admin') {
       return users.filter(u => ['internal', 'admin', 'super_admin'].includes(u.role));
@@ -940,7 +731,6 @@ export const TasksScreen: React.FC = () => {
     parentId?: string,
     isReply?: boolean
   ) => {
-    // Generate optimistic task ID
     const optimisticId = `optimistic-${Date.now()}-${Math.random()}`;
 
     try {
@@ -960,7 +750,6 @@ export const TasksScreen: React.FC = () => {
         }
       }
 
-      // Create optimistic task
       const assignedUser = users.find(u => u.id === assignee);
       const optimisticTask: TaskThread = {
         id: optimisticId,
@@ -978,10 +767,8 @@ export const TasksScreen: React.FC = () => {
         isOptimistic: true,
       };
 
-      // Immediately add optimistic task to state
       setOptimisticTasks(prev => new Map(prev).set(optimisticId, { ...optimisticTask, dealId: targetDealId }));
 
-      // Insert optimistic task into dealGroups for instant feedback
       setDealGroups(prevGroups => {
         return prevGroups.map(group => {
           if (group.id !== targetDealId) return group;
@@ -989,10 +776,8 @@ export const TasksScreen: React.FC = () => {
           const tasks = group.tasks || [];
 
           if (!parentId) {
-            // Root level task
             return { ...group, tasks: [...tasks, optimisticTask] };
           } else {
-            // Child task - need to insert into parent
             const insertIntoParent = (taskList: TaskThread[]): TaskThread[] => {
               return taskList.map(task => {
                 if (task.id === parentId) {
@@ -1014,26 +799,22 @@ export const TasksScreen: React.FC = () => {
         });
       });
 
-      // Expand parent if needed
       if (parentId) {
         setExpandedTasks(prev => new Set(prev).add(parentId));
       }
 
-      // Close editors
       setAddingRootTo(null);
       setAddingChildTo(null);
       setAddingReplyTo(null);
 
-      // Now make the actual API call
       const payload: any = {
         summary,
         is_task: true,
         task_status: 'Pending',
-        created_by: user?.id,
+        created_by_id: user?.id,
         assigned_to_id: assignee,
-        root_deal_id: targetDealId,
-        related_to_id: targetDealId,
-        related_to_type: 'Opportunity',
+        related_to_id: parentId || targetDealId,
+        related_to_type: parentId ? 'Activity' : 'Opportunity',
       };
 
       if (parentId) {
@@ -1048,7 +829,6 @@ export const TasksScreen: React.FC = () => {
 
       if (error) throw error;
 
-      // Success - remove optimistic task and refetch
       setOptimisticTasks(prev => {
         const next = new Map(prev);
         next.delete(optimisticId);
@@ -1060,14 +840,12 @@ export const TasksScreen: React.FC = () => {
     } catch (err: any) {
       console.error(err);
 
-      // Error - remove optimistic task
       setOptimisticTasks(prev => {
         const next = new Map(prev);
         next.delete(optimisticId);
         return next;
       });
 
-      // Remove optimistic task from dealGroups
       setDealGroups(prevGroups => {
         return prevGroups.map(group => {
           const removeOptimistic = (tasks: TaskThread[]): TaskThread[] => {
@@ -1093,13 +871,11 @@ export const TasksScreen: React.FC = () => {
       .map(t => ({ ...t, children: t.children ? filterTasks(t.children) : [] }));
   };
 
-  // Calculate counts for Mine vs Team
   const myTasksCount = useMemo(() => {
     let count = 0;
     dealGroups.forEach(group => {
       (group.tasks || []).forEach(task => {
         const countTask = (t: TaskThread) => {
-          // Skip completed tasks if hideCompleted is enabled
           if (hideCompleted && t.task_status === 'Completed') {
             (t.children || []).forEach(countTask);
             return;
@@ -1118,7 +894,6 @@ export const TasksScreen: React.FC = () => {
     dealGroups.forEach(group => {
       (group.tasks || []).forEach(task => {
         const countTask = (t: TaskThread) => {
-          // Skip completed tasks if hideCompleted is enabled
           if (hideCompleted && t.task_status === 'Completed') {
             (t.children || []).forEach(countTask);
             return;
@@ -1127,12 +902,9 @@ export const TasksScreen: React.FC = () => {
           const isMyTask = t.assigned_to_id === user?.id;
           const isSubordinateTask = subordinateIds.includes(t.assigned_to_id || '');
 
-          // Count team tasks EXCLUDING mine
           if (isAdmin) {
-            // Admin sees all tasks except their own
             if (!isMyTask) count++;
           } else {
-            // Regular users see only subordinate tasks (not their own)
             if (isSubordinateTask && !isMyTask) count++;
           }
           (t.children || []).forEach(countTask);
@@ -1150,12 +922,10 @@ export const TasksScreen: React.FC = () => {
       .map(group => {
         let tasks = group.tasks || [];
 
-        // Apply stage filter
         if (filterStage !== 'all' && group.stage !== filterStage) {
           return { ...group, tasks: [] };
         }
 
-        // Apply priority filter
         if (filterPriority !== 'all') {
           const filterByPriority = (taskList: TaskThread[]): TaskThread[] => {
             return taskList
@@ -1168,21 +938,17 @@ export const TasksScreen: React.FC = () => {
           tasks = filterByPriority(tasks);
         }
 
-        // Apply hierarchy filter
         if (!isSearching && hierarchyView === 'mine') {
-          // Mine: Show ONLY tasks assigned to me (recursively check all levels)
           const collectMyTasks = (taskList: TaskThread[]): TaskThread[] => {
             const result: TaskThread[] = [];
 
             for (const task of taskList) {
               if (task.assigned_to_id === user?.id) {
-                // This task is mine, include it with its children
                 result.push({
                   ...task,
                   children: task.children ? collectMyTasks(task.children) : []
                 });
               } else if (task.children && task.children.length > 0) {
-                // This task is not mine, but check its children
                 const myChildTasks = collectMyTasks(task.children);
                 result.push(...myChildTasks);
               }
@@ -1193,20 +959,17 @@ export const TasksScreen: React.FC = () => {
 
           tasks = collectMyTasks(tasks);
         } else if (hierarchyView === 'team') {
-          // Team Member Filter (specific person selected)
           if (selectedMemberId !== 'all') {
             const collectMemberTasks = (taskList: TaskThread[]): TaskThread[] => {
               const result: TaskThread[] = [];
 
               for (const task of taskList) {
                 if (task.assigned_to_id === selectedMemberId) {
-                  // This task belongs to the selected member
                   result.push({
                     ...task,
                     children: task.children ? collectMemberTasks(task.children) : []
                   });
                 } else if (task.children && task.children.length > 0) {
-                  // Check children
                   const memberChildTasks = collectMemberTasks(task.children);
                   result.push(...memberChildTasks);
                 }
@@ -1217,7 +980,6 @@ export const TasksScreen: React.FC = () => {
 
             tasks = collectMemberTasks(tasks);
           } else {
-            // Team: Show all team tasks EXCLUDING mine
             const collectTeamTasks = (taskList: TaskThread[]): TaskThread[] => {
               const result: TaskThread[] = [];
 
@@ -1227,13 +989,11 @@ export const TasksScreen: React.FC = () => {
                 const isTeamTask = isAdmin ? (task.assigned_to_id !== user?.id) : isSubordinateTask;
 
                 if (isTeamTask && !isMyTask) {
-                  // This task belongs to the team (not me)
                   result.push({
                     ...task,
                     children: task.children ? collectTeamTasks(task.children) : []
                   });
                 } else if (task.children && task.children.length > 0) {
-                  // Check children
                   const teamChildTasks = collectTeamTasks(task.children);
                   result.push(...teamChildTasks);
                 }
@@ -1245,7 +1005,6 @@ export const TasksScreen: React.FC = () => {
             tasks = collectTeamTasks(tasks);
           }
         } else if (isSearching) {
-          // When searching, show all accessible tasks
           const filterByAccess = (t: TaskThread): boolean => {
             const isMyTask = t.assigned_to_id === user?.id;
             const isSubordinateTask = subordinateIds.includes(t.assigned_to_id || '');
@@ -1258,12 +1017,10 @@ export const TasksScreen: React.FC = () => {
           tasks = tasks.filter(filterByAccess);
         }
 
-        // Apply hide completed filter
         if (hideCompleted) {
           tasks = filterTasks(tasks);
         }
 
-        // Apply search filter
         if (search) {
           const matchSearch = (t: TaskThread): boolean => {
             return t.summary.toLowerCase().includes(search.toLowerCase()) ||
@@ -1275,7 +1032,6 @@ export const TasksScreen: React.FC = () => {
         return { ...group, tasks };
       })
       .filter(g => {
-        // Only show groups with tasks, unless searching and group name matches
         if (g.tasks.length > 0) return true;
         if (search.trim() && g.name.toLowerCase().includes(search.toLowerCase())) return true;
         return false;
@@ -1286,13 +1042,10 @@ export const TasksScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white pb-24">
-      {/* Sticky Header */}
       <div className="sticky top-0 z-40 bg-white border-b border-slate-100 px-4 py-3">
-        {/* Row 1: Title, Search, Filter */}
         <div className="flex items-center justify-between gap-2 mb-3">
           <h1 className="text-2xl font-bold text-slate-900">Tasks</h1>
 
-          {/* Search & Filter */}
           <div className="flex items-center gap-2 flex-1 max-w-md ml-auto">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
@@ -1329,7 +1082,6 @@ export const TasksScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Row 2: Hierarchy Toggle & Hide Done */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 flex-wrap">
             <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
@@ -1368,7 +1120,6 @@ export const TasksScreen: React.FC = () => {
               </button>
             </div>
 
-            {/* Team Member Drill-Down Filter */}
             {hierarchyView === 'team' && (
               <div className="relative flex-shrink-0 animate-in fade-in slide-in-from-left-2">
                 <select
@@ -1400,7 +1151,6 @@ export const TasksScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Deals List */}
       <div className="space-y-3 p-4">
         {displayGroups.map((group) => {
           const isExpanded = expandedDeals.has(group.id);
@@ -1409,7 +1159,6 @@ export const TasksScreen: React.FC = () => {
 
           return (
             <div key={group.id} className="bg-white">
-              {/* Deal Header */}
               <div
                 onClick={() => handleToggleDeal(group.id)}
                 className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 transition-colors py-2 px-2 rounded-lg"
@@ -1426,14 +1175,13 @@ export const TasksScreen: React.FC = () => {
                 )}
               </div>
 
-              {/* Tasks Tree */}
               <AnimatePresence>
                 {isExpanded && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="ml-6 border-l-2 border-slate-300 pl-2 mt-1"
+                    className="ml-6 mt-1"
                   >
                     {taskTree.map((task) => (
                       <TaskNode
@@ -1479,7 +1227,6 @@ export const TasksScreen: React.FC = () => {
                       />
                     ))}
 
-                    {/* Root Add Editor */}
                     {isAddingRoot && (
                       <InlineTaskEditor
                         users={users}
@@ -1491,20 +1238,22 @@ export const TasksScreen: React.FC = () => {
                       />
                     )}
 
-                    {/* Root Add Button (+1) */}
                     {!isAddingRoot && (
-                      <div className="py-1">
-                        <button
-                          onClick={() => {
-                            setAddingRootTo(group.id);
-                            setAddingChildTo(null);
-                            setAddingReplyTo(null);
-                          }}
-                          className="w-7 h-7 rounded-full bg-orange-50 border border-orange-300 flex items-center justify-center hover:scale-110 active:scale-90 transition-transform shadow-sm"
-                          title="Add root task"
-                        >
-                          <Plus className="w-4 h-4 text-orange-600" />
-                        </button>
+                      <div className="relative group py-3">
+                        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 group-hover:bg-orange-300 transition-colors z-0" />
+                        <div className="relative z-10 pl-[48px]">
+                          <button
+                            onClick={() => {
+                              setAddingRootTo(group.id);
+                              setAddingChildTo(null);
+                              setAddingReplyTo(null);
+                            }}
+                            className="absolute left-[17px] top-[-4px] w-4 h-4 rounded-full bg-orange-500 border-2 border-white flex items-center justify-center hover:scale-125 active:scale-90 transition-transform shadow-md z-20"
+                            title="Add task"
+                          >
+                            <Plus className="w-3 h-3 text-white" />
+                          </button>
+                        </div>
                       </div>
                     )}
                   </motion.div>
@@ -1521,7 +1270,6 @@ export const TasksScreen: React.FC = () => {
         )}
       </div>
 
-      {/* Filter Modal */}
       <FilterModal
         isOpen={showFilterModal}
         onClose={() => setShowFilterModal(false)}
