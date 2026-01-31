@@ -574,9 +574,16 @@ const TaskNode = ({
         <div className="pl-[42px] pr-2">
           <div className={cn(
             "flex items-start gap-2",
-            isComment && "bg-slate-50 -ml-[42px] pl-[42px] py-2 pr-2 rounded-lg"
+            isComment && "bg-green-50/30 border border-green-100/50 -ml-[42px] pl-[42px] py-2 pr-2 rounded-lg"
           )}>
-            {!isComment && (
+            {isComment ? (
+              <Avatar className="w-5 h-5 ring-2 ring-white shadow-sm flex-shrink-0 border-2 border-green-300">
+                <AvatarImage src={task.assignee_avatar} />
+                <AvatarFallback className="bg-green-100 text-[8px] text-green-700">
+                  {getInitials(task.assignee_name)}
+                </AvatarFallback>
+              </Avatar>
+            ) : (
               <>
                 {isUnassigned ? (
                   <button
@@ -597,10 +604,18 @@ const TaskNode = ({
             )}
 
             <div className="flex-1 min-w-0">
+              {isComment && (
+                <div className="mb-1">
+                  <span className="text-[11px] font-semibold text-green-700">
+                    {task.assignee_name}
+                  </span>
+                </div>
+              )}
+
               <p
                 className={cn(
                   "text-[13px] leading-relaxed transition-all",
-                  isMine ? "text-slate-900 font-normal" : "text-slate-700 font-normal",
+                  isComment ? "text-slate-700" : (isMine ? "text-slate-900 font-normal" : "text-slate-700 font-normal"),
                   isCompleted && "line-through decoration-slate-300"
                 )}
               >
@@ -614,7 +629,7 @@ const TaskNode = ({
                         onToggleExpand(task.id);
                       }}
                       className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-100 border border-slate-200 hover:scale-110 transition-transform"
-                      title="Toggle subtasks"
+                      title={isComment ? "Toggle replies" : "Toggle subtasks"}
                     >
                       <ChevronRight className={cn("w-2.5 h-2.5 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
                     </button>
@@ -624,13 +639,13 @@ const TaskNode = ({
 
               {isComment && (
                 <div className="mt-1">
-                  <span className="text-[10px] text-slate-400">
+                  <span className="text-[10px] text-green-600/70">
                     {format(parseISO(task.created_at), 'MMM d, h:mm a')}
                   </span>
                 </div>
               )}
 
-              {!isComment && !isCompleted && (
+              {!isCompleted && (
                 <div className="flex items-center justify-between mt-2 ml-7 pr-2">
                   <div className="flex items-center gap-4">
                     <button
@@ -660,21 +675,23 @@ const TaskNode = ({
                         onAddReply(task.id);
                       }}
                       className="text-slate-400 hover:text-green-500 transition-colors"
-                      title="Comment"
+                      title={isComment ? "Reply" : "Comment"}
                     >
                       <MessageSquare className="w-4 h-4" />
                     </button>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAddChild(task.id);
-                      }}
-                      className="text-slate-400 hover:text-orange-500 transition-colors"
-                      title="Add subtask"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
+                    {!isComment && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAddChild(task.id);
+                        }}
+                        className="text-slate-400 hover:text-orange-500 transition-colors"
+                        title="Add subtask"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    )}
 
                     <button
                       onClick={(e) => {
@@ -688,18 +705,20 @@ const TaskNode = ({
                     </button>
                   </div>
 
-                  <div className="flex items-center">
-                    {task.due_date && (
-                      <span className={cn(
-                        "text-[10px] font-bold px-2 py-0.5 rounded-md",
-                        isOverdue
-                          ? "bg-red-100 text-red-700"
-                          : "bg-yellow-100 text-yellow-700"
-                      )}>
-                        {format(parseISO(task.due_date), 'MMM d')}
-                      </span>
-                    )}
-                  </div>
+                  {!isComment && (
+                    <div className="flex items-center">
+                      {task.due_date && (
+                        <span className={cn(
+                          "text-[10px] font-bold px-2 py-0.5 rounded-md",
+                          isOverdue
+                            ? "bg-red-100 text-red-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        )}>
+                          {format(parseISO(task.due_date), 'MMM d')}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -708,56 +727,116 @@ const TaskNode = ({
       </div>
 
       <AnimatePresence>
-        {isExpanded && hasChildren && (
-          <div className="ml-6">
-            {task.children?.map((child) => (
-              <TaskNode
-                key={child.id}
-                task={child}
-                dealId={dealId}
-                dealName={dealName}
-                depth={depth + 1}
-                onComplete={onComplete}
-                onPickup={onPickup}
-                onAddChild={onAddChild}
-                onAddReply={onAddReply}
-                onShare={onShare}
-                onLike={onLike}
-                currentUserId={currentUserId}
-                users={users}
-                addingChildTo={addingChildTo}
-                addingReplyTo={addingReplyTo}
-                onSaveTask={onSaveTask}
-                onCancelTask={onCancelTask}
-                expandedTasks={expandedTasks}
-                onToggleExpand={onToggleExpand}
-                editingTaskId={editingTaskId}
-                editingSummary={editingSummary}
-                editingAssignee={editingAssignee}
-                editingDueDate={editingDueDate}
-                onStartEdit={onStartEdit}
-                onSaveEdit={onSaveEdit}
-                onCancelEdit={onCancelEdit}
-                onEditSummaryChange={onEditSummaryChange}
-                onEditAssigneeChange={onEditAssigneeChange}
-                onEditDueDateChange={onEditDueDateChange}
-              />
-            ))}
-          </div>
-        )}
-
-        {(isAddingChild || isAddingReply) && (
+        {isAddingReply && (
           <div className="ml-6">
             <InlineTaskEditor
               users={users}
               currentUser={currentUser}
-              onSave={(s, a, d) => onSaveTask(s, a, d, task.id, isAddingReply)}
+              onSave={(s, a, d) => onSaveTask(s, a, d, task.id, true)}
               onCancel={onCancelTask}
               depth={depth + 1}
-              mode={isAddingReply ? 'comment' : 'task'}
+              mode="comment"
             />
           </div>
         )}
+
+        {isExpanded && hasChildren && (() => {
+          const comments = task.children?.filter(c => c.is_task === false) || [];
+          const subtasks = task.children?.filter(c => c.is_task !== false) || [];
+
+          return (
+            <>
+              {comments.length > 0 && (
+                <div className="ml-6">
+                  {comments.map((comment) => (
+                    <TaskNode
+                      key={comment.id}
+                      task={comment}
+                      dealId={dealId}
+                      dealName={dealName}
+                      depth={depth + 1}
+                      onComplete={onComplete}
+                      onPickup={onPickup}
+                      onAddChild={onAddChild}
+                      onAddReply={onAddReply}
+                      onShare={onShare}
+                      onLike={onLike}
+                      currentUserId={currentUserId}
+                      users={users}
+                      addingChildTo={addingChildTo}
+                      addingReplyTo={addingReplyTo}
+                      onSaveTask={onSaveTask}
+                      onCancelTask={onCancelTask}
+                      expandedTasks={expandedTasks}
+                      onToggleExpand={onToggleExpand}
+                      editingTaskId={editingTaskId}
+                      editingSummary={editingSummary}
+                      editingAssignee={editingAssignee}
+                      editingDueDate={editingDueDate}
+                      onStartEdit={onStartEdit}
+                      onSaveEdit={onSaveEdit}
+                      onCancelEdit={onCancelEdit}
+                      onEditSummaryChange={onEditSummaryChange}
+                      onEditAssigneeChange={onEditAssigneeChange}
+                      onEditDueDateChange={onEditDueDateChange}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {isAddingChild && (
+                <div className="ml-6">
+                  <InlineTaskEditor
+                    users={users}
+                    currentUser={currentUser}
+                    onSave={(s, a, d) => onSaveTask(s, a, d, task.id, false)}
+                    onCancel={onCancelTask}
+                    depth={depth + 1}
+                    mode="task"
+                  />
+                </div>
+              )}
+
+              {subtasks.length > 0 && (
+                <div className="ml-6">
+                  {subtasks.map((subtask) => (
+                    <TaskNode
+                      key={subtask.id}
+                      task={subtask}
+                      dealId={dealId}
+                      dealName={dealName}
+                      depth={depth + 1}
+                      onComplete={onComplete}
+                      onPickup={onPickup}
+                      onAddChild={onAddChild}
+                      onAddReply={onAddReply}
+                      onShare={onShare}
+                      onLike={onLike}
+                      currentUserId={currentUserId}
+                      users={users}
+                      addingChildTo={addingChildTo}
+                      addingReplyTo={addingReplyTo}
+                      onSaveTask={onSaveTask}
+                      onCancelTask={onCancelTask}
+                      expandedTasks={expandedTasks}
+                      onToggleExpand={onToggleExpand}
+                      editingTaskId={editingTaskId}
+                      editingSummary={editingSummary}
+                      editingAssignee={editingAssignee}
+                      editingDueDate={editingDueDate}
+                      onStartEdit={onStartEdit}
+                      onSaveEdit={onSaveEdit}
+                      onCancelEdit={onCancelEdit}
+                      onEditSummaryChange={onEditSummaryChange}
+                      onEditAssigneeChange={onEditAssigneeChange}
+                      onEditDueDateChange={onEditDueDateChange}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          );
+        })()}
       </AnimatePresence>
     </div>
   );
