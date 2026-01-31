@@ -161,9 +161,9 @@ const InlineTaskEditor = ({
       exit={{ opacity: 0, height: 0 }}
       className="relative group py-3"
     >
-      <div className="absolute left-[24px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 z-0" />
+      <div className="absolute left-[22px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 z-0" />
 
-      <div className="relative z-10 pl-[36px] pr-2">
+      <div className="relative z-10 pl-[42px] pr-2">
         <div className="flex items-start gap-2">
           <div ref={userPickerRef} className="relative flex-shrink-0">
             <button
@@ -401,13 +401,13 @@ const TaskNode = ({
 
     return (
       <div className="relative group py-3">
-        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 z-0" />
+        <div className="absolute left-[22px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 z-0" />
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 pl-[36px] pr-2"
+          className="relative z-10 pl-[42px] pr-2"
         >
-          <div className="absolute left-[17px] top-[16px] z-20 bg-white">
+          <div className="absolute left-[15px] top-[10px] z-20 bg-white">
             <div className="w-4 h-4 rounded-full bg-orange-500 border-2 border-orange-500" />
           </div>
 
@@ -464,7 +464,7 @@ const TaskNode = ({
 
   return (
     <div className="relative group">
-      <div className="absolute left-[24px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 group-hover:border-slate-400 transition-colors z-0" />
+      <div className="absolute left-[22px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 group-hover:border-slate-400 transition-colors z-0" />
 
       <div
         className={cn(
@@ -476,7 +476,7 @@ const TaskNode = ({
         onTouchMove={handleTouchEnd}
         onDoubleClick={handleDoubleClick}
       >
-        <div className="absolute left-[17px] top-[16px] z-20 bg-white">
+        <div className="absolute left-[15px] top-[10px] z-20 bg-white">
           <button
             onClick={() => onComplete(task.id, task.task_status)}
             className={cn(
@@ -490,7 +490,7 @@ const TaskNode = ({
           </button>
         </div>
 
-        <div className="pl-[36px] pr-2">
+        <div className="pl-[42px] pr-2">
           <div className="flex items-start gap-2">
             {isUnassigned ? (
               <button
@@ -1261,12 +1261,18 @@ export const TasksScreen: React.FC = () => {
             <div key={group.id} className="bg-white">
               <div
                 onClick={() => handleToggleDeal(group.id)}
-                className="flex items-center cursor-pointer hover:bg-slate-50 transition-colors py-2 rounded-lg"
+                className="flex items-center gap-3 pl-1 cursor-pointer hover:bg-slate-50 transition-colors py-2 rounded-lg"
               >
-                <div className="ml-2">
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.location.href = `/?view=opportunities&id=${group.id}`;
+                  }}
+                  className="cursor-pointer hover:opacity-80 transition-opacity"
+                >
                   {getStageAvatar(group.stage)}
                 </div>
-                <span className="font-bold text-slate-900 text-sm truncate ml-3 flex-1 min-w-0">{group.name}</span>
+                <span className="font-bold text-slate-900 text-sm truncate flex-1 min-w-0">{group.name}</span>
                 {group.mw > 0 && (
                   <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 mr-2">
                     {group.mw} MW
