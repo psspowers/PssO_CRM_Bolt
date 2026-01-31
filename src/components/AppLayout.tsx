@@ -446,7 +446,7 @@ export default function AppLayout() {
       case 'partners': return <PartnersScreen forcedOpenId={autoOpenId} />;
       case 'contacts': return <ContactsScreen forcedOpenId={autoOpenId} />;
       case 'projects': return <ProjectsScreen forcedOpenId={autoOpenId} />;
-      case 'tasks': return <TasksScreen />;
+      case 'tasks': return <TasksScreen onNavigate={handleDeepLink} />;
       case 'pulse': return <PulseScreen forcedOpenId={autoOpenId} onNavigate={handleDeepLink} />;
       case 'timeline': return <ActivityTimelineScreen />;
       case 'search': return <SearchScreen onNavigate={handleDeepLink} />;

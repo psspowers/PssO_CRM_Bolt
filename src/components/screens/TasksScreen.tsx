@@ -637,7 +637,13 @@ const TaskNode = ({
   );
 };
 
-export const TasksScreen: React.FC = () => {
+type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'projects' | 'pulse' | 'me' | 'nexus';
+
+interface TasksScreenProps {
+  onNavigate?: (tab: Tab, id?: string) => void;
+}
+
+export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
   const { user, profile } = useAuth();
   const { users } = useAppContext();
   const [dealGroups, setDealGroups] = useState<DealGroup[]>([]);
@@ -1266,7 +1272,7 @@ export const TasksScreen: React.FC = () => {
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
-                    window.location.href = `/?view=opportunities&id=${group.id}`;
+                    onNavigate?.('opportunities', group.id);
                   }}
                   className="cursor-pointer hover:opacity-80 transition-opacity"
                 >
