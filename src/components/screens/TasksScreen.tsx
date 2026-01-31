@@ -29,6 +29,7 @@ interface TaskThread {
   isOptimistic?: boolean;
   reactions?: Record<string, string>;
   comment_count?: number;
+  like_count?: number;
 }
 
 interface DealGroup {
@@ -84,8 +85,6 @@ const getRoleBorderColor = (role?: string) => {
 const buildTaskTree = (tasks: TaskThread[]): TaskThread[] => {
   if (!tasks || tasks.length === 0) return [];
 
-  console.log('🌳 Building tree from tasks:', tasks.length);
-
   const uniqueTasks = Array.from(
     new Map(tasks.map(t => [t.id, t])).values()
   );
@@ -93,25 +92,22 @@ const buildTaskTree = (tasks: TaskThread[]): TaskThread[] => {
   const taskMap = new Map<string, TaskThread>();
   const roots: TaskThread[] = [];
 
-  const tasksCopy = uniqueTasks.map(t => ({ ...t, children: [] }));
+  // Preserve comment_count and like_count from database when copying
+  const tasksCopy = uniqueTasks.map(t => ({
+    ...t,
+    children: [],
+    comment_count: t.comment_count || 0,  // Preserve from DB
+    like_count: t.like_count || 0         // Preserve from DB
+  }));
+
   tasksCopy.forEach(task => taskMap.set(task.id, task));
 
   tasksCopy.forEach(task => {
     if (task.parent_task_id && taskMap.has(task.parent_task_id)) {
       const parent = taskMap.get(task.parent_task_id)!;
       parent.children!.push(task);
-      console.log(`  └─ Added ${task.is_task ? 'subtask' : 'comment'} "${task.summary?.substring(0, 30)}" to parent "${parent.summary?.substring(0, 30)}"`);
     } else {
       roots.push(task);
-    }
-  });
-
-  console.log(`🌳 Built tree with ${roots.length} roots, checking children...`);
-  roots.forEach(root => {
-    if (root.children && root.children.length > 0) {
-      const comments = root.children.filter(c => !c.is_task).length;
-      const subtasks = root.children.filter(c => c.is_task).length;
-      console.log(`  ✓ "${root.summary?.substring(0, 40)}" has ${comments} comments + ${subtasks} subtasks`);
     }
   });
 
@@ -423,8 +419,10 @@ const TaskNode = ({
   const hasLiked = currentUserId && task.reactions?.[currentUserId] === 'like';
   const likeCount = task.reactions ? Object.keys(task.reactions).length : 0;
 
-  const commentCount = task.children?.filter(c => c.is_task === false).length || 0;
-  const subtaskCount = task.children?.filter(c => c.is_task !== false).length || 0;
+  // Use comment_count from database (which already counts direct children correctly)
+  // Build children array from parent_task_id relationships for display only
+  const commentCount = task.comment_count || 0;
+  const subtaskCount = task.children?.filter(c => c.is_task === true).length || 0;
 
   const avatarSize = 'w-7 h-7';
   const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isCompleted;
@@ -964,7 +962,6 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
       const { data, error } = await supabase.rpc('get_deal_threads_view', { p_view_mode: 'all' });
       if (error) throw error;
       const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-      console.log('🔍 Raw RPC data:', JSON.stringify(parsed, null, 2));
       setDealGroups(parsed);
     } catch (err) {
       console.error(err);
@@ -1169,17 +1166,21 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
       const optimisticTask: TaskThread = {
         id: optimisticId,
         summary,
-        task_status: 'Pending',
-        priority: 'Medium',
-        due_date: date ? new Date(date).toISOString() : undefined,
-        assigned_to_id: assignee,
-        assignee_name: assignedUser?.name,
-        assignee_avatar: assignedUser?.avatar_url,
+        is_task: !isReply,  // Comments have is_task = false
+        task_status: isReply ? undefined : 'Pending',
+        priority: isReply ? undefined : 'Medium',
+        due_date: date && !isReply ? new Date(date).toISOString() : undefined,
+        assigned_to_id: isReply ? undefined : assignee,
+        assignee_name: isReply ? user?.name : assignedUser?.name,
+        assignee_avatar: isReply ? user?.avatar_url : assignedUser?.avatar_url,
+        assignee_role: isReply ? user?.role : assignedUser?.role,
         parent_task_id: parentId,
         depth: parentId ? 1 : 0,
         created_at: new Date().toISOString(),
         children: [],
         isOptimistic: true,
+        comment_count: 0,
+        like_count: 0,
       };
 
       setOptimisticTasks(prev => new Map(prev).set(optimisticId, { ...optimisticTask, dealId: targetDealId }));
@@ -1196,9 +1197,15 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
             const insertIntoParent = (taskList: TaskThread[]): TaskThread[] => {
               return taskList.map(task => {
                 if (task.id === parentId) {
+                  // If adding a comment (reply), increment comment_count optimistically
+                  const updatedCommentCount = isReply
+                    ? (task.comment_count || 0) + 1
+                    : task.comment_count;
+
                   return {
                     ...task,
                     children: [...(task.children || []), optimisticTask],
+                    comment_count: updatedCommentCount,
                   };
                 } else if (task.children && task.children.length > 0) {
                   return {
