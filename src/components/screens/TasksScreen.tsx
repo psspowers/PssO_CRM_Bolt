@@ -96,11 +96,36 @@ const InlineTaskEditor = ({
   const [summary, setSummary] = useState('');
   const [assigneeId, setAssigneeId] = useState(currentUser?.id || '');
   const [dueDate, setDueDate] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [showUserPicker, setShowUserPicker] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const userPickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    textareaRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userPickerRef.current && !userPickerRef.current.contains(event.target as Node)) {
+        setShowUserPicker(false);
+      }
+    };
+
+    if (showUserPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserPicker]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [summary]);
 
   const handleSave = () => {
     if (summary.trim()) {
@@ -108,6 +133,16 @@ const InlineTaskEditor = ({
       setSummary('');
       setAssigneeId(currentUser?.id || '');
       setDueDate('');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSave();
+    }
+    if (e.key === 'Escape') {
+      onCancel();
     }
   };
 
@@ -119,68 +154,120 @@ const InlineTaskEditor = ({
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
-      className="py-1"
+      className="relative group py-3"
     >
-      <div className="flex items-start gap-2 pl-1">
-        <div className="flex-1 bg-white border border-orange-200 rounded-lg shadow-sm">
-          <input
-            ref={inputRef}
+      <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 z-0" />
+
+      <div className="relative z-10 pl-[48px] pr-2 flex items-start gap-3">
+        <div ref={userPickerRef} className="relative flex-shrink-0 mt-0.5">
+          <button
+            onClick={() => setShowUserPicker(!showUserPicker)}
+            className="relative"
+            title="Assign to user"
+          >
+            <Avatar className="w-7 h-7 ring-2 ring-white shadow-sm hover:ring-orange-500 transition-all">
+              <AvatarImage src={selectedUser?.avatar_url} />
+              <AvatarFallback className="bg-orange-500 text-white text-[10px] font-bold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+
+          {showUserPicker && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+              className="absolute left-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
+            >
+              {users.map(u => (
+                <button
+                  key={u.id}
+                  onClick={() => {
+                    setAssigneeId(u.id);
+                    setShowUserPicker(false);
+                  }}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors text-left",
+                    assigneeId === u.id && "bg-orange-50"
+                  )}
+                >
+                  <Avatar className="w-6 h-6 ring-1 ring-slate-200">
+                    <AvatarImage src={u.avatar_url} />
+                    <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
+                      {getInitials(u.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium text-slate-700 truncate">{u.name}</span>
+                  {assigneeId === u.id && <Check className="w-4 h-4 text-orange-600 ml-auto" />}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <textarea
+            ref={textareaRef}
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSave();
-              if (e.key === 'Escape') onCancel();
-            }}
+            onKeyDown={handleKeyDown}
             placeholder={isReply ? "Type reply..." : "Type task..."}
-            className="w-full bg-transparent outline-none text-sm font-medium py-2 px-2 placeholder:text-slate-300"
+            rows={1}
+            className="w-full bg-transparent resize-none outline-none text-sm font-medium placeholder:text-slate-400 leading-relaxed overflow-hidden"
           />
+        </div>
 
+        <div className="flex items-center gap-2 flex-shrink-0">
           {!isReply && (
-            <div className="flex items-center gap-2 px-2 pb-2">
-              <div className="relative">
-                <select
-                  value={assigneeId}
-                  onChange={e => setAssigneeId(e.target.value)}
-                  className="appearance-none bg-transparent outline-none cursor-pointer opacity-0 absolute inset-0 w-6 h-6 z-10"
-                  title="Assign to user"
+            <div className="relative group/date">
+              {dueDate ? (
+                <button
+                  onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
+                  className="text-xs font-medium text-slate-600 hover:text-orange-600 transition-colors px-2 py-1 rounded hover:bg-orange-50"
                 >
-                  <option value={currentUser?.id}>Me</option>
-                  {users.filter(u => u.id !== currentUser?.id).map(u => (
-                    <option key={u.id} value={u.id}>{u.name}</option>
-                  ))}
-                </select>
-                <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-[10px] font-bold pointer-events-none">
-                  {initials}
-                </div>
-              </div>
-
+                  {format(parseISO(dueDate), 'MMM d')}
+                </button>
+              ) : (
+                <button
+                  onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
+                  className="text-slate-400 hover:text-orange-500 transition-colors p-1 rounded hover:bg-orange-50"
+                  title="Set due date"
+                >
+                  <Calendar className="w-4 h-4" />
+                </button>
+              )}
               <input
+                id={`date-picker-${depth}`}
                 type="date"
                 value={dueDate}
-                onChange={e => setDueDate(e.target.value)}
-                className="text-[11px] outline-none text-slate-400 cursor-pointer ml-auto"
-                placeholder="mm/dd/yyyy"
+                onChange={(e) => setDueDate(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
               />
-
-              <button onClick={onCancel} className="p-1 hover:bg-slate-100 rounded text-slate-400">
-                <X className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={handleSave} className="p-1 hover:bg-green-50 rounded text-green-600">
-                <Check className="w-3.5 h-3.5" />
-              </button>
             </div>
           )}
 
-          {isReply && (
-            <div className="flex items-center gap-1 px-2 py-2 justify-end">
-              <button onClick={onCancel} className="p-1 hover:bg-slate-100 rounded text-slate-400">
-                <X className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={handleSave} className="p-1 hover:bg-green-50 rounded text-green-600">
-                <Check className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
+          <button
+            onClick={onCancel}
+            className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors"
+            title="Cancel"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={handleSave}
+            disabled={!summary.trim()}
+            className={cn(
+              "p-1 rounded transition-colors",
+              summary.trim()
+                ? "hover:bg-green-50 text-green-600 hover:text-green-700"
+                : "text-slate-300 cursor-not-allowed"
+            )}
+            title="Save task"
+          >
+            <Check className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </motion.div>
