@@ -377,180 +377,367 @@ const TaskNode = ({
     );
   }
 
+  // Root tasks (depth 0) should be Cards
+  const isRootTask = depth === 0;
+
   return (
     <div className="relative">
-      <div
-        className={cn(
-          'flex items-start gap-2 py-1 group transition-all',
+      {/* Root Task: Card wrapper */}
+      {isRootTask && (
+        <div className={cn(
+          'bg-white shadow-sm border border-slate-200 rounded-lg p-3 mb-2',
           isCompleted && 'opacity-50 grayscale'
-        )}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchMove={handleTouchEnd}
-        onDoubleClick={handleDoubleClick}
-      >
-        {/* Expand/Collapse */}
-        <div className="w-4 flex justify-center items-start pt-1.5 flex-shrink-0">
-          {hasChildren ? (
-            <button
-              onClick={() => onToggleExpand(task.id)}
-              className="w-4 h-4 flex items-center justify-center hover:bg-slate-200 rounded transition-colors"
-            >
-              <ChevronRight className={cn("w-3 h-3 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
-            </button>
-          ) : null}
-        </div>
+        )}>
+          <div
+            className="flex items-start gap-2 group transition-all"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchMove={handleTouchEnd}
+            onDoubleClick={handleDoubleClick}
+          >
+            {/* Expand/Collapse */}
+            <div className="w-4 flex justify-center items-start pt-1.5 flex-shrink-0">
+              {hasChildren ? (
+                <button
+                  onClick={() => onToggleExpand(task.id)}
+                  className="w-4 h-4 flex items-center justify-center hover:bg-slate-200 rounded transition-colors"
+                >
+                  <ChevronRight className={cn("w-3 h-3 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
+                </button>
+              ) : null}
+            </div>
 
-        {/* Avatar or Pickup Button */}
-        <div className="flex-shrink-0 mt-0.5">
-          {isUnassigned ? (
-            <button
-              onClick={() => onPickup(task.id)}
-              className={cn(
-                avatarSize,
-                "rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white"
+            {/* Avatar or Pickup Button */}
+            <div className="flex-shrink-0 mt-0.5">
+              {isUnassigned ? (
+                <button
+                  onClick={() => onPickup(task.id)}
+                  className={cn(
+                    avatarSize,
+                    "rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white"
+                  )}
+                >
+                  <Hand className="w-3 h-3 text-amber-600" />
+                </button>
+              ) : (
+                <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm")}>
+                  <AvatarImage src={task.assignee_avatar} />
+                  <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
+                    {getInitials(task.assignee_name)}
+                  </AvatarFallback>
+                </Avatar>
               )}
-            >
-              <Hand className="w-3 h-3 text-amber-600" />
-            </button>
-          ) : (
-            <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm")}>
-              <AvatarImage src={task.assignee_avatar} />
-              <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
-                {getInitials(task.assignee_name)}
-              </AvatarFallback>
-            </Avatar>
-          )}
-        </div>
+            </div>
 
-        {/* Task Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
+            {/* Task Content */}
             <div className="flex-1 min-w-0">
-              <p
-                className={cn(
-                  "text-sm leading-snug transition-all inline",
-                  isMine ? "font-bold text-slate-900" : "font-medium text-slate-600",
-                  isCompleted && "line-through decoration-slate-300"
-                )}
-              >
-                {task.summary}
-                {!isCompleted && (
-                  <>
-                    {' '}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAddChild(task.id);
-                      }}
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-50 border border-orange-300 hover:scale-110 active:scale-90 transition-transform ml-1"
-                      title="Add subtask"
-                    >
-                      <Plus className="w-3.5 h-3.5 text-orange-600" />
-                    </button>
-                    {' '}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAddReply(task.id);
-                      }}
-                      className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:scale-110 transition-transform ml-1"
-                      title="Reply"
-                    >
-                      <Reply className="w-2.5 h-2.5" />
-                    </button>
-                  </>
-                )}
-              </p>
-            </div>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p
+                    className={cn(
+                      "text-sm leading-snug transition-all inline",
+                      isMine ? "font-bold text-slate-900" : "font-medium text-slate-600",
+                      isCompleted && "line-through decoration-slate-300"
+                    )}
+                  >
+                    {task.summary}
+                    {!isCompleted && (
+                      <>
+                        {' '}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAddChild(task.id);
+                          }}
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-50 border border-orange-300 hover:scale-110 active:scale-90 transition-transform ml-1"
+                          title="Add subtask"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-orange-600" />
+                        </button>
+                        {' '}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAddReply(task.id);
+                          }}
+                          className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:scale-110 transition-transform ml-1"
+                          title="Reply"
+                        >
+                          <Reply className="w-2.5 h-2.5" />
+                        </button>
+                      </>
+                    )}
+                  </p>
+                </div>
 
-            {/* Right Side: Due Date + Checkbox (Stacked) */}
-            <div className="flex flex-col items-end gap-1 flex-shrink-0">
-              {task.due_date && (
-                <span className={cn(
-                  "text-xs whitespace-nowrap",
-                  isOverdue ? "text-red-600 font-extrabold" : "text-slate-400 font-medium"
-                )}>
-                  {format(parseISO(task.due_date), 'MMM d')}
-                </span>
-              )}
-              <button
-                onClick={() => onComplete(task.id, task.task_status)}
-                className="text-slate-300 hover:text-green-500 transition-colors"
-              >
-                {isCompleted ? (
-                  <CheckSquare className="w-4 h-4 text-green-500" />
-                ) : (
-                  <Square className="w-4 h-4" />
-                )}
-              </button>
+                {/* Right Side: Due Date + Checkbox (Stacked) */}
+                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                  {task.due_date && (
+                    <span className={cn(
+                      "text-xs whitespace-nowrap",
+                      isOverdue ? "text-red-600 font-extrabold" : "text-slate-400 font-medium"
+                    )}>
+                      {format(parseISO(task.due_date), 'MMM d')}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => onComplete(task.id, task.task_status)}
+                    className="text-slate-300 hover:text-green-500 transition-colors"
+                  >
+                    {isCompleted ? (
+                      <CheckSquare className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <Square className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
+
+          {/* Children inside root card */}
+          <AnimatePresence>
+            {isExpanded && (
+              <div className="ml-2 mt-3 border-l-2 border-slate-300 pl-2">
+                {task.children?.map((child) => (
+                  <TaskNode
+                    key={child.id}
+                    task={child}
+                    dealId={dealId}
+                    depth={depth + 1}
+                    onComplete={onComplete}
+                    onPickup={onPickup}
+                    onAddChild={onAddChild}
+                    onAddReply={onAddReply}
+                    currentUserId={currentUserId}
+                    users={users}
+                    addingChildTo={addingChildTo}
+                    addingReplyTo={addingReplyTo}
+                    onSaveTask={onSaveTask}
+                    onCancelTask={onCancelTask}
+                    expandedTasks={expandedTasks}
+                    onToggleExpand={onToggleExpand}
+                    editingTaskId={editingTaskId}
+                    editingSummary={editingSummary}
+                    editingAssignee={editingAssignee}
+                    editingDueDate={editingDueDate}
+                    onStartEdit={onStartEdit}
+                    onSaveEdit={onSaveEdit}
+                    onCancelEdit={onCancelEdit}
+                    onEditSummaryChange={onEditSummaryChange}
+                    onEditAssigneeChange={onEditAssigneeChange}
+                    onEditDueDateChange={onEditDueDateChange}
+                  />
+                ))}
+
+                {/* Adding Child Editor inside root card */}
+                {isAddingChild && (
+                  <InlineTaskEditor
+                    users={users}
+                    currentUser={currentUser}
+                    onSave={(s, a, d) => onSaveTask(s, a, d, task.id, false)}
+                    onCancel={onCancelTask}
+                    depth={depth + 1}
+                    isReply={false}
+                  />
+                )}
+
+                {/* Adding Reply Editor inside root card */}
+                {isAddingReply && (
+                  <InlineTaskEditor
+                    users={users}
+                    currentUser={currentUser}
+                    onSave={(s, a, d) => onSaveTask(s, a, d, task.id, true)}
+                    onCancel={onCancelTask}
+                    depth={depth + 1}
+                    isReply={true}
+                  />
+                )}
+              </div>
+            )}
+          </AnimatePresence>
         </div>
-      </div>
+      )}
 
-      {/* Children and Reply Editor */}
-      <AnimatePresence>
-        {isExpanded && (
-          <div className="ml-6 border-l-2 border-dotted border-gray-300 pl-2">
-            {/* Render Children */}
-            {task.children?.map((child) => (
-              <TaskNode
-                key={child.id}
-                task={child}
-                dealId={dealId}
-                depth={depth + 1}
-                onComplete={onComplete}
-                onPickup={onPickup}
-                onAddChild={onAddChild}
-                onAddReply={onAddReply}
-                currentUserId={currentUserId}
-                users={users}
-                addingChildTo={addingChildTo}
-                addingReplyTo={addingReplyTo}
-                onSaveTask={onSaveTask}
-                onCancelTask={onCancelTask}
-                expandedTasks={expandedTasks}
-                onToggleExpand={onToggleExpand}
-                editingTaskId={editingTaskId}
-                editingSummary={editingSummary}
-                editingAssignee={editingAssignee}
-                editingDueDate={editingDueDate}
-                onStartEdit={onStartEdit}
-                onSaveEdit={onSaveEdit}
-                onCancelEdit={onCancelEdit}
-                onEditSummaryChange={onEditSummaryChange}
-                onEditAssigneeChange={onEditAssigneeChange}
-                onEditDueDateChange={onEditDueDateChange}
-              />
-            ))}
+      {/* Child Task: Transparent with connector */}
+      {!isRootTask && (
+        <div className="relative">
+          {/* Horizontal connector hook from spine to avatar */}
+          <div className="absolute left-0 top-4 w-3 border-b-2 border-slate-300" />
 
-            {/* Adding Child Editor */}
-            {isAddingChild && (
-              <InlineTaskEditor
-                users={users}
-                currentUser={currentUser}
-                onSave={(s, a, d) => onSaveTask(s, a, d, task.id, false)}
-                onCancel={onCancelTask}
-                depth={depth + 1}
-                isReply={false}
-              />
+          <div
+            className={cn(
+              'flex items-start gap-2 py-1 pl-3 group transition-all',
+              isCompleted && 'opacity-50 grayscale'
             )}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onTouchMove={handleTouchEnd}
+            onDoubleClick={handleDoubleClick}
+          >
+            {/* Expand/Collapse */}
+            <div className="w-4 flex justify-center items-start pt-1.5 flex-shrink-0">
+              {hasChildren ? (
+                <button
+                  onClick={() => onToggleExpand(task.id)}
+                  className="w-4 h-4 flex items-center justify-center hover:bg-slate-200 rounded transition-colors"
+                >
+                  <ChevronRight className={cn("w-3 h-3 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
+                </button>
+              ) : null}
+            </div>
 
-            {/* Adding Reply Editor */}
-            {isAddingReply && (
-              <InlineTaskEditor
-                users={users}
-                currentUser={currentUser}
-                onSave={(s, a, d) => onSaveTask(s, a, d, task.id, true)}
-                onCancel={onCancelTask}
-                depth={depth + 1}
-                isReply={true}
-              />
-            )}
+            {/* Avatar or Pickup Button */}
+            <div className="flex-shrink-0 mt-0.5">
+              {isUnassigned ? (
+                <button
+                  onClick={() => onPickup(task.id)}
+                  className={cn(
+                    avatarSize,
+                    "rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white"
+                  )}
+                >
+                  <Hand className="w-3 h-3 text-amber-600" />
+                </button>
+              ) : (
+                <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm")}>
+                  <AvatarImage src={task.assignee_avatar} />
+                  <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
+                    {getInitials(task.assignee_name)}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+            </div>
+
+            {/* Task Content */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p
+                    className={cn(
+                      "text-sm leading-snug transition-all inline",
+                      isMine ? "font-bold text-slate-900" : "font-medium text-slate-600",
+                      isCompleted && "line-through decoration-slate-300"
+                    )}
+                  >
+                    {task.summary}
+                    {!isCompleted && (
+                      <>
+                        {' '}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAddChild(task.id);
+                          }}
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-50 border border-orange-300 hover:scale-110 active:scale-90 transition-transform ml-1"
+                          title="Add subtask"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-orange-600" />
+                        </button>
+                        {' '}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAddReply(task.id);
+                          }}
+                          className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:scale-110 transition-transform ml-1"
+                          title="Reply"
+                        >
+                          <Reply className="w-2.5 h-2.5" />
+                        </button>
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                {/* Right Side: Due Date + Checkbox (Stacked) */}
+                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                  {task.due_date && (
+                    <span className={cn(
+                      "text-xs whitespace-nowrap",
+                      isOverdue ? "text-red-600 font-extrabold" : "text-slate-400 font-medium"
+                    )}>
+                      {format(parseISO(task.due_date), 'MMM d')}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => onComplete(task.id, task.task_status)}
+                    className="text-slate-300 hover:text-green-500 transition-colors"
+                  >
+                    {isCompleted ? (
+                      <CheckSquare className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <Square className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+
+          {/* Child task nested children */}
+          <AnimatePresence>
+            {isExpanded && (
+              <div className="ml-3 border-l-2 border-slate-300 pl-2">
+                {task.children?.map((child) => (
+                  <TaskNode
+                    key={child.id}
+                    task={child}
+                    dealId={dealId}
+                    depth={depth + 1}
+                    onComplete={onComplete}
+                    onPickup={onPickup}
+                    onAddChild={onAddChild}
+                    onAddReply={onAddReply}
+                    currentUserId={currentUserId}
+                    users={users}
+                    addingChildTo={addingChildTo}
+                    addingReplyTo={addingReplyTo}
+                    onSaveTask={onSaveTask}
+                    onCancelTask={onCancelTask}
+                    expandedTasks={expandedTasks}
+                    onToggleExpand={onToggleExpand}
+                    editingTaskId={editingTaskId}
+                    editingSummary={editingSummary}
+                    editingAssignee={editingAssignee}
+                    editingDueDate={editingDueDate}
+                    onStartEdit={onStartEdit}
+                    onSaveEdit={onSaveEdit}
+                    onCancelEdit={onCancelEdit}
+                    onEditSummaryChange={onEditSummaryChange}
+                    onEditAssigneeChange={onEditAssigneeChange}
+                    onEditDueDateChange={onEditDueDateChange}
+                  />
+                ))}
+
+                {/* Adding Child Editor */}
+                {isAddingChild && (
+                  <InlineTaskEditor
+                    users={users}
+                    currentUser={currentUser}
+                    onSave={(s, a, d) => onSaveTask(s, a, d, task.id, false)}
+                    onCancel={onCancelTask}
+                    depth={depth + 1}
+                    isReply={false}
+                  />
+                )}
+
+                {/* Adding Reply Editor */}
+                {isAddingReply && (
+                  <InlineTaskEditor
+                    users={users}
+                    currentUser={currentUser}
+                    onSave={(s, a, d) => onSaveTask(s, a, d, task.id, true)}
+                    onCancel={onCancelTask}
+                    depth={depth + 1}
+                    isReply={true}
+                  />
+                )}
+              </div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 };
@@ -1246,7 +1433,7 @@ export const TasksScreen: React.FC = () => {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="ml-6 border-l-2 border-dotted border-gray-300 pl-2 mt-1"
+                    className="ml-6 border-l-2 border-slate-300 pl-2 mt-1"
                   >
                     {taskTree.map((task) => (
                       <TaskNode
