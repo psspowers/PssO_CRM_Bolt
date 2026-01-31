@@ -39,21 +39,21 @@ interface DealGroup {
 }
 
 const getStageAvatar = (stage: string) => {
-  const configs: Record<string, { char: string; color: string; bg: string; hollow?: boolean }> = {
-    'Prospect': { char: '', color: 'text-slate-500', bg: 'bg-white', hollow: true },
-    'Qualified': { char: 'Q', color: 'text-blue-600', bg: 'bg-blue-100' },
-    'Proposal': { char: 'P', color: 'text-amber-600', bg: 'bg-amber-100' },
-    'Negotiation': { char: 'N', color: 'text-purple-600', bg: 'bg-purple-100' },
-    'Term Sheet': { char: 'T', color: 'text-teal-600', bg: 'bg-teal-100' },
-    'Won': { char: 'W', color: 'text-emerald-600', bg: 'bg-emerald-100' },
+  const configs: Record<string, { char: string; color: string; bg: string; borderColor: string; hollow?: boolean }> = {
+    'Prospect': { char: '', color: 'text-slate-500', bg: 'bg-white', borderColor: 'border-slate-400', hollow: true },
+    'Qualified': { char: 'Q', color: 'text-blue-600', bg: 'bg-blue-100', borderColor: 'border-blue-500' },
+    'Proposal': { char: 'P', color: 'text-amber-600', bg: 'bg-amber-100', borderColor: 'border-amber-500' },
+    'Negotiation': { char: 'N', color: 'text-purple-600', bg: 'bg-purple-100', borderColor: 'border-purple-500' },
+    'Term Sheet': { char: 'T', color: 'text-teal-600', bg: 'bg-teal-100', borderColor: 'border-teal-500' },
+    'Won': { char: 'W', color: 'text-emerald-600', bg: 'bg-emerald-100', borderColor: 'border-emerald-500' },
   };
-  const s = configs[stage] || { char: '?', color: 'text-slate-500', bg: 'bg-slate-100' };
+  const s = configs[stage] || { char: '?', color: 'text-slate-500', bg: 'bg-slate-100', borderColor: 'border-slate-300' };
   return (
     <div className={cn(
-      'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ring-2 ring-white',
+      'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ring-2 ring-white border-[3px]',
       s.bg,
       s.color,
-      s.hollow && 'border-[3px] border-slate-400'
+      s.borderColor
     )}>
       {s.char}
     </div>
