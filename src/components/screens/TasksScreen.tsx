@@ -41,7 +41,7 @@ const getStageAvatar = (stage: string) => {
     'Prospect': { char: 'P', color: 'text-slate-500', bg: 'bg-slate-100' },
     'Qualified': { char: 'Q', color: 'text-blue-600', bg: 'bg-blue-100' },
     'Proposal': { char: 'P', color: 'text-amber-600', bg: 'bg-amber-100' },
-    'Negotiation': { char: 'N', color: 'text-orange-600', bg: 'bg-orange-100' },
+    'Negotiation': { char: 'N', color: 'text-purple-600', bg: 'bg-purple-100' },
     'Term Sheet': { char: 'T', color: 'text-teal-600', bg: 'bg-teal-100' },
     'Won': { char: 'W', color: 'text-emerald-600', bg: 'bg-emerald-100' },
   };
