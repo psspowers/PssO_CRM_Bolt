@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { CheckSquare, Square, Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight, Reply, Filter, Users, ChevronDown } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight, Reply, Filter, Users, ChevronDown, ThumbsUp, CornerDownRight } from 'lucide-react';
 import { format, isPast, parseISO } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
@@ -156,117 +156,109 @@ const InlineTaskEditor = ({
       exit={{ opacity: 0, height: 0 }}
       className="relative group py-3"
     >
-      <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 z-0" />
+      <div className="absolute left-[24px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 z-0" />
 
-      <div className="relative z-10 pl-[48px] pr-2 flex items-start gap-3">
-        <div ref={userPickerRef} className="relative flex-shrink-0 mt-0.5">
-          <button
-            onClick={() => setShowUserPicker(!showUserPicker)}
-            className="relative"
-            title="Assign to user"
-          >
-            <Avatar className="w-7 h-7 ring-2 ring-white shadow-sm hover:ring-orange-500 transition-all">
-              <AvatarImage src={selectedUser?.avatar_url} />
-              <AvatarFallback className="bg-orange-500 text-white text-[10px] font-bold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </button>
-
-          {showUserPicker && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -10 }}
-              className="absolute left-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
+      <div className="relative z-10 pl-[36px] pr-2">
+        <div className="flex items-start gap-2">
+          <div ref={userPickerRef} className="relative flex-shrink-0">
+            <button
+              onClick={() => setShowUserPicker(!showUserPicker)}
+              className="relative"
+              title="Assign to user"
             >
-              {users.map(u => (
-                <button
-                  key={u.id}
-                  onClick={() => {
-                    setAssigneeId(u.id);
-                    setShowUserPicker(false);
-                  }}
-                  className={cn(
-                    "w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors text-left",
-                    assigneeId === u.id && "bg-orange-50"
-                  )}
-                >
-                  <Avatar className="w-6 h-6 ring-1 ring-slate-200">
-                    <AvatarImage src={u.avatar_url} />
-                    <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
-                      {getInitials(u.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-medium text-slate-700 truncate">{u.name}</span>
-                  {assigneeId === u.id && <Check className="w-4 h-4 text-orange-600 ml-auto" />}
-                </button>
-              ))}
-            </motion.div>
-          )}
+              <Avatar className="w-5 h-5 ring-2 ring-white shadow-sm hover:ring-orange-500 transition-all">
+                <AvatarImage src={selectedUser?.avatar_url} />
+                <AvatarFallback className="bg-orange-500 text-white text-[9px] font-bold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </button>
+
+            {showUserPicker && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                className="absolute left-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
+              >
+                {users.map(u => (
+                  <button
+                    key={u.id}
+                    onClick={() => {
+                      setAssigneeId(u.id);
+                      setShowUserPicker(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors text-left",
+                      assigneeId === u.id && "bg-orange-50"
+                    )}
+                  >
+                    <Avatar className="w-6 h-6 ring-1 ring-slate-200">
+                      <AvatarImage src={u.avatar_url} />
+                      <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
+                        {getInitials(u.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium text-slate-700 truncate">{u.name}</span>
+                    {assigneeId === u.id && <Check className="w-4 h-4 text-orange-600 ml-auto" />}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <textarea
+              ref={textareaRef}
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={isReply ? "Type reply..." : "Type task..."}
+              rows={1}
+              className="w-full bg-transparent resize-none outline-none text-[13px] text-slate-700 font-normal placeholder:text-slate-400 leading-relaxed overflow-hidden"
+            />
+          </div>
         </div>
 
-        <div className="flex-1 min-w-0">
-          <textarea
-            ref={textareaRef}
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={isReply ? "Type reply..." : "Type task..."}
-            rows={1}
-            className="w-full bg-transparent resize-none outline-none text-sm font-medium placeholder:text-slate-400 leading-relaxed overflow-hidden"
+        <div className="flex items-center gap-2 mt-1 ml-7">
+          {dueDate ? (
+            <button
+              onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
+              className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded-md hover:bg-yellow-200 transition-colors"
+            >
+              {format(parseISO(dueDate), 'MMM d')}
+            </button>
+          ) : (
+            <button
+              onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
+              className="text-slate-400 hover:text-orange-500 transition-colors"
+              title="Set due date"
+            >
+              <Calendar className="w-4 h-4" />
+            </button>
+          )}
+          <input
+            id={`date-picker-${depth}`}
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="absolute opacity-0 pointer-events-none"
           />
-        </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {!isReply && (
-            <div className="relative group/date">
-              {dueDate ? (
-                <button
-                  onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
-                  className="text-xs font-medium text-slate-600 hover:text-orange-600 transition-colors px-2 py-1 rounded hover:bg-orange-50"
-                >
-                  {format(parseISO(dueDate), 'MMM d')}
-                </button>
-              ) : (
-                <button
-                  onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
-                  className="text-slate-400 hover:text-orange-500 transition-colors p-1 rounded hover:bg-orange-50"
-                  title="Set due date"
-                >
-                  <Calendar className="w-4 h-4" />
-                </button>
-              )}
-              <input
-                id={`date-picker-${depth}`}
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-              />
-            </div>
-          )}
-
-          <button
-            onClick={onCancel}
-            className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors"
-            title="Cancel"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex-1" />
 
           <button
             onClick={handleSave}
             disabled={!summary.trim()}
             className={cn(
-              "p-1 rounded transition-colors",
+              "text-xs font-bold px-3 py-1 rounded-md transition-colors",
               summary.trim()
-                ? "hover:bg-green-50 text-green-600 hover:text-green-700"
-                : "text-slate-300 cursor-not-allowed"
+                ? "bg-orange-500 text-white hover:bg-orange-600"
+                : "bg-slate-200 text-slate-400 cursor-not-allowed"
             )}
-            title="Save task"
+            title="Post"
           >
-            <Check className="w-4 h-4" />
+            Post
           </button>
         </div>
       </div>
@@ -371,21 +363,23 @@ const TaskNode = ({
   if (task.isOptimistic) {
     return (
       <div className="relative group py-3">
-        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 z-0" />
-        <div className="relative z-10 pl-[48px] pr-2 flex items-start gap-3">
+        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 z-0" />
+        <div className="relative z-10 pl-[36px] pr-2">
           <div className="absolute left-[17px] top-[16px] z-20 bg-white">
             <div className="w-4 h-4 rounded-full border-2 border-slate-300 animate-pulse" />
           </div>
-          <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm animate-pulse flex-shrink-0")}>
-            <AvatarImage src={task.assignee_avatar} />
-            <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
-              {getInitials(task.assignee_name)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 flex items-center gap-2 min-w-0">
-            <p className="text-sm font-medium text-slate-600">{task.summary}</p>
-            <Loader2 className="w-3 h-3 animate-spin text-orange-500 flex-shrink-0" />
-            <span className="text-[10px] text-slate-400">Saving...</span>
+          <div className="flex items-start gap-2">
+            <Avatar className="w-5 h-5 ring-2 ring-white shadow-sm animate-pulse flex-shrink-0">
+              <AvatarImage src={task.assignee_avatar} />
+              <AvatarFallback className="bg-slate-100 text-[8px] text-slate-600">
+                {getInitials(task.assignee_name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 flex items-center gap-2 min-w-0">
+              <p className="text-[13px] font-normal text-slate-600">{task.summary}</p>
+              <Loader2 className="w-3 h-3 animate-spin text-orange-500 flex-shrink-0" />
+              <span className="text-[10px] text-slate-400">Saving...</span>
+            </div>
           </div>
         </div>
       </div>
@@ -400,18 +394,22 @@ const TaskNode = ({
 
     return (
       <div className="relative group py-3">
-        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 z-0" />
+        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 z-0" />
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 pl-[48px] pr-2 flex items-start gap-3"
+          className="relative z-10 pl-[36px] pr-2"
         >
           <div className="absolute left-[17px] top-[16px] z-20 bg-white">
-            <div className="relative">
+            <div className="w-4 h-4 rounded-full bg-orange-500 border-2 border-orange-500" />
+          </div>
+
+          <div className="flex items-start gap-2">
+            <div className="relative flex-shrink-0">
               <select
                 value={editingAssignee}
                 onChange={e => onEditAssigneeChange(e.target.value)}
-                className="appearance-none bg-transparent outline-none cursor-pointer opacity-0 absolute inset-0 w-7 h-7 z-10"
+                className="appearance-none bg-transparent outline-none cursor-pointer opacity-0 absolute inset-0 w-5 h-5 z-10"
                 title="Change assignee"
               >
                 <option value="">Unassigned</option>
@@ -419,37 +417,37 @@ const TaskNode = ({
                   <option key={u.id} value={u.id}>{u.name}</option>
                 ))}
               </select>
-              <div className={cn(avatarSize, "rounded-full bg-orange-500 flex items-center justify-center text-white text-[10px] font-bold pointer-events-none ring-2 ring-white shadow-sm")}>
+              <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center text-white text-[9px] font-bold pointer-events-none ring-2 ring-white shadow-sm">
                 {initials}
               </div>
             </div>
-          </div>
 
-          <div className="flex-1 bg-white border-2 border-orange-300 rounded-lg shadow-md">
-            <input
-              value={editingSummary}
-              onChange={(e) => onEditSummaryChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') onSaveEdit();
-                if (e.key === 'Escape') onCancelEdit();
-              }}
-              placeholder="Task summary..."
-              className="w-full bg-transparent outline-none text-sm font-medium py-2 px-2"
-              autoFocus
-            />
-            <div className="flex items-center gap-2 px-2 pb-2 border-t border-orange-100 pt-2 mt-1">
+            <div className="flex-1 bg-white border-2 border-orange-300 rounded-lg shadow-md">
               <input
-                type="date"
-                value={editingDueDate}
-                onChange={e => onEditDueDateChange(e.target.value)}
-                className="text-[11px] outline-none text-slate-600 cursor-pointer flex-1"
+                value={editingSummary}
+                onChange={(e) => onEditSummaryChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onSaveEdit();
+                  if (e.key === 'Escape') onCancelEdit();
+                }}
+                placeholder="Task summary..."
+                className="w-full bg-transparent outline-none text-[13px] font-normal py-2 px-2"
+                autoFocus
               />
-              <button onClick={onCancelEdit} className="p-1 hover:bg-slate-100 rounded text-slate-400">
-                <X className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={onSaveEdit} className="p-1 hover:bg-green-50 rounded text-green-600">
-                <Check className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-2 px-2 pb-2 border-t border-orange-100 pt-2 mt-1">
+                <input
+                  type="date"
+                  value={editingDueDate}
+                  onChange={e => onEditDueDateChange(e.target.value)}
+                  className="text-[11px] outline-none text-slate-600 cursor-pointer flex-1"
+                />
+                <button onClick={onCancelEdit} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={onSaveEdit} className="p-1 hover:bg-green-50 rounded text-green-600">
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -459,11 +457,11 @@ const TaskNode = ({
 
   return (
     <div className="relative group">
-      <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 group-hover:bg-slate-300 transition-colors z-0" />
+      <div className="absolute left-[24px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 group-hover:border-slate-400 transition-colors z-0" />
 
       <div
         className={cn(
-          'relative z-10 pl-[48px] py-3 pr-2 flex items-start gap-3 transition-all',
+          'relative z-10 py-3 transition-all',
           isCompleted && 'opacity-50 grayscale'
         )}
         onTouchStart={handleTouchStart}
@@ -485,86 +483,94 @@ const TaskNode = ({
           </button>
         </div>
 
-        {isUnassigned ? (
-          <button
-            onClick={() => onPickup(task.id)}
-            className={cn(
-              avatarSize,
-              "rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white flex-shrink-0"
+        <div className="pl-[36px] pr-2">
+          <div className="flex items-start gap-2">
+            {isUnassigned ? (
+              <button
+                onClick={() => onPickup(task.id)}
+                className="w-5 h-5 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white flex-shrink-0"
+              >
+                <Hand className="w-3 h-3 text-amber-600" />
+              </button>
+            ) : (
+              <Avatar className="w-5 h-5 ring-2 ring-white shadow-sm flex-shrink-0">
+                <AvatarImage src={task.assignee_avatar} />
+                <AvatarFallback className="bg-slate-100 text-[8px] text-slate-600">
+                  {getInitials(task.assignee_name)}
+                </AvatarFallback>
+              </Avatar>
             )}
-          >
-            <Hand className="w-3 h-3 text-amber-600" />
-          </button>
-        ) : (
-          <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm flex-shrink-0")}>
-            <AvatarImage src={task.assignee_avatar} />
-            <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
-              {getInitials(task.assignee_name)}
-            </AvatarFallback>
-          </Avatar>
-        )}
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <p
                 className={cn(
-                  "text-sm leading-snug transition-all inline",
-                  isMine ? "font-bold text-slate-900" : "font-medium text-slate-600",
+                  "text-[13px] leading-relaxed transition-all",
+                  isMine ? "text-slate-900 font-normal" : "text-slate-700 font-normal",
                   isCompleted && "line-through decoration-slate-300"
                 )}
               >
                 {task.summary}
-                {!isCompleted && (
+                {hasChildren && (
                   <>
                     {' '}
-                    {hasChildren && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onToggleExpand(task.id);
-                        }}
-                        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-50 border border-slate-200 hover:scale-110 transition-transform ml-1"
-                        title="Toggle subtasks"
-                      >
-                        <ChevronRight className={cn("w-2.5 h-2.5 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
-                      </button>
-                    )}
-                    {' '}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onAddChild(task.id);
+                        onToggleExpand(task.id);
                       }}
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-50 border border-orange-300 hover:scale-110 active:scale-90 transition-transform ml-1"
-                      title="Add subtask"
+                      className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-100 border border-slate-200 hover:scale-110 transition-transform"
+                      title="Toggle subtasks"
                     >
-                      <Plus className="w-3.5 h-3.5 text-orange-600" />
-                    </button>
-                    {' '}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAddReply(task.id);
-                      }}
-                      className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:scale-110 transition-transform ml-1"
-                      title="Reply"
-                    >
-                      <Reply className="w-2.5 h-2.5" />
+                      <ChevronRight className={cn("w-2.5 h-2.5 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
                     </button>
                   </>
                 )}
               </p>
-            </div>
 
-            <div className="flex flex-col items-end gap-1 flex-shrink-0">
-              {task.due_date && (
-                <span className={cn(
-                  "text-xs whitespace-nowrap",
-                  isOverdue ? "text-red-600 font-extrabold" : "text-slate-400 font-medium"
-                )}>
-                  {format(parseISO(task.due_date), 'MMM d')}
-                </span>
+              {!isCompleted && (
+                <div className="flex items-center gap-4 mt-1">
+                  <button
+                    className="text-slate-400 hover:text-orange-500 transition-colors"
+                    title="Like"
+                  >
+                    <ThumbsUp className="w-4 h-4" />
+                  </button>
+
+                  {task.due_date && (
+                    <span className={cn(
+                      "text-[10px] font-bold px-2 py-0.5 rounded-md",
+                      isOverdue
+                        ? "bg-red-100 text-red-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    )}>
+                      {format(parseISO(task.due_date), 'MMM d')}
+                    </span>
+                  )}
+
+                  <div className="flex-1" />
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddChild(task.id);
+                    }}
+                    className="text-slate-400 hover:text-orange-500 transition-colors"
+                    title="Add subtask"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAddReply(task.id);
+                    }}
+                    className="text-slate-400 hover:text-slate-600 transition-colors"
+                    title="Reply"
+                  >
+                    <CornerDownRight className="w-4 h-4" />
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -1248,18 +1254,20 @@ export const TasksScreen: React.FC = () => {
             <div key={group.id} className="bg-white">
               <div
                 onClick={() => handleToggleDeal(group.id)}
-                className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 transition-colors py-2 px-2 rounded-lg"
+                className="flex items-center cursor-pointer hover:bg-slate-50 transition-colors py-2 rounded-lg"
               >
-                <ChevronRight
-                  className={cn("w-5 h-5 text-slate-400 transition-transform flex-shrink-0", isExpanded && "rotate-90")}
-                />
-                {getStageAvatar(group.stage)}
-                <span className="font-bold text-slate-900 text-sm truncate flex-1 min-w-0">{group.name}</span>
+                <div className="ml-2">
+                  {getStageAvatar(group.stage)}
+                </div>
+                <span className="font-bold text-slate-900 text-sm truncate ml-3 flex-1 min-w-0">{group.name}</span>
                 {group.mw > 0 && (
-                  <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
+                  <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 mr-2">
                     {group.mw} MW
                   </span>
                 )}
+                <ChevronRight
+                  className={cn("w-5 h-5 text-slate-400 transition-transform flex-shrink-0 ml-auto mr-2", isExpanded && "rotate-90")}
+                />
               </div>
 
               <AnimatePresence>
@@ -1327,8 +1335,8 @@ export const TasksScreen: React.FC = () => {
 
                     {!isAddingRoot && (
                       <div className="relative group py-3">
-                        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 group-hover:bg-orange-300 transition-colors z-0" />
-                        <div className="relative z-10 pl-[48px]">
+                        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 group-hover:border-orange-400 transition-colors z-0" />
+                        <div className="relative z-10 pl-[36px]">
                           <button
                             onClick={() => {
                               setAddingRootTo(group.id);
