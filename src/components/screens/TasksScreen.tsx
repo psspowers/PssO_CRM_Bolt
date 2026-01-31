@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Circle, CheckCircle2, Loader2, Search, Plus, Calendar, Check, X, User, ChevronRight, MessageCircle, Filter, Users, ChevronDown } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight, Reply, Filter, Users, ChevronDown } from 'lucide-react';
 import { format, isPast, parseISO } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
@@ -154,87 +154,84 @@ const InlineTaskEditor = ({
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
-      className="relative group"
+      className="relative group py-3"
     >
-      <div className="absolute left-[24px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 z-0" />
+      <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 z-0" />
 
-      <div className="relative z-10 pl-[48px] py-2 pr-2">
-        <div className="flex items-start gap-3">
-          <div ref={userPickerRef} className="relative -ml-[24px] bg-white pt-1">
-            <button
-              onClick={() => setShowUserPicker(!showUserPicker)}
-              className="relative"
-              title="Assign to user"
+      <div className="relative z-10 pl-[48px] pr-2 flex items-start gap-3">
+        <div ref={userPickerRef} className="relative flex-shrink-0 mt-0.5">
+          <button
+            onClick={() => setShowUserPicker(!showUserPicker)}
+            className="relative"
+            title="Assign to user"
+          >
+            <Avatar className="w-7 h-7 ring-2 ring-white shadow-sm hover:ring-orange-500 transition-all">
+              <AvatarImage src={selectedUser?.avatar_url} />
+              <AvatarFallback className="bg-orange-500 text-white text-[10px] font-bold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+
+          {showUserPicker && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+              className="absolute left-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
             >
-              <Avatar className="w-6 h-6 ring-2 ring-white hover:ring-orange-500 transition-all">
-                <AvatarImage src={selectedUser?.avatar_url} />
-                <AvatarFallback className="bg-orange-500 text-white text-[9px] font-bold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-            </button>
-
-            {showUserPicker && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                className="absolute left-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
-              >
-                {users.map(u => (
-                  <button
-                    key={u.id}
-                    onClick={() => {
-                      setAssigneeId(u.id);
-                      setShowUserPicker(false);
-                    }}
-                    className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors text-left",
-                      assigneeId === u.id && "bg-orange-50"
-                    )}
-                  >
-                    <Avatar className="w-6 h-6 ring-1 ring-slate-200">
-                      <AvatarImage src={u.avatar_url} />
-                      <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
-                        {getInitials(u.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium text-slate-700 truncate">{u.name}</span>
-                    {assigneeId === u.id && <Check className="w-4 h-4 text-orange-600 ml-auto" />}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </div>
-
-          <div className="flex-1 min-w-0 pt-0.5">
-            <textarea
-              ref={textareaRef}
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={isReply ? "What's on your mind?" : "What needs to be done?"}
-              rows={1}
-              className="w-full bg-transparent resize-none outline-none text-sm text-slate-900 placeholder:text-slate-400 leading-relaxed overflow-hidden font-medium"
-            />
-          </div>
+              {users.map(u => (
+                <button
+                  key={u.id}
+                  onClick={() => {
+                    setAssigneeId(u.id);
+                    setShowUserPicker(false);
+                  }}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors text-left",
+                    assigneeId === u.id && "bg-orange-50"
+                  )}
+                >
+                  <Avatar className="w-6 h-6 ring-1 ring-slate-200">
+                    <AvatarImage src={u.avatar_url} />
+                    <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
+                      {getInitials(u.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium text-slate-700 truncate">{u.name}</span>
+                  {assigneeId === u.id && <Check className="w-4 h-4 text-orange-600 ml-auto" />}
+                </button>
+              ))}
+            </motion.div>
+          )}
         </div>
 
-        <div className="flex items-center gap-3 mt-2 ml-3">
+        <div className="flex-1 min-w-0">
+          <textarea
+            ref={textareaRef}
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={isReply ? "Type reply..." : "Type task..."}
+            rows={1}
+            className="w-full bg-transparent resize-none outline-none text-sm font-medium placeholder:text-slate-400 leading-relaxed overflow-hidden"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
           {!isReply && (
-            <div className="relative">
+            <div className="relative group/date">
               {dueDate ? (
                 <button
                   onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
-                  className="bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-md flex items-center gap-1 hover:bg-yellow-200 transition-colors"
+                  className="text-xs font-medium text-slate-600 hover:text-orange-600 transition-colors px-2 py-1 rounded hover:bg-orange-50"
                 >
-                  <Calendar className="w-3 h-3" />
                   {format(parseISO(dueDate), 'MMM d')}
                 </button>
               ) : (
                 <button
                   onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
-                  className="text-slate-400 hover:text-yellow-600 transition-colors p-1"
+                  className="text-slate-400 hover:text-orange-500 transition-colors p-1 rounded hover:bg-orange-50"
                   title="Set due date"
                 >
                   <Calendar className="w-4 h-4" />
@@ -250,28 +247,26 @@ const InlineTaskEditor = ({
             </div>
           )}
 
-          <div className="flex-1" />
-
           <button
             onClick={onCancel}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors"
             title="Cancel"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
 
           <button
             onClick={handleSave}
             disabled={!summary.trim()}
             className={cn(
-              "px-3 py-1 rounded-full text-xs font-bold transition-colors",
+              "p-1 rounded transition-colors",
               summary.trim()
-                ? "bg-orange-500 text-white hover:bg-orange-600"
-                : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                ? "hover:bg-green-50 text-green-600 hover:text-green-700"
+                : "text-slate-300 cursor-not-allowed"
             )}
-            title="Post"
+            title="Save task"
           >
-            Post
+            <Check className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -284,6 +279,7 @@ const TaskNode = ({
   dealId,
   depth,
   onComplete,
+  onPickup,
   onAddChild,
   onAddReply,
   currentUserId,
@@ -296,17 +292,20 @@ const TaskNode = ({
   onToggleExpand,
   editingTaskId,
   editingSummary,
+  editingAssignee,
   editingDueDate,
   onStartEdit,
   onSaveEdit,
   onCancelEdit,
   onEditSummaryChange,
+  onEditAssigneeChange,
   onEditDueDateChange,
 }: {
   task: TaskThread;
   dealId: string;
   depth: number;
   onComplete: (id: string, status?: string) => void;
+  onPickup: (id: string) => void;
   onAddChild: (taskId: string) => void;
   onAddReply: (taskId: string) => void;
   currentUserId?: string;
@@ -319,58 +318,74 @@ const TaskNode = ({
   onToggleExpand: (id: string) => void;
   editingTaskId: string | null;
   editingSummary: string;
+  editingAssignee: string;
   editingDueDate: string;
   onStartEdit: (task: TaskThread) => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
   onEditSummaryChange: (value: string) => void;
+  onEditAssigneeChange: (value: string) => void;
   onEditDueDateChange: (value: string) => void;
 }) => {
   const isCompleted = task.task_status === 'Completed';
   const isMine = task.assigned_to_id === currentUserId;
+  const isUnassigned = !task.assigned_to_id;
   const hasChildren = task.children && task.children.length > 0;
   const isExpanded = expandedTasks.has(task.id);
   const isAddingChild = addingChildTo === task.id;
   const isAddingReply = addingReplyTo === task.id;
   const isEditing = editingTaskId === task.id;
 
+  const avatarSize = 'w-7 h-7';
   const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isCompleted;
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (isEditing && textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+  const handleTouchStart = () => {
+    if (isCompleted) return;
+    longPressTimerRef.current = setTimeout(() => {
+      onStartEdit(task);
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
     }
-  }, [isEditing]);
+  };
 
   const handleDoubleClick = () => {
     if (isCompleted) return;
     onStartEdit(task);
   };
 
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+    };
+  }, []);
+
   if (task.isOptimistic) {
     return (
-      <div className="relative group">
-        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 z-0" />
-        <div className="relative z-10 pl-[48px] py-2 pr-2">
-          <div className="flex items-start gap-3">
-            <div className="relative -ml-[24px] bg-white pt-1">
-              <Avatar className="w-6 h-6 ring-2 ring-white shadow-sm animate-pulse">
-                <AvatarImage src={task.assignee_avatar} />
-                <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
-                  {getInitials(task.assignee_name)}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-            <div className="flex-1 min-w-0 pt-0.5">
-              <p className="text-sm text-slate-600 leading-relaxed font-medium flex items-center gap-2">
-                {task.summary}
-                <Loader2 className="w-3 h-3 animate-spin text-orange-500 flex-shrink-0" />
-              </p>
-            </div>
+      <div className="relative group py-3">
+        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 z-0" />
+        <div className="relative z-10 pl-[48px] pr-2 flex items-start gap-3">
+          <div className="absolute left-[17px] top-[16px] z-20 bg-white">
+            <div className="w-4 h-4 rounded-full border-2 border-slate-300 animate-pulse" />
+          </div>
+          <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm animate-pulse flex-shrink-0")}>
+            <AvatarImage src={task.assignee_avatar} />
+            <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
+              {getInitials(task.assignee_name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <p className="text-sm font-medium text-slate-600">{task.summary}</p>
+            <Loader2 className="w-3 h-3 animate-spin text-orange-500 flex-shrink-0" />
+            <span className="text-[10px] text-slate-400">Saving...</span>
           </div>
         </div>
       </div>
@@ -380,86 +395,62 @@ const TaskNode = ({
   const currentUser = users.find(u => u.id === currentUserId);
 
   if (isEditing) {
+    const selectedUser = users.find(u => u.id === editingAssignee);
+    const initials = selectedUser?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U';
+
     return (
-      <div className="relative group">
-        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 z-0" />
+      <div className="relative group py-3">
+        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 z-0" />
         <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 pl-[48px] py-2 pr-2"
+          className="relative z-10 pl-[48px] pr-2 flex items-start gap-3"
         >
-          <div className="flex items-start gap-3">
-            <div className="relative -ml-[24px] bg-white pt-1">
-              <Avatar className="w-6 h-6 ring-2 ring-white">
-                <AvatarImage src={task.assignee_avatar} />
-                <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
-                  {getInitials(task.assignee_name)}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-            <div className="flex-1 min-w-0 pt-0.5">
-              <textarea
-                ref={textareaRef}
-                value={editingSummary}
-                onChange={(e) => {
-                  onEditSummaryChange(e.target.value);
-                  if (textareaRef.current) {
-                    textareaRef.current.style.height = 'auto';
-                    textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    onSaveEdit();
-                  }
-                  if (e.key === 'Escape') onCancelEdit();
-                }}
-                placeholder="Task summary..."
-                rows={1}
-                className="w-full bg-white border-2 border-orange-300 rounded-lg px-2 py-1 resize-none outline-none text-sm text-slate-900 leading-relaxed overflow-hidden font-medium"
-              />
+          <div className="absolute left-[17px] top-[16px] z-20 bg-white">
+            <div className="relative">
+              <select
+                value={editingAssignee}
+                onChange={e => onEditAssigneeChange(e.target.value)}
+                className="appearance-none bg-transparent outline-none cursor-pointer opacity-0 absolute inset-0 w-7 h-7 z-10"
+                title="Change assignee"
+              >
+                <option value="">Unassigned</option>
+                {users.map(u => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+              <div className={cn(avatarSize, "rounded-full bg-orange-500 flex items-center justify-center text-white text-[10px] font-bold pointer-events-none ring-2 ring-white shadow-sm")}>
+                {initials}
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 mt-2 ml-3">
-            <div className="relative">
-              {editingDueDate ? (
-                <button
-                  onClick={() => document.getElementById(`edit-date-${task.id}`)?.click()}
-                  className="bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-md flex items-center gap-1 hover:bg-yellow-200"
-                >
-                  <Calendar className="w-3 h-3" />
-                  {format(parseISO(editingDueDate), 'MMM d')}
-                </button>
-              ) : (
-                <button
-                  onClick={() => document.getElementById(`edit-date-${task.id}`)?.click()}
-                  className="text-slate-400 hover:text-yellow-600 transition-colors"
-                >
-                  <Calendar className="w-4 h-4" />
-                </button>
-              )}
+          <div className="flex-1 bg-white border-2 border-orange-300 rounded-lg shadow-md">
+            <input
+              value={editingSummary}
+              onChange={(e) => onEditSummaryChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSaveEdit();
+                if (e.key === 'Escape') onCancelEdit();
+              }}
+              placeholder="Task summary..."
+              className="w-full bg-transparent outline-none text-sm font-medium py-2 px-2"
+              autoFocus
+            />
+            <div className="flex items-center gap-2 px-2 pb-2 border-t border-orange-100 pt-2 mt-1">
               <input
-                id={`edit-date-${task.id}`}
                 type="date"
                 value={editingDueDate}
                 onChange={e => onEditDueDateChange(e.target.value)}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                className="text-[11px] outline-none text-slate-600 cursor-pointer flex-1"
               />
+              <button onClick={onCancelEdit} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                <X className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={onSaveEdit} className="p-1 hover:bg-green-50 rounded text-green-600">
+                <Check className="w-3.5 h-3.5" />
+              </button>
             </div>
-
-            <div className="flex-1" />
-
-            <button onClick={onCancelEdit} className="text-slate-400 hover:text-slate-600">
-              <X className="w-5 h-5" />
-            </button>
-            <button
-              onClick={onSaveEdit}
-              className="px-3 py-1 bg-green-500 text-white rounded-full text-xs font-bold hover:bg-green-600"
-            >
-              Save
-            </button>
           </div>
         </motion.div>
       </div>
@@ -468,104 +459,115 @@ const TaskNode = ({
 
   return (
     <div className="relative group">
-      <div className="absolute left-[24px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 group-hover:border-slate-400 transition-colors z-0" />
+      <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 group-hover:bg-slate-300 transition-colors z-0" />
 
       <div
         className={cn(
-          'relative z-10 pl-[48px] py-2 pr-2 transition-all',
-          isCompleted && 'opacity-40'
+          'relative z-10 pl-[48px] py-3 pr-2 flex items-start gap-3 transition-all',
+          isCompleted && 'opacity-50 grayscale'
         )}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchEnd}
         onDoubleClick={handleDoubleClick}
       >
-        <div className="flex items-start gap-3">
-          <div className="relative -ml-[24px] bg-white pt-1">
-            <Avatar className={cn("w-6 h-6 ring-2 ring-white", isMine && "ring-orange-200")}>
-              <AvatarImage src={task.assignee_avatar} />
-              <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
-                {getInitials(task.assignee_name)}
-              </AvatarFallback>
-            </Avatar>
-          </div>
-
-          <div className="flex-1 min-w-0 pt-0.5">
-            <p
-              className={cn(
-                "text-sm leading-relaxed transition-all",
-                isMine ? "font-bold text-slate-900" : "font-medium text-slate-700",
-                isCompleted && "line-through decoration-slate-400"
-              )}
-            >
-              {task.summary}
-              {hasChildren && !isCompleted && (
-                <>
-                  {' '}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleExpand(task.id);
-                    }}
-                    className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 border border-slate-200 hover:scale-110 transition-transform"
-                    title="Toggle subtasks"
-                  >
-                    <ChevronRight className={cn("w-2.5 h-2.5 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
-                  </button>
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 mt-2 ml-3">
+        <div className="absolute left-[17px] top-[16px] z-20 bg-white">
           <button
             onClick={() => onComplete(task.id, task.task_status)}
-            className="hover:scale-110 transition-transform"
-            title={isCompleted ? "Mark as pending" : "Mark as complete"}
-          >
-            {isCompleted ? (
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-            ) : (
-              <Circle className="w-5 h-5 text-slate-300 hover:text-green-400" />
+            className={cn(
+              "w-4 h-4 rounded-full border-2 transition-all hover:scale-110",
+              isCompleted
+                ? "bg-green-500 border-green-500"
+                : "border-slate-300 hover:border-green-400"
             )}
+          >
+            {isCompleted && <Check className="w-3 h-3 text-white absolute inset-0 m-auto" />}
           </button>
+        </div>
 
-          {task.due_date && (
-            <span className={cn(
-              "text-xs font-bold px-2 py-0.5 rounded-md flex items-center gap-1",
-              isOverdue
-                ? "bg-red-100 text-red-700"
-                : "bg-yellow-100 text-yellow-700"
-            )}>
-              <Calendar className="w-3 h-3" />
-              {format(parseISO(task.due_date), 'MMM d')}
-            </span>
-          )}
+        {isUnassigned ? (
+          <button
+            onClick={() => onPickup(task.id)}
+            className={cn(
+              avatarSize,
+              "rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white flex-shrink-0"
+            )}
+          >
+            <Hand className="w-3 h-3 text-amber-600" />
+          </button>
+        ) : (
+          <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm flex-shrink-0")}>
+            <AvatarImage src={task.assignee_avatar} />
+            <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
+              {getInitials(task.assignee_name)}
+            </AvatarFallback>
+          </Avatar>
+        )}
 
-          <div className="flex-1" />
-
-          {!isCompleted && (
-            <>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddChild(task.id);
-                }}
-                className="group/btn"
-                title="Add subtask"
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p
+                className={cn(
+                  "text-sm leading-snug transition-all inline",
+                  isMine ? "font-bold text-slate-900" : "font-medium text-slate-600",
+                  isCompleted && "line-through decoration-slate-300"
+                )}
               >
-                <Plus className="w-5 h-5 text-slate-300 group-hover/btn:text-orange-500 transition-colors" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddReply(task.id);
-                }}
-                className="group/btn"
-                title="Reply"
-              >
-                <MessageCircle className="w-5 h-5 text-slate-300 group-hover/btn:text-blue-500 transition-colors" />
-              </button>
-            </>
-          )}
+                {task.summary}
+                {!isCompleted && (
+                  <>
+                    {' '}
+                    {hasChildren && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleExpand(task.id);
+                        }}
+                        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-50 border border-slate-200 hover:scale-110 transition-transform ml-1"
+                        title="Toggle subtasks"
+                      >
+                        <ChevronRight className={cn("w-2.5 h-2.5 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
+                      </button>
+                    )}
+                    {' '}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddChild(task.id);
+                      }}
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-50 border border-orange-300 hover:scale-110 active:scale-90 transition-transform ml-1"
+                      title="Add subtask"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-orange-600" />
+                    </button>
+                    {' '}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddReply(task.id);
+                      }}
+                      className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:scale-110 transition-transform ml-1"
+                      title="Reply"
+                    >
+                      <Reply className="w-2.5 h-2.5" />
+                    </button>
+                  </>
+                )}
+              </p>
+            </div>
+
+            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+              {task.due_date && (
+                <span className={cn(
+                  "text-xs whitespace-nowrap",
+                  isOverdue ? "text-red-600 font-extrabold" : "text-slate-400 font-medium"
+                )}>
+                  {format(parseISO(task.due_date), 'MMM d')}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -579,6 +581,7 @@ const TaskNode = ({
                 dealId={dealId}
                 depth={depth + 1}
                 onComplete={onComplete}
+                onPickup={onPickup}
                 onAddChild={onAddChild}
                 onAddReply={onAddReply}
                 currentUserId={currentUserId}
@@ -591,11 +594,13 @@ const TaskNode = ({
                 onToggleExpand={onToggleExpand}
                 editingTaskId={editingTaskId}
                 editingSummary={editingSummary}
+                editingAssignee={editingAssignee}
                 editingDueDate={editingDueDate}
                 onStartEdit={onStartEdit}
                 onSaveEdit={onSaveEdit}
                 onCancelEdit={onCancelEdit}
                 onEditSummaryChange={onEditSummaryChange}
+                onEditAssigneeChange={onEditAssigneeChange}
                 onEditDueDateChange={onEditDueDateChange}
               />
             ))}
@@ -641,6 +646,7 @@ export const TasksScreen: React.FC = () => {
 
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editingSummary, setEditingSummary] = useState('');
+  const [editingAssignee, setEditingAssignee] = useState('');
   const [editingDueDate, setEditingDueDate] = useState('');
 
   const [hierarchyView, setHierarchyView] = useState<'mine' | 'team'>('mine');
@@ -754,15 +760,23 @@ export const TasksScreen: React.FC = () => {
     }
   };
 
+  const handlePickup = async (id: string) => {
+    await supabase.from('activities').update({ assigned_to_id: user?.id }).eq('id', id);
+    fetchTasks();
+    toast({ title: 'Task Picked Up (+5⚡)', className: 'bg-orange-50 border-orange-200' });
+  };
+
   const handleStartEdit = (task: TaskThread) => {
     setEditingTaskId(task.id);
     setEditingSummary(task.summary);
+    setEditingAssignee(task.assigned_to_id || '');
     setEditingDueDate(task.due_date ? format(parseISO(task.due_date), 'yyyy-MM-dd') : '');
   };
 
   const handleCancelEdit = () => {
     setEditingTaskId(null);
     setEditingSummary('');
+    setEditingAssignee('');
     setEditingDueDate('');
   };
 
@@ -772,6 +786,7 @@ export const TasksScreen: React.FC = () => {
     try {
       const updateData: any = {
         summary: editingSummary.trim(),
+        assigned_to_id: editingAssignee || null,
       };
 
       if (editingDueDate) {
@@ -1262,6 +1277,7 @@ export const TasksScreen: React.FC = () => {
                         dealId={group.id}
                         depth={0}
                         onComplete={handleComplete}
+                        onPickup={handlePickup}
                         onAddChild={(id) => {
                           setAddingChildTo(id);
                           setAddingReplyTo(null);
@@ -1287,11 +1303,13 @@ export const TasksScreen: React.FC = () => {
                         onToggleExpand={handleToggleTask}
                         editingTaskId={editingTaskId}
                         editingSummary={editingSummary}
+                        editingAssignee={editingAssignee}
                         editingDueDate={editingDueDate}
                         onStartEdit={handleStartEdit}
                         onSaveEdit={handleSaveEdit}
                         onCancelEdit={handleCancelEdit}
                         onEditSummaryChange={setEditingSummary}
+                        onEditAssigneeChange={setEditingAssignee}
                         onEditDueDateChange={setEditingDueDate}
                       />
                     ))}
@@ -1309,7 +1327,7 @@ export const TasksScreen: React.FC = () => {
 
                     {!isAddingRoot && (
                       <div className="relative group py-3">
-                        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 group-hover:border-orange-400 transition-colors z-0" />
+                        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 group-hover:bg-orange-300 transition-colors z-0" />
                         <div className="relative z-10 pl-[48px]">
                           <button
                             onClick={() => {
@@ -1317,10 +1335,10 @@ export const TasksScreen: React.FC = () => {
                               setAddingChildTo(null);
                               setAddingReplyTo(null);
                             }}
-                            className="absolute left-[17px] top-[-4px] w-5 h-5 rounded-full bg-orange-500 border-2 border-white flex items-center justify-center hover:scale-125 active:scale-90 transition-transform shadow-md z-20"
+                            className="absolute left-[17px] top-[-4px] w-4 h-4 rounded-full bg-orange-500 border-2 border-white flex items-center justify-center hover:scale-125 active:scale-90 transition-transform shadow-md z-20"
                             title="Add task"
                           >
-                            <Plus className="w-3.5 h-3.5 text-white" />
+                            <Plus className="w-3 h-3 text-white" />
                           </button>
                         </div>
                       </div>
