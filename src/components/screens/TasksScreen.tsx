@@ -410,6 +410,9 @@ const TaskNode = ({
   const hasLiked = currentUserId && task.reactions?.[currentUserId] === 'like';
   const likeCount = task.reactions ? Object.keys(task.reactions).length : 0;
 
+  const commentCount = task.children?.filter(c => c.is_task === false).length || 0;
+  const subtaskCount = task.children?.filter(c => c.is_task !== false).length || 0;
+
   const avatarSize = 'w-7 h-7';
   const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isCompleted;
 
@@ -628,10 +631,16 @@ const TaskNode = ({
                         e.stopPropagation();
                         onToggleExpand(task.id);
                       }}
-                      className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-100 border border-slate-200 hover:scale-110 transition-transform"
-                      title={isComment ? "Toggle replies" : "Toggle subtasks"}
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 hover:scale-105 transition-transform"
+                      title={isComment ? "Toggle replies" : `${commentCount} comment${commentCount !== 1 ? 's' : ''}, ${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''}`}
                     >
                       <ChevronRight className={cn("w-2.5 h-2.5 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
+                      {!isComment && commentCount > 0 && (
+                        <span className="text-[10px] font-semibold text-green-600">{commentCount}</span>
+                      )}
+                      {subtaskCount > 0 && (
+                        <span className="text-[10px] font-semibold text-slate-600">{subtaskCount}</span>
+                      )}
                     </button>
                   </>
                 )}
@@ -674,10 +683,18 @@ const TaskNode = ({
                         e.stopPropagation();
                         onAddReply(task.id);
                       }}
-                      className="text-slate-400 hover:text-green-500 transition-colors"
+                      className={cn(
+                        "flex items-center gap-1 transition-all",
+                        commentCount > 0
+                          ? "text-green-600 hover:text-green-700"
+                          : "text-slate-400 hover:text-green-500"
+                      )}
                       title={isComment ? "Reply" : "Comment"}
                     >
                       <MessageSquare className="w-4 h-4" />
+                      {commentCount > 0 && (
+                        <span className="text-[10px] font-bold">{commentCount}</span>
+                      )}
                     </button>
 
                     {!isComment && (
