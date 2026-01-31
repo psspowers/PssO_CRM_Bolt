@@ -14,6 +14,7 @@ interface TaskThread {
   id: string;
   summary: string;
   details?: string;
+  is_task?: boolean;
   task_status?: 'Pending' | 'Completed';
   priority?: 'Low' | 'Medium' | 'High';
   due_date?: string;
@@ -105,14 +106,14 @@ const InlineTaskEditor = ({
   onSave,
   onCancel,
   depth = 0,
-  isReply = false,
+  mode = 'task',
 }: {
   users: any[];
   currentUser: any;
   onSave: (summary: string, assignee: string, date: string) => void;
   onCancel: () => void;
   depth?: number;
-  isReply?: boolean;
+  mode?: 'task' | 'comment';
 }) => {
   const [summary, setSummary] = useState('');
   const [assigneeId, setAssigneeId] = useState(currentUser?.id || '');
@@ -181,7 +182,7 @@ const InlineTaskEditor = ({
 
       <div className="relative z-10 pl-[42px] pr-2">
         <div className="flex items-start gap-2">
-          {!isReply && (
+          {mode === 'task' && (
             <div ref={userPickerRef} className="relative flex-shrink-0">
               <button
                 onClick={() => setShowUserPicker(!showUserPicker)}
@@ -230,7 +231,7 @@ const InlineTaskEditor = ({
             </div>
           )}
 
-          {isReply && (
+          {mode === 'comment' && (
             <div className="flex-shrink-0">
               <MessageSquare className="w-4 h-4 text-green-500 mt-1" />
             </div>
@@ -242,14 +243,14 @@ const InlineTaskEditor = ({
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isReply ? "Add a comment..." : "Type task..."}
+              placeholder={mode === 'comment' ? "Add a comment..." : "Type task..."}
               rows={1}
               className="w-full bg-transparent resize-none outline-none text-[13px] text-slate-700 font-normal placeholder:text-slate-400 leading-relaxed overflow-hidden"
             />
           </div>
         </div>
 
-        {!isReply && (
+        {mode === 'task' && (
           <div className="flex items-center gap-2 mt-1 ml-7">
             <div className="relative">
               {dueDate ? (
@@ -303,7 +304,7 @@ const InlineTaskEditor = ({
         </div>
         )}
 
-        {isReply && (
+        {mode === 'comment' && (
           <div className="flex items-center gap-2 mt-1 ml-7">
             <button
               onClick={handleSave}
@@ -316,7 +317,7 @@ const InlineTaskEditor = ({
               )}
               title="Post Comment"
             >
-              Comment
+              Post
             </button>
 
             <button
@@ -392,6 +393,7 @@ const TaskNode = ({
   onEditAssigneeChange: (value: string) => void;
   onEditDueDateChange: (value: string) => void;
 }) => {
+  const isComment = task.is_task === false;
   const isCompleted = task.task_status === 'Completed';
   const isMine = task.assigned_to_id === currentUserId;
   const isUnassigned = !task.assigned_to_id;
@@ -409,7 +411,7 @@ const TaskNode = ({
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleTouchStart = () => {
-    if (isCompleted) return;
+    if (isCompleted || isComment) return;
     longPressTimerRef.current = setTimeout(() => {
       onStartEdit(task);
     }, 500);
@@ -423,7 +425,7 @@ const TaskNode = ({
   };
 
   const handleDoubleClick = () => {
-    if (isCompleted) return;
+    if (isCompleted || isComment) return;
     onStartEdit(task);
   };
 
@@ -545,35 +547,48 @@ const TaskNode = ({
         onDoubleClick={handleDoubleClick}
       >
         <div className="absolute left-[15px] top-[10px] z-20 bg-white">
-          <button
-            onClick={() => onComplete(task.id, task.task_status)}
-            className={cn(
-              "w-4 h-4 rounded-full border-2 transition-all hover:scale-110",
-              isCompleted
-                ? "bg-green-500 border-green-500"
-                : "border-slate-300 hover:border-green-400"
-            )}
-          >
-            {isCompleted && <Check className="w-3 h-3 text-white absolute inset-0 m-auto" />}
-          </button>
+          {isComment ? (
+            <div className="w-4 h-4 rounded-full bg-green-50 border border-green-200 flex items-center justify-center">
+              <MessageSquare className="w-2.5 h-2.5 text-green-600" />
+            </div>
+          ) : (
+            <button
+              onClick={() => onComplete(task.id, task.task_status)}
+              className={cn(
+                "w-4 h-4 rounded-full border-2 transition-all hover:scale-110",
+                isCompleted
+                  ? "bg-green-500 border-green-500"
+                  : "border-slate-300 hover:border-green-400"
+              )}
+            >
+              {isCompleted && <Check className="w-3 h-3 text-white absolute inset-0 m-auto" />}
+            </button>
+          )}
         </div>
 
         <div className="pl-[42px] pr-2">
-          <div className="flex items-start gap-2">
-            {isUnassigned ? (
-              <button
-                onClick={() => onPickup(task.id)}
-                className="w-5 h-5 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white flex-shrink-0"
-              >
-                <Hand className="w-3 h-3 text-amber-600" />
-              </button>
-            ) : (
-              <Avatar className={cn("w-5 h-5 ring-2 ring-white shadow-sm flex-shrink-0 border-2", getRoleBorderColor(task.assignee_role))}>
-                <AvatarImage src={task.assignee_avatar} />
-                <AvatarFallback className="bg-slate-100 text-[8px] text-slate-600">
-                  {getInitials(task.assignee_name)}
-                </AvatarFallback>
-              </Avatar>
+          <div className={cn(
+            "flex items-start gap-2",
+            isComment && "bg-slate-50 -ml-[42px] pl-[42px] py-2 pr-2 rounded-lg"
+          )}>
+            {!isComment && (
+              <>
+                {isUnassigned ? (
+                  <button
+                    onClick={() => onPickup(task.id)}
+                    className="w-5 h-5 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white flex-shrink-0"
+                  >
+                    <Hand className="w-3 h-3 text-amber-600" />
+                  </button>
+                ) : (
+                  <Avatar className={cn("w-5 h-5 ring-2 ring-white shadow-sm flex-shrink-0 border-2", getRoleBorderColor(task.assignee_role))}>
+                    <AvatarImage src={task.assignee_avatar} />
+                    <AvatarFallback className="bg-slate-100 text-[8px] text-slate-600">
+                      {getInitials(task.assignee_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </>
             )}
 
             <div className="flex-1 min-w-0">
@@ -602,7 +617,15 @@ const TaskNode = ({
                 )}
               </p>
 
-              {!isCompleted && (
+              {isComment && (
+                <div className="mt-1">
+                  <span className="text-[10px] text-slate-400">
+                    {format(parseISO(task.created_at), 'MMM d, h:mm a')}
+                  </span>
+                </div>
+              )}
+
+              {!isComment && !isCompleted && (
                 <div className="flex items-center justify-between mt-2 ml-7 pr-2">
                   <div className="flex items-center gap-4">
                     <button
@@ -726,7 +749,7 @@ const TaskNode = ({
               onSave={(s, a, d) => onSaveTask(s, a, d, task.id, isAddingReply)}
               onCancel={onCancelTask}
               depth={depth + 1}
-              isReply={isAddingReply}
+              mode={isAddingReply ? 'comment' : 'task'}
             />
           </div>
         )}
@@ -842,7 +865,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
   useEffect(() => {
     const channel = supabase
       .channel('task-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities', filter: 'is_task=eq.true' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
         fetchTasks();
       })
       .subscribe();
@@ -1521,7 +1544,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
                         onSave={(s, a, d) => handleSaveNewTask(s, a, d)}
                         onCancel={() => setAddingRootTo(null)}
                         depth={0}
-                        isReply={false}
+                        mode="task"
                       />
                     )}
 
