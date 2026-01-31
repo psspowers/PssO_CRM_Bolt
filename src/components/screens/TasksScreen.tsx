@@ -367,6 +367,7 @@ const TaskNode = ({
   onCancelTask,
   expandedTasks,
   onToggleExpand,
+  setExpandedTasks,
   commentsViewTasks,
   setCommentsViewTasks,
   editingTaskId,
@@ -398,6 +399,7 @@ const TaskNode = ({
   onCancelTask: () => void;
   expandedTasks: Set<string>;
   onToggleExpand: (id: string) => void;
+  setExpandedTasks: React.Dispatch<React.SetStateAction<Set<string>>>;
   commentsViewTasks: Set<string>;
   setCommentsViewTasks: React.Dispatch<React.SetStateAction<Set<string>>>;
   editingTaskId: string | null;
@@ -830,6 +832,7 @@ const TaskNode = ({
                           onCancelTask={onCancelTask}
                           expandedTasks={expandedTasks}
                           onToggleExpand={onToggleExpand}
+                          setExpandedTasks={setExpandedTasks}
                           commentsViewTasks={commentsViewTasks}
                           setCommentsViewTasks={setCommentsViewTasks}
                           editingTaskId={editingTaskId}
@@ -885,6 +888,7 @@ const TaskNode = ({
                           onCancelTask={onCancelTask}
                           expandedTasks={expandedTasks}
                           onToggleExpand={onToggleExpand}
+                          setExpandedTasks={setExpandedTasks}
                           commentsViewTasks={commentsViewTasks}
                           setCommentsViewTasks={setCommentsViewTasks}
                           editingTaskId={editingTaskId}
@@ -1689,6 +1693,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
                         }}
                         expandedTasks={expandedTasks}
                         onToggleExpand={handleToggleTask}
+                        setExpandedTasks={setExpandedTasks}
                         commentsViewTasks={commentsViewTasks}
                         setCommentsViewTasks={setCommentsViewTasks}
                         editingTaskId={editingTaskId}
