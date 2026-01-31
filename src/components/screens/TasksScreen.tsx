@@ -367,6 +367,8 @@ const TaskNode = ({
   onCancelTask,
   expandedTasks,
   onToggleExpand,
+  commentsViewTasks,
+  setCommentsViewTasks,
   editingTaskId,
   editingSummary,
   editingAssignee,
@@ -396,6 +398,8 @@ const TaskNode = ({
   onCancelTask: () => void;
   expandedTasks: Set<string>;
   onToggleExpand: (id: string) => void;
+  commentsViewTasks: Set<string>;
+  setCommentsViewTasks: React.Dispatch<React.SetStateAction<Set<string>>>;
   editingTaskId: string | null;
   editingSummary: string;
   editingAssignee: string;
@@ -640,6 +644,12 @@ const TaskNode = ({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        // Clicking chevron shows subtasks, not comments
+                        setCommentsViewTasks(prev => {
+                          const next = new Set(prev);
+                          next.delete(task.id);
+                          return next;
+                        });
                         onToggleExpand(task.id);
                       }}
                       className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 hover:scale-105 transition-transform"
@@ -687,17 +697,29 @@ const TaskNode = ({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        console.log(`[DEBUG] Comment button clicked for "${task.summary.substring(0, 30)}":`, {
-                          commentCount,
-                          subtaskCount,
-                          hasChildren,
-                          totalChildren: task.children?.length,
-                          willExpand: commentCount > 0
-                        });
-                        // If there are existing comments, expand to show them
+                        // If there are existing comments, expand to show ONLY comments
                         // Otherwise, open the reply editor
                         if (commentCount > 0) {
-                          onToggleExpand(task.id);
+                          const isExpanded = expandedTasks.has(task.id);
+                          const isCommentsView = commentsViewTasks.has(task.id);
+
+                          if (isExpanded && isCommentsView) {
+                            // Already showing comments, collapse
+                            setExpandedTasks(prev => {
+                              const next = new Set(prev);
+                              next.delete(task.id);
+                              return next;
+                            });
+                            setCommentsViewTasks(prev => {
+                              const next = new Set(prev);
+                              next.delete(task.id);
+                              return next;
+                            });
+                          } else {
+                            // Show comments view
+                            setExpandedTasks(prev => new Set(prev).add(task.id));
+                            setCommentsViewTasks(prev => new Set(prev).add(task.id));
+                          }
                         } else {
                           onAddReply(task.id);
                         }
@@ -777,109 +799,109 @@ const TaskNode = ({
         )}
 
         {isExpanded && hasChildren && (() => {
+          const isCommentsView = commentsViewTasks.has(task.id);
           const comments = task.children?.filter(c => c.is_task === false && c.id && c.id.trim() !== '') || [];
           const subtasks = task.children?.filter(c => c.is_task !== false && c.id && c.id.trim() !== '') || [];
 
-          console.log(`[DEBUG] Task "${task.summary.substring(0, 30)}" expanded:`, {
-            totalChildren: task.children?.length,
-            commentsFound: comments.length,
-            subtasksFound: subtasks.length,
-            childrenDetails: task.children?.map(c => ({
-              summary: c.summary?.substring(0, 30),
-              is_task: c.is_task,
-              type: c.is_task === false ? 'COMMENT' : (c.is_task === true ? 'SUBTASK' : 'UNKNOWN')
-            }))
-          });
-
           return (
             <>
-              {comments.length > 0 && (
-                <div className="ml-6">
-                  {comments.map((comment) => (
-                    <TaskNode
-                      key={comment.id}
-                      task={comment}
-                      dealId={dealId}
-                      dealName={dealName}
-                      depth={depth + 1}
-                      onComplete={onComplete}
-                      onPickup={onPickup}
-                      onAddChild={onAddChild}
-                      onAddReply={onAddReply}
-                      onShare={onShare}
-                      onLike={onLike}
-                      currentUserId={currentUserId}
-                      users={users}
-                      addingChildTo={addingChildTo}
-                      addingReplyTo={addingReplyTo}
-                      onSaveTask={onSaveTask}
-                      onCancelTask={onCancelTask}
-                      expandedTasks={expandedTasks}
-                      onToggleExpand={onToggleExpand}
-                      editingTaskId={editingTaskId}
-                      editingSummary={editingSummary}
-                      editingAssignee={editingAssignee}
-                      editingDueDate={editingDueDate}
-                      onStartEdit={onStartEdit}
-                      onSaveEdit={onSaveEdit}
-                      onCancelEdit={onCancelEdit}
-                      onEditSummaryChange={onEditSummaryChange}
-                      onEditAssigneeChange={onEditAssigneeChange}
-                      onEditDueDateChange={onEditDueDateChange}
-                    />
-                  ))}
-                </div>
-              )}
+              {isCommentsView ? (
+                <>
+                  {comments.length > 0 && (
+                    <div className="ml-6">
+                      {comments.map((comment) => (
+                        <TaskNode
+                          key={comment.id}
+                          task={comment}
+                          dealId={dealId}
+                          dealName={dealName}
+                          depth={depth + 1}
+                          onComplete={onComplete}
+                          onPickup={onPickup}
+                          onAddChild={onAddChild}
+                          onAddReply={onAddReply}
+                          onShare={onShare}
+                          onLike={onLike}
+                          currentUserId={currentUserId}
+                          users={users}
+                          addingChildTo={addingChildTo}
+                          addingReplyTo={addingReplyTo}
+                          onSaveTask={onSaveTask}
+                          onCancelTask={onCancelTask}
+                          expandedTasks={expandedTasks}
+                          onToggleExpand={onToggleExpand}
+                          commentsViewTasks={commentsViewTasks}
+                          setCommentsViewTasks={setCommentsViewTasks}
+                          editingTaskId={editingTaskId}
+                          editingSummary={editingSummary}
+                          editingAssignee={editingAssignee}
+                          editingDueDate={editingDueDate}
+                          onStartEdit={onStartEdit}
+                          onSaveEdit={onSaveEdit}
+                          onCancelEdit={onCancelEdit}
+                          onEditSummaryChange={onEditSummaryChange}
+                          onEditAssigneeChange={onEditAssigneeChange}
+                          onEditDueDateChange={onEditDueDateChange}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {isAddingChild && (
+                    <div key={`subtask-editor-${task.id}`} className="ml-6">
+                      <InlineTaskEditor
+                        users={users}
+                        currentUser={currentUser}
+                        onSave={(s, a, d) => onSaveTask(s, a, d, task.id, false)}
+                        onCancel={onCancelTask}
+                        depth={depth + 1}
+                        mode="task"
+                      />
+                    </div>
+                  )}
 
-              {isAddingChild && (
-                <div key={`subtask-editor-${task.id}`} className="ml-6">
-                  <InlineTaskEditor
-                    users={users}
-                    currentUser={currentUser}
-                    onSave={(s, a, d) => onSaveTask(s, a, d, task.id, false)}
-                    onCancel={onCancelTask}
-                    depth={depth + 1}
-                    mode="task"
-                  />
-                </div>
-              )}
-
-              {subtasks.length > 0 && (
-                <div className="ml-6">
-                  {subtasks.map((subtask) => (
-                    <TaskNode
-                      key={subtask.id}
-                      task={subtask}
-                      dealId={dealId}
-                      dealName={dealName}
-                      depth={depth + 1}
-                      onComplete={onComplete}
-                      onPickup={onPickup}
-                      onAddChild={onAddChild}
-                      onAddReply={onAddReply}
-                      onShare={onShare}
-                      onLike={onLike}
-                      currentUserId={currentUserId}
-                      users={users}
-                      addingChildTo={addingChildTo}
-                      addingReplyTo={addingReplyTo}
-                      onSaveTask={onSaveTask}
-                      onCancelTask={onCancelTask}
-                      expandedTasks={expandedTasks}
-                      onToggleExpand={onToggleExpand}
-                      editingTaskId={editingTaskId}
-                      editingSummary={editingSummary}
-                      editingAssignee={editingAssignee}
-                      editingDueDate={editingDueDate}
-                      onStartEdit={onStartEdit}
-                      onSaveEdit={onSaveEdit}
-                      onCancelEdit={onCancelEdit}
-                      onEditSummaryChange={onEditSummaryChange}
-                      onEditAssigneeChange={onEditAssigneeChange}
-                      onEditDueDateChange={onEditDueDateChange}
-                    />
-                  ))}
-                </div>
+                  {subtasks.length > 0 && (
+                    <div className="ml-6">
+                      {subtasks.map((subtask) => (
+                        <TaskNode
+                          key={subtask.id}
+                          task={subtask}
+                          dealId={dealId}
+                          dealName={dealName}
+                          depth={depth + 1}
+                          onComplete={onComplete}
+                          onPickup={onPickup}
+                          onAddChild={onAddChild}
+                          onAddReply={onAddReply}
+                          onShare={onShare}
+                          onLike={onLike}
+                          currentUserId={currentUserId}
+                          users={users}
+                          addingChildTo={addingChildTo}
+                          addingReplyTo={addingReplyTo}
+                          onSaveTask={onSaveTask}
+                          onCancelTask={onCancelTask}
+                          expandedTasks={expandedTasks}
+                          onToggleExpand={onToggleExpand}
+                          commentsViewTasks={commentsViewTasks}
+                          setCommentsViewTasks={setCommentsViewTasks}
+                          editingTaskId={editingTaskId}
+                          editingSummary={editingSummary}
+                          editingAssignee={editingAssignee}
+                          editingDueDate={editingDueDate}
+                          onStartEdit={onStartEdit}
+                          onSaveEdit={onSaveEdit}
+                          onCancelEdit={onCancelEdit}
+                          onEditSummaryChange={onEditSummaryChange}
+                          onEditAssigneeChange={onEditAssigneeChange}
+                          onEditDueDateChange={onEditDueDateChange}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </>
           );
@@ -904,6 +926,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
   const [hideCompleted, setHideCompleted] = useState(false);
   const [expandedDeals, setExpandedDeals] = useState<Set<string>>(new Set());
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [commentsViewTasks, setCommentsViewTasks] = useState<Set<string>>(new Set());
 
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [filterPriority, setFilterPriority] = useState<string>('all');
@@ -1666,6 +1689,8 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
                         }}
                         expandedTasks={expandedTasks}
                         onToggleExpand={handleToggleTask}
+                        commentsViewTasks={commentsViewTasks}
+                        setCommentsViewTasks={setCommentsViewTasks}
                         editingTaskId={editingTaskId}
                         editingSummary={editingSummary}
                         editingAssignee={editingAssignee}
