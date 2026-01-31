@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight, CornerDownRight, Filter, Users, ChevronDown } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight, Reply, Filter, Users, ChevronDown } from 'lucide-react';
 import { format, isPast, parseISO } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
@@ -96,12 +96,10 @@ const InlineTaskEditor = ({
   const [summary, setSummary] = useState('');
   const [assigneeId, setAssigneeId] = useState(currentUser?.id || '');
   const [dueDate, setDueDate] = useState('');
-  const [showUserPicker, setShowUserPicker] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const dateInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    textareaRef.current?.focus();
+    inputRef.current?.focus();
   }, []);
 
   const handleSave = () => {
@@ -114,109 +112,78 @@ const InlineTaskEditor = ({
   };
 
   const selectedUser = users.find(u => u.id === assigneeId);
+  const initials = selectedUser?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U';
 
   return (
-    <div className="relative group py-3">
-      <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-orange-300 z-0" />
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      exit={{ opacity: 0, height: 0 }}
+      className="py-1"
+    >
+      <div className="flex items-start gap-2 pl-1">
+        <div className="flex-1 bg-white border border-orange-200 rounded-lg shadow-sm">
+          <input
+            ref={inputRef}
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSave();
+              if (e.key === 'Escape') onCancel();
+            }}
+            placeholder={isReply ? "Type reply..." : "Type task..."}
+            className="w-full bg-transparent outline-none text-sm font-medium py-2 px-2 placeholder:text-slate-300"
+          />
 
-      <div className="relative z-10 pl-[48px] pr-2 flex items-start gap-3">
-        <div className="absolute left-[17px] top-[16px] z-20 bg-white">
-          <div className="w-4 h-4 rounded-full border-2 border-orange-400 animate-pulse" />
-        </div>
-
-        <div className="relative flex-shrink-0">
-          <button
-            onClick={() => setShowUserPicker(!showUserPicker)}
-            className="hover:scale-105 transition-transform"
-          >
-            <Avatar className="w-7 h-7 ring-2 ring-white shadow-sm">
-              <AvatarImage src={selectedUser?.avatar_url} />
-              <AvatarFallback className="bg-orange-500 text-white text-[9px] font-bold">
-                {getInitials(selectedUser?.name)}
-              </AvatarFallback>
-            </Avatar>
-          </button>
-
-          {showUserPicker && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-50 min-w-[180px]">
-              {users.map(u => (
-                <button
-                  key={u.id}
-                  onClick={() => {
-                    setAssigneeId(u.id);
-                    setShowUserPicker(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors text-left"
+          {!isReply && (
+            <div className="flex items-center gap-2 px-2 pb-2">
+              <div className="relative">
+                <select
+                  value={assigneeId}
+                  onChange={e => setAssigneeId(e.target.value)}
+                  className="appearance-none bg-transparent outline-none cursor-pointer opacity-0 absolute inset-0 w-6 h-6 z-10"
+                  title="Assign to user"
                 >
-                  <Avatar className="w-6 h-6">
-                    <AvatarImage src={u.avatar_url} />
-                    <AvatarFallback className="bg-slate-200 text-slate-600 text-[8px] font-bold">
-                      {getInitials(u.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-medium text-slate-700">{u.name}</span>
-                </button>
-              ))}
+                  <option value={currentUser?.id}>Me</option>
+                  {users.filter(u => u.id !== currentUser?.id).map(u => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+                <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-white text-[10px] font-bold pointer-events-none">
+                  {initials}
+                </div>
+              </div>
+
+              <input
+                type="date"
+                value={dueDate}
+                onChange={e => setDueDate(e.target.value)}
+                className="text-[11px] outline-none text-slate-400 cursor-pointer ml-auto"
+                placeholder="mm/dd/yyyy"
+              />
+
+              <button onClick={onCancel} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                <X className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={handleSave} className="p-1 hover:bg-green-50 rounded text-green-600">
+                <Check className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {isReply && (
+            <div className="flex items-center gap-1 px-2 py-2 justify-end">
+              <button onClick={onCancel} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                <X className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={handleSave} className="p-1 hover:bg-green-50 rounded text-green-600">
+                <Check className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
         </div>
-
-        <textarea
-          ref={textareaRef}
-          value={summary}
-          onChange={(e) => setSummary(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSave();
-            }
-            if (e.key === 'Escape') onCancel();
-          }}
-          placeholder={isReply ? "Type reply..." : "Type task..."}
-          rows={1}
-          className="flex-1 bg-transparent outline-none text-sm font-medium text-slate-900 placeholder:text-slate-400 resize-none min-w-0"
-        />
-
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="relative">
-            <input
-              ref={dateInputRef}
-              type="date"
-              value={dueDate}
-              onChange={e => setDueDate(e.target.value)}
-              className="opacity-0 absolute inset-0 w-8 h-8 cursor-pointer"
-            />
-            <button
-              onClick={() => dateInputRef.current?.showPicker?.()}
-              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-              title="Set due date"
-            >
-              <Calendar className="w-4 h-4" />
-            </button>
-          </div>
-
-          <button
-            onClick={onCancel}
-            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={handleSave}
-            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-green-50 text-green-600 hover:text-green-700 transition-colors"
-          >
-            <Check className="w-4 h-4" />
-          </button>
-        </div>
       </div>
-
-      {dueDate && (
-        <div className="relative z-10 pl-[48px] pr-2 mt-1">
-          <span className="text-xs text-slate-400">Due: {format(new Date(dueDate), 'MMM d, yyyy')}</span>
-        </div>
-      )}
-    </div>
+    </motion.div>
   );
 };
 
@@ -286,9 +253,6 @@ const TaskNode = ({
   const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isCompleted;
 
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [showUserPicker, setShowUserPicker] = useState(false);
-  const dateInputRef = useRef<HTMLInputElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleTouchStart = () => {
     if (isCompleted) return;
@@ -308,12 +272,6 @@ const TaskNode = ({
     if (isCompleted) return;
     onStartEdit(task);
   };
-
-  useEffect(() => {
-    if (isEditing) {
-      textareaRef.current?.focus();
-    }
-  }, [isEditing]);
 
   useEffect(() => {
     return () => {
@@ -351,124 +309,63 @@ const TaskNode = ({
 
   if (isEditing) {
     const selectedUser = users.find(u => u.id === editingAssignee);
+    const initials = selectedUser?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U';
 
     return (
       <div className="relative group py-3">
-        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-orange-300 z-0" />
-
+        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] w-[2px] bg-slate-200 z-0" />
         <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="relative z-10 pl-[48px] pr-2 flex items-start gap-3"
         >
           <div className="absolute left-[17px] top-[16px] z-20 bg-white">
-            <div className="w-4 h-4 rounded-full border-2 border-orange-400" />
-          </div>
-
-          <div className="relative flex-shrink-0">
-            <button
-              onClick={() => setShowUserPicker(!showUserPicker)}
-              className="hover:scale-105 transition-transform"
-            >
-              <Avatar className={cn(avatarSize, "ring-2 ring-white shadow-sm")}>
-                <AvatarImage src={selectedUser?.avatar_url} />
-                <AvatarFallback className="bg-orange-500 text-white text-[9px] font-bold">
-                  {getInitials(selectedUser?.name)}
-                </AvatarFallback>
-              </Avatar>
-            </button>
-
-            {showUserPicker && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-50 min-w-[180px]">
-                <button
-                  onClick={() => {
-                    onEditAssigneeChange('');
-                    setShowUserPicker(false);
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors text-left"
-                >
-                  <div className="w-6 h-6 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center">
-                    <Hand className="w-3 h-3 text-amber-600" />
-                  </div>
-                  <span className="text-sm font-medium text-slate-700">Unassigned</span>
-                </button>
-                {users.map(u => (
-                  <button
-                    key={u.id}
-                    onClick={() => {
-                      onEditAssigneeChange(u.id);
-                      setShowUserPicker(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors text-left"
-                  >
-                    <Avatar className="w-6 h-6">
-                      <AvatarImage src={u.avatar_url} />
-                      <AvatarFallback className="bg-slate-200 text-slate-600 text-[8px] font-bold">
-                        {getInitials(u.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium text-slate-700">{u.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <textarea
-            ref={textareaRef}
-            value={editingSummary}
-            onChange={(e) => onEditSummaryChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                onSaveEdit();
-              }
-              if (e.key === 'Escape') onCancelEdit();
-            }}
-            placeholder="Task summary..."
-            rows={1}
-            className="flex-1 bg-transparent outline-none text-sm font-medium text-slate-900 resize-none min-w-0"
-          />
-
-          <div className="flex items-center gap-2 flex-shrink-0">
             <div className="relative">
+              <select
+                value={editingAssignee}
+                onChange={e => onEditAssigneeChange(e.target.value)}
+                className="appearance-none bg-transparent outline-none cursor-pointer opacity-0 absolute inset-0 w-7 h-7 z-10"
+                title="Change assignee"
+              >
+                <option value="">Unassigned</option>
+                {users.map(u => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+              <div className={cn(avatarSize, "rounded-full bg-orange-500 flex items-center justify-center text-white text-[10px] font-bold pointer-events-none ring-2 ring-white shadow-sm")}>
+                {initials}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 bg-white border-2 border-orange-300 rounded-lg shadow-md">
+            <input
+              value={editingSummary}
+              onChange={(e) => onEditSummaryChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSaveEdit();
+                if (e.key === 'Escape') onCancelEdit();
+              }}
+              placeholder="Task summary..."
+              className="w-full bg-transparent outline-none text-sm font-medium py-2 px-2"
+              autoFocus
+            />
+            <div className="flex items-center gap-2 px-2 pb-2 border-t border-orange-100 pt-2 mt-1">
               <input
-                ref={dateInputRef}
                 type="date"
                 value={editingDueDate}
                 onChange={e => onEditDueDateChange(e.target.value)}
-                className="opacity-0 absolute inset-0 w-8 h-8 cursor-pointer"
+                className="text-[11px] outline-none text-slate-600 cursor-pointer flex-1"
               />
-              <button
-                onClick={() => dateInputRef.current?.showPicker?.()}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                title="Set due date"
-              >
-                <Calendar className="w-4 h-4" />
+              <button onClick={onCancelEdit} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                <X className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={onSaveEdit} className="p-1 hover:bg-green-50 rounded text-green-600">
+                <Check className="w-3.5 h-3.5" />
               </button>
             </div>
-
-            <button
-              onClick={onCancelEdit}
-              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={onSaveEdit}
-              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-green-50 text-green-600 hover:text-green-700 transition-colors"
-            >
-              <Check className="w-4 h-4" />
-            </button>
           </div>
         </motion.div>
-
-        {editingDueDate && (
-          <div className="relative z-10 pl-[48px] pr-2 mt-1">
-            <span className="text-xs text-slate-400">Due: {format(new Date(editingDueDate), 'MMM d, yyyy')}</span>
-          </div>
-        )}
       </div>
     );
   }
@@ -480,7 +377,7 @@ const TaskNode = ({
       <div
         className={cn(
           'relative z-10 pl-[48px] py-3 pr-2 flex items-start gap-3 transition-all',
-          isCompleted && 'opacity-50'
+          isCompleted && 'opacity-50 grayscale'
         )}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -521,64 +418,70 @@ const TaskNode = ({
         )}
 
         <div className="flex-1 min-w-0">
-          <p
-            className={cn(
-              "text-sm leading-snug transition-all",
-              isMine ? "font-bold text-slate-900" : "font-medium text-slate-600",
-              isCompleted && "line-through decoration-slate-300"
-            )}
-          >
-            {task.summary}
-          </p>
-        </div>
-
-        {!isCompleted && (
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddReply(task.id);
-              }}
-              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors"
-              title="Reply"
-            >
-              <CornerDownRight className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onAddChild(task.id);
-              }}
-              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-orange-600 transition-colors"
-              title="Add subtask"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-
-            {task.due_date && (
-              <span className={cn(
-                "text-xs whitespace-nowrap font-medium px-2",
-                isOverdue ? "text-red-600" : "text-slate-400"
-              )}>
-                {format(parseISO(task.due_date), 'MMM d')}
-              </span>
-            )}
-
-            {hasChildren && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleExpand(task.id);
-                }}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                title="Toggle subtasks"
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p
+                className={cn(
+                  "text-sm leading-snug transition-all inline",
+                  isMine ? "font-bold text-slate-900" : "font-medium text-slate-600",
+                  isCompleted && "line-through decoration-slate-300"
+                )}
               >
-                <ChevronRight className={cn("w-4 h-4 transition-transform", isExpanded && "rotate-90")} />
-              </button>
-            )}
+                {task.summary}
+                {!isCompleted && (
+                  <>
+                    {' '}
+                    {hasChildren && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleExpand(task.id);
+                        }}
+                        className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-50 border border-slate-200 hover:scale-110 transition-transform ml-1"
+                        title="Toggle subtasks"
+                      >
+                        <ChevronRight className={cn("w-2.5 h-2.5 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
+                      </button>
+                    )}
+                    {' '}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddChild(task.id);
+                      }}
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-50 border border-orange-300 hover:scale-110 active:scale-90 transition-transform ml-1"
+                      title="Add subtask"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-orange-600" />
+                    </button>
+                    {' '}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddReply(task.id);
+                      }}
+                      className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-50 border border-slate-200 text-slate-500 hover:scale-110 transition-transform ml-1"
+                      title="Reply"
+                    >
+                      <Reply className="w-2.5 h-2.5" />
+                    </button>
+                  </>
+                )}
+              </p>
+            </div>
+
+            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+              {task.due_date && (
+                <span className={cn(
+                  "text-xs whitespace-nowrap",
+                  isOverdue ? "text-red-600 font-extrabold" : "text-slate-400 font-medium"
+                )}>
+                  {format(parseISO(task.due_date), 'MMM d')}
+                </span>
+              )}
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
       <AnimatePresence>
