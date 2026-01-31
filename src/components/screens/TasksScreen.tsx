@@ -20,6 +20,7 @@ interface TaskThread {
   assigned_to_id?: string;
   assignee_name?: string;
   assignee_avatar?: string;
+  assignee_role?: string;
   parent_task_id?: string;
   depth: number;
   created_at: string;
@@ -66,25 +67,17 @@ const getInitials = (name?: string) => {
   return parts.length >= 2 ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase() : name.substring(0, 2).toUpperCase();
 };
 
-const getUserColor = (userId?: string, userName?: string) => {
-  const colors = [
-    { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-500' },
-    { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-500' },
-    { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-500' },
-    { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-500' },
-    { bg: 'bg-pink-100', text: 'text-pink-700', border: 'border-pink-500' },
-    { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-500' },
-    { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-500' },
-    { bg: 'bg-cyan-100', text: 'text-cyan-700', border: 'border-cyan-500' },
-  ];
-
-  const identifier = userId || userName || 'default';
-  let hash = 0;
-  for (let i = 0; i < identifier.length; i++) {
-    hash = identifier.charCodeAt(i) + ((hash << 5) - hash);
+const getRoleBorderColor = (role?: string) => {
+  switch (role) {
+    case 'admin':
+      return 'border-red-500';
+    case 'internal':
+      return 'border-orange-500';
+    case 'external':
+      return 'border-gray-400';
+    default:
+      return 'border-slate-300';
   }
-  const index = Math.abs(hash) % colors.length;
-  return colors[index];
 };
 
 const buildTaskTree = (tasks: TaskThread[]): TaskThread[] => {
@@ -221,9 +214,9 @@ const InlineTaskEditor = ({
                       assigneeId === u.id && "bg-orange-50"
                     )}
                   >
-                    <Avatar className={cn("w-6 h-6 ring-2 ring-white border-2", getUserColor(u.id, u.name).border)}>
+                    <Avatar className={cn("w-6 h-6 ring-2 ring-white border-2", getRoleBorderColor(u.role))}>
                       <AvatarImage src={u.avatar_url} />
-                      <AvatarFallback className={cn("text-[9px]", getUserColor(u.id, u.name).bg, getUserColor(u.id, u.name).text)}>
+                      <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
                         {getInitials(u.name)}
                       </AvatarFallback>
                     </Avatar>
@@ -403,9 +396,9 @@ const TaskNode = ({
             <div className="w-4 h-4 rounded-full border-2 border-slate-300 animate-pulse" />
           </div>
           <div className="flex items-start gap-2">
-            <Avatar className={cn("w-5 h-5 ring-2 ring-white shadow-sm animate-pulse flex-shrink-0 border-2", getUserColor(task.assigned_to_id, task.assignee_name).border)}>
+            <Avatar className={cn("w-5 h-5 ring-2 ring-white shadow-sm animate-pulse flex-shrink-0 border-2", getRoleBorderColor(task.assignee_role))}>
               <AvatarImage src={task.assignee_avatar} />
-              <AvatarFallback className={cn("text-[8px]", getUserColor(task.assigned_to_id, task.assignee_name).bg, getUserColor(task.assigned_to_id, task.assignee_name).text)}>
+              <AvatarFallback className="bg-slate-100 text-[8px] text-slate-600">
                 {getInitials(task.assignee_name)}
               </AvatarFallback>
             </Avatar>
@@ -527,9 +520,9 @@ const TaskNode = ({
                 <Hand className="w-3 h-3 text-amber-600" />
               </button>
             ) : (
-              <Avatar className={cn("w-5 h-5 ring-2 ring-white shadow-sm flex-shrink-0 border-2", getUserColor(task.assigned_to_id, task.assignee_name).border)}>
+              <Avatar className={cn("w-5 h-5 ring-2 ring-white shadow-sm flex-shrink-0 border-2", getRoleBorderColor(task.assignee_role))}>
                 <AvatarImage src={task.assignee_avatar} />
-                <AvatarFallback className={cn("text-[8px]", getUserColor(task.assigned_to_id, task.assignee_name).bg, getUserColor(task.assigned_to_id, task.assignee_name).text)}>
+                <AvatarFallback className="bg-slate-100 text-[8px] text-slate-600">
                   {getInitials(task.assignee_name)}
                 </AvatarFallback>
               </Avatar>
