@@ -221,29 +221,31 @@ const InlineTaskEditor = ({
         </div>
 
         <div className="flex items-center gap-2 mt-1 ml-7">
-          {dueDate ? (
-            <button
-              onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
-              className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded-md hover:bg-yellow-200 transition-colors"
-            >
-              {format(parseISO(dueDate), 'MMM d')}
-            </button>
-          ) : (
-            <button
-              onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
-              className="text-slate-400 hover:text-orange-500 transition-colors"
-              title="Set due date"
-            >
-              <Calendar className="w-4 h-4" />
-            </button>
-          )}
-          <input
-            id={`date-picker-${depth}`}
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="absolute opacity-0 pointer-events-none"
-          />
+          <div className="relative">
+            {dueDate ? (
+              <button
+                onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
+                className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded-md hover:bg-yellow-200 transition-colors"
+              >
+                {format(parseISO(dueDate), 'MMM d')}
+              </button>
+            ) : (
+              <button
+                onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
+                className="text-slate-400 hover:text-orange-500 transition-colors"
+                title="Set due date"
+              >
+                <Calendar className="w-4 h-4" />
+              </button>
+            )}
+            <input
+              id={`date-picker-${depth}`}
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            />
+          </div>
 
           <div className="flex-1" />
 
