@@ -593,13 +593,13 @@ const TaskNode = ({
 
         <div className="pl-[42px] pr-2">
           <div className={cn(
-            "flex items-start gap-3",
+            "flex items-start gap-2",
             isComment && "bg-green-50/30 border border-green-100/50 -ml-[42px] pl-[42px] py-2 pr-2 rounded-lg"
           )}>
             {isComment ? (
-              <Avatar className="w-8 h-8 ring-2 ring-white shadow-sm flex-shrink-0 border-2 border-green-300">
+              <Avatar className="w-5 h-5 ring-2 ring-white shadow-sm flex-shrink-0 border-2 border-green-300">
                 <AvatarImage src={task.assignee_avatar} />
-                <AvatarFallback className="bg-green-100 text-[9px] text-green-700">
+                <AvatarFallback className="bg-green-100 text-[8px] text-green-700">
                   {getInitials(task.assignee_name)}
                 </AvatarFallback>
               </Avatar>
@@ -608,14 +608,14 @@ const TaskNode = ({
                 {isUnassigned ? (
                   <button
                     onClick={() => onPickup(task.id)}
-                    className="w-8 h-8 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white flex-shrink-0"
+                    className="w-5 h-5 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white flex-shrink-0"
                   >
-                    <Hand className="w-4 h-4 text-amber-600" />
+                    <Hand className="w-3 h-3 text-amber-600" />
                   </button>
                 ) : (
-                  <Avatar className={cn("w-8 h-8 ring-2 ring-white shadow-sm flex-shrink-0 border-2", getRoleBorderColor(task.assignee_role))}>
+                  <Avatar className={cn("w-5 h-5 ring-2 ring-white shadow-sm flex-shrink-0 border-2", getRoleBorderColor(task.assignee_role))}>
                     <AvatarImage src={task.assignee_avatar} />
-                    <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
+                    <AvatarFallback className="bg-slate-100 text-[8px] text-slate-600">
                       {getInitials(task.assignee_name)}
                     </AvatarFallback>
                   </Avatar>
@@ -624,144 +624,161 @@ const TaskNode = ({
             )}
 
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-baseline gap-2 min-w-0 flex-1">
-                  <span className={cn(
-                    "text-[13px] font-semibold truncate flex-shrink-0",
-                    isComment ? "text-green-700" : "text-slate-900"
-                  )}>
-                    {task.assignee_name || 'Unassigned'}
+              {isComment && (
+                <div className="mb-1">
+                  <span className="text-[11px] font-semibold text-green-700">
+                    {task.assignee_name}
                   </span>
-                  <span className="text-[11px] text-slate-400 flex-shrink-0">
-                    {format(parseISO(task.created_at), 'MMM d')}
-                  </span>
-                  {!isComment && task.due_date && (
-                    <span className={cn(
-                      "text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0",
-                      isOverdue
-                        ? "bg-red-100 text-red-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    )}>
-                      Due {format(parseISO(task.due_date), 'MMM d')}
-                    </span>
-                  )}
                 </div>
-                {subtaskCount > 0 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCommentsViewTasks(prev => {
-                        const next = new Set(prev);
-                        next.delete(task.id);
-                        return next;
-                      });
-                      onToggleExpand(task.id);
-                    }}
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 hover:bg-slate-200 transition-colors flex-shrink-0"
-                    title={`${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''}`}
-                  >
-                    <ChevronRight className={cn("w-3 h-3 text-slate-500 transition-transform", isExpanded && !commentsViewTasks.has(task.id) && "rotate-90")} />
-                    <span className="text-[10px] font-semibold text-slate-600">{subtaskCount}</span>
-                  </button>
-                )}
-              </div>
+              )}
 
               <p
                 className={cn(
-                  "text-[14px] leading-[1.4] mt-0.5",
-                  isComment ? "text-slate-700" : "text-slate-900",
-                  isCompleted && "line-through decoration-slate-300 opacity-60"
+                  "text-[13px] leading-relaxed transition-all",
+                  isComment ? "text-slate-700" : (isMine ? "text-slate-900 font-normal" : "text-slate-700 font-normal"),
+                  isCompleted && "line-through decoration-slate-300"
                 )}
               >
                 {task.summary}
-              </p>
-
-              {!isCompleted && (
-                <div className="flex items-center gap-4 mt-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (currentUserId) {
-                        onLike(task.id, currentUserId);
-                      }
-                    }}
-                    className={cn(
-                      "flex items-center gap-1.5 transition-all group",
-                      hasLiked
-                        ? "text-blue-500"
-                        : "text-slate-400 hover:text-blue-500"
-                    )}
-                    title={hasLiked ? "Unlike" : "Like"}
-                  >
-                    <ThumbsUp className={cn("w-[18px] h-[18px] group-hover:scale-110 transition-transform", hasLiked && "fill-blue-500")} />
-                    {likeCount > 0 && (
-                      <span className="text-[12px] font-semibold">{likeCount}</span>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (commentCount > 0) {
-                        const isExpanded = expandedTasks.has(task.id);
-                        const isCommentsView = commentsViewTasks.has(task.id);
-
-                        if (isExpanded && isCommentsView) {
-                          setExpandedTasks(prev => {
-                            const next = new Set(prev);
-                            next.delete(task.id);
-                            return next;
-                          });
-                          setCommentsViewTasks(prev => {
-                            const next = new Set(prev);
-                            next.delete(task.id);
-                            return next;
-                          });
-                        } else {
-                          setExpandedTasks(prev => new Set(prev).add(task.id));
-                          setCommentsViewTasks(prev => new Set(prev).add(task.id));
-                        }
-                      } else {
-                        onAddReply(task.id);
-                      }
-                    }}
-                    className={cn(
-                      "flex items-center gap-1.5 transition-all group",
-                      commentCount > 0
-                        ? "text-green-600"
-                        : "text-slate-400 hover:text-green-500"
-                    )}
-                    title={isComment ? "Reply" : (commentCount > 0 ? `View ${commentCount} comment${commentCount !== 1 ? 's' : ''}` : "Add comment")}
-                  >
-                    <MessageSquare className="w-[18px] h-[18px] group-hover:scale-110 transition-transform" />
-                    {commentCount > 0 && (
-                      <span className="text-[12px] font-semibold">{commentCount}</span>
-                    )}
-                  </button>
-
-                  {!isComment && (
+                {subtaskCount > 0 && (
+                  <>
+                    {' '}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onAddChild(task.id);
+                        // Clicking chevron shows subtasks, not comments
+                        setCommentsViewTasks(prev => {
+                          const next = new Set(prev);
+                          next.delete(task.id);
+                          return next;
+                        });
+                        onToggleExpand(task.id);
                       }}
-                      className="text-slate-400 hover:text-orange-500 transition-all group"
-                      title="Add subtask"
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 hover:scale-105 transition-transform"
+                      title={`${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''}`}
                     >
-                      <Plus className="w-[18px] h-[18px] group-hover:scale-110 transition-transform" />
+                      <ChevronRight className={cn("w-2.5 h-2.5 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
+                      <span className="text-[10px] font-semibold text-slate-600">{subtaskCount}</span>
                     </button>
-                  )}
+                  </>
+                )}
+              </p>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onShare(task);
-                    }}
-                    className="text-slate-400 hover:text-slate-600 transition-all group"
-                    title="Share"
-                  >
-                    <Share2 className="w-[18px] h-[18px] group-hover:scale-110 transition-transform" />
-                  </button>
+              {isComment && (
+                <div className="mt-1">
+                  <span className="text-[10px] text-green-600/70">
+                    {format(parseISO(task.created_at), 'MMM d, h:mm a')}
+                  </span>
+                </div>
+              )}
+
+              {!isCompleted && (
+                <div className="flex items-center justify-between mt-2 ml-7 pr-2">
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (currentUserId) {
+                          onLike(task.id, currentUserId);
+                        }
+                      }}
+                      className={cn(
+                        "flex items-center gap-1 transition-all",
+                        hasLiked
+                          ? "text-blue-500 hover:text-blue-600"
+                          : "text-slate-400 hover:text-blue-500 hover:scale-110"
+                      )}
+                      title={hasLiked ? "Unlike" : "Like"}
+                    >
+                      <ThumbsUp className={cn("w-4 h-4", hasLiked && "fill-blue-500")} />
+                      {likeCount > 0 && (
+                        <span className="text-[10px] font-bold">{likeCount}</span>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // If there are existing comments, expand to show ONLY comments
+                        // Otherwise, open the reply editor
+                        if (commentCount > 0) {
+                          const isExpanded = expandedTasks.has(task.id);
+                          const isCommentsView = commentsViewTasks.has(task.id);
+
+                          if (isExpanded && isCommentsView) {
+                            // Already showing comments, collapse
+                            setExpandedTasks(prev => {
+                              const next = new Set(prev);
+                              next.delete(task.id);
+                              return next;
+                            });
+                            setCommentsViewTasks(prev => {
+                              const next = new Set(prev);
+                              next.delete(task.id);
+                              return next;
+                            });
+                          } else {
+                            // Show comments view
+                            setExpandedTasks(prev => new Set(prev).add(task.id));
+                            setCommentsViewTasks(prev => new Set(prev).add(task.id));
+                          }
+                        } else {
+                          onAddReply(task.id);
+                        }
+                      }}
+                      className={cn(
+                        "flex items-center gap-1 transition-all",
+                        commentCount > 0
+                          ? "text-green-600 hover:text-green-700"
+                          : "text-slate-400 hover:text-green-500"
+                      )}
+                      title={isComment ? "Reply" : (commentCount > 0 ? `View ${commentCount} comment${commentCount !== 1 ? 's' : ''}` : "Add comment")}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      {commentCount > 0 && (
+                        <span className="text-[10px] font-bold">{commentCount}</span>
+                      )}
+                    </button>
+
+                    {!isComment && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAddChild(task.id);
+                        }}
+                        className="text-slate-400 hover:text-orange-500 transition-colors"
+                        title="Add subtask"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    )}
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onShare(task);
+                      }}
+                      className="text-slate-400 hover:text-slate-600 transition-colors"
+                      title="Share"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {!isComment && (
+                    <div className="flex items-center">
+                      {task.due_date && (
+                        <span className={cn(
+                          "text-[10px] font-bold px-2 py-0.5 rounded-md",
+                          isOverdue
+                            ? "bg-red-100 text-red-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        )}>
+                          {format(parseISO(task.due_date), 'MMM d')}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
