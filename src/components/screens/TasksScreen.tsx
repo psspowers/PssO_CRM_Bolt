@@ -699,15 +699,23 @@ const TaskNode = ({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+
+                        // Check if we are currently looking at the children
                         const isExpanded = expandedTasks.has(task.id);
 
-                        if (!isExpanded) {
-                          // Case 1: Thread is closed. Open it to show content.
+                        // LOGIC BRANCHING
+                        if (commentCount > 0 && !isExpanded) {
+                          // Case: Hidden comments. Just show them.
                           onToggleExpand(task.id);
                         } else {
-                          // Case 2: Thread is ALREADY open.
-                          // The user clicked "Comment" while looking at the thread, so they must want to WRITE.
+                          // Case: No comments OR Comments are visible.
+                          // Action: User wants to TYPE.
                           onAddReply(task.id);
+
+                          // Safety: Ensure it stays open if we are adding a reply
+                          if (!isExpanded) {
+                            onToggleExpand(task.id);
+                          }
                         }
                       }}
                       className={cn(
