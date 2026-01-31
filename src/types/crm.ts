@@ -177,6 +177,9 @@ export interface Activity {
   priority?: 'Low' | 'Medium' | 'High';
   // NEW FIELD FOR RECURSIVE TASKS
   parentTaskId?: string;
+  // NEW ENGAGEMENT FIELDS
+  reactions?: Record<string, string>; // JSONB: { "userId": "like" | "love" | "fight" }
+  commentCount?: number;              // Display count of child notes
 }
 
 export interface Relationship {
