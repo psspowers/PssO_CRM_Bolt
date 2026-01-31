@@ -634,7 +634,7 @@ const TaskNode = ({
                 )}
               >
                 {task.summary}
-                {hasChildren && (
+                {subtaskCount > 0 && (
                   <>
                     {' '}
                     <button
@@ -643,15 +643,10 @@ const TaskNode = ({
                         onToggleExpand(task.id);
                       }}
                       className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 hover:scale-105 transition-transform"
-                      title={isComment ? "Toggle replies" : `${commentCount} comment${commentCount !== 1 ? 's' : ''}, ${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''}`}
+                      title={`${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''}`}
                     >
                       <ChevronRight className={cn("w-2.5 h-2.5 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
-                      {!isComment && commentCount > 0 && (
-                        <span className="text-[10px] font-semibold text-green-600">{commentCount}</span>
-                      )}
-                      {subtaskCount > 0 && (
-                        <span className="text-[10px] font-semibold text-slate-600">{subtaskCount}</span>
-                      )}
+                      <span className="text-[10px] font-semibold text-slate-600">{subtaskCount}</span>
                     </button>
                   </>
                 )}
@@ -692,7 +687,13 @@ const TaskNode = ({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onAddReply(task.id);
+                        // If there are existing comments, expand to show them
+                        // Otherwise, open the reply editor
+                        if (commentCount > 0) {
+                          onToggleExpand(task.id);
+                        } else {
+                          onAddReply(task.id);
+                        }
                       }}
                       className={cn(
                         "flex items-center gap-1 transition-all",
@@ -700,7 +701,7 @@ const TaskNode = ({
                           ? "text-green-600 hover:text-green-700"
                           : "text-slate-400 hover:text-green-500"
                       )}
-                      title={isComment ? "Reply" : "Comment"}
+                      title={isComment ? "Reply" : (commentCount > 0 ? `View ${commentCount} comment${commentCount !== 1 ? 's' : ''}` : "Add comment")}
                     >
                       <MessageSquare className="w-4 h-4" />
                       {commentCount > 0 && (
