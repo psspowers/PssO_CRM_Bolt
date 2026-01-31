@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { CheckSquare, Square, Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight, Reply, Filter, Users, ChevronDown, ThumbsUp, CornerDownRight, MessageSquare, ListPlus } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight, Reply, Filter, Users, ChevronDown, ThumbsUp, CornerDownRight, MessageSquare, ListPlus, Share2 } from 'lucide-react';
 import { format, isPast, parseISO } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
@@ -181,52 +181,60 @@ const InlineTaskEditor = ({
 
       <div className="relative z-10 pl-[42px] pr-2">
         <div className="flex items-start gap-2">
-          <div ref={userPickerRef} className="relative flex-shrink-0">
-            <button
-              onClick={() => setShowUserPicker(!showUserPicker)}
-              className="relative"
-              title="Assign to user"
-            >
-              <Avatar className="w-5 h-5 ring-2 ring-white shadow-sm hover:ring-orange-500 transition-all">
-                <AvatarImage src={selectedUser?.avatar_url} />
-                <AvatarFallback className="bg-orange-500 text-white text-[9px] font-bold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-            </button>
-
-            {showUserPicker && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                className="absolute left-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
+          {!isReply && (
+            <div ref={userPickerRef} className="relative flex-shrink-0">
+              <button
+                onClick={() => setShowUserPicker(!showUserPicker)}
+                className="relative"
+                title="Assign to user"
               >
-                {users.map(u => (
-                  <button
-                    key={u.id}
-                    onClick={() => {
-                      setAssigneeId(u.id);
-                      setShowUserPicker(false);
-                    }}
-                    className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors text-left",
-                      assigneeId === u.id && "bg-orange-50"
-                    )}
-                  >
-                    <Avatar className={cn("w-6 h-6 ring-2 ring-white border-2", getRoleBorderColor(u.role))}>
-                      <AvatarImage src={u.avatar_url} />
-                      <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
-                        {getInitials(u.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium text-slate-700 truncate">{u.name}</span>
-                    {assigneeId === u.id && <Check className="w-4 h-4 text-orange-600 ml-auto" />}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </div>
+                <Avatar className="w-5 h-5 ring-2 ring-white shadow-sm hover:ring-orange-500 transition-all">
+                  <AvatarImage src={selectedUser?.avatar_url} />
+                  <AvatarFallback className="bg-orange-500 text-white text-[9px] font-bold">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+
+              {showUserPicker && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  className="absolute left-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
+                >
+                  {users.map(u => (
+                    <button
+                      key={u.id}
+                      onClick={() => {
+                        setAssigneeId(u.id);
+                        setShowUserPicker(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors text-left",
+                        assigneeId === u.id && "bg-orange-50"
+                      )}
+                    >
+                      <Avatar className={cn("w-6 h-6 ring-2 ring-white border-2", getRoleBorderColor(u.role))}>
+                        <AvatarImage src={u.avatar_url} />
+                        <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
+                          {getInitials(u.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium text-slate-700 truncate">{u.name}</span>
+                      {assigneeId === u.id && <Check className="w-4 h-4 text-orange-600 ml-auto" />}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </div>
+          )}
+
+          {isReply && (
+            <div className="flex-shrink-0">
+              <MessageSquare className="w-4 h-4 text-green-500 mt-1" />
+            </div>
+          )}
 
           <div className="flex-1 min-w-0">
             <textarea
@@ -234,56 +242,92 @@ const InlineTaskEditor = ({
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isReply ? "Type reply..." : "Type task..."}
+              placeholder={isReply ? "Add a comment..." : "Type task..."}
               rows={1}
               className="w-full bg-transparent resize-none outline-none text-[13px] text-slate-700 font-normal placeholder:text-slate-400 leading-relaxed overflow-hidden"
             />
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mt-1 ml-7">
-          <div className="relative">
-            {dueDate ? (
-              <button
-                onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
-                className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded-md hover:bg-yellow-200 transition-colors"
-              >
-                {format(parseISO(dueDate), 'MMM d')}
-              </button>
-            ) : (
-              <button
-                onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
-                className="text-slate-400 hover:text-orange-500 transition-colors"
-                title="Set due date"
-              >
-                <Calendar className="w-4 h-4" />
-              </button>
-            )}
-            <input
-              id={`date-picker-${depth}`}
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-            />
-          </div>
+        {!isReply && (
+          <div className="flex items-center gap-2 mt-1 ml-7">
+            <div className="relative">
+              {dueDate ? (
+                <button
+                  onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
+                  className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded-md hover:bg-yellow-200 transition-colors"
+                >
+                  {format(parseISO(dueDate), 'MMM d')}
+                </button>
+              ) : (
+                <button
+                  onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
+                  className="text-slate-400 hover:text-orange-500 transition-colors"
+                  title="Set due date"
+                >
+                  <Calendar className="w-4 h-4" />
+                </button>
+              )}
+              <input
+                id={`date-picker-${depth}`}
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              />
+            </div>
 
-          <div className="flex-1" />
+            <div className="flex-1" />
 
-          <button
-            onClick={handleSave}
-            disabled={!summary.trim()}
-            className={cn(
-              "text-xs font-bold px-3 py-1 rounded-md transition-colors",
-              summary.trim()
-                ? "bg-orange-500 text-white hover:bg-orange-600"
-                : "bg-slate-200 text-slate-400 cursor-not-allowed"
-            )}
-            title="Post"
-          >
+            <button
+              onClick={handleSave}
+              disabled={!summary.trim()}
+              className={cn(
+                "text-xs font-bold px-3 py-1 rounded-md transition-colors",
+                summary.trim()
+                  ? "bg-orange-500 text-white hover:bg-orange-600"
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed"
+              )}
+              title="Post"
+            >
             Post
           </button>
+
+          <button
+            onClick={onCancel}
+            className="text-xs font-bold px-3 py-1 text-slate-500 hover:text-slate-700 transition-colors"
+            title="Cancel"
+          >
+            Cancel
+          </button>
         </div>
+        )}
+
+        {isReply && (
+          <div className="flex items-center gap-2 mt-1 ml-7">
+            <button
+              onClick={handleSave}
+              disabled={!summary.trim()}
+              className={cn(
+                "text-xs font-bold px-3 py-1 rounded-md transition-colors",
+                summary.trim()
+                  ? "bg-green-500 text-white hover:bg-green-600"
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed"
+              )}
+              title="Post Comment"
+            >
+              Comment
+            </button>
+
+            <button
+              onClick={onCancel}
+              className="text-xs font-bold px-3 py-1 text-slate-500 hover:text-slate-700 transition-colors"
+              title="Cancel"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
     </motion.div>
   );
@@ -292,11 +336,13 @@ const InlineTaskEditor = ({
 const TaskNode = ({
   task,
   dealId,
+  dealName,
   depth,
   onComplete,
   onPickup,
   onAddChild,
   onAddReply,
+  onShare,
   onLike,
   currentUserId,
   users,
@@ -319,11 +365,13 @@ const TaskNode = ({
 }: {
   task: TaskThread;
   dealId: string;
+  dealName: string;
   depth: number;
   onComplete: (id: string, status?: string) => void;
   onPickup: (id: string) => void;
   onAddChild: (taskId: string) => void;
   onAddReply: (taskId: string) => void;
+  onShare: (task: TaskThread) => void;
   onLike: (id: string, userId: string) => void;
   currentUserId?: string;
   users: any[];
@@ -597,18 +645,18 @@ const TaskNode = ({
                       className="text-slate-400 hover:text-orange-500 transition-colors"
                       title="Add subtask"
                     >
-                      <ListPlus className="w-4 h-4" />
+                      <Plus className="w-4 h-4" />
                     </button>
 
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onAddReply(task.id);
+                        onShare(task);
                       }}
                       className="text-slate-400 hover:text-slate-600 transition-colors"
-                      title="Reply"
+                      title="Share"
                     >
-                      <CornerDownRight className="w-4 h-4" />
+                      <Share2 className="w-4 h-4" />
                     </button>
                   </div>
 
@@ -639,11 +687,13 @@ const TaskNode = ({
                 key={child.id}
                 task={child}
                 dealId={dealId}
+                dealName={dealName}
                 depth={depth + 1}
                 onComplete={onComplete}
                 onPickup={onPickup}
                 onAddChild={onAddChild}
                 onAddReply={onAddReply}
+                onShare={onShare}
                 onLike={onLike}
                 currentUserId={currentUserId}
                 users={users}
@@ -881,6 +931,30 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
     }
   };
 
+  const handleShare = async (task: TaskThread, dealName: string) => {
+    const shareData = {
+      title: `Task: ${task.summary}`,
+      text: `Project: ${dealName}\nTask: ${task.summary}\nAssignee: ${task.assignee_name || 'Unassigned'}`,
+      url: window.location.href
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.error('Share failed', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+        toast({ title: 'Copied to Clipboard' });
+      } catch (err) {
+        console.error('Copy failed', err);
+        toast({ title: 'Share not supported', description: 'Unable to share or copy', variant: 'destructive' });
+      }
+    }
+  };
+
   const handleStartEdit = (task: TaskThread) => {
     setEditingTaskId(task.id);
     setEditingSummary(task.summary);
@@ -1011,10 +1085,10 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
 
       const payload: any = {
         summary,
-        is_task: true,
-        task_status: 'Pending',
+        is_task: !isReply,
+        task_status: isReply ? undefined : 'Pending',
         created_by_id: user?.id,
-        assigned_to_id: assignee,
+        assigned_to_id: isReply ? undefined : assignee,
         related_to_id: parentId || targetDealId,
         related_to_type: parentId ? 'Activity' : 'Opportunity',
       };
@@ -1023,7 +1097,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
         payload.parent_task_id = parentId;
       }
 
-      if (date) {
+      if (date && !isReply) {
         payload.due_date = new Date(date).toISOString();
       }
 
@@ -1037,7 +1111,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
         return next;
       });
 
-      toast({ title: 'Task Created' });
+      toast({ title: isReply ? 'Comment Added' : 'Task Created' });
       fetchTasks();
     } catch (err: any) {
       console.error(err);
@@ -1398,6 +1472,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
                         key={task.id}
                         task={task}
                         dealId={group.id}
+                        dealName={group.name}
                         depth={0}
                         onComplete={handleComplete}
                         onPickup={handlePickup}
@@ -1413,6 +1488,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
                           setAddingRootTo(null);
                           setExpandedTasks(prev => new Set(prev).add(id));
                         }}
+                        onShare={(task) => handleShare(task, group.name)}
                         onLike={handleLike}
                         currentUserId={user?.id}
                         users={users}
