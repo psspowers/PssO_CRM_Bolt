@@ -745,7 +745,7 @@ const TaskNode = ({
 
       <AnimatePresence>
         {isAddingReply && (
-          <div className="ml-6">
+          <div key={`comment-editor-${task.id}`} className="ml-6">
             <InlineTaskEditor
               users={users}
               currentUser={currentUser}
@@ -758,8 +758,8 @@ const TaskNode = ({
         )}
 
         {isExpanded && hasChildren && (() => {
-          const comments = task.children?.filter(c => c.is_task === false) || [];
-          const subtasks = task.children?.filter(c => c.is_task !== false) || [];
+          const comments = task.children?.filter(c => c.is_task === false && c.id && c.id.trim() !== '') || [];
+          const subtasks = task.children?.filter(c => c.is_task !== false && c.id && c.id.trim() !== '') || [];
 
           return (
             <>
@@ -802,7 +802,7 @@ const TaskNode = ({
               )}
 
               {isAddingChild && (
-                <div className="ml-6">
+                <div key={`subtask-editor-${task.id}`} className="ml-6">
                   <InlineTaskEditor
                     users={users}
                     currentUser={currentUser}
