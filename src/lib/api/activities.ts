@@ -99,3 +99,37 @@ export const deleteActivity = async (id: string): Promise<void> => {
     throw error;
   }
 };
+
+export const toggleReaction = async (
+  activityId: string,
+  userId: string,
+  reactionType: string = 'like'
+): Promise<Record<string, string>> => {
+  const { data: activity, error: fetchError } = await supabase
+    .from('activities')
+    .select('reactions')
+    .eq('id', activityId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  const currentReactions = (activity?.reactions as Record<string, string>) || {};
+  const newReactions = { ...currentReactions };
+
+  if (newReactions[userId]) {
+    delete newReactions[userId];
+  } else {
+    newReactions[userId] = reactionType;
+  }
+
+  const { data, error } = await supabase
+    .from('activities')
+    .update({ reactions: newReactions })
+    .eq('id', activityId)
+    .select('reactions')
+    .single();
+
+  if (error) throw error;
+
+  return (data?.reactions as Record<string, string>) || {};
+};

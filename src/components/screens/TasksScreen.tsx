@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FilterModal } from '../crm/FilterModal';
+import { toggleReaction } from '@/lib/api/activities';
 
 interface TaskThread {
   id: string;
@@ -1059,29 +1060,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
 
   const handleLike = async (taskId: string, userId: string) => {
     try {
-      const { data: currentTask, error: fetchError } = await supabase
-        .from('activities')
-        .select('reactions')
-        .eq('id', taskId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      const reactions = currentTask?.reactions || {};
-      const newReactions = { ...reactions };
-
-      if (newReactions[userId] === 'like') {
-        delete newReactions[userId];
-      } else {
-        newReactions[userId] = 'like';
-      }
-
-      const { error: updateError } = await supabase
-        .from('activities')
-        .update({ reactions: newReactions })
-        .eq('id', taskId);
-
-      if (updateError) throw updateError;
+      const newReactions = await toggleReaction(taskId, userId, 'like');
 
       setDealGroups(prevGroups => {
         return prevGroups.map(group => {
