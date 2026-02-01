@@ -1,586 +1,944 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { CheckSquare, Square, Clock, Loader2, User, ChevronDown, Hand, Users, Search, X, Info, Plus, Minus, Calendar, Check } from 'lucide-react';
+import { CheckSquare, Square, Loader2, Hand, Search, Plus, Calendar, Check, X, User, ChevronRight, Reply, Filter, Users, ChevronDown, ThumbsUp, CornerDownRight, MessageSquare, ListPlus, Share2 } from 'lucide-react';
+import { format, isPast, parseISO } from 'date-fns';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../../contexts/AppContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FilterModal } from '../crm/FilterModal';
+import { toggleReaction } from '@/lib/api/activities';
 
 interface TaskThread {
   id: string;
   summary: string;
   details?: string;
-  status?: 'Pending' | 'Completed';
+  is_task?: boolean;
+  task_status?: 'Pending' | 'Completed';
   priority?: 'Low' | 'Medium' | 'High';
-  dueDate?: string;
-  assignedToId?: string;
-  assigneeName?: string;
-  assigneeAvatar?: string;
-  parentTaskId?: string;
+  due_date?: string;
+  assigned_to_id?: string;
+  assignee_name?: string;
+  assignee_avatar?: string;
+  assignee_role?: string;
+  parent_task_id?: string;
   depth: number;
-  createdAt: string;
+  created_at: string;
   children?: TaskThread[];
+  isOptimistic?: boolean;
+  reactions?: Record<string, string>;
+  comment_count?: number;
+  like_count?: number;
 }
 
 interface DealGroup {
-  deal: {
-    id: string;
-    name: string;
-    stage: string;
-    value: number;
-    account_name: string;
-  };
-  progress: number;
-  total_tasks: number;
-  completed_tasks: number;
-  tasks: TaskThread[];
+  id: string;
+  name: string;
+  stage: string;
+  mw: number;
+  velocity_score: number;
+  tasks: TaskThread[] | null;
 }
 
-const getStageConfig = (stage: string) => {
-  const configs: Record<string, { char: string; color: string; label: string }> = {
-    'Prospect': { char: '', color: 'bg-slate-400', label: 'Prospect' },
-    'Qualified': { char: 'Q', color: 'bg-blue-500', label: 'Qualified' },
-    'Proposal': { char: 'P', color: 'bg-amber-500', label: 'Proposal' },
-    'Negotiation': { char: 'N', color: 'bg-purple-500', label: 'Negotiation' },
-    'Term Sheet': { char: 'T', color: 'bg-teal-500', label: 'Term Sheet' },
-    'Won': { char: 'W', color: 'bg-green-500', label: 'Won' }
+const getStageAvatar = (stage: string) => {
+  const configs: Record<string, { char: string; color: string; bg: string; borderColor: string; hollow?: boolean }> = {
+    'Prospect': { char: '', color: 'text-slate-500', bg: 'bg-white', borderColor: 'border-slate-400', hollow: true },
+    'Qualified': { char: 'Q', color: 'text-blue-600', bg: 'bg-blue-100', borderColor: 'border-blue-500' },
+    'Proposal': { char: 'P', color: 'text-amber-600', bg: 'bg-amber-100', borderColor: 'border-amber-500' },
+    'Negotiation': { char: 'N', color: 'text-purple-600', bg: 'bg-purple-100', borderColor: 'border-purple-500' },
+    'Term Sheet': { char: 'T', color: 'text-teal-600', bg: 'bg-teal-100', borderColor: 'border-teal-500' },
+    'Won': { char: 'W', color: 'text-emerald-600', bg: 'bg-emerald-100', borderColor: 'border-emerald-500' },
   };
-  return configs[stage] || { char: '', color: 'bg-slate-400', label: stage };
-};
-
-const INDENT_PX = 32;
-
-interface InlineTaskEditorProps {
-  depth: number;
-  users: any[];
-  assigneeId: string;
-  summary: string;
-  dueDate: string;
-  onAssigneeChange: (id: string) => void;
-  onSummaryChange: (text: string) => void;
-  onDueDateChange: (date: string) => void;
-  onSave: () => void;
-  onCancel: () => void;
-}
-
-const InlineTaskEditor: React.FC<InlineTaskEditorProps> = ({
-  depth,
-  users,
-  assigneeId,
-  summary,
-  dueDate,
-  onAssigneeChange,
-  onSummaryChange,
-  onDueDateChange,
-  onSave,
-  onCancel
-}) => {
-  const [showAssigneeMenu, setShowAssigneeMenu] = useState(false);
-  const dateInputRef = useRef<HTMLInputElement>(null);
-  const assignedUser = users.find(u => u.id === assigneeId);
-
-  const getInitials = (name: string) => {
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
-
-  const getAvatarSize = () => {
-    if (depth === 0) return 'w-8 h-8';
-    if (depth === 1) return 'w-7 h-7';
-    return 'w-6 h-6';
-  };
-
+  const s = configs[stage] || { char: '?', color: 'text-slate-500', bg: 'bg-slate-100', borderColor: 'border-slate-300' };
   return (
-    <div
-      className="task-row relative py-2 pr-4 overflow-visible bg-transparent"
-      style={{ '--spine-x': `${depth * INDENT_PX}px` } as React.CSSProperties}
-    >
-      {depth > 0 && (
-        <>
-          <div className="tree-spine z-0" style={{ top: '-12px', bottom: '-12px' }} />
-          <div className="tree-elbow z-0" />
-        </>
-      )}
-
-      <div
-        className="flex items-center gap-3 relative z-10"
-        style={{ paddingLeft: `${depth * INDENT_PX + 24}px` }}
-      >
-        <div className="relative">
-          <button
-            onClick={() => setShowAssigneeMenu(!showAssigneeMenu)}
-            className="flex-shrink-0 z-10"
-          >
-            <Avatar className={`${getAvatarSize()} cursor-pointer ring-4 ring-white dark:ring-slate-900`}>
-              <AvatarImage src={assignedUser?.avatar_url} />
-              <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
-                {assignedUser ? getInitials(assignedUser.name) : '?'}
-              </AvatarFallback>
-            </Avatar>
-          </button>
-
-          {showAssigneeMenu && (
-            <div className="absolute bottom-full left-0 mb-1 bg-white border border-slate-200 rounded-lg shadow-xl z-[9999] min-w-[180px] max-h-60 overflow-y-auto">
-              {users
-                .filter(u => ['internal', 'admin', 'super_admin'].includes(u.role))
-                .map(u => (
-                  <button
-                    key={u.id}
-                    onClick={() => {
-                      onAssigneeChange(u.id);
-                      setShowAssigneeMenu(false);
-                    }}
-                    className="w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center gap-2 text-sm"
-                  >
-                    <Avatar className="w-6 h-6">
-                      <AvatarImage src={u.avatar_url} />
-                      <AvatarFallback className="bg-slate-200 text-slate-700 text-xs">
-                        {getInitials(u.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-slate-900">{u.name}</span>
-                  </button>
-                ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <textarea
-            autoFocus
-            rows={2}
-            value={summary}
-            onChange={(e) => onSummaryChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && e.metaKey && summary.trim()) {
-                e.preventDefault();
-                onSave();
-              }
-              if (e.key === 'Escape') {
-                onCancel();
-              }
-            }}
-            placeholder="Type task description..."
-            className="w-full text-sm leading-relaxed bg-transparent border-none focus:ring-0 focus:outline-none px-1 py-1 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium resize-none"
-          />
-        </div>
-
-        <div className="flex flex-col items-center gap-1 flex-shrink-0 ml-2">
-          <div className="relative">
-            <input
-              ref={dateInputRef}
-              type="date"
-              value={dueDate}
-              onChange={(e) => onDueDateChange(e.target.value)}
-              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-            />
-            <button
-              className="p-1.5 hover:bg-slate-100 rounded transition-colors pointer-events-none"
-              title={dueDate ? new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Set due date'}
-            >
-              <Calendar className="w-4 h-4 text-slate-600" />
-            </button>
-          </div>
-
-          <button
-            onClick={onSave}
-            disabled={!summary.trim()}
-            className="p-1.5 hover:bg-green-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Save (Cmd+Enter)"
-          >
-            <Check className="w-4 h-4 text-green-600" />
-          </button>
-
-          <button
-            onClick={onCancel}
-            className="p-1.5 hover:bg-red-50 rounded transition-colors"
-            title="Cancel (Esc)"
-          >
-            <X className="w-4 h-4 text-red-600" />
-          </button>
-        </div>
-      </div>
+    <div className={cn(
+      'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ring-2 ring-white border-[3px]',
+      s.bg,
+      s.color,
+      s.borderColor
+    )}>
+      {s.char}
     </div>
   );
 };
 
-interface TaskRowProps {
-  task: TaskThread & { children?: TaskThread[] };
-  dealId: string;
-  depth: number;
-  isLast: boolean;
-  expanded: Set<string>;
-  onToggleExpand: (id: string) => void;
-  onToggleComplete: (id: string, status?: string) => void;
-  onPickup: (id: string, summary: string) => void;
-  onAddSubtask: (parentId: string, dealId: string) => void;
-  currentUserId?: string;
-  addingToTaskId: string | null;
-  newTaskSummary: string;
-  newTaskAssignee: string;
-  newTaskDueDate: string;
-  users: any[];
-  onNewTaskSummaryChange: (text: string) => void;
-  onNewTaskAssigneeChange: (id: string) => void;
-  onNewTaskDueDateChange: (date: string) => void;
-  onSaveNewTask: () => void;
-  onCancelNewTask: () => void;
-}
-
-const TaskRow: React.FC<TaskRowProps> = ({
-  task,
-  dealId,
-  depth,
-  isLast,
-  expanded,
-  onToggleExpand,
-  onToggleComplete,
-  onPickup,
-  onAddSubtask,
-  currentUserId,
-  addingToTaskId,
-  newTaskSummary,
-  newTaskAssignee,
-  newTaskDueDate,
-  users,
-  onNewTaskSummaryChange,
-  onNewTaskAssigneeChange,
-  onNewTaskDueDateChange,
-  onSaveNewTask,
-  onCancelNewTask
-}) => {
-  const hasChildren = task.children && task.children.length > 0;
-  const isExpanded = expanded.has(task.id);
-  const isCompleted = task.status === 'Completed';
-  const isMine = task.assignedToId === currentUserId;
-  const isUnassigned = !task.assignedToId;
-  const isAddingHere = addingToTaskId === task.id;
-
-  const getInitials = (name: string) => {
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
-
-  const getAvatarSize = () => {
-    if (depth === 0) return 'w-8 h-8';
-    if (depth === 1) return 'w-7 h-7';
-    return 'w-6 h-6';
-  };
-
-  return (
-    <>
-      <div
-        className="task-row relative py-3 pr-4 overflow-visible border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/30 transition-colors group"
-        style={{ '--spine-x': `${depth * INDENT_PX}px` } as React.CSSProperties}
-      >
-        {depth > 0 && (
-          <>
-            <div
-              className="tree-spine"
-              style={{
-                top: '-12px',
-                bottom: isLast && !isAddingHere ? '50%' : '-12px'
-              }}
-            />
-            <div className="tree-elbow" />
-          </>
-        )}
-
-        {hasChildren && (
-          <div
-            className="junction-dot"
-            onClick={() => onToggleExpand(task.id)}
-            title={isExpanded ? 'Collapse' : 'Expand'}
-          >
-            {isExpanded ? (
-              <Minus className="w-2 h-2 text-white" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
-            ) : (
-              <Plus className="w-2 h-2 text-white" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
-            )}
-          </div>
-        )}
-
-        <div
-          className="red-plus-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddSubtask(task.id, dealId);
-          }}
-          title="Add subtask"
-        >
-          +
-        </div>
-
-        <div
-          className="flex items-start gap-3 relative z-10"
-          style={{ paddingLeft: `${depth * INDENT_PX + 24}px` }}
-        >
-          {isUnassigned ? (
-            <button
-              onClick={() => onPickup(task.id, task.summary)}
-              className={`flex-shrink-0 ${getAvatarSize()} flex items-center justify-center bg-amber-100 hover:bg-amber-200 rounded-full transition-colors border border-amber-300 ring-4 ring-white dark:ring-slate-900 z-10`}
-            >
-              <Hand className="w-4 h-4 text-amber-700" />
-            </button>
-          ) : (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex-shrink-0 bg-white dark:bg-slate-900 z-10">
-                    <Avatar className={`${getAvatarSize()} ring-4 ring-white dark:ring-slate-900`}>
-                      <AvatarImage src={task.assigneeAvatar} />
-                      <AvatarFallback className="bg-slate-200 text-slate-700 text-xs font-semibold">
-                        {task.assigneeName ? getInitials(task.assigneeName) : '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs">{task.assigneeName || 'Unassigned'}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-
-          <div className="flex-1 min-w-0 pr-2">
-            <p
-              className={`text-[14px] leading-relaxed ${
-                isCompleted
-                  ? 'line-through text-slate-400'
-                  : isMine
-                  ? 'font-black text-slate-900 dark:text-white'
-                  : 'font-medium text-slate-500'
-              }`}
-            >
-              {task.summary}
-            </p>
-          </div>
-
-          <div className="flex flex-col items-end gap-1 flex-shrink-0">
-            {task.dueDate && (
-              <div className="text-[11px] text-slate-400 font-medium">
-                {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </div>
-            )}
-
-            <button
-              onClick={() => onToggleComplete(task.id, task.status)}
-              className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              {isCompleted ? (
-                <CheckSquare className="w-5 h-5 text-green-500" />
-              ) : (
-                <Square className="w-5 h-5 text-slate-300 hover:text-slate-500 transition-colors" />
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {isAddingHere && (
-        <InlineTaskEditor
-          depth={depth + 1}
-          users={users}
-          assigneeId={newTaskAssignee}
-          summary={newTaskSummary}
-          dueDate={newTaskDueDate}
-          onAssigneeChange={onNewTaskAssigneeChange}
-          onSummaryChange={onNewTaskSummaryChange}
-          onDueDateChange={onNewTaskDueDateChange}
-          onSave={onSaveNewTask}
-          onCancel={onCancelNewTask}
-        />
-      )}
-
-      {hasChildren && isExpanded && task.children && (
-        <>
-          {task.children.map((child, idx) => (
-            <TaskRow
-              key={child.id}
-              task={child}
-              dealId={dealId}
-              depth={depth + 1}
-              isLast={idx === task.children!.length - 1}
-              expanded={expanded}
-              onToggleExpand={onToggleExpand}
-              onToggleComplete={onToggleComplete}
-              onPickup={onPickup}
-              onAddSubtask={onAddSubtask}
-              currentUserId={currentUserId}
-              addingToTaskId={addingToTaskId}
-              newTaskSummary={newTaskSummary}
-              newTaskAssignee={newTaskAssignee}
-              newTaskDueDate={newTaskDueDate}
-              users={users}
-              onNewTaskSummaryChange={onNewTaskSummaryChange}
-              onNewTaskAssigneeChange={onNewTaskAssigneeChange}
-              onNewTaskDueDateChange={onNewTaskDueDateChange}
-              onSaveNewTask={onSaveNewTask}
-              onCancelNewTask={onCancelNewTask}
-            />
-          ))}
-        </>
-      )}
-    </>
-  );
+const getInitials = (name?: string) => {
+  if (!name) return '?';
+  const parts = name.split(' ');
+  return parts.length >= 2 ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase() : name.substring(0, 2).toUpperCase();
 };
 
-interface DealThreadItemProps {
-  group: DealGroup;
-  expanded: Set<string>;
-  expandedDeals: Set<string>;
-  onToggleExpand: (id: string) => void;
-  onToggleDealExpand: (id: string) => void;
-  onToggleComplete: (id: string, status?: string) => void;
-  onPickup: (id: string, summary: string) => void;
-  onAddSubtask: (parentId: string, dealId: string) => void;
-  currentUserId?: string;
-  addingToTaskId: string | null;
-  newTaskSummary: string;
-  newTaskAssignee: string;
-  newTaskDueDate: string;
-  users: any[];
-  onNewTaskSummaryChange: (text: string) => void;
-  onNewTaskAssigneeChange: (id: string) => void;
-  onNewTaskDueDateChange: (date: string) => void;
-  onSaveNewTask: () => void;
-  onCancelNewTask: () => void;
-}
-
-const DealThreadItem: React.FC<DealThreadItemProps> = ({
-  group,
-  expanded,
-  expandedDeals,
-  onToggleExpand,
-  onToggleDealExpand,
-  onToggleComplete,
-  onPickup,
-  onAddSubtask,
-  currentUserId,
-  addingToTaskId,
-  newTaskSummary,
-  newTaskAssignee,
-  newTaskDueDate,
-  users,
-  onNewTaskSummaryChange,
-  onNewTaskAssigneeChange,
-  onNewTaskDueDateChange,
-  onSaveNewTask,
-  onCancelNewTask
-}) => {
-  const stageConfig = getStageConfig(group.deal.stage);
-  const taskTree = buildTaskTree(group.tasks);
-  const isDealExpanded = expandedDeals.has(group.deal.id);
-
-  return (
-    <div className="mb-8 relative">
-      <div className="relative flex items-center gap-3 px-2 py-3 group/deal">
-        <div
-          className={`w-9 h-9 rounded-full ${stageConfig.color} flex items-center justify-center text-white font-bold text-sm flex-shrink-0 z-10 relative`}
-        >
-          {stageConfig.char}
-        </div>
-
-        <div className="flex-1 min-w-0 flex items-center gap-2">
-          {taskTree.length > 0 && (
-            <button
-              onClick={() => onToggleDealExpand(group.deal.id)}
-              className="flex-shrink-0 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
-              title={isDealExpanded ? 'Collapse tasks' : 'Expand tasks'}
-            >
-              <ChevronDown
-                className={`w-4 h-4 text-slate-400 transition-transform ${isDealExpanded ? '' : '-rotate-90'}`}
-              />
-            </button>
-          )}
-          <h3 className="font-bold text-[16px] text-slate-900 truncate">{group.deal.name}</h3>
-        </div>
-
-        <div className="text-[11px] font-medium text-slate-400 flex-shrink-0">
-          {group.deal.value ? `${group.deal.value} MW` : ''}
-        </div>
-
-        <div className="text-[11px] font-medium text-slate-400 flex-shrink-0 min-w-[40px] text-right">
-          {group.completed_tasks}/{group.total_tasks}
-        </div>
-      </div>
-
-      {taskTree.length > 0 && isDealExpanded && (
-        <>
-          <div className="absolute left-[27px] top-[44px] bottom-0 w-[2px] bg-slate-200 dark:bg-slate-700 z-0" />
-          <div className="pl-2">
-            {taskTree.map((task, idx) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                dealId={group.deal.id}
-                depth={0}
-                isLast={idx === taskTree.length - 1}
-                expanded={expanded}
-                onToggleExpand={onToggleExpand}
-                onToggleComplete={onToggleComplete}
-                onPickup={onPickup}
-                onAddSubtask={onAddSubtask}
-                currentUserId={currentUserId}
-                addingToTaskId={addingToTaskId}
-                newTaskSummary={newTaskSummary}
-                newTaskAssignee={newTaskAssignee}
-                newTaskDueDate={newTaskDueDate}
-                users={users}
-                onNewTaskSummaryChange={onNewTaskSummaryChange}
-                onNewTaskAssigneeChange={onNewTaskAssigneeChange}
-                onNewTaskDueDateChange={onNewTaskDueDateChange}
-                onSaveNewTask={onSaveNewTask}
-                onCancelNewTask={onCancelNewTask}
-              />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
+const getRoleBorderColor = (role?: string) => {
+  switch (role) {
+    case 'admin':
+      return 'border-red-500';
+    case 'internal':
+      return 'border-orange-500';
+    case 'external':
+      return 'border-gray-400';
+    default:
+      return 'border-slate-300';
+  }
 };
 
-const buildTaskTree = (tasks: TaskThread[]): (TaskThread & { children: TaskThread[] })[] => {
-  const taskMap = new Map<string, TaskThread & { children: TaskThread[] }>();
-  const roots: (TaskThread & { children: TaskThread[] })[] = [];
+const buildTaskTree = (tasks: TaskThread[]): TaskThread[] => {
+  if (!tasks || tasks.length === 0) return [];
 
-  tasks.forEach(task => {
-    taskMap.set(task.id, { ...task, children: [] });
-  });
+  const uniqueTasks = Array.from(
+    new Map(tasks.map(t => [t.id, t])).values()
+  );
 
-  tasks.forEach(task => {
-    const node = taskMap.get(task.id)!;
-    if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
-      taskMap.get(task.parentTaskId)!.children.push(node);
+  const taskMap = new Map<string, TaskThread>();
+  const roots: TaskThread[] = [];
+
+  // Preserve comment_count and like_count from database when copying
+  const tasksCopy = uniqueTasks.map(t => ({
+    ...t,
+    children: [],
+    comment_count: t.comment_count || 0,  // Preserve from DB
+    like_count: t.like_count || 0         // Preserve from DB
+  }));
+
+  tasksCopy.forEach(task => taskMap.set(task.id, task));
+
+  tasksCopy.forEach(task => {
+    if (task.parent_task_id && taskMap.has(task.parent_task_id)) {
+      const parent = taskMap.get(task.parent_task_id)!;
+      parent.children!.push(task);
     } else {
-      roots.push(node);
+      roots.push(task);
     }
   });
 
   return roots;
 };
 
-export const TasksScreen: React.FC = () => {
+const InlineTaskEditor = ({
+  users,
+  currentUser,
+  onSave,
+  onCancel,
+  depth = 0,
+  mode = 'task',
+}: {
+  users: any[];
+  currentUser: any;
+  onSave: (summary: string, assignee: string, date: string) => void;
+  onCancel: () => void;
+  depth?: number;
+  mode?: 'task' | 'comment';
+}) => {
+  const [summary, setSummary] = useState('');
+  const [assigneeId, setAssigneeId] = useState(currentUser?.id || '');
+  const [dueDate, setDueDate] = useState('');
+  const [showUserPicker, setShowUserPicker] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const userPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userPickerRef.current && !userPickerRef.current.contains(event.target as Node)) {
+        setShowUserPicker(false);
+      }
+    };
+
+    if (showUserPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserPicker]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [summary]);
+
+  const handleSave = () => {
+    if (summary.trim()) {
+      onSave(summary, assigneeId, dueDate);
+      setSummary('');
+      setAssigneeId(currentUser?.id || '');
+      setDueDate('');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSave();
+    }
+    if (e.key === 'Escape') {
+      onCancel();
+    }
+  };
+
+  const selectedUser = users.find(u => u.id === assigneeId);
+  const initials = selectedUser?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      exit={{ opacity: 0, height: 0 }}
+      className="relative group py-3"
+    >
+      <div className="absolute left-[22px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 z-0" />
+
+      <div className="relative z-10 pl-[42px] pr-2">
+        <div className="flex items-start gap-2">
+          {mode === 'task' && (
+            <div ref={userPickerRef} className="relative flex-shrink-0">
+              <button
+                onClick={() => setShowUserPicker(!showUserPicker)}
+                className="relative"
+                title="Assign to user"
+              >
+                <Avatar className="w-5 h-5 ring-2 ring-white shadow-sm hover:ring-orange-500 transition-all">
+                  <AvatarImage src={selectedUser?.avatar_url} />
+                  <AvatarFallback className="bg-orange-500 text-white text-[9px] font-bold">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+
+              {showUserPicker && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  className="absolute left-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
+                >
+                  {users.map(u => (
+                    <button
+                      key={u.id}
+                      onClick={() => {
+                        setAssigneeId(u.id);
+                        setShowUserPicker(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors text-left",
+                        assigneeId === u.id && "bg-orange-50"
+                      )}
+                    >
+                      <Avatar className={cn("w-6 h-6 ring-2 ring-white border-2", getRoleBorderColor(u.role))}>
+                        <AvatarImage src={u.avatar_url} />
+                        <AvatarFallback className="bg-slate-100 text-[9px] text-slate-600">
+                          {getInitials(u.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium text-slate-700 truncate">{u.name}</span>
+                      {assigneeId === u.id && <Check className="w-4 h-4 text-orange-600 ml-auto" />}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </div>
+          )}
+
+          {mode === 'comment' && (
+            <div className="flex-shrink-0">
+              <MessageSquare className="w-4 h-4 text-green-500 mt-1" />
+            </div>
+          )}
+
+          <div className="flex-1 min-w-0">
+            <textarea
+              ref={textareaRef}
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={mode === 'comment' ? "Add a comment..." : "Type task..."}
+              rows={1}
+              className="w-full bg-transparent resize-none outline-none text-[13px] text-slate-700 font-normal placeholder:text-slate-400 leading-relaxed overflow-hidden"
+            />
+          </div>
+        </div>
+
+        {mode === 'task' && (
+          <div className="flex items-center gap-2 mt-1 ml-7">
+            <div className="relative">
+              {dueDate ? (
+                <button
+                  onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
+                  className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded-md hover:bg-yellow-200 transition-colors"
+                >
+                  {format(parseISO(dueDate), 'MMM d')}
+                </button>
+              ) : (
+                <button
+                  onClick={() => document.getElementById(`date-picker-${depth}`)?.click()}
+                  className="text-slate-400 hover:text-orange-500 transition-colors"
+                  title="Set due date"
+                >
+                  <Calendar className="w-4 h-4" />
+                </button>
+              )}
+              <input
+                id={`date-picker-${depth}`}
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              />
+            </div>
+
+            <div className="flex-1" />
+
+            <button
+              onClick={handleSave}
+              disabled={!summary.trim()}
+              className={cn(
+                "text-xs font-bold px-3 py-1 rounded-md transition-colors",
+                summary.trim()
+                  ? "bg-orange-500 text-white hover:bg-orange-600"
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed"
+              )}
+              title="Post"
+            >
+            Post
+          </button>
+
+          <button
+            onClick={onCancel}
+            className="text-xs font-bold px-3 py-1 text-slate-500 hover:text-slate-700 transition-colors"
+            title="Cancel"
+          >
+            Cancel
+          </button>
+        </div>
+        )}
+
+        {mode === 'comment' && (
+          <div className="flex items-center gap-2 mt-1 ml-7">
+            <button
+              onClick={handleSave}
+              disabled={!summary.trim()}
+              className={cn(
+                "text-xs font-bold px-3 py-1 rounded-md transition-colors",
+                summary.trim()
+                  ? "bg-green-500 text-white hover:bg-green-600"
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed"
+              )}
+              title="Post Comment"
+            >
+              Post
+            </button>
+
+            <button
+              onClick={onCancel}
+              className="text-xs font-bold px-3 py-1 text-slate-500 hover:text-slate-700 transition-colors"
+              title="Cancel"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+const TaskNode = ({
+  task,
+  dealId,
+  dealName,
+  depth,
+  onComplete,
+  onPickup,
+  onAddChild,
+  onAddReply,
+  onShare,
+  onLike,
+  currentUserId,
+  users,
+  addingChildTo,
+  addingReplyTo,
+  onSaveTask,
+  onCancelTask,
+  expandedTasks,
+  onToggleExpand,
+  setExpandedTasks,
+  commentsViewTasks,
+  setCommentsViewTasks,
+  editingTaskId,
+  editingSummary,
+  editingAssignee,
+  editingDueDate,
+  onStartEdit,
+  onSaveEdit,
+  onCancelEdit,
+  onEditSummaryChange,
+  onEditAssigneeChange,
+  onEditDueDateChange,
+}: {
+  task: TaskThread;
+  dealId: string;
+  dealName: string;
+  depth: number;
+  onComplete: (id: string, status?: string) => void;
+  onPickup: (id: string) => void;
+  onAddChild: (taskId: string) => void;
+  onAddReply: (taskId: string) => void;
+  onShare: (task: TaskThread) => void;
+  onLike: (id: string, userId: string) => void;
+  currentUserId?: string;
+  users: any[];
+  addingChildTo: string | null;
+  addingReplyTo: string | null;
+  onSaveTask: (summary: string, assignee: string, date: string, parentId?: string, isReply?: boolean) => void;
+  onCancelTask: () => void;
+  expandedTasks: Set<string>;
+  onToggleExpand: (id: string) => void;
+  setExpandedTasks: React.Dispatch<React.SetStateAction<Set<string>>>;
+  commentsViewTasks: Set<string>;
+  setCommentsViewTasks: React.Dispatch<React.SetStateAction<Set<string>>>;
+  editingTaskId: string | null;
+  editingSummary: string;
+  editingAssignee: string;
+  editingDueDate: string;
+  onStartEdit: (task: TaskThread) => void;
+  onSaveEdit: () => void;
+  onCancelEdit: () => void;
+  onEditSummaryChange: (value: string) => void;
+  onEditAssigneeChange: (value: string) => void;
+  onEditDueDateChange: (value: string) => void;
+}) => {
+  const isComment = task.is_task === false;
+  const isCompleted = task.task_status === 'Completed';
+  const isMine = task.assigned_to_id === currentUserId;
+  const isUnassigned = !task.assigned_to_id;
+  const hasChildren = task.children && task.children.length > 0;
+  const isExpanded = expandedTasks.has(task.id);
+  const isAddingChild = addingChildTo === task.id;
+  const isAddingReply = addingReplyTo === task.id;
+  const isEditing = editingTaskId === task.id;
+  const hasLiked = currentUserId && task.reactions?.[currentUserId] === 'like';
+  const likeCount = task.like_count || 0;
+
+  // Use comment_count from database (which already counts direct children correctly)
+  // Build children array from parent_task_id relationships for display only
+  const commentCount = task.comment_count || 0;
+  const subtaskCount = task.children?.filter(c => c.is_task === true).length || 0;
+
+  const avatarSize = 'w-7 h-7';
+  const isOverdue = task.due_date && isPast(parseISO(task.due_date)) && !isCompleted;
+
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleTouchStart = () => {
+    if (isCompleted || isComment) return;
+    longPressTimerRef.current = setTimeout(() => {
+      onStartEdit(task);
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleDoubleClick = () => {
+    if (isCompleted || isComment) return;
+    onStartEdit(task);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+    };
+  }, []);
+
+  if (task.isOptimistic) {
+    return (
+      <div className="relative group py-3">
+        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 z-0" />
+        <div className="relative z-10 pl-[36px] pr-2">
+          <div className="absolute left-[17px] top-[16px] z-20 bg-white">
+            <div className="w-4 h-4 rounded-full border-2 border-slate-300 animate-pulse" />
+          </div>
+          <div className="flex items-start gap-2">
+            <Avatar className={cn("w-5 h-5 ring-2 ring-white shadow-sm animate-pulse flex-shrink-0 border-2", getRoleBorderColor(task.assignee_role))}>
+              <AvatarImage src={task.assignee_avatar} />
+              <AvatarFallback className="bg-slate-100 text-[8px] text-slate-600">
+                {getInitials(task.assignee_name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 flex items-center gap-2 min-w-0">
+              <p className="text-[13px] font-normal text-slate-600">{task.summary}</p>
+              <Loader2 className="w-3 h-3 animate-spin text-orange-500 flex-shrink-0" />
+              <span className="text-[10px] text-slate-400">Saving...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const currentUser = users.find(u => u.id === currentUserId);
+
+  if (isEditing) {
+    const selectedUser = users.find(u => u.id === editingAssignee);
+    const initials = selectedUser?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U';
+
+    return (
+      <div className="relative group py-3">
+        <div className="absolute left-[22px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 z-0" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="relative z-10 pl-[42px] pr-2"
+        >
+          <div className="absolute left-[15px] top-[10px] z-20 bg-white">
+            <div className="w-4 h-4 rounded-full bg-orange-500 border-2 border-orange-500" />
+          </div>
+
+          <div className="flex items-start gap-2">
+            <div className="relative flex-shrink-0">
+              <select
+                value={editingAssignee}
+                onChange={e => onEditAssigneeChange(e.target.value)}
+                className="appearance-none bg-transparent outline-none cursor-pointer opacity-0 absolute inset-0 w-5 h-5 z-10"
+                title="Change assignee"
+              >
+                <option value="">Unassigned</option>
+                {users.map(u => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+              <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center text-white text-[9px] font-bold pointer-events-none ring-2 ring-white shadow-sm">
+                {initials}
+              </div>
+            </div>
+
+            <div className="flex-1 bg-white border-2 border-orange-300 rounded-lg shadow-md">
+              <input
+                value={editingSummary}
+                onChange={(e) => onEditSummaryChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onSaveEdit();
+                  if (e.key === 'Escape') onCancelEdit();
+                }}
+                placeholder="Task summary..."
+                className="w-full bg-transparent outline-none text-[13px] font-normal py-2 px-2"
+                autoFocus
+              />
+              <div className="flex items-center gap-2 px-2 pb-2 border-t border-orange-100 pt-2 mt-1">
+                <input
+                  type="date"
+                  value={editingDueDate}
+                  onChange={e => onEditDueDateChange(e.target.value)}
+                  className="text-[11px] outline-none text-slate-600 cursor-pointer flex-1"
+                />
+                <button onClick={onCancelEdit} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={onSaveEdit} className="p-1 hover:bg-green-50 rounded text-green-600">
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative group">
+      <div className="absolute left-[22px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 group-hover:border-slate-400 transition-colors z-0" />
+
+      <div
+        className={cn(
+          'relative z-10 py-3 transition-all',
+          isCompleted && 'opacity-50 grayscale'
+        )}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchEnd}
+        onDoubleClick={handleDoubleClick}
+      >
+        <div className="absolute left-[15px] top-[10px] z-20 bg-white">
+          {isComment ? (
+            <div className="w-4 h-4 rounded-full bg-green-50 border border-green-200 flex items-center justify-center">
+              <MessageSquare className="w-2.5 h-2.5 text-green-600" />
+            </div>
+          ) : (
+            <button
+              onClick={() => onComplete(task.id, task.task_status)}
+              className={cn(
+                "w-4 h-4 rounded-full border-2 transition-all hover:scale-110",
+                isCompleted
+                  ? "bg-green-500 border-green-500"
+                  : "border-slate-300 hover:border-green-400"
+              )}
+            >
+              {isCompleted && <Check className="w-3 h-3 text-white absolute inset-0 m-auto" />}
+            </button>
+          )}
+        </div>
+
+        <div className="pl-[42px] pr-2">
+          <div className={cn(
+            "flex items-start gap-2",
+            isComment && "bg-green-50/30 border border-green-100/50 -ml-[42px] pl-[42px] py-2 pr-2 rounded-lg"
+          )}>
+            {isComment ? (
+              <Avatar className="w-5 h-5 ring-2 ring-white shadow-sm flex-shrink-0 border-2 border-green-300">
+                <AvatarImage src={task.assignee_avatar} />
+                <AvatarFallback className="bg-green-100 text-[8px] text-green-700">
+                  {getInitials(task.assignee_name)}
+                </AvatarFallback>
+              </Avatar>
+            ) : (
+              <>
+                {isUnassigned ? (
+                  <button
+                    onClick={() => onPickup(task.id)}
+                    className="w-5 h-5 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center hover:scale-105 transition-transform ring-2 ring-white flex-shrink-0"
+                  >
+                    <Hand className="w-3 h-3 text-amber-600" />
+                  </button>
+                ) : (
+                  <Avatar className={cn("w-5 h-5 ring-2 ring-white shadow-sm flex-shrink-0 border-2", getRoleBorderColor(task.assignee_role))}>
+                    <AvatarImage src={task.assignee_avatar} />
+                    <AvatarFallback className="bg-slate-100 text-[8px] text-slate-600">
+                      {getInitials(task.assignee_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </>
+            )}
+
+            <div className="flex-1 min-w-0">
+              {isComment && (
+                <div className="mb-1">
+                  <span className="text-[11px] font-semibold text-green-700">
+                    {task.assignee_name}
+                  </span>
+                </div>
+              )}
+
+              <p
+                className={cn(
+                  "text-[13px] leading-relaxed transition-all",
+                  isComment ? "text-slate-700" : (isMine ? "text-slate-900 font-normal" : "text-slate-700 font-normal"),
+                  isCompleted && "line-through decoration-slate-300"
+                )}
+              >
+                {task.summary}
+                {subtaskCount > 0 && (
+                  <>
+                    {' '}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Clicking chevron shows subtasks, not comments
+                        setCommentsViewTasks(prev => {
+                          const next = new Set(prev);
+                          next.delete(task.id);
+                          return next;
+                        });
+                        onToggleExpand(task.id);
+                      }}
+                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 hover:scale-105 transition-transform"
+                      title={`${subtaskCount} subtask${subtaskCount !== 1 ? 's' : ''}`}
+                    >
+                      <ChevronRight className={cn("w-2.5 h-2.5 text-slate-500 transition-transform", isExpanded && "rotate-90")} />
+                      <span className="text-[10px] font-semibold text-slate-600">{subtaskCount}</span>
+                    </button>
+                  </>
+                )}
+              </p>
+
+              {isComment && (
+                <div className="mt-1">
+                  <span className="text-[10px] text-green-600/70">
+                    {format(parseISO(task.created_at), 'MMM d, h:mm a')}
+                  </span>
+                </div>
+              )}
+
+              {!isCompleted && (
+                <div className="flex items-center justify-between mt-2 ml-7 pr-2">
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (currentUserId) {
+                          onLike(task.id, currentUserId);
+                        }
+                      }}
+                      className={cn(
+                        "flex items-center gap-1 transition-all",
+                        hasLiked
+                          ? "text-blue-500 hover:text-blue-600"
+                          : "text-slate-400 hover:text-blue-500 hover:scale-110"
+                      )}
+                      title={hasLiked ? "Unlike" : "Like"}
+                    >
+                      <ThumbsUp className={cn("w-4 h-4", hasLiked && "fill-blue-500")} />
+                      {likeCount > 0 && (
+                        <span className="text-[10px] font-bold">{likeCount}</span>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+
+                        // Check if we are currently looking at the children
+                        const isExpanded = expandedTasks.has(task.id);
+
+                        // LOGIC BRANCHING
+                        if (commentCount > 0 && !isExpanded) {
+                          // Case: Hidden comments. Just show them.
+                          onToggleExpand(task.id);
+                        } else {
+                          // Case: No comments OR Comments are visible.
+                          // Action: User wants to TYPE.
+                          onAddReply(task.id);
+
+                          // Safety: Ensure it stays open if we are adding a reply
+                          if (!isExpanded) {
+                            onToggleExpand(task.id);
+                          }
+                        }
+                      }}
+                      className={cn(
+                        "flex items-center gap-1 transition-all",
+                        commentCount > 0
+                          ? "text-green-600 hover:text-green-700"
+                          : "text-slate-400 hover:text-green-500"
+                      )}
+                      title={isComment ? "Reply" : (commentCount > 0 ? `View ${commentCount} comment${commentCount !== 1 ? 's' : ''}` : "Add comment")}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      {commentCount > 0 && (
+                        <span className="text-[10px] font-bold">{commentCount}</span>
+                      )}
+                    </button>
+
+                    {!isComment && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAddChild(task.id);
+                        }}
+                        className="text-slate-400 hover:text-orange-500 transition-colors"
+                        title="Add subtask"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    )}
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onShare(task);
+                      }}
+                      className="text-slate-400 hover:text-slate-600 transition-colors"
+                      title="Share"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {!isComment && (
+                    <div className="flex items-center">
+                      {task.due_date && (
+                        <span className={cn(
+                          "text-[10px] font-bold px-2 py-0.5 rounded-md",
+                          isOverdue
+                            ? "bg-red-100 text-red-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        )}>
+                          {format(parseISO(task.due_date), 'MMM d')}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {isAddingReply && (
+          <div key={`comment-editor-${task.id}`} className="ml-6">
+            <InlineTaskEditor
+              users={users}
+              currentUser={currentUser}
+              onSave={(s, a, d) => onSaveTask(s, a, d, task.id, true)}
+              onCancel={onCancelTask}
+              depth={depth + 1}
+              mode="comment"
+            />
+          </div>
+        )}
+
+        {isExpanded && hasChildren && (() => {
+          const isCommentsView = commentsViewTasks.has(task.id);
+          const comments = task.children?.filter(c => c.is_task === false && c.id && c.id.trim() !== '') || [];
+          const subtasks = task.children?.filter(c => c.is_task !== false && c.id && c.id.trim() !== '') || [];
+
+          return (
+            <>
+              {isCommentsView ? (
+                <>
+                  {comments.length > 0 && (
+                    <div className="ml-6">
+                      {comments.map((comment) => (
+                        <TaskNode
+                          key={comment.id}
+                          task={comment}
+                          dealId={dealId}
+                          dealName={dealName}
+                          depth={depth + 1}
+                          onComplete={onComplete}
+                          onPickup={onPickup}
+                          onAddChild={onAddChild}
+                          onAddReply={onAddReply}
+                          onShare={onShare}
+                          onLike={onLike}
+                          currentUserId={currentUserId}
+                          users={users}
+                          addingChildTo={addingChildTo}
+                          addingReplyTo={addingReplyTo}
+                          onSaveTask={onSaveTask}
+                          onCancelTask={onCancelTask}
+                          expandedTasks={expandedTasks}
+                          onToggleExpand={onToggleExpand}
+                          setExpandedTasks={setExpandedTasks}
+                          commentsViewTasks={commentsViewTasks}
+                          setCommentsViewTasks={setCommentsViewTasks}
+                          editingTaskId={editingTaskId}
+                          editingSummary={editingSummary}
+                          editingAssignee={editingAssignee}
+                          editingDueDate={editingDueDate}
+                          onStartEdit={onStartEdit}
+                          onSaveEdit={onSaveEdit}
+                          onCancelEdit={onCancelEdit}
+                          onEditSummaryChange={onEditSummaryChange}
+                          onEditAssigneeChange={onEditAssigneeChange}
+                          onEditDueDateChange={onEditDueDateChange}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {isAddingChild && (
+                    <div key={`subtask-editor-${task.id}`} className="ml-6">
+                      <InlineTaskEditor
+                        users={users}
+                        currentUser={currentUser}
+                        onSave={(s, a, d) => onSaveTask(s, a, d, task.id, false)}
+                        onCancel={onCancelTask}
+                        depth={depth + 1}
+                        mode="task"
+                      />
+                    </div>
+                  )}
+
+                  {subtasks.length > 0 && (
+                    <div className="ml-6">
+                      {subtasks.map((subtask) => (
+                        <TaskNode
+                          key={subtask.id}
+                          task={subtask}
+                          dealId={dealId}
+                          dealName={dealName}
+                          depth={depth + 1}
+                          onComplete={onComplete}
+                          onPickup={onPickup}
+                          onAddChild={onAddChild}
+                          onAddReply={onAddReply}
+                          onShare={onShare}
+                          onLike={onLike}
+                          currentUserId={currentUserId}
+                          users={users}
+                          addingChildTo={addingChildTo}
+                          addingReplyTo={addingReplyTo}
+                          onSaveTask={onSaveTask}
+                          onCancelTask={onCancelTask}
+                          expandedTasks={expandedTasks}
+                          onToggleExpand={onToggleExpand}
+                          setExpandedTasks={setExpandedTasks}
+                          commentsViewTasks={commentsViewTasks}
+                          setCommentsViewTasks={setCommentsViewTasks}
+                          editingTaskId={editingTaskId}
+                          editingSummary={editingSummary}
+                          editingAssignee={editingAssignee}
+                          editingDueDate={editingDueDate}
+                          onStartEdit={onStartEdit}
+                          onSaveEdit={onSaveEdit}
+                          onCancelEdit={onCancelEdit}
+                          onEditSummaryChange={onEditSummaryChange}
+                          onEditAssigneeChange={onEditAssigneeChange}
+                          onEditDueDateChange={onEditDueDateChange}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          );
+        })()}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+type Tab = 'home' | 'accounts' | 'opportunities' | 'partners' | 'contacts' | 'search' | 'timeline' | 'tasks' | 'projects' | 'pulse' | 'me' | 'nexus';
+
+interface TasksScreenProps {
+  onNavigate?: (tab: Tab, id?: string) => void;
+}
+
+export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
   const { user, profile } = useAuth();
   const { users } = useAppContext();
   const [dealGroups, setDealGroups] = useState<DealGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [hideCompleted, setHideCompleted] = useState(false);
   const [expandedDeals, setExpandedDeals] = useState<Set<string>>(new Set());
-  const [addingToTaskId, setAddingToTaskId] = useState<string | null>(null);
-  const [addingToDealId, setAddingToDealId] = useState<string | null>(null);
-  const [newTaskSummary, setNewTaskSummary] = useState('');
-  const [newTaskAssignee, setNewTaskAssignee] = useState<string>('');
-  const [newTaskDueDate, setNewTaskDueDate] = useState<string>('');
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [commentsViewTasks, setCommentsViewTasks] = useState<Set<string>>(new Set());
+
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filterPriority, setFilterPriority] = useState<string>('all');
+  const [filterStage, setFilterStage] = useState<string>('all');
+
+  const [addingRootTo, setAddingRootTo] = useState<string | null>(null);
+  const [addingChildTo, setAddingChildTo] = useState<string | null>(null);
+  const [addingReplyTo, setAddingReplyTo] = useState<string | null>(null);
+
+  const [optimisticTasks, setOptimisticTasks] = useState<Map<string, TaskThread>>(new Map());
+
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingSummary, setEditingSummary] = useState('');
+  const [editingAssignee, setEditingAssignee] = useState('');
+  const [editingDueDate, setEditingDueDate] = useState('');
 
   const [hierarchyView, setHierarchyView] = useState<'mine' | 'team'>('mine');
   const [selectedMemberId, setSelectedMemberId] = useState<string>('all');
@@ -588,9 +946,6 @@ export const TasksScreen: React.FC = () => {
   const [loadingSubordinates, setLoadingSubordinates] = useState(false);
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
-
-  const [myTasksCount, setMyTasksCount] = useState(0);
-  const [teamTasksCount, setTeamTasksCount] = useState(0);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -626,12 +981,12 @@ export const TasksScreen: React.FC = () => {
   }, [hierarchyView]);
 
   const teamMembers = useMemo(() => {
-    if (isAdmin) {
+    if (profile?.role === 'admin' || profile?.role === 'super_admin') {
       return users.filter(u => ['internal', 'admin', 'super_admin'].includes(u.role));
     } else {
       return users.filter(u => subordinateIds.includes(u.id) || u.id === user?.id);
     }
-  }, [users, subordinateIds, isAdmin, user]);
+  }, [users, subordinateIds, profile, user]);
 
   const formatShortName = (fullName: string) => {
     const parts = fullName.split(' ');
@@ -639,396 +994,539 @@ export const TasksScreen: React.FC = () => {
     return `${parts[0]} ${parts[parts.length - 1][0]}.`;
   };
 
-  const fetchCounts = async () => {
-    if (!user?.id) return;
-
+  const fetchTasks = async () => {
+    if (!user) return;
     try {
-      const { data: myData } = await supabase.rpc('get_task_threads', {
-        p_user_id: user.id,
-        p_filter: 'mine'
-      });
-      const myCount = myData?.reduce((sum: number, group: DealGroup) => sum + group.total_tasks, 0) || 0;
-      setMyTasksCount(myCount);
-
-      const { data: teamData } = await supabase.rpc('get_task_threads', {
-        p_user_id: user.id,
-        p_filter: 'all'
-      });
-      const teamCount = teamData?.reduce((sum: number, group: DealGroup) => sum + group.total_tasks, 0) || 0;
-      setTeamTasksCount(teamCount);
-    } catch (error) {
-      console.error('Error fetching task counts:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchCounts();
-  }, [user?.id]);
-
-  const filteredDealGroups = useMemo(() => {
-    if (!search.trim()) return dealGroups;
-
-    const searchLower = search.toLowerCase();
-    return dealGroups
-      .map(group => ({
-        ...group,
-        tasks: group.tasks.filter(task =>
-          task.summary.toLowerCase().includes(searchLower) ||
-          task.details?.toLowerCase().includes(searchLower) ||
-          task.assigneeName?.toLowerCase().includes(searchLower) ||
-          group.deal.name.toLowerCase().includes(searchLower)
-        )
-      }))
-      .filter(group => group.tasks.length > 0);
-  }, [dealGroups, search]);
-
-  const fetchTaskThreads = async () => {
-    setLoading(true);
-    try {
-      const filterParam = hierarchyView === 'mine' ? 'mine' : 'all';
-      console.log('[TasksScreen] Fetching tasks with:', { userId: user?.id, filter: filterParam });
-
-      const { data, error } = await supabase.rpc('get_task_threads', {
-        p_user_id: user?.id || null,
-        p_filter: filterParam
-      });
-
-      console.log('[TasksScreen] RPC Response:', { data, error });
-
-      if (error) {
-        console.error('[TasksScreen] RPC Error:', error);
-        throw error;
-      }
-
-      // The RPC returns JSON, which Supabase automatically parses
-      let filteredData: DealGroup[] = [];
-
-      if (data !== null && data !== undefined) {
-        console.log('[TasksScreen] Data type:', typeof data, 'isArray:', Array.isArray(data));
-        console.log('[TasksScreen] Raw data:', JSON.stringify(data).substring(0, 500));
-
-        if (Array.isArray(data)) {
-          // Data is already an array
-          filteredData = data as DealGroup[];
-        } else if (typeof data === 'object') {
-          // Sometimes RPC returns wrapped data - try common patterns
-          if ('data' in data) {
-            filteredData = (data as any).data as DealGroup[];
-          } else {
-            // Treat as single object or already parsed JSON
-            filteredData = [data] as DealGroup[];
-          }
-        }
-      }
-
-      console.log('[TasksScreen] Deal groups returned:', filteredData.length, 'groups');
-
-      if (hierarchyView === 'team' && selectedMemberId !== 'all') {
-        filteredData = filteredData.map(group => ({
-          ...group,
-          tasks: group.tasks.filter((t: TaskThread) => t.assignedToId === selectedMemberId),
-          completed_tasks: group.tasks.filter((t: TaskThread) =>
-            t.assignedToId === selectedMemberId && t.status === 'Completed'
-          ).length,
-          total_tasks: group.tasks.filter((t: TaskThread) => t.assignedToId === selectedMemberId).length
-        })).filter(group => group.total_tasks > 0);
-      }
-
-      console.log('[TasksScreen] Final deal groups to display:', filteredData.length, 'groups');
-      setDealGroups(filteredData);
-    } catch (error: any) {
-      console.error('[TasksScreen] Error fetching task threads:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load task threads',
-        variant: 'destructive'
-      });
+      setLoading(true);
+      const { data, error } = await supabase.rpc('get_deal_threads_view', { p_view_mode: 'all' });
+      if (error) throw error;
+      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+      setDealGroups(parsed);
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Error', description: 'Failed to load tasks', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTaskThreads();
-  }, [hierarchyView, selectedMemberId, user?.id]);
+    fetchTasks();
+  }, [user]);
 
   useEffect(() => {
-    if (dealGroups.length > 0) {
-      const tasksWithChildren: string[] = [];
-      const dealIds: string[] = [];
+    const channel = supabase
+      .channel('task-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
+        fetchTasks();
+      })
+      .subscribe();
 
-      dealGroups.forEach(group => {
-        dealIds.push(group.deal.id);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
-        const taskMap = new Map<string, TaskThread>();
-        group.tasks.forEach(task => taskMap.set(task.id, task));
+  const handleToggleDeal = (id: string) => {
+    setExpandedDeals((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
 
-        group.tasks.forEach(task => {
-          if (task.parentTaskId && taskMap.has(task.parentTaskId)) {
-            if (!tasksWithChildren.includes(task.parentTaskId)) {
-              tasksWithChildren.push(task.parentTaskId);
-            }
+  const handleToggleTask = (id: string) => {
+    setExpandedTasks((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleComplete = async (id: string, currentStatus?: string) => {
+    const newStatus = currentStatus === 'Completed' ? 'Pending' : 'Completed';
+    await supabase.from('activities').update({ task_status: newStatus }).eq('id', id);
+    fetchTasks();
+    if (newStatus === 'Completed') {
+      toast({ title: 'Task Completed (+10⚡)', className: 'bg-green-50 border-green-200' });
+    }
+  };
+
+  const handlePickup = async (id: string) => {
+    await supabase.from('activities').update({ assigned_to_id: user?.id }).eq('id', id);
+    fetchTasks();
+    toast({ title: 'Task Picked Up (+5⚡)', className: 'bg-orange-50 border-orange-200' });
+  };
+
+  const handleLike = async (taskId: string, userId: string) => {
+    try {
+      const newReactions = await toggleReaction(taskId, userId, 'like');
+      const newLikeCount = Object.keys(newReactions).length;
+
+      setDealGroups(prevGroups => {
+        return prevGroups.map(group => {
+          const updateReactions = (tasks: TaskThread[]): TaskThread[] => {
+            return tasks.map(task => {
+              if (task.id === taskId) {
+                return {
+                  ...task,
+                  reactions: newReactions,
+                  like_count: newLikeCount
+                };
+              }
+              return {
+                ...task,
+                children: task.children ? updateReactions(task.children) : []
+              };
+            });
+          };
+          return { ...group, tasks: updateReactions(group.tasks || []) };
+        });
+      });
+    } catch (err: any) {
+      console.error('Error toggling like:', err);
+      toast({ title: 'Error', description: 'Failed to update reaction', variant: 'destructive' });
+    }
+  };
+
+  const handleShare = async (task: TaskThread, dealName: string) => {
+    const shareData = {
+      title: `Task: ${task.summary}`,
+      text: `Project: ${dealName}\nTask: ${task.summary}\nAssignee: ${task.assignee_name || 'Unassigned'}`,
+      url: window.location.href
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.error('Share failed', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+        toast({ title: 'Copied to Clipboard' });
+      } catch (err) {
+        console.error('Copy failed', err);
+        toast({ title: 'Share not supported', description: 'Unable to share or copy', variant: 'destructive' });
+      }
+    }
+  };
+
+  const handleStartEdit = (task: TaskThread) => {
+    setEditingTaskId(task.id);
+    setEditingSummary(task.summary);
+    setEditingAssignee(task.assigned_to_id || '');
+    setEditingDueDate(task.due_date ? format(parseISO(task.due_date), 'yyyy-MM-dd') : '');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTaskId(null);
+    setEditingSummary('');
+    setEditingAssignee('');
+    setEditingDueDate('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingTaskId || !editingSummary.trim()) return;
+
+    try {
+      const updateData: any = {
+        summary: editingSummary.trim(),
+        assigned_to_id: editingAssignee || null,
+      };
+
+      if (editingDueDate) {
+        updateData.due_date = new Date(editingDueDate).toISOString();
+      } else {
+        updateData.due_date = null;
+      }
+
+      const { error } = await supabase
+        .from('activities')
+        .update(updateData)
+        .eq('id', editingTaskId);
+
+      if (error) throw error;
+
+      toast({ title: 'Task Updated' });
+      handleCancelEdit();
+      fetchTasks();
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const handleSaveNewTask = async (
+    summary: string,
+    assignee: string,
+    date: string,
+    parentId?: string,
+    isReply?: boolean
+  ) => {
+    const optimisticId = `optimistic-${Date.now()}-${Math.random()}`;
+
+    try {
+      let targetDealId = '';
+
+      if (addingRootTo) {
+        targetDealId = addingRootTo;
+      } else if (parentId) {
+        for (const group of dealGroups) {
+          const findDeal = (tasks: TaskThread[]): boolean => {
+            return tasks.some(t => t.id === parentId || findDeal(t.children || []));
+          };
+          if (findDeal(group.tasks || [])) {
+            targetDealId = group.id;
+            break;
+          }
+        }
+      }
+
+      const assignedUser = users.find(u => u.id === assignee);
+      const optimisticTask: TaskThread = {
+        id: optimisticId,
+        summary,
+        is_task: !isReply,  // Comments have is_task = false
+        task_status: isReply ? undefined : 'Pending',
+        priority: isReply ? undefined : 'Medium',
+        due_date: date && !isReply ? new Date(date).toISOString() : undefined,
+        assigned_to_id: isReply ? undefined : assignee,
+        assignee_name: isReply ? user?.name : assignedUser?.name,
+        assignee_avatar: isReply ? user?.avatar_url : assignedUser?.avatar_url,
+        assignee_role: isReply ? user?.role : assignedUser?.role,
+        parent_task_id: parentId,
+        depth: parentId ? 1 : 0,
+        created_at: new Date().toISOString(),
+        children: [],
+        isOptimistic: true,
+        comment_count: 0,
+        like_count: 0,
+      };
+
+      setOptimisticTasks(prev => new Map(prev).set(optimisticId, { ...optimisticTask, dealId: targetDealId }));
+
+      setDealGroups(prevGroups => {
+        return prevGroups.map(group => {
+          if (group.id !== targetDealId) return group;
+
+          const tasks = group.tasks || [];
+
+          if (!parentId) {
+            return { ...group, tasks: [...tasks, optimisticTask] };
+          } else {
+            const insertIntoParent = (taskList: TaskThread[]): TaskThread[] => {
+              return taskList.map(task => {
+                if (task.id === parentId) {
+                  // If adding a comment (reply), increment comment_count optimistically
+                  const updatedCommentCount = isReply
+                    ? (task.comment_count || 0) + 1
+                    : task.comment_count;
+
+                  return {
+                    ...task,
+                    children: [...(task.children || []), optimisticTask],
+                    comment_count: updatedCommentCount,
+                  };
+                } else if (task.children && task.children.length > 0) {
+                  return {
+                    ...task,
+                    children: insertIntoParent(task.children),
+                  };
+                }
+                return task;
+              });
+            };
+            return { ...group, tasks: insertIntoParent(tasks) };
           }
         });
       });
 
-      setExpandedTasks(new Set(tasksWithChildren));
-      setExpandedDeals(new Set(dealIds));
-    }
-  }, [dealGroups]);
+      if (parentId) {
+        setExpandedTasks(prev => new Set(prev).add(parentId));
+      }
 
-  const toggleTask = async (taskId: string, currentStatus?: string) => {
-    try {
-      const newStatus = currentStatus === 'Completed' ? 'Pending' : 'Completed';
-      const { error } = await supabase
-        .from('activities')
-        .update({ task_status: newStatus })
-        .eq('id', taskId);
+      setAddingRootTo(null);
+      setAddingChildTo(null);
+      setAddingReplyTo(null);
+
+      const payload: any = {
+        summary,
+        is_task: !isReply,
+        task_status: isReply ? undefined : 'Pending',
+        created_by_id: user?.id,
+        assigned_to_id: isReply ? undefined : assignee,
+        related_to_id: parentId || targetDealId,
+        related_to_type: parentId ? 'Activity' : 'Opportunity',
+      };
+
+      if (parentId) {
+        payload.parent_task_id = parentId;
+      }
+
+      if (date && !isReply) {
+        payload.due_date = new Date(date).toISOString();
+      }
+
+      const { error } = await supabase.from('activities').insert(payload);
 
       if (error) throw error;
 
-      toast({
-        title: newStatus === 'Completed' ? 'Task Completed' : 'Task Reopened',
-        description: newStatus === 'Completed' ? 'Great work!' : 'Task marked as pending'
+      setOptimisticTasks(prev => {
+        const next = new Map(prev);
+        next.delete(optimisticId);
+        return next;
       });
 
-      fetchTaskThreads();
-      fetchCounts();
-    } catch (error: any) {
-      console.error('Error toggling task:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update task',
-        variant: 'destructive'
+      toast({ title: isReply ? 'Comment Added' : 'Task Created' });
+      fetchTasks();
+    } catch (err: any) {
+      console.error(err);
+
+      setOptimisticTasks(prev => {
+        const next = new Map(prev);
+        next.delete(optimisticId);
+        return next;
       });
-    }
-  };
 
-  const pickupTask = async (taskId: string, taskSummary: string) => {
-    if (!user?.id) return;
-
-    try {
-      const { error: updateError } = await supabase
-        .from('activities')
-        .update({ assigned_to_id: user.id })
-        .eq('id', taskId);
-
-      if (updateError) throw updateError;
-
-      const { error: wattsError } = await supabase
-        .from('watts_ledger')
-        .insert({
-          user_id: user.id,
-          amount: 5,
-          type: 'pickup_task',
-          description: `Picked up task: ${taskSummary}`,
-          related_entity_id: taskId,
-          related_entity_type: 'Activity'
+      setDealGroups(prevGroups => {
+        return prevGroups.map(group => {
+          const removeOptimistic = (tasks: TaskThread[]): TaskThread[] => {
+            return tasks
+              .filter(t => t.id !== optimisticId)
+              .map(t => ({
+                ...t,
+                children: t.children ? removeOptimistic(t.children) : [],
+              }));
+          };
+          return { ...group, tasks: removeOptimistic(group.tasks || []) };
         });
-
-      if (wattsError) throw wattsError;
-
-      toast({
-        title: 'Task Picked Up!',
-        description: '+5 Watts earned for taking initiative',
-        className: 'bg-green-50 border-green-200'
       });
 
-      fetchTaskThreads();
-    } catch (error: any) {
-      console.error('Error picking up task:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to pickup task',
-        variant: 'destructive'
-      });
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
   };
 
-  const handleAddSubtask = (parentId: string, dealId: string) => {
-    setAddingToTaskId(parentId);
-    setAddingToDealId(dealId);
-    setNewTaskSummary('');
-    setNewTaskAssignee(user?.id || '');
-    setNewTaskDueDate('');
-    setExpandedTasks(prev => new Set(prev).add(parentId));
+  const filterTasks = (tasks: TaskThread[]): TaskThread[] => {
+    if (!hideCompleted) return tasks;
+    return tasks
+      .filter(t => t.task_status !== 'Completed')
+      .map(t => ({ ...t, children: t.children ? filterTasks(t.children) : [] }));
   };
 
-  const handleSaveSubtask = async () => {
-    console.log('[TasksScreen] handleSaveSubtask called', {
-      summary: newTaskSummary,
-      dealId: addingToDealId,
-      taskId: addingToTaskId,
-      assignee: newTaskAssignee,
-      dueDate: newTaskDueDate
+  const myTasksCount = useMemo(() => {
+    let count = 0;
+    dealGroups.forEach(group => {
+      (group.tasks || []).forEach(task => {
+        const countTask = (t: TaskThread) => {
+          if (hideCompleted && t.task_status === 'Completed') {
+            (t.children || []).forEach(countTask);
+            return;
+          }
+          if (t.assigned_to_id === user?.id) count++;
+          (t.children || []).forEach(countTask);
+        };
+        countTask(task);
+      });
     });
+    return count;
+  }, [dealGroups, user, hideCompleted]);
 
-    if (!newTaskSummary.trim()) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please enter a task description',
-        variant: 'destructive'
+  const teamTasksCount = useMemo(() => {
+    let count = 0;
+    dealGroups.forEach(group => {
+      (group.tasks || []).forEach(task => {
+        const countTask = (t: TaskThread) => {
+          if (hideCompleted && t.task_status === 'Completed') {
+            (t.children || []).forEach(countTask);
+            return;
+          }
+
+          const isMyTask = t.assigned_to_id === user?.id;
+          const isSubordinateTask = subordinateIds.includes(t.assigned_to_id || '');
+
+          if (isAdmin) {
+            if (!isMyTask) count++;
+          } else {
+            if (isSubordinateTask && !isMyTask) count++;
+          }
+          (t.children || []).forEach(countTask);
+        };
+        countTask(task);
       });
-      return;
-    }
-
-    if (!addingToDealId) {
-      console.error('[TasksScreen] Missing addingToDealId');
-      toast({
-        title: 'Error',
-        description: 'Missing deal information',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    if (!addingToTaskId) {
-      console.error('[TasksScreen] Missing addingToTaskId');
-      toast({
-        title: 'Error',
-        description: 'Missing parent task information',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    try {
-      const insertData: any = {
-        type: 'Task',
-        summary: newTaskSummary.trim(),
-        task_status: 'Pending',
-        related_to_id: addingToDealId,
-        related_to_type: 'Opportunity',
-        is_task: true,
-        assigned_to_id: newTaskAssignee || user?.id,
-        parent_task_id: addingToTaskId,
-        created_by: user?.id
-      };
-
-      if (newTaskDueDate) {
-        insertData.due_date = new Date(newTaskDueDate).toISOString();
-      }
-
-      console.log('[TasksScreen] Inserting task:', insertData);
-
-      const { error, data } = await supabase.from('activities').insert(insertData).select();
-
-      if (error) {
-        console.error('[TasksScreen] Insert error:', error);
-        throw error;
-      }
-
-      console.log('[TasksScreen] Task inserted successfully:', data);
-
-      toast({
-        title: 'Subtask Added',
-        description: 'New subtask created successfully',
-        className: 'bg-green-50 border-green-200'
-      });
-
-      setAddingToTaskId(null);
-      setAddingToDealId(null);
-      setNewTaskSummary('');
-      setNewTaskAssignee('');
-      setNewTaskDueDate('');
-      fetchTaskThreads();
-      fetchCounts();
-    } catch (error: any) {
-      console.error('[TasksScreen] Error adding subtask:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to add subtask',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleCancelSubtask = () => {
-    setAddingToTaskId(null);
-    setAddingToDealId(null);
-    setNewTaskSummary('');
-    setNewTaskAssignee('');
-    setNewTaskDueDate('');
-  };
-
-  const toggleExpanded = (taskId: string) => {
-    setExpandedTasks(prev => {
-      const next = new Set(prev);
-      if (next.has(taskId)) {
-        next.delete(taskId);
-      } else {
-        next.add(taskId);
-      }
-      return next;
     });
-  };
+    return count;
+  }, [dealGroups, subordinateIds, isAdmin, user, hideCompleted]);
 
-  const toggleDealExpanded = (dealId: string) => {
-    setExpandedDeals(prev => {
-      const next = new Set(prev);
-      if (next.has(dealId)) {
-        next.delete(dealId);
-      } else {
-        next.add(dealId);
-      }
-      return next;
-    });
-  };
+  const displayGroups = useMemo(() => {
+    const isSearching = search.trim().length > 0;
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center p-12">
-        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-      </div>
-    );
-  }
+    return dealGroups
+      .map(group => {
+        let tasks = group.tasks || [];
+
+        if (filterStage !== 'all' && group.stage !== filterStage) {
+          return { ...group, tasks: [] };
+        }
+
+        if (filterPriority !== 'all') {
+          const filterByPriority = (taskList: TaskThread[]): TaskThread[] => {
+            return taskList
+              .filter(t => t.priority === filterPriority)
+              .map(t => ({
+                ...t,
+                children: t.children ? filterByPriority(t.children) : []
+              }));
+          };
+          tasks = filterByPriority(tasks);
+        }
+
+        if (!isSearching && hierarchyView === 'mine') {
+          const collectMyTasks = (taskList: TaskThread[]): TaskThread[] => {
+            const result: TaskThread[] = [];
+
+            for (const task of taskList) {
+              if (task.assigned_to_id === user?.id) {
+                result.push({
+                  ...task,
+                  children: task.children ? collectMyTasks(task.children) : []
+                });
+              } else if (task.children && task.children.length > 0) {
+                const myChildTasks = collectMyTasks(task.children);
+                result.push(...myChildTasks);
+              }
+            }
+
+            return result;
+          };
+
+          tasks = collectMyTasks(tasks);
+        } else if (hierarchyView === 'team') {
+          if (selectedMemberId !== 'all') {
+            const collectMemberTasks = (taskList: TaskThread[]): TaskThread[] => {
+              const result: TaskThread[] = [];
+
+              for (const task of taskList) {
+                if (task.assigned_to_id === selectedMemberId) {
+                  result.push({
+                    ...task,
+                    children: task.children ? collectMemberTasks(task.children) : []
+                  });
+                } else if (task.children && task.children.length > 0) {
+                  const memberChildTasks = collectMemberTasks(task.children);
+                  result.push(...memberChildTasks);
+                }
+              }
+
+              return result;
+            };
+
+            tasks = collectMemberTasks(tasks);
+          } else {
+            const collectTeamTasks = (taskList: TaskThread[]): TaskThread[] => {
+              const result: TaskThread[] = [];
+
+              for (const task of taskList) {
+                const isMyTask = task.assigned_to_id === user?.id;
+                const isSubordinateTask = subordinateIds.includes(task.assigned_to_id || '');
+                const isTeamTask = isAdmin ? (task.assigned_to_id !== user?.id) : isSubordinateTask;
+
+                if (isTeamTask && !isMyTask) {
+                  result.push({
+                    ...task,
+                    children: task.children ? collectTeamTasks(task.children) : []
+                  });
+                } else if (task.children && task.children.length > 0) {
+                  const teamChildTasks = collectTeamTasks(task.children);
+                  result.push(...teamChildTasks);
+                }
+              }
+
+              return result;
+            };
+
+            tasks = collectTeamTasks(tasks);
+          }
+        } else if (isSearching) {
+          const filterByAccess = (t: TaskThread): boolean => {
+            const isMyTask = t.assigned_to_id === user?.id;
+            const isSubordinateTask = subordinateIds.includes(t.assigned_to_id || '');
+            if (!isAdmin && !isMyTask && !isSubordinateTask) {
+              const filteredChildren = (t.children || []).filter(filterByAccess);
+              return filteredChildren.length > 0;
+            }
+            return true;
+          };
+          tasks = tasks.filter(filterByAccess);
+        }
+
+        if (hideCompleted) {
+          tasks = filterTasks(tasks);
+        }
+
+        if (search) {
+          const matchSearch = (t: TaskThread): boolean => {
+            return t.summary.toLowerCase().includes(search.toLowerCase()) ||
+              (t.children && t.children.some(matchSearch)) || false;
+          };
+          tasks = tasks.filter(matchSearch);
+        }
+
+        return { ...group, tasks };
+      })
+      .filter(g => {
+        if (g.tasks.length > 0) return true;
+        if (search.trim() && g.name.toLowerCase().includes(search.toLowerCase())) return true;
+        return false;
+      });
+  }, [dealGroups, hideCompleted, search, hierarchyView, selectedMemberId, subordinateIds, isAdmin, user?.id, filterPriority, filterStage]);
+
+  const currentUser = users.find(u => u.id === user?.id);
 
   return (
-    <div className="min-h-screen pb-24 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-hidden">
-      <div className="space-y-3 mb-6 pt-6">
-        <div>
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors">
-                      <Info className="w-4 h-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-xs">
-                    <p className="text-xs">
-                      <strong>Mine:</strong> Your tasks<br />
-                      <strong>Team:</strong> Your tasks + subordinates' tasks
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <h1 className="text-2xl font-bold text-slate-900">Tasks</h1>
-            </div>
+    <div className="min-h-screen bg-white pb-24">
+      <div className="sticky top-0 z-40 bg-white border-b border-slate-100 px-4 py-3">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h1 className="text-2xl font-bold text-slate-900">Tasks</h1>
 
-            <div className="flex items-center gap-2 flex-1 max-w-md ml-auto">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search tasks..."
-                  className="w-full pl-9 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
-                />
-                {search && (
-                  <button
-                    onClick={() => setSearch('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5 text-slate-400" />
-                  </button>
-                )}
-              </div>
+          <div className="flex items-center gap-2 flex-1 max-w-md ml-auto">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search tasks..."
+                className="w-full pl-9 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded transition-colors"
+                >
+                  <X className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+              )}
             </div>
+            <button
+              onClick={() => setShowFilterModal(true)}
+              className={cn(
+                "p-2 bg-white border rounded-lg hover:bg-slate-50 transition-colors flex-shrink-0",
+                (filterPriority !== 'all' || filterStage !== 'all')
+                  ? 'border-orange-500 bg-orange-50'
+                  : 'border-slate-200 hover:border-slate-300'
+              )}
+            >
+              <Filter className={cn(
+                "w-5 h-5",
+                (filterPriority !== 'all' || filterStage !== 'all') ? 'text-orange-600' : 'text-slate-600'
+              )} />
+            </button>
           </div>
+        </div>
 
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 flex-wrap">
             <div className="flex items-center bg-slate-100 rounded-lg p-1 flex-shrink-0">
               <button
@@ -1084,43 +1582,190 @@ export const TasksScreen: React.FC = () => {
               </div>
             )}
           </div>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={hideCompleted}
+              onChange={(e) => setHideCompleted(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
+            />
+            <span className="text-xs font-medium text-slate-600">Hide Done</span>
+          </label>
         </div>
       </div>
 
-      {filteredDealGroups.length === 0 ? (
-        <div className="text-center py-12 text-slate-500">
-          <CheckSquare className="w-12 h-12 mx-auto mb-3 opacity-20" />
-          <p>No tasks found</p>
-          <p className="text-xs mt-1">{search ? 'Try a different search' : 'Create tasks from the Deals screen'}</p>
-        </div>
-      ) : (
-        <div className="space-y-0">
-          {filteredDealGroups.map(group => (
-            <DealThreadItem
-              key={group.deal.id}
-              group={group}
-              expanded={expandedTasks}
-              expandedDeals={expandedDeals}
-              onToggleExpand={toggleExpanded}
-              onToggleDealExpand={toggleDealExpanded}
-              onToggleComplete={toggleTask}
-              onPickup={pickupTask}
-              onAddSubtask={handleAddSubtask}
-              currentUserId={user?.id}
-              addingToTaskId={addingToTaskId}
-              newTaskSummary={newTaskSummary}
-              newTaskAssignee={newTaskAssignee}
-              newTaskDueDate={newTaskDueDate}
-              users={users}
-              onNewTaskSummaryChange={setNewTaskSummary}
-              onNewTaskAssigneeChange={setNewTaskAssignee}
-              onNewTaskDueDateChange={setNewTaskDueDate}
-              onSaveNewTask={handleSaveSubtask}
-              onCancelNewTask={handleCancelSubtask}
-            />
-          ))}
-        </div>
-      )}
+      <div className="space-y-3 p-4">
+        {displayGroups.map((group) => {
+          const isExpanded = expandedDeals.has(group.id);
+          const taskTree = buildTaskTree(group.tasks || []);
+          const isAddingRoot = addingRootTo === group.id;
+
+          return (
+            <div key={group.id} className="bg-white">
+              <div
+                onClick={() => handleToggleDeal(group.id)}
+                className="flex items-center gap-3 pl-1 cursor-pointer hover:bg-slate-50 transition-colors py-2 rounded-lg"
+              >
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNavigate?.('opportunities', group.id);
+                  }}
+                  className="cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  {getStageAvatar(group.stage)}
+                </div>
+                <span className="font-bold text-slate-900 text-sm truncate flex-1 min-w-0">{group.name}</span>
+                {group.mw > 0 && (
+                  <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 mr-2">
+                    {group.mw} MW
+                  </span>
+                )}
+                <ChevronRight
+                  className={cn("w-5 h-5 text-slate-400 transition-transform flex-shrink-0 ml-auto mr-2", isExpanded && "rotate-90")}
+                />
+              </div>
+
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="ml-6 mt-1"
+                  >
+                    {taskTree.map((task) => (
+                      <TaskNode
+                        key={task.id}
+                        task={task}
+                        dealId={group.id}
+                        dealName={group.name}
+                        depth={0}
+                        onComplete={handleComplete}
+                        onPickup={handlePickup}
+                        onAddChild={(id) => {
+                          setAddingChildTo(id);
+                          setAddingReplyTo(null);
+                          setAddingRootTo(null);
+                          setExpandedTasks(prev => new Set(prev).add(id));
+                        }}
+                        onAddReply={(id) => {
+                          setAddingReplyTo(id);
+                          setAddingChildTo(null);
+                          setAddingRootTo(null);
+                          setExpandedTasks(prev => new Set(prev).add(id));
+                        }}
+                        onShare={(task) => handleShare(task, group.name)}
+                        onLike={handleLike}
+                        currentUserId={user?.id}
+                        users={users}
+                        addingChildTo={addingChildTo}
+                        addingReplyTo={addingReplyTo}
+                        onSaveTask={handleSaveNewTask}
+                        onCancelTask={() => {
+                          setAddingChildTo(null);
+                          setAddingReplyTo(null);
+                        }}
+                        expandedTasks={expandedTasks}
+                        onToggleExpand={handleToggleTask}
+                        setExpandedTasks={setExpandedTasks}
+                        commentsViewTasks={commentsViewTasks}
+                        setCommentsViewTasks={setCommentsViewTasks}
+                        editingTaskId={editingTaskId}
+                        editingSummary={editingSummary}
+                        editingAssignee={editingAssignee}
+                        editingDueDate={editingDueDate}
+                        onStartEdit={handleStartEdit}
+                        onSaveEdit={handleSaveEdit}
+                        onCancelEdit={handleCancelEdit}
+                        onEditSummaryChange={setEditingSummary}
+                        onEditAssigneeChange={setEditingAssignee}
+                        onEditDueDateChange={setEditingDueDate}
+                      />
+                    ))}
+
+                    {isAddingRoot && (
+                      <InlineTaskEditor
+                        users={users}
+                        currentUser={currentUser}
+                        onSave={(s, a, d) => handleSaveNewTask(s, a, d)}
+                        onCancel={() => setAddingRootTo(null)}
+                        depth={0}
+                        mode="task"
+                      />
+                    )}
+
+                    {!isAddingRoot && (
+                      <div className="relative group py-3">
+                        <div className="absolute left-[24px] top-[-12px] bottom-[-12px] border-l-2 border-dotted border-slate-300 group-hover:border-orange-400 transition-colors z-0" />
+                        <div className="relative z-10 pl-[36px]">
+                          <button
+                            onClick={() => {
+                              setAddingRootTo(group.id);
+                              setAddingChildTo(null);
+                              setAddingReplyTo(null);
+                            }}
+                            className="absolute left-[17px] top-[-4px] w-4 h-4 rounded-full bg-orange-500 border-2 border-white flex items-center justify-center hover:scale-125 active:scale-90 transition-transform shadow-md z-20"
+                            title="Add task"
+                          >
+                            <Plus className="w-3 h-3 text-white" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
+
+        {!loading && displayGroups.length === 0 && (
+          <div className="text-center py-12 text-slate-400">
+            <p className="text-sm">No tasks found</p>
+          </div>
+        )}
+      </div>
+
+      <FilterModal
+        isOpen={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        title="Filter Tasks"
+        filters={[
+          {
+            name: 'Priority',
+            options: [
+              { label: 'All', value: 'all' },
+              { label: 'High', value: 'High' },
+              { label: 'Medium', value: 'Medium' },
+              { label: 'Low', value: 'Low' },
+            ],
+            selected: filterPriority,
+            onChange: setFilterPriority,
+          },
+          {
+            name: 'Deal Stage',
+            options: [
+              { label: 'All', value: 'all' },
+              { label: 'Prospect', value: 'Prospect' },
+              { label: 'Qualified', value: 'Qualified' },
+              { label: 'Proposal', value: 'Proposal' },
+              { label: 'Negotiation', value: 'Negotiation' },
+              { label: 'Term Sheet', value: 'Term Sheet' },
+              { label: 'Won', value: 'Won' },
+            ],
+            selected: filterStage,
+            onChange: setFilterStage,
+          },
+        ]}
+        onReset={() => {
+          setFilterPriority('all');
+          setFilterStage('all');
+        }}
+      />
     </div>
   );
 };
+
+export default TasksScreen;
