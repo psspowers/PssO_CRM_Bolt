@@ -424,7 +424,7 @@ const TaskNode = ({
   const isAddingReply = addingReplyTo === task.id;
   const isEditing = editingTaskId === task.id;
   const hasLiked = currentUserId && task.reactions?.[currentUserId] === 'like';
-  const likeCount = task.reactions ? Object.keys(task.reactions).length : 0;
+  const likeCount = task.like_count || 0;
 
   // Use comment_count from database (which already counts direct children correctly)
   // Build children array from parent_task_id relationships for display only
@@ -1061,13 +1061,18 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onNavigate }) => {
   const handleLike = async (taskId: string, userId: string) => {
     try {
       const newReactions = await toggleReaction(taskId, userId, 'like');
+      const newLikeCount = Object.keys(newReactions).length;
 
       setDealGroups(prevGroups => {
         return prevGroups.map(group => {
           const updateReactions = (tasks: TaskThread[]): TaskThread[] => {
             return tasks.map(task => {
               if (task.id === taskId) {
-                return { ...task, reactions: newReactions };
+                return {
+                  ...task,
+                  reactions: newReactions,
+                  like_count: newLikeCount
+                };
               }
               return {
                 ...task,
